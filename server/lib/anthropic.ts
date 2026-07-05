@@ -3,6 +3,92 @@
 export interface ClaudeMessage { role: "user" | "assistant"; content: string }
 interface ClaudeResp { content: { type: string; text: string }[] }
 
+/**
+ * Streaming da API do Claude — emite cada delta de texto via onDelta e
+ * devolve o texto completo ao final.
+ *
+ * `system` é enviado como bloco COM cache_control (prefixo estático — persona/
+ * instruções) e `systemDynamic` como segundo bloco SEM cache (data, taxas,
+ * contexto do usuário). Separar os dois é o que faz o prompt caching realmente
+ * acertar: o prefixo idêntico entre usuários é reaproveitado (~90% mais barato,
+ * TTFT menor) mesmo com a parte dinâmica mudando a cada request.
+ *
+ * Retry: 1 tentativa extra com backoff de 500ms, apenas se a falha ocorrer
+ * ANTES do primeiro byte (conexão/5xx) — nunca no meio do stream.
+ */
+export async function streamClaude(opts: {
+  model: string;
+  maxTokens: number;
+  system: string;
+  systemDynamic?: string;
+  messages: ClaudeMessage[];
+  timeoutMs?: number;
+  onDelta?: (text: string) => void;
+}): Promise<string> {
+  const apiKey = process.env.ANTHROPIC_API_KEY ?? "";
+
+  async function connect(): Promise<Response> {
+    return fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
+      },
+      body: JSON.stringify({
+        model: opts.model,
+        max_tokens: opts.maxTokens,
+        stream: true,
+        system: [
+          { type: "text", text: opts.system, cache_control: { type: "ephemeral" } },
+          ...(opts.systemDynamic ? [{ type: "text", text: opts.systemDynamic }] : []),
+        ],
+        messages: opts.messages,
+      }),
+      signal: AbortSignal.timeout(opts.timeoutMs ?? 60_000),
+    });
+  }
+
+  let response: Response;
+  try {
+    response = await connect();
+    if (!response.ok && response.status >= 500) throw new Error(`HTTP ${response.status}`);
+  } catch {
+    await new Promise((r) => setTimeout(r, 500));
+    response = await connect();
+  }
+  if (!response.ok || !response.body) {
+    const err = await response.text().catch(() => "");
+    throw new Error(`Claude HTTP ${response.status}: ${err.slice(0, 300)}`);
+  }
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  let full = "";
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    let sep: number;
+    while ((sep = buffer.indexOf("\n\n")) !== -1) {
+      const block = buffer.slice(0, sep);
+      buffer = buffer.slice(sep + 2);
+      for (const line of block.split("\n")) {
+        if (!line.startsWith("data:")) continue;
+        try {
+          const evt = JSON.parse(line.slice(5)) as { type: string; delta?: { type: string; text?: string } };
+          if (evt.type === "content_block_delta" && evt.delta?.type === "text_delta" && evt.delta.text) {
+            full += evt.delta.text;
+            opts.onDelta?.(evt.delta.text);
+          }
+        } catch { /* linha parcial/keepalive — ignora */ }
+      }
+    }
+  }
+  return full;
+}
+
 export async function callClaude(opts: {
   model: string;
   maxTokens: number;

@@ -14,6 +14,7 @@ import Home from "./pages/Home";
 import { lazy, Suspense } from "react";
 import { usePWA } from "./hooks/usePWA";
 import OnboardingTour from "./components/OnboardingTour";
+import ChatWidget from "./components/chat/ChatWidget";
 
 const Login         = lazy(() => import("./pages/Login"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
@@ -127,6 +128,7 @@ function App() {
             <Router />
             <PWAInstallBanner />
             <OnboardingTour />
+            <ChatWidget />
           </TooltipProvider>
         </AuthProvider>
       </ThemeProvider>

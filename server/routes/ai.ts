@@ -6,7 +6,7 @@ import type { NewsApiResponse, PolyEvent, KalshiEventsResponse } from "../lib/ty
 import { aiCreditsMiddleware } from "../middleware/aiCredits.ts";
 import { sendEmail, emailEnabled, renderWeeklyDigestHtml } from "../lib/email.ts";
 import { extractJson } from "../lib/extractJson.ts";
-import { callClaude, type ClaudeMessage } from "../lib/anthropic.ts";
+import { callClaude, streamClaude, type ClaudeMessage } from "../lib/anthropic.ts";
 import { getNewsForMarket } from "../lib/news.ts";
 import { SUPABASE_URL, SUPABASE_KEY } from "../lib/supabaseRest.ts";
 import { CATEGORY_BASE_RATES } from "../lib/categoryRates.ts";
@@ -153,58 +153,135 @@ JSON exato, sem markdown:
   }
 });
 
-// ── AI Chat ───────────────────────────────────────────────────────────────────
+// ── AI Chat (widget flutuante) ────────────────────────────────────────────────
+// Duas rotas sobre o MESMO núcleo (runChat): POST /chat (JSON, retrocompat) e
+// POST /chat/stream (SSE — o widget vê o texto nascendo, TTFT percebido ~1s).
+
+interface ChatContext { portfolio?: string; isAuthenticated?: boolean; userLevel?: number; levelContext?: string }
+interface ChatRequest { message?: string; history?: unknown; context?: ChatContext }
+
+// Bloco ESTÁTICO do system — idêntico para todos os usuários, vai com
+// cache_control (prompt caching real: TTFT menor e ~90% mais barato).
+// Tudo que varia por request fica no bloco dinâmico, nunca aqui.
+const CHAT_SYSTEM = `Você é o Analista JLB — assistente da JLB Analytics, plataforma brasileira de educação quantitativa para mercados preditivos (Polymarket, Kalshi), apostas esportivas racionais e finanças.
+
+PERSONA: analista quantitativo sênior e professor paciente. Tom direto e caloroso, zero jargão vazio; o rigor de quem ensina com números.
+
+ESCOPO — você responde sobre:
+- Mercados preditivos: probabilidades, odds, liquidez, volume, como ler Polymarket/Kalshi
+- Método quantitativo: Valor Esperado, Critério de Kelly, Brier Score, calibração, overround, base rates, decomposição de Fermi
+- Estatística e modelos: Poisson, regressão, Elo, Monte Carlo, vieses cognitivos
+- Macro/finanças em contexto educacional (Selic, CDI, IPCA, juros, inflação)
+- A própria plataforma JLB: páginas, calculadoras, trilha de níveis 1-5
+
+FORA DO ESCOPO: qualquer outro assunto → redirecione com gentileza, em 1 frase, para o que você cobre. Nunca finja saber.
+
+REGRAS INEGOCIÁVEIS:
+- SEMPRE em português brasileiro
+- NUNCA recomende aposta, posição, compra ou venda específica. Você ensina o método; a decisão é do usuário. Pressionado por uma "dica", explique o porquê da regra e ofereça o cálculo no lugar
+- Corrija achismos com matemática, não com opinião — mostre a conta
+- Probabilidade sem contexto não existe: relacione com valor esperado, margem e gestão de banca quando relevante
+- NÃO invente dados, notícias ou cotações; use apenas o que estiver nos blocos de contexto. Sem dado, diga que não tem
+- Use os indicadores do BCB do contexto ao falar de macro brasileira
+
+FORMATO:
+- Curto por padrão: 1 a 3 parágrafos, TEXTO PURO — sem nenhum markdown (nada de **negrito**, títulos, tabelas ou crase); hífens para listas curtas são ok
+- Adapte a profundidade ao nível do usuário indicado no contexto (1 = iniciante absoluto, 5 = avançado)
+- Números com 1-2 casas decimais e unidade sempre (%, R$, pp)
+- Ao usar material do Cerebro, cite [C1], [C2]…
+- Quando fizer sentido, feche apontando a página da JLB que aprofunda o tema (/calculadoras, /nivel/3, /previsao, /apostas)`;
+
+function sanitizeHistory(history: unknown): ClaudeMessage[] {
+  if (!Array.isArray(history)) return [];
+  return history
+    .filter((m): m is ClaudeMessage =>
+      !!m && (m.role === "user" || m.role === "assistant") && typeof m.content === "string" && m.content.trim().length > 0)
+    .slice(-10)
+    .map((m) => ({ role: m.role, content: m.content.slice(0, 4_000) }));
+}
+
+/** Contexto dinâmico do system: data, BCB (cache 1h) e Cerebro (cache 10min) em PARALELO. */
+async function buildChatDynamicContext(message: string, context?: ChatContext): Promise<string> {
+  const cerebroKey = `chat-cerebro:${message.toLowerCase().replace(/\s+/g, " ").slice(0, 100)}`;
+  const cachedCerebro = getCache<string>(cerebroKey);
+  const [selic, cdi, ipca, cerebro] = await Promise.all([
+    fetchBcbSerie(11), fetchBcbSerie(12), fetchBcbSerie(433),
+    cachedCerebro !== null
+      ? Promise.resolve(cachedCerebro)
+      : fetchCerebroContext(message).then((c) => { setCache(cerebroKey, c.context, 600); return c.context; }),
+  ]);
+
+  const parts = [
+    `DATA ATUAL: ${new Date().toLocaleDateString("pt-BR", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}`,
+    `INDICADORES (Banco Central do Brasil): Selic ${selic ?? "~11"}% a.a. · CDI ${cdi ?? "~11"}% a.a. · IPCA ${ipca ?? "~4.5"}% a.a.`,
+    `NÍVEL DO USUÁRIO NA TRILHA: ${context?.userLevel ?? 1}/5`,
+  ];
+  if (context?.levelContext) parts.push(`CONTEXTO DO USUÁRIO:\n${String(context.levelContext).slice(0, 800)}`);
+  if (context?.portfolio) parts.push(`CARTEIRA SIMULADA DO USUÁRIO:\n${String(context.portfolio).slice(0, 800)}`);
+  parts.push(cerebro
+    ? `BASE DE CONHECIMENTO CEREBRO (material curado; cite como [C1], [C2]…):\n${cerebro}`
+    : "BASE DE CONHECIMENTO CEREBRO: nenhum material relevante para esta pergunta. NÃO invente notícias, números de mercado ou eventos recentes — responda com o conhecimento conceitual e, se o dado recente fizer falta, diga isso ao usuário.");
+  return parts.join("\n\n");
+}
+
+/** Núcleo do chat — valida, monta contexto e chama o Claude (com ou sem streaming). */
+async function runChat(body: ChatRequest, onDelta?: (text: string) => void): Promise<string> {
+  const message = String(body.message ?? "").trim().slice(0, 4_000);
+  const dynamic = await buildChatDynamicContext(message, body.context);
+  return streamClaude({
+    model: "claude-sonnet-4-6",
+    maxTokens: 1024,
+    system: CHAT_SYSTEM,
+    systemDynamic: dynamic,
+    messages: [...sanitizeHistory(body.history), { role: "user", content: message }],
+    timeoutMs: 55_000,
+    onDelta,
+  });
+}
+
+function chatGuards(req: Parameters<Parameters<typeof router.post>[1]>[0], res: Parameters<Parameters<typeof router.post>[1]>[1]): boolean {
+  if (!process.env.ANTHROPIC_API_KEY) {
+    res.status(503).json({ error: "AI service not configured. Add ANTHROPIC_API_KEY to .env" });
+    return false;
+  }
+  const { message } = (req.body ?? {}) as ChatRequest;
+  if (!message?.trim()) { res.status(400).json({ error: "message is required" }); return false; }
+  const ip = req.ip ?? "unknown";
+  if (isRateLimited(`chat:${ip}`, 10, 60_000)) {
+    res.status(429).json({ error: "rate_limited", message: "Muitas mensagens. Aguarde um instante." });
+    return false;
+  }
+  return true;
+}
 
 router.post("/chat", aiCreditsMiddleware, async (req, res) => {
-  if (!process.env.ANTHROPIC_API_KEY) {
-    return res.status(503).json({ error: "AI service not configured. Add ANTHROPIC_API_KEY to .env" });
-  }
-
-  interface ChatRequest {
-    message: string;
-    history: ClaudeMessage[];
-    context: { portfolio: string; isAuthenticated: boolean; userLevel?: number; levelContext?: string };
-  }
-  const { message, history = [], context } = req.body as ChatRequest;
-  if (!message?.trim()) return res.status(400).json({ error: "message is required" });
-
-  const [selic, cdi, ipca] = await Promise.all([fetchBcbSerie(11), fetchBcbSerie(12), fetchBcbSerie(433)]);
-
-  const systemPrompt = `Você é o assistente da JLB Analytics, plataforma brasileira de educação quantitativa para mercados preditivos.
-
-DATA ATUAL: ${new Date().toLocaleDateString("pt-BR", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
-
-DADOS MACROECONÔMICOS ATUAIS (Banco Central do Brasil):
-- Selic: ${selic ?? "~11"}% a.a.
-- CDI: ${cdi ?? "~11"}% a.a.
-- IPCA: ${ipca ?? "~4.5"}% a.a.
-
-${context?.levelContext ? `CONTEXTO DO USUÁRIO:\n${context.levelContext}` : ""}
-${context?.portfolio ? `CARTEIRA DO USUÁRIO:\n${context.portfolio}` : ""}
-
-INSTRUÇÕES OBRIGATÓRIAS:
-- Responda SEMPRE em português brasileiro
-- Seja objetivo — máximo 3 parágrafos por resposta
-- Adapte a complexidade ao nível do usuário (${context?.userLevel ?? 1}/5)
-- NUNCA recomende posição, aposta ou compra/venda específica
-- Quando falar de probabilidade, sempre contextualize com valor esperado e margem
-- Use os dados do BCB acima para contexto macroeconômico
-- Corrija com cálculo, não com opinião — se o usuário tem um achismo, mostre a matemática
-- Se perguntado sobre algo fora do escopo (mercados preditivos, finanças, estatística), redirecione educacionalmente`;
-
+  if (!chatGuards(req, res)) return;
   try {
-    const reply = await callClaude({
-      model: "claude-sonnet-4-6",
-      maxTokens: 1024,
-      system: systemPrompt,
-      messages: [...history.slice(-10), { role: "user", content: message }],
-      cacheSystem: true,
-    });
+    const reply = await runChat(req.body as ChatRequest);
     res.json({ reply });
   } catch (err) {
     log.error("[AI chat] error:", err);
     res.status(500).json({ error: "Internal error" });
   }
+});
+
+router.post("/chat/stream", aiCreditsMiddleware, async (req, res) => {
+  if (!chatGuards(req, res)) return;
+  res.writeHead(200, {
+    "Content-Type": "text/event-stream",
+    "Cache-Control": "no-cache",
+    Connection: "keep-alive",
+  });
+  const send = (event: string, data: Record<string, unknown>) =>
+    res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
+  try {
+    const reply = await runChat(req.body as ChatRequest, (text) => send("delta", { text }));
+    send("done", { reply });
+  } catch (err) {
+    log.error("[AI chat/stream] error:", err);
+    send("error", { message: "O assistente está indisponível agora. Tente de novo em instantes." });
+  }
+  res.end();
 });
 
 // ── Market Analyze ────────────────────────────────────────────────────────────
