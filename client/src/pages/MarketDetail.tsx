@@ -19,6 +19,7 @@ import { CHART_TOOLTIP_STYLE, CHART_TICK_STYLE } from "@/lib/data";
 import { supabase } from "@/lib/supabase";
 import { getMarkets } from "@/lib/marketsCache";
 import { computeConsensus, marketWeight, aiWeight, communityWeight, type ConsensusSignal } from "@/lib/consensus";
+import { useSEO } from "@/hooks/useSEO";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -362,6 +363,11 @@ export default function MarketDetail() {
   const [communityForecast, setCommunityForecast] = useState<CommunityForecast | null>(null);
   const [cerebroArticles, setCerebroArticles] = useState<CerebroArticleSnippet[]>([]);
   const [trackRecord, setTrackRecord] = useState<{ skillVsMarket: number | null; resolvedCount: number } | null>(null);
+
+  useSEO(
+    market?.title ?? "Detalhe do Mercado",
+    "Probabilidades ao vivo, histórico de preços, consenso da comunidade e análise quantitativa deste mercado preditivo.",
+  );
 
   // Track record da IA — usado para ponderar o voto da IA no consenso
   useEffect(() => {

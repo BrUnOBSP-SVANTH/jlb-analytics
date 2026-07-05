@@ -10,6 +10,7 @@ import { useState, useEffect } from "react";
 import { TrendingUp, Zap, Cloud, BarChart2, Users, Info, AlertCircle } from "lucide-react";
 import { useModelCall } from "@/hooks/useModels";
 import { awardPoints } from "@/lib/userProgress";
+import { useSEO } from "@/hooks/useSEO";
 
 interface TaylorResult { selic_observed: number; taylor_implied: number; divergence_pp: number; signal: string; explanation: string; }
 interface PoissonResult { p_home_win: number; p_draw: number; p_away_win: number; lambda_home: number; lambda_away: number; top_scores: { score: string; probability: number }[]; explanation: string; }
@@ -266,6 +267,7 @@ function EnsoCalculator() {
 }
 
 export default function Nivel3() {
+  useSEO("Nível 3 — Modelos Básicos", "Poisson, regressão e Elo: os primeiros modelos quantitativos para previsões.");
   useEffect(() => {
     awardPoints("level_visited", "Visitou o Nível 3 — Modelos Básicos", "level_visited_3");
   }, []);

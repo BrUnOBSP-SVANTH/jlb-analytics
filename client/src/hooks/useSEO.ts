@@ -12,19 +12,30 @@ import { useEffect } from "react";
 
 const DEFAULT_TITLE = "JLB Analytics — Educação em Mercados Preditivos";
 
+function upsertMeta(name: string, content: string): void {
+  let tag = document.querySelector(`meta[name="${name}"]`);
+  if (!tag) {
+    tag = document.createElement("meta");
+    tag.setAttribute("name", name);
+    document.head.appendChild(tag);
+  }
+  tag.setAttribute("content", content);
+}
+
 export function useSEO(title: string, description?: string): void {
   useEffect(() => {
     document.title = `${title} · JLB Analytics`;
 
-    if (description) {
-      let tag = document.querySelector('meta[name="description"]');
-      if (!tag) {
-        tag = document.createElement("meta");
-        tag.setAttribute("name", "description");
-        document.head.appendChild(tag);
-      }
-      tag.setAttribute("content", description);
+    if (description) upsertMeta("description", description);
+
+    // Canonical da rota atual (sem query/hash) — evita indexação duplicada
+    let link = document.querySelector('link[rel="canonical"]');
+    if (!link) {
+      link = document.createElement("link");
+      link.setAttribute("rel", "canonical");
+      document.head.appendChild(link);
     }
+    link.setAttribute("href", `${window.location.origin}${window.location.pathname}`);
 
     return () => { document.title = DEFAULT_TITLE; };
   }, [title, description]);

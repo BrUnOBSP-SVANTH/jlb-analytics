@@ -11,6 +11,7 @@ import { useState, useEffect } from "react";
 import { Calculator, TrendingDown, RefreshCw, ChevronDown, ChevronUp, AlertCircle, CheckCircle, Info } from "lucide-react";
 import { useModelCall } from "@/hooks/useModels";
 import { awardPoints } from "@/lib/userProgress";
+import { useSEO } from "@/hooks/useSEO";
 
 // ─── Tipos de resposta da API ─────────────────────────────────────────────────
 interface EVResult {
@@ -322,6 +323,7 @@ function BayesCalculator() {
 
 // ─── Página principal ─────────────────────────────────────────────────────────
 export default function Nivel1() {
+  useSEO("Nível 1 — Fundamentos", "Probabilidade, odds e Valor Esperado do zero: a base matemática para apostar com lógica.");
   useEffect(() => {
     awardPoints("level_visited", "Visitou o Nível 1 — Fundamentos", "level_visited_1");
   }, []);

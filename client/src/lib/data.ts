@@ -27,15 +27,6 @@ export const CHART_TICK_STYLE = {
   fontSize: 12,
 } as const;
 
-// ============ IMAGE URLS ============
-export const IMAGES = {
-  heroBg: "https://d2xsxph8kpxj0f.cloudfront.net/310419663032591208/PLaZ8Q4er6RrsQwHgPFvYK/hero-bg-7RU8tM2se8ztBJczbGhh78.webp",
-  marketDashboard: "https://d2xsxph8kpxj0f.cloudfront.net/310419663032591208/PLaZ8Q4er6RrsQwHgPFvYK/market-dashboard-XUS9ov8mGV2yd4pNMaFkHd.webp",
-  investmentGrowth: "https://d2xsxph8kpxj0f.cloudfront.net/310419663032591208/PLaZ8Q4er6RrsQwHgPFvYK/investment-growth-e2jYztG6jWgrY5yUBDaQYo.webp",
-  educationFinance: "https://d2xsxph8kpxj0f.cloudfront.net/310419663032591208/PLaZ8Q4er6RrsQwHgPFvYK/education-finance-KSWcr2y8eNg5DomM5pKecH.webp",
-  correlationAnalysis: "https://d2xsxph8kpxj0f.cloudfront.net/310419663032591208/PLaZ8Q4er6RrsQwHgPFvYK/correlation-analysis-mpAsF7VfUN3DsgRRhps6Ce.webp",
-};
-
 // ============ STOCK METADATA (apenas dados estáticos — preços/histórico buscados ao vivo) ============
 export interface StockMeta {
   ticker: string;

@@ -28,6 +28,7 @@ import { loadWatchlist, removeFromWatchlist, cycleAlertThreshold, type Watchlist
 import { pullFromSupabase, pushToSupabase, syncOne, deleteOne } from "@/lib/predictionsSync";
 import ContaTabs from "@/components/ContaTabs";
 import { CHART_COLORS, CHART_TOOLTIP_STYLE, CHART_TICK_STYLE } from "@/lib/data";
+import { useSEO } from "@/hooks/useSEO";
 
 // ── Constants ──────────────────────────────────────────────────────────────
 
@@ -1258,6 +1259,7 @@ function DashboardSkeleton() {
 // ── Main ───────────────────────────────────────────────────────────────────
 
 export default function Dashboard() {
+  useSEO("Meu Dashboard", "Suas previsões, calibração vs. mercado, Brier Score e evolução como forecaster.");
   const { user, loading: authLoading } = useAuth();
 
   if (authLoading) return <DashboardSkeleton />;

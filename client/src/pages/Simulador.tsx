@@ -27,6 +27,7 @@ import {
 } from "recharts";
 import { TrendingUp, Activity, Target, type LucideIcon } from "lucide-react";
 import LaboratorioTabs from "@/components/LaboratorioTabs";
+import { useSEO } from "@/hooks/useSEO";
 
 const inputClass =
   "w-full mt-1.5 bg-secondary/50 border border-border/50 rounded-lg px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary";
@@ -528,6 +529,7 @@ function CalibracaoSimulator() {
 // ─── Main ──────────────────────────────────────────────────────────────────
 
 export default function Simulador() {
+  useSEO("Simulador de Apostas", "Simule estratégias de longo prazo: bankroll, stake, variância e risco de ruína na prática.");
   const [tab, setTab] = useState<Tab>("ev");
 
   const tabs: { id: Tab; label: string; icon: typeof TrendingUp }[] = [

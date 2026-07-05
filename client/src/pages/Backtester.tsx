@@ -25,6 +25,7 @@ import {
   type PricePoint, type Trade, type BacktestMetrics, type StrategyConfig,
   type MeanReversionConfig, type PanicFadeConfig, type RsiReversionConfig,
 } from "@/lib/backtester";
+import { useSEO } from "@/hooks/useSEO";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -243,6 +244,7 @@ const STRATEGY_LABELS: Record<StrategyType, string> = {
 };
 
 export default function Backtester() {
+  useSEO("Backtester de Estratégias", "Teste estratégias em mercados preditivos contra dados históricos reais de Polymarket e Kalshi — win rate, ROI, drawdown e exportação CSV.");
   // Market selection
   const [markets, setMarkets] = useState<PolyMarketResolved[]>([]);
   const [selectedMarket, setSelectedMarket] = useState<PolyMarketResolved | null>(null);

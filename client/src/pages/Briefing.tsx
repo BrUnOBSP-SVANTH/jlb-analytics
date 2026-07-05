@@ -13,6 +13,7 @@ import {
 import { loadPredictions, addPrediction, type StoredPrediction } from "@/lib/predictions";
 import { awardPoints } from "@/lib/userProgress";
 import AnaliseTabs from "@/components/AnaliseTabs";
+import { useSEO } from "@/hooks/useSEO";
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 
@@ -217,6 +218,7 @@ function ExpiringPredictions({ preds }: { preds: StoredPrediction[] }) {
 const SESSION_KEY = "jlb_briefing_session";
 
 export default function Briefing() {
+  useSEO("Briefing Diário", "O resumo do dia nos mercados preditivos: leitura macro, mercados em destaque, dica de calibração e alerta de risco — gerado por IA.");
   const [briefing, setBriefing] = useState<BriefingData | null>(() => {
     // Restaura do sessionStorage para evitar refetch ao navegar
     try {

@@ -11,6 +11,7 @@ import { GitMerge, Layers, Lock, Info, AlertTriangle, Star, ArrowRight } from "l
 import { useModelCall } from "@/hooks/useModels";
 import { loadProgress, UNLOCK_THRESHOLDS, awardPoints } from "@/lib/userProgress";
 import { Link } from "wouter";
+import { useSEO } from "@/hooks/useSEO";
 
 interface DivergenceResult {
   divergence_pct: number; signal: string; label: string;
@@ -306,6 +307,7 @@ function EnsembleCalculator() {
 }
 
 export default function Nivel5() {
+  useSEO("Nível 5 — Análise Integrada", "Combine modelos, dados e julgamento calibrado numa análise completa de mercado.");
   const progress = loadProgress();
   const required = UNLOCK_THRESHOLDS[5];
 

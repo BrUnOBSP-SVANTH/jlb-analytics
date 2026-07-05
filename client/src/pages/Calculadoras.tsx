@@ -14,7 +14,6 @@ import {
   GitCompare, AlertTriangle,
 } from "lucide-react";
 import {
-  IMAGES,
   stocks,
   calculateCorrelation,
   CHART_COLORS,
@@ -30,6 +29,7 @@ import {
   Tooltip,
   Legend,
 } from "recharts";
+import { useSEO } from "@/hooks/useSEO";
 
 type CalcTab = "ev" | "overround" | "brier" | "kelly" | "correlacao" | "guia";
 
@@ -996,6 +996,7 @@ const CALC_LABELS: Partial<Record<CalcTab, string>> = {
 };
 
 export default function Calculadoras() {
+  useSEO("Calculadoras Quantitativas", "Valor Esperado, Critério de Kelly, Overround e Brier Score — calculadoras educacionais com dados reais para apostar com método.");
   const [tab, setTab] = useState<CalcTab>("guia");
   const awardedTabs = useRef<Set<CalcTab>>(new Set());
 

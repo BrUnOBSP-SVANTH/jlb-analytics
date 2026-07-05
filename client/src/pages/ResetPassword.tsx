@@ -13,6 +13,7 @@ import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { TrendingUp, Lock, Eye, EyeOff, AlertCircle, CheckCircle } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { useSEO } from "@/hooks/useSEO";
 
 const inputClass =
   "w-full px-4 py-3 rounded-lg bg-secondary/50 border border-border/50 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary transition-colors";
@@ -20,6 +21,7 @@ const inputClass =
 type PageState = "waiting" | "ready" | "success" | "error";
 
 export default function ResetPassword() {
+  useSEO("Redefinir Senha", "Defina uma nova senha para sua conta JLB Analytics.");
   const [, navigate] = useLocation();
 
   const [pageState, setPageState] = useState<PageState>("waiting");

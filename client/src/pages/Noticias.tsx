@@ -25,6 +25,7 @@ import {
   type StoredPrediction,
 } from "@/lib/predictions";
 import { awardPoints } from "@/lib/userProgress";
+import { useSEO } from "@/hooks/useSEO";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -716,6 +717,7 @@ function ArticleCardSkeleton() {
 type Tab = "markets" | "kalshi" | "news" | "articles";
 
 export default function Noticias() {
+  useSEO("Notícias dos Mercados", "Notícias que movem os mercados preditivos, cruzadas com probabilidades ao vivo e análise de IA.");
   const [tab, setTab] = useState<Tab>("markets");
   const [markets, setMarkets] = useState<PolyMarket[]>([]);
   const [loadingMarkets, setLoadingMarkets] = useState(false);

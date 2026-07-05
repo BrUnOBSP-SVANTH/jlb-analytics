@@ -7,6 +7,7 @@ import { useState } from "react";
 import { useLocation } from "wouter";
 import { TrendingUp, Mail, Lock, Eye, EyeOff, Chrome, ArrowLeft, AlertCircle, CheckCircle } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useSEO } from "@/hooks/useSEO";
 
 type Mode = "login" | "signup" | "reset";
 
@@ -14,6 +15,7 @@ const inputClass =
   "w-full px-4 py-3 rounded-lg bg-secondary/50 border border-border/50 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary transition-colors";
 
 export default function Login() {
+  useSEO("Entrar", "Acesse sua conta para sincronizar previsões, calibração e progresso.");
   const [, navigate] = useLocation();
   const { signIn, signUp, signInWithGoogle, resetPassword } = useAuth();
 

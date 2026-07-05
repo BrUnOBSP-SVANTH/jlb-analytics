@@ -15,6 +15,7 @@ import {
   RefreshCw, Info, AlertTriangle, BarChart2, Target,
   ChevronDown, ChevronUp, Download, Sparkles,
 } from "lucide-react";
+import { useSEO } from "@/hooks/useSEO";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -527,6 +528,7 @@ function PortfolioAnalysisPanel({ positions }: { positions: PortfolioPosition[] 
 // ── Main Page ─────────────────────────────────────────────────────────────────
 
 export default function Portfolio() {
+  useSEO("Portfólio Simulado", "Acompanhe posições simuladas em mercados preditivos com P&L e histórico.");
   const [positions, setPositions] = useState<PortfolioPosition[]>(loadPositions);
   const [showAdd, setShowAdd] = useState(false);
   const [refreshing, setRefreshing] = useState(false);

@@ -11,6 +11,7 @@ import { useState, useEffect } from "react";
 import { BarChart3, Activity, GitBranch, Info, AlertCircle } from "lucide-react";
 import { useModelCall } from "@/hooks/useModels";
 import { awardPoints } from "@/lib/userProgress";
+import { useSEO } from "@/hooks/useSEO";
 
 interface ZResult { z: number; p_two_tail: number; signal: string; explanation: string; }
 interface CIResult { lower: number; upper: number; margin: number; se: number; dist_used: string; level_pct: number; signal: string; explanation: string; }
@@ -251,6 +252,7 @@ function CorrelationCalculator() {
 }
 
 export default function Nivel2() {
+  useSEO("Nível 2 — Leitura de Dados", "Aprenda a ler volume, liquidez e movimento de preços em mercados preditivos.");
   useEffect(() => {
     awardPoints("level_visited", "Visitou o Nível 2 — Leitura de Dados", "level_visited_2");
   }, []);
