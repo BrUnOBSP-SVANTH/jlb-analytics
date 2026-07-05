@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { getCache, setCache } from "../lib/cache.ts";
 import { fetchJSON } from "../lib/fetcher.ts";
+import { log } from "../lib/log.ts";
 
 const router = Router();
 
@@ -35,7 +36,7 @@ router.get("/markets", async (req, res) => {
     res.json({ markets, source: "live" });
   } catch (err) {
     const msg = err instanceof Error ? err.message : "unknown";
-    console.error("[Manifold] error:", msg);
+    log.error("[Manifold] error:", msg);
     res.status(502).json({ error: "manifold_unavailable", message: msg });
   }
 });

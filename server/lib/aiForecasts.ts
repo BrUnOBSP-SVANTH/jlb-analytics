@@ -7,6 +7,7 @@ import { CATEGORY_BASE_RATES } from "./categoryRates.ts";
 import { callClaude } from "./anthropic.ts";
 import { extractJson } from "./extractJson.ts";
 import { getCache } from "./cache.ts";
+import { log } from "./log.ts";
 
 export async function logAiForecast(f: {
   marketId: string; source: string; title: string; category?: string;
@@ -185,7 +186,7 @@ JSON apenas: {"fairValue": <inteiro 5-95>, "confidence": "baixa|media|alta"}`;
       } catch { /* pula mercado */ }
       await sleep(300); // throttle
     }
-    console.log(`[ai-seed] ${done}/${queue.length} previsões da IA registradas`);
+    log.info(`[ai-seed] ${done}/${queue.length} previsões da IA registradas`);
     seedRunning = false;
   })().catch(() => { seedRunning = false; });
 

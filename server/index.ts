@@ -28,6 +28,7 @@ import pythonRouter   from "./routes/python.ts";
 import manifoldRouter from "./routes/manifold.ts";
 import snapshotsRouter from "./routes/snapshots.ts";
 import levelsRouter   from "./routes/levels.ts";
+import { log } from "./lib/log.ts";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -47,11 +48,11 @@ function runPythonScript(script: string, args: string[] = []): Promise<void> {
     py.stdout.on("data", (d: Buffer) => process.stdout.write(`[cerebro:${script}] ${d}`));
     py.stderr.on("data", (d: Buffer) => process.stderr.write(`[cerebro:${script}] ${d}`));
     py.on("close", (code) => {
-      if (code !== 0) console.warn(`[cerebro] ${script} saiu com código ${code}`);
+      if (code !== 0) log.warn(`[cerebro] ${script} saiu com código ${code}`);
       resolve();
     });
     py.on("error", (err) => {
-      console.warn(`[cerebro] Não foi possível iniciar ${script}: ${err.message}`);
+      log.warn(`[cerebro] Não foi possível iniciar ${script}: ${err.message}`);
       resolve();
     });
   });
@@ -59,24 +60,24 @@ function runPythonScript(script: string, args: string[] = []): Promise<void> {
 
 async function runCerebroCollection() {
   if (!process.env.SUPABASE_SERVICE_KEY) {
-    console.warn("[cerebro] SUPABASE_SERVICE_KEY não configurada — coleta automática desativada.");
+    log.warn("[cerebro] SUPABASE_SERVICE_KEY não configurada — coleta automática desativada.");
     return;
   }
-  console.log("[cerebro] Iniciando coleta RSS...");
+  log.info("[cerebro] Iniciando coleta RSS...");
   await runPythonScript("rss_collector.py", ["--limit", "30"]);
-  console.log("[cerebro] Coleta concluída. Iniciando síntese IA...");
+  log.info("[cerebro] Coleta concluída. Iniciando síntese IA...");
   await runPythonScript("cerebro_synthesizer.py");
-  console.log("[cerebro] Síntese concluída.");
+  log.info("[cerebro] Síntese concluída.");
 }
 
 async function runMarketSnapshots() {
   if (!process.env.SUPABASE_SERVICE_KEY) {
-    console.warn("[snapshots] SUPABASE_SERVICE_KEY ausente — snapshots desativados.");
+    log.warn("[snapshots] SUPABASE_SERVICE_KEY ausente — snapshots desativados.");
     return;
   }
-  console.log("[snapshots] Coletando snapshots diários de mercados...");
+  log.info("[snapshots] Coletando snapshots diários de mercados...");
   await runPythonScript("market_snapshots.py", ["--limit", "100"]);
-  console.log("[snapshots] Snapshots concluídos.");
+  log.info("[snapshots] Snapshots concluídos.");
 }
 
 async function startServer() {
@@ -86,7 +87,7 @@ async function startServer() {
     { key: "NEWS_API_KEY",      feature: "news context in market analysis" },
   ];
   for (const { key, feature } of REQUIRED_ENV) {
-    if (!process.env[key]) console.warn(`⚠️  [env] ${key} not set — ${feature} will be degraded`);
+    if (!process.env[key]) log.warn(`⚠️  [env] ${key} not set — ${feature} will be degraded`);
   }
 
   const app = express();
@@ -96,9 +97,39 @@ async function startServer() {
   app.set("trust proxy", 1);
 
   // ── Security headers ───────────────────────────────────────────────────────
-  // CSP desligado por ora: o script inline do tema, Google Fonts e o WS
-  // same-origin exigem uma policy dedicada (follow-up).
-  app.use(helmet({ contentSecurityPolicy: false, crossOriginEmbedderPolicy: false }));
+  // Sem inline scripts (tema é /theme-init.js) e fontes self-hosted, a CSP
+  // pode ser restrita. 'unsafe-inline' só em style-src: React/Recharts usam
+  // style attributes. img-src https: porque thumbnails de notícias vêm de
+  // hosts arbitrários (NewsAPI/Reddit). O wss explícito cobre navegadores
+  // antigos onde 'self' não casa com WebSocket same-origin.
+  const supabaseHost = (process.env.SUPABASE_URL ?? process.env.VITE_SUPABASE_URL ?? "")
+    .replace(/^https?:\/\//, "").replace(/\/.*$/, "");
+  const appHost = (process.env.APP_URL ?? "").replace(/^https?:\/\//, "").replace(/\/.*$/, "");
+  app.use(helmet({
+    contentSecurityPolicy: {
+      useDefaults: false,
+      directives: {
+        "default-src": ["'self'"],
+        "script-src": ["'self'"],
+        "style-src": ["'self'", "'unsafe-inline'"],
+        "img-src": ["'self'", "data:", "https:"],
+        "font-src": ["'self'"],
+        "connect-src": [
+          "'self'",
+          ...(supabaseHost ? [`https://${supabaseHost}`, `wss://${supabaseHost}`] : []),
+          ...(appHost ? [`wss://${appHost}`] : []),
+          ...(process.env.NODE_ENV !== "production" ? ["ws://localhost:*", "http://localhost:*"] : []),
+        ],
+        "worker-src": ["'self'"],
+        "manifest-src": ["'self'"],
+        "object-src": ["'none'"],
+        "base-uri": ["'self'"],
+        "form-action": ["'self'"],
+        "frame-ancestors": ["'self'"],
+      },
+    },
+    crossOriginEmbedderPolicy: false,
+  }));
 
   // ── CORS ───────────────────────────────────────────────────────────────────
   // Restrict API access to known origins only.
@@ -217,7 +248,7 @@ async function startServer() {
         us: usRaw.status === "fulfilled" ? usRaw.value.map((q) => ({ ticker: q.symbol, price: q.regularMarketPrice ?? 0, change: q.regularMarketChangePercent ?? 0 })) : [],
       });
     } catch (err) {
-      console.error("[WS] Broadcast error:", err);
+      log.error("[WS] Broadcast error:", err);
     }
   }
 
@@ -326,10 +357,10 @@ async function startServer() {
         }
 
         broadcast({ type: "market_alerts", updatedAt: new Date().toISOString(), alerts });
-        console.log(`[WS] Market alerts: ${alerts.length} movimentos ≥${ALERT_THRESHOLD_PP}pp`);
+        log.info(`[WS] Market alerts: ${alerts.length} movimentos ≥${ALERT_THRESHOLD_PP}pp`);
       }
     } catch (err) {
-      console.error("[WS] Market alerts error:", err);
+      log.error("[WS] Market alerts error:", err);
     }
   }
 
@@ -339,37 +370,37 @@ async function startServer() {
   // ── Start ──────────────────────────────────────────────────────────────────
   const port = process.env.PORT ?? 3001;
   httpServer.listen(port, () => {
-    console.log(`✅ Server running on http://localhost:${port}/`);
-    console.log("   Routes: market | polymarket | kalshi | reddit | news | ai | stripe");
-    console.log("   WebSocket: ws://localhost:3001/ws/quotes");
+    log.info(`✅ Server running on http://localhost:${port}/`);
+    log.info("   Routes: market | polymarket | kalshi | reddit | news | ai | stripe");
+    log.info("   WebSocket: ws://localhost:3001/ws/quotes");
   });
 
   // ── Cerebro auto-collection ────────────────────────────────────────────────
   if (process.env.SUPABASE_SERVICE_KEY) {
     setTimeout(() => { void runCerebroCollection(); }, 30_000);
     setInterval(() => { void runCerebroCollection(); }, CEREBRO_INTERVAL_MS);
-    console.log("   Cerebro: coleta automática a cada 2h ✅");
+    log.info("   Cerebro: coleta automática a cada 2h ✅");
 
     // Snapshots de mercado: primeira coleta 2min após o boot, depois 1× por dia
     setTimeout(() => { void runMarketSnapshots(); }, 2 * 60_000);
     setInterval(() => { void runMarketSnapshots(); }, SNAPSHOT_INTERVAL_MS);
-    console.log("   Snapshots: coleta diária de mercados ✅");
+    log.info("   Snapshots: coleta diária de mercados ✅");
 
     // Scoring das previsões da IA: resolve contra preços extremos (track record)
     setTimeout(() => { void scoreAiForecasts(); }, 3 * 60_000);
     setInterval(() => { void scoreAiForecasts(); }, 6 * 60 * 60 * 1000); // a cada 6h
-    console.log("   AI track record: scoring automático a cada 6h ✅");
+    log.info("   AI track record: scoring automático a cada 6h ✅");
 
     // Seed de previsões da IA: 4min após o boot (mercados já em cache), depois 1×/dia
     setTimeout(() => { void seedAiForecasts(); }, 4 * 60_000);
     setInterval(() => { void seedAiForecasts(); }, 24 * 60 * 60 * 1000);
-    console.log("   AI seed: previsões nos top mercados (Consenso/Divergências) ✅");
+    log.info("   AI seed: previsões nos top mercados (Consenso/Divergências) ✅");
 
     // Resumo semanal por email: checa 1×/dia, RPC entrega só a quem está há 6+ dias sem receber
     setInterval(() => { void sendWeeklyDigests(); }, 24 * 60 * 60 * 1000);
-    console.log("   Resumo semanal: email aos inscritos (precisa RESEND_API_KEY) ✅");
+    log.info("   Resumo semanal: email aos inscritos (precisa RESEND_API_KEY) ✅");
   } else {
-    console.warn("   Cerebro/Snapshots: SUPABASE_SERVICE_KEY ausente — coleta manual apenas.");
+    log.warn("   Cerebro/Snapshots: SUPABASE_SERVICE_KEY ausente — coleta manual apenas.");
   }
 
   // Graceful shutdown so node --watch can restart without EADDRINUSE
@@ -381,12 +412,12 @@ async function startServer() {
   process.once("SIGINT", shutdown);
 }
 
-startServer().catch(console.error);
+startServer().catch((err) => log.error("[boot] Falha ao iniciar o servidor:", err));
 
 // Keep the process alive through unhandled errors instead of crashing.
 process.on("uncaughtException", (err) => {
-  console.error("[process] uncaughtException — servidor continua:", err);
+  log.error("[process] uncaughtException — servidor continua:", err);
 });
 process.on("unhandledRejection", (reason) => {
-  console.error("[process] unhandledRejection — servidor continua:", reason);
+  log.error("[process] unhandledRejection — servidor continua:", reason);
 });

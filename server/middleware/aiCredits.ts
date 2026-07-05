@@ -16,6 +16,7 @@
 
 import type { Request, Response, NextFunction } from "express";
 import { createHash } from "crypto";
+import { log } from "../lib/log.ts";
 
 const SUPABASE_URL = process.env.SUPABASE_URL ?? process.env.VITE_SUPABASE_URL ?? "";
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY ?? "";
@@ -63,7 +64,7 @@ async function incrementCredits(userId: string) {
     headers: supaHeaders(),
     body: JSON.stringify({ p_user_id: userId }),
   }).catch((e) => {
-    console.warn("[aiCredits] increment RPC failed:", e instanceof Error ? e.message : e);
+    log.warn("[aiCredits] increment RPC failed:", e instanceof Error ? e.message : e);
   });
 }
 

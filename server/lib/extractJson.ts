@@ -1,3 +1,4 @@
+import { log } from "./log.ts";
 /**
  * extractJson — extração robusta de JSON de respostas do Claude.
  *
@@ -43,7 +44,7 @@ export function extractJson(raw: string): Record<string, unknown> {
   // Find start of first JSON object
   const start = stripped.indexOf("{");
   if (start === -1) {
-    console.error("[extractJson] Claude returned no JSON. Raw (first 300 chars):", stripped.slice(0, 300));
+    log.error("[extractJson] Claude returned no JSON. Raw (first 300 chars):", stripped.slice(0, 300));
     throw new Error("No JSON found in Claude response");
   }
   // Walk forward com pilha completa de brackets ({ e [) para achar o fechamento correto
@@ -69,13 +70,13 @@ export function extractJson(raw: string): Record<string, unknown> {
   for (let attempt = 0; attempt < 8; attempt++) {
     const obj = tryCloseAndParse(frag);
     if (obj && Object.keys(obj).length > 0) {
-      console.warn(`[extractJson] JSON truncado recuperado (tentativa ${attempt + 1}, ${Object.keys(obj).length} campos).`);
+      log.warn(`[extractJson] JSON truncado recuperado (tentativa ${attempt + 1}, ${Object.keys(obj).length} campos).`);
       return obj;
     }
     const lastComma = frag.lastIndexOf(",");
     if (lastComma === -1) break;
     frag = frag.slice(0, lastComma);
   }
-  console.error("[extractJson] Claude returned no JSON. Raw (first 300 chars):", stripped.slice(0, 300));
+  log.error("[extractJson] Claude returned no JSON. Raw (first 300 chars):", stripped.slice(0, 300));
   throw new Error("No JSON found in Claude response");
 }

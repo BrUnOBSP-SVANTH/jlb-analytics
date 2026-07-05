@@ -1,3 +1,4 @@
+import { log } from "./log.ts";
 export async function fetchJSON<T>(url: string, headers: Record<string, string> = {}): Promise<T> {
   const res = await fetch(url, { headers, signal: AbortSignal.timeout(8000) });
   if (!res.ok) throw new Error(`HTTP ${res.status} fetching ${url}`);
@@ -20,7 +21,7 @@ export async function fetchWithRetry<T>(
       if (msg.includes("HTTP 4")) throw err;
       if (attempt < maxRetries) {
         const wait = delayMs * Math.pow(2, attempt);
-        console.warn(`[fetchWithRetry] attempt ${attempt + 1}/${maxRetries + 1} failed (${msg}), retrying in ${wait}ms…`);
+        log.warn(`[fetchWithRetry] attempt ${attempt + 1}/${maxRetries + 1} failed (${msg}), retrying in ${wait}ms…`);
         await new Promise((r) => setTimeout(r, wait));
       }
     }

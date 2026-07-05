@@ -69,7 +69,7 @@ export function ProbArc({ yes }: { yes: number }) {
         />
       )}
       {/* Label */}
-      <text x={cx} y={cy + 6} textAnchor="middle" fill={color} fontSize="12" fontWeight="700" fontFamily="JetBrains Mono, monospace">
+      <text x={cx} y={cy + 6} textAnchor="middle" fill={color} fontSize="12" fontWeight="700" fontFamily="var(--font-mono)">
         {yes.toFixed(0)}%
       </text>
     </svg>

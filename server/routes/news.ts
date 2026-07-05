@@ -2,6 +2,7 @@ import { Router } from "express";
 import { getCache, setCache } from "../lib/cache.ts";
 import { fetchJSON } from "../lib/fetcher.ts";
 import type { NewsArticle, NewsApiResponse } from "../lib/types.ts";
+import { log } from "../lib/log.ts";
 
 const router = Router();
 
@@ -88,7 +89,7 @@ router.get("/news", async (req, res) => {
     res.json({ articles, source: "live" });
   } catch (err) {
     const msg = err instanceof Error ? err.message : "unknown";
-    console.error("[News] error:", msg);
+    log.error("[News] error:", msg);
     res.status(502).json({ error: "news_unavailable", message: msg });
   }
 });

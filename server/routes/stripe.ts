@@ -5,6 +5,7 @@
 
 import { Router, raw } from "express";
 import crypto from "crypto";
+import { log } from "../lib/log.ts";
 
 const router = Router();
 
@@ -22,7 +23,7 @@ function supaHeaders() {
 
 async function setUserPlan(userId: string, plan: "free" | "premium") {
   if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
-    console.warn("[Stripe] Supabase não configurado — plano não atualizado");
+    log.warn("[Stripe] Supabase não configurado — plano não atualizado");
     return;
   }
   // Atualiza profiles.plan
@@ -31,7 +32,7 @@ async function setUserPlan(userId: string, plan: "free" | "premium") {
     headers: supaHeaders(),
     body: JSON.stringify({ plan }),
   });
-  if (!r1.ok) console.error(`[Stripe] profiles update HTTP ${r1.status}`);
+  if (!r1.ok) log.error(`[Stripe] profiles update HTTP ${r1.status}`);
 
   // Atualiza ai_credits.plan (upsert)
   const r2 = await fetch(`${SUPABASE_URL}/rest/v1/ai_credits`, {
@@ -39,8 +40,8 @@ async function setUserPlan(userId: string, plan: "free" | "premium") {
     headers: { ...supaHeaders(), Prefer: "resolution=merge-duplicates,return=minimal" },
     body: JSON.stringify({ user_id: userId, plan, used_this_month: 0 }),
   });
-  if (!r2.ok) console.error(`[Stripe] ai_credits upsert HTTP ${r2.status}`);
-  else console.log(`[Stripe] Plano ${plan} ativado para usuário ${userId}`);
+  if (!r2.ok) log.error(`[Stripe] ai_credits upsert HTTP ${r2.status}`);
+  else log.info(`[Stripe] Plano ${plan} ativado para usuário ${userId}`);
 }
 
 // Verifica assinatura HMAC-SHA256 do webhook Stripe
@@ -94,14 +95,14 @@ router.post("/checkout", async (req, res) => {
 
     if (!response.ok) {
       const errText = await response.text();
-      console.error("[Stripe] Checkout error:", errText);
+      log.error("[Stripe] Checkout error:", errText);
       throw new Error("Stripe API error");
     }
     interface StripeSession { id: string; url: string }
     const session = await response.json() as StripeSession;
     res.json({ sessionId: session.id, url: session.url });
   } catch (err) {
-    console.error("[Stripe] Checkout error:", err);
+    log.error("[Stripe] Checkout error:", err);
     res.status(500).json({ error: "Failed to create checkout session" });
   }
 });
@@ -136,7 +137,7 @@ router.post("/webhook", raw({ type: "application/json" }), async (req, res) => {
     if (!signature) return res.status(400).json({ error: "Missing stripe-signature header" });
     const valid = verifyStripeSignature(req.body as Buffer, String(signature), webhookSecret);
     if (!valid) {
-      console.warn("[Stripe] Assinatura inválida — webhook rejeitado");
+      log.warn("[Stripe] Assinatura inválida — webhook rejeitado");
       return res.status(400).json({ error: "Invalid signature" });
     }
   }
@@ -154,7 +155,7 @@ router.post("/webhook", raw({ type: "application/json" }), async (req, res) => {
       break;
 
     case "invoice.payment_failed":
-      console.warn(`[Stripe] Pagamento falhou para usuário ${userId ?? "desconhecido"}`);
+      log.warn(`[Stripe] Pagamento falhou para usuário ${userId ?? "desconhecido"}`);
       break;
 
     default:

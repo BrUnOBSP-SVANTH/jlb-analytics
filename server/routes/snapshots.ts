@@ -4,6 +4,7 @@
  */
 
 import { Router } from "express";
+import { log } from "../lib/log.ts";
 
 const router = Router();
 
@@ -46,7 +47,7 @@ router.get("/history/:source/:marketId", async (req, res) => {
 
     res.json({ marketId, source, days, rows });
   } catch (err) {
-    console.error("[snapshots] error:", err);
+    log.error("[snapshots] error:", err);
     res.status(500).json({ error: "Internal error" });
   }
 });
@@ -108,7 +109,7 @@ router.get("/top", async (req, res) => {
 
     res.json({ days, ranked });
   } catch (err) {
-    console.error("[snapshots/top] error:", err);
+    log.error("[snapshots/top] error:", err);
     res.status(500).json({ error: "Internal error" });
   }
 });
@@ -216,7 +217,7 @@ router.post("/seed", async (req, res) => {
 
     res.json({ seeded, rows: deduped.length, message: `${deduped.length} snapshots inseridos para ${seeded} mercados.` });
   } catch (err) {
-    console.error("[snapshots/seed] error:", err);
+    log.error("[snapshots/seed] error:", err);
     res.status(500).json({ error: "Internal error", message: err instanceof Error ? err.message : "unknown" });
   }
 });

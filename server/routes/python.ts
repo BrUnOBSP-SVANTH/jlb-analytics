@@ -1,5 +1,6 @@
 import { Router } from "express";
 import type { Request, Response } from "express";
+import { log } from "../lib/log.ts";
 
 const PYTHON_API_URL = process.env.PYTHON_API_URL ?? "http://localhost:8000";
 
@@ -26,7 +27,7 @@ async function proxyToPython(req: Request, res: Response, targetPath: string, us
     if (msg.includes("ECONNREFUSED") || msg.includes("fetch failed")) {
       res.status(503).json({ error: "python_unavailable", message: "Serviço de modelos indisponível. Inicie o FastAPI: cd python && python pipeline.py" });
     } else {
-      console.error("[Python proxy] error:", msg);
+      log.error("[Python proxy] error:", msg);
       res.status(500).json({ error: "proxy_error", message: msg });
     }
   }

@@ -12,6 +12,7 @@ import { SUPABASE_URL, SUPABASE_KEY } from "../lib/supabaseRest.ts";
 import { CATEGORY_BASE_RATES } from "../lib/categoryRates.ts";
 import { fetchCerebroContext, fetchMarketMomentum } from "../lib/cerebro.ts";
 import { logAiForecast, seedAiForecasts, computeDivergences, getTrackRecordData, getClosingSoon, parsePolyPrices } from "../lib/aiForecasts.ts";
+import { log } from "../lib/log.ts";
 
 const router = Router();
 
@@ -60,7 +61,7 @@ export async function sendWeeklyDigests(): Promise<{ sent: number; skipped: stri
       }
       await sleep(400); // throttle (Resend free: ~2 req/s)
     }
-    console.log(`[weekly-digest] ${sent}/${recipients.length} emails enviados`);
+    log.info(`[weekly-digest] ${sent}/${recipients.length} emails enviados`);
     return { sent, skipped: "" };
   } catch (e) {
     return { sent: 0, skipped: e instanceof Error ? e.message : "erro" };
@@ -147,7 +148,7 @@ JSON exato, sem markdown:
     setCache(cacheKey, result, 1800);
     res.json(result);
   } catch (err) {
-    console.error("[explain-edge] error:", err);
+    log.error("[explain-edge] error:", err);
     res.status(500).json({ error: "explain_edge_failed" });
   }
 });
@@ -201,7 +202,7 @@ INSTRUÇÕES OBRIGATÓRIAS:
     });
     res.json({ reply });
   } catch (err) {
-    console.error("[AI chat] error:", err);
+    log.error("[AI chat] error:", err);
     res.status(500).json({ error: "Internal error" });
   }
 });
@@ -324,7 +325,7 @@ JSON exato (sem markdown):
           relevantIndices = parsed.relevantIndices.filter((i) => typeof i === "number" && i >= 0 && i < allArticles.length);
         }
       } catch (e) {
-        console.warn("[market-analyze] Claude analysis failed:", e instanceof Error ? e.message : e);
+        log.warn("[market-analyze] Claude analysis failed:", e instanceof Error ? e.message : e);
         analysis = `Mercado em ${probPct}% no ${platformName}. ${allArticles.length > 0 ? `${allArticles.length} artigos encontrados — análise IA temporariamente indisponível.` : "Sem notícias recentes localizadas para este mercado específico."}`;
       }
     } else {
@@ -380,7 +381,7 @@ router.post("/analyze", aiCreditsMiddleware, async (req, res) => {
     setCache(cacheKey, result, 1800);
     res.json(result);
   } catch (err) {
-    console.error("[market-analyze] error:", err);
+    log.error("[market-analyze] error:", err);
     res.status(500).json({ error: "analyze_failed" });
   }
 });
@@ -420,7 +421,7 @@ router.post("/analyze/stream", aiCreditsMiddleware, async (req, res) => {
     send("done", {});
     res.end();
   } catch (err) {
-    console.error("[market-analyze-stream] error:", err);
+    log.error("[market-analyze-stream] error:", err);
     send("error", { message: "analyze_failed" });
     res.end();
   }
@@ -763,7 +764,7 @@ router.post("/model-predict", aiCreditsMiddleware, async (req, res) => {
     setCache(cacheKey, result, 900);
     res.json(result);
   } catch (err) {
-    console.error("[model-predict] error:", err);
+    log.error("[model-predict] error:", err);
     res.status(500).json({ error: "predict_failed", message: err instanceof Error ? err.message : "unknown" });
   }
 });
@@ -793,7 +794,7 @@ router.post("/model-predict/stream", aiCreditsMiddleware, async (req, res) => {
     send("done", {});
     res.end();
   } catch (err) {
-    console.error("[model-predict-stream] error:", err);
+    log.error("[model-predict-stream] error:", err);
     send("error", { message: err instanceof Error ? err.message : "predict_failed" });
     res.end();
   }
@@ -853,7 +854,7 @@ JSON exato:
     setCache(cacheKey, result, 900);
     res.json(result);
   } catch (err) {
-    console.error("[reddit-ctx] error:", err);
+    log.error("[reddit-ctx] error:", err);
     res.status(500).json({ error: "reddit_ctx_failed", message: err instanceof Error ? err.message : "unknown" });
   }
 });
@@ -936,7 +937,7 @@ JSON exato (sem markdown):
     setCache(cacheKey, result, 86400);
     res.json(result);
   } catch (err) {
-    console.error("[daily-briefing] error:", err);
+    log.error("[daily-briefing] error:", err);
     res.status(500).json({ error: "briefing_failed", message: err instanceof Error ? err.message : "unknown" });
   }
 });
@@ -1060,7 +1061,7 @@ Onde:
     setCache(cacheKey, result, 1800); // cache 30 min
     res.json(result);
   } catch (err) {
-    console.error("[fair-value] error:", err);
+    log.error("[fair-value] error:", err);
     // Fallback sem Claude: retorna estimativa quantitativa pura
     res.json({
       fairValue: clampedPreFV,
@@ -1147,7 +1148,7 @@ Responda em JSON com exatamente estes campos:
     portfolioAnalysisCache.set(cacheKey, { ts: Date.now(), data: result });
     res.json({ ...result, cached: false });
   } catch (err) {
-    console.error("[portfolio-analysis]", err);
+    log.error("[portfolio-analysis]", err);
     res.status(500).json({ error: "Análise indisponível" });
   }
 });
@@ -1267,7 +1268,7 @@ Onde:
     setCache(cacheKey, result, 1800);
     res.json({ ...result, cached: false });
   } catch (err) {
-    console.error("[article-crossref] error:", err);
+    log.error("[article-crossref] error:", err);
     res.status(500).json({ error: "crossref_failed", message: err instanceof Error ? err.message : "unknown" });
   }
 });

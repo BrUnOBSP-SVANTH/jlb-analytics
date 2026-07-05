@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { getCache, setCache } from "../lib/cache.ts";
 import { fetchJSON } from "../lib/fetcher.ts";
+import { log } from "../lib/log.ts";
 
 interface RedditChild {
   data: {
@@ -33,7 +34,7 @@ router.get("/:subreddit", async (req, res) => {
     res.json({ posts, source: "live" });
   } catch (err) {
     const msg = err instanceof Error ? err.message : "unknown";
-    console.error(`[Reddit/${sub}] error:`, msg);
+    log.error(`[Reddit/${sub}] error:`, msg);
     res.status(502).json({ error: "reddit_unavailable", message: msg });
   }
 });

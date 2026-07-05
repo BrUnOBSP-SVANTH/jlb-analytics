@@ -2,6 +2,7 @@ import { Router } from "express";
 import { swr, getCache, setCache } from "../lib/cache.ts";
 import { fetchWithRetry, fetchJSON } from "../lib/fetcher.ts";
 import type { PolyEvent, PolyMarket } from "../lib/types.ts";
+import { log } from "../lib/log.ts";
 
 const router = Router();
 
@@ -136,7 +137,7 @@ router.get("/markets", async (req, res) => {
     res.json({ markets, source: "live" });
   } catch (err) {
     const msg = err instanceof Error ? err.message : "unknown";
-    console.error("[Polymarket] error:", msg);
+    log.error("[Polymarket] error:", msg);
     res.status(502).json({ error: "polymarket_unavailable", message: msg });
   }
 });
@@ -160,7 +161,7 @@ router.get("/clob-history", async (req, res) => {
     res.json({ history: data.history, source: "live" });
   } catch (err) {
     const msg = err instanceof Error ? err.message : "unknown";
-    console.error(`[CLOB/${tokenId}] error:`, msg);
+    log.error(`[CLOB/${tokenId}] error:`, msg);
     res.status(502).json({ error: "clob_unavailable", message: msg });
   }
 });

@@ -2,6 +2,7 @@ import { Router } from "express";
 import { swr } from "../lib/cache.ts";
 import { fetchWithRetry } from "../lib/fetcher.ts";
 import type { KalshiEventsResponse, KalshiMarket } from "../lib/types.ts";
+import { log } from "../lib/log.ts";
 
 const router = Router();
 
@@ -42,7 +43,7 @@ router.get("/markets", async (req, res) => {
     res.json({ markets, source: "live" });
   } catch (err) {
     const msg = err instanceof Error ? err.message : "unknown";
-    console.error("[Kalshi] error:", msg);
+    log.error("[Kalshi] error:", msg);
     res.status(502).json({ error: "kalshi_unavailable", message: msg });
   }
 });

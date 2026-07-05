@@ -4,6 +4,7 @@ import { fetchBrapiQuotes } from "../lib/brapi.ts";
 import { fetchYahooQuotes, fetchYahooHistory } from "../lib/yahoo.ts";
 import { getCache, setCache } from "../lib/cache.ts";
 import type { NormalisedQuote } from "../lib/types.ts";
+import { log } from "../lib/log.ts";
 
 const router = Router();
 
@@ -136,7 +137,7 @@ router.get("/ticker-tape", async (_req, res) => {
     if (items.length > 0) setCache(cacheKey, result, 60);
     res.json(result);
   } catch (err) {
-    console.error("[ticker-tape] route error:", err);
+    log.error("[ticker-tape] route error:", err);
     res.json({ items: [], updatedAt: new Date().toISOString() });
   }
 });
