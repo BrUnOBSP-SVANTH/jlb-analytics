@@ -1,0 +1,427 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  /* Custom JLB colors */
+  --color-gold: oklch(0.78 0.12 85);
+  --color-gold-light: oklch(0.85 0.1 85);
+  --color-gold-dark: oklch(0.65 0.12 85);
+  --color-neon-blue: oklch(0.72 0.18 240);
+  --color-neon-blue-light: oklch(0.82 0.14 240);
+  --color-positive: oklch(0.72 0.19 155);
+  --color-negative: oklch(0.65 0.2 25);
+  /* obsidian = superfície de chrome (adapta ao tema); on-accent = texto sobre dourado (sempre escuro) */
+  --color-obsidian: var(--obsidian);
+  --color-obsidian-light: oklch(0.18 0.015 260);
+  --color-surface: var(--card);
+  --color-on-accent: oklch(0.17 0.012 280);
+
+  --font-sans: 'Inter Tight', system-ui, sans-serif;
+  --font-display: 'Outfit', system-ui, sans-serif;
+  --font-serif: 'Playfair Display', Georgia, serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+
+/* ───────────────────────────────────────────────────────────────────────────
+   Tema DARK (padrão) — "Obsidian quente": near-black com um leve calor violáceo,
+   cartões com contraste suave e bordas nítidas. Menos "preto duro de template".
+   ─────────────────────────────────────────────────────────────────────────── */
+:root {
+  --radius: 0.625rem;
+  --background: oklch(0.155 0.012 280);
+  --foreground: oklch(0.94 0.006 250);
+  --card: oklch(0.195 0.014 278);
+  --card-foreground: oklch(0.94 0.006 250);
+  --popover: oklch(0.215 0.016 276);
+  --popover-foreground: oklch(0.94 0.006 250);
+  --primary: oklch(0.78 0.125 83);
+  --primary-foreground: oklch(0.16 0.012 280);
+  --secondary: oklch(0.235 0.016 276);
+  --secondary-foreground: oklch(0.82 0.01 250);
+  --muted: oklch(0.25 0.014 278);
+  --muted-foreground: oklch(0.65 0.018 262);
+  --accent: oklch(0.78 0.12 85);
+  --accent-foreground: oklch(0.155 0.012 280);
+  --destructive: oklch(0.65 0.2 25);
+  --destructive-foreground: oklch(0.98 0 0);
+  --border: oklch(0.29 0.015 276);
+  --input: oklch(0.25 0.016 276);
+  --ring: oklch(0.78 0.125 83);
+  --chart-1: oklch(0.72 0.18 240);
+  --chart-2: oklch(0.78 0.12 85);
+  --chart-3: oklch(0.75 0.13 82);
+  --chart-4: oklch(0.72 0.19 155);
+  --chart-5: oklch(0.65 0.2 25);
+  --sidebar: oklch(0.17 0.012 280);
+  --sidebar-foreground: oklch(0.94 0.006 250);
+  --sidebar-primary: oklch(0.78 0.125 83);
+  --sidebar-primary-foreground: oklch(0.16 0.012 280);
+  --sidebar-accent: oklch(0.235 0.016 276);
+  --sidebar-accent-foreground: oklch(0.94 0.006 250);
+  --sidebar-border: oklch(0.29 0.015 276);
+  --sidebar-ring: oklch(0.78 0.125 83);
+
+  /* Vidro + sombras (theme-aware) */
+  --glass-bg: oklch(0.195 0.014 278 / 55%);
+  --glass-border: oklch(0.34 0.016 274 / 38%);
+  --shadow-card: 0 1px 0 oklch(1 0 0 / 4%) inset, 0 10px 30px -16px oklch(0 0 0 / 0.55);
+  --shadow-soft: 0 2px 8px -4px oklch(0 0 0 / 0.4);
+  --obsidian: oklch(0.135 0.011 280);
+}
+
+/* ───────────────────────────────────────────────────────────────────────────
+   Tema LIGHT — "papel quente" editorial. Off-white com um toque de calor (não
+   branco clínico), cartões brancos que destacam, dourado escurecido pra contraste.
+   ─────────────────────────────────────────────────────────────────────────── */
+.light {
+  --background: oklch(0.975 0.006 90);
+  --foreground: oklch(0.21 0.016 275);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.21 0.016 275);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.21 0.016 275);
+  --primary: oklch(0.6 0.13 78);
+  --primary-foreground: oklch(0.99 0.003 90);
+  --secondary: oklch(0.955 0.007 88);
+  --secondary-foreground: oklch(0.3 0.02 270);
+  --muted: oklch(0.95 0.007 88);
+  --muted-foreground: oklch(0.48 0.02 268);
+  --accent: oklch(0.62 0.13 80);
+  --accent-foreground: oklch(0.99 0.003 90);
+  --destructive: oklch(0.58 0.21 27);
+  --destructive-foreground: oklch(0.99 0 0);
+  --border: oklch(0.9 0.008 88);
+  --input: oklch(0.92 0.008 88);
+  --ring: oklch(0.6 0.13 78);
+  --sidebar: oklch(0.99 0.004 90);
+  --sidebar-foreground: oklch(0.21 0.016 275);
+  --sidebar-accent: oklch(0.955 0.007 88);
+  --sidebar-accent-foreground: oklch(0.21 0.016 275);
+  --sidebar-border: oklch(0.9 0.008 88);
+
+  --glass-bg: oklch(1 0 0 / 72%);
+  --glass-border: oklch(0.88 0.008 88 / 80%);
+  --shadow-card: 0 1px 2px oklch(0 0 0 / 0.04), 0 12px 28px -16px oklch(0.3 0.05 80 / 0.22);
+  --shadow-soft: 0 2px 10px -6px oklch(0.3 0.05 80 / 0.18);
+  --obsidian: oklch(0.945 0.008 88);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    scroll-behavior: smooth;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Inter Tight', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    /* Transição suave ao alternar tema — toque de craft */
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+
+  /* Acessibilidade + craft: respeita quem pede menos movimento (desliga as
+     animações de entrada do tw-animate-css, transições e scroll suave). */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Outfit', system-ui, sans-serif;
+    letter-spacing: -0.02em; /* tracking apertado nos títulos — assinatura editorial */
+  }
+
+  /* Seleção de texto com o dourado da marca */
+  ::selection {
+    background: oklch(0.78 0.12 85 / 25%);
+    color: var(--foreground);
+  }
+
+  /* Foco visível consistente e elegante (acessibilidade + craft) */
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  /* Scrollbar discreta que segue o tema */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+  *::-webkit-scrollbar { width: 10px; height: 10px; }
+  *::-webkit-scrollbar-track { background: transparent; }
+  *::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 8px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
+  *::-webkit-scrollbar-thumb:hover { background: var(--muted-foreground); background-clip: content-box; }
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  [type="button"]:not(:disabled),
+  [type="submit"]:not(:disabled),
+  [type="reset"]:not(:disabled),
+  a[href],
+  select:not(:disabled),
+  input[type="checkbox"]:not(:disabled),
+  input[type="radio"]:not(:disabled) {
+    @apply cursor-pointer;
+  }
+}
+
+@layer components {
+  .container {
+    width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  .flex {
+    min-height: 0;
+    min-width: 0;
+  }
+
+  @media (min-width: 640px) {
+    .container {
+      padding-left: 1.5rem;
+      padding-right: 1.5rem;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .container {
+      padding-left: 2rem;
+      padding-right: 2rem;
+      max-width: 1400px;
+    }
+  }
+
+  /* Glass card — theme-aware, com sombra em camadas e realce sutil no topo */
+  .glass-card {
+    background: var(--glass-bg);
+    backdrop-filter: blur(16px) saturate(1.1);
+    -webkit-backdrop-filter: blur(16px) saturate(1.1);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--shadow-card);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+  }
+
+  .glass-card:hover {
+    border-color: oklch(0.78 0.12 85 / 35%);
+  }
+
+  /* Gold gradient border — fill segue o tema (var --card) */
+  .gold-border {
+    border: 1px solid transparent;
+    background-image: linear-gradient(var(--card), var(--card)),
+                      linear-gradient(135deg, var(--color-gold), var(--color-neon-blue), var(--color-gold));
+    background-origin: border-box;
+    background-clip: padding-box, border-box;
+  }
+
+  /* Glow effects */
+  .glow-blue {
+    box-shadow: 0 0 20px oklch(0.62 0.2 250 / 20%), 0 0 40px oklch(0.62 0.2 250 / 10%);
+  }
+
+  .glow-gold {
+    box-shadow: 0 0 20px oklch(0.78 0.12 85 / 20%), 0 0 40px oklch(0.78 0.12 85 / 10%);
+  }
+
+  /* Text gradient */
+  .text-gradient-gold {
+    background: linear-gradient(135deg, oklch(0.78 0.12 85), oklch(0.85 0.1 85));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .text-gradient-blue {
+    background: linear-gradient(135deg, oklch(0.62 0.2 250), oklch(0.72 0.18 240));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Ticker animation */
+  @keyframes ticker {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+  }
+
+  .animate-ticker {
+    animation: ticker 30s linear infinite;
+  }
+
+  /* Ticker tape — velocidade proporcional ao conteúdo */
+  @keyframes ticker-tape {
+    0%   { transform: translateX(0); }
+    100% { transform: translateX(-33.333%); }
+  }
+
+  .animate-ticker-tape {
+    animation: ticker-tape 60s linear infinite;
+  }
+  .animate-ticker-tape:hover {
+    animation-play-state: paused;
+  }
+
+  /* Number counter animation */
+  @keyframes countUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .animate-count {
+    animation: countUp 0.6s ease-out forwards;
+  }
+
+  /* Pulse glow */
+  @keyframes pulseGlow {
+    0%, 100% { opacity: 0.4; }
+    50% { opacity: 1; }
+  }
+
+  .animate-pulse-glow {
+    animation: pulseGlow 3s ease-in-out infinite;
+  }
+
+  /* Prediction probability slider — gold thumb */
+  input[type="range"].accent-gold {
+    -webkit-appearance: none;
+    appearance: none;
+    height: 4px;
+    background: var(--secondary);
+    border-radius: 2px;
+    outline: none;
+  }
+  input[type="range"].accent-gold::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: oklch(0.78 0.12 85);
+    cursor: pointer;
+    box-shadow: 0 0 0 3px oklch(0.78 0.12 85 / 20%);
+    transition: box-shadow 0.15s;
+  }
+  input[type="range"].accent-gold::-webkit-slider-thumb:hover {
+    box-shadow: 0 0 0 5px oklch(0.78 0.12 85 / 30%);
+  }
+  input[type="range"].accent-gold::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: oklch(0.78 0.12 85);
+    cursor: pointer;
+    border: none;
+  }
+
+  /* Gold border gradient on focus */
+  .focus-gold:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px oklch(0.78 0.12 85 / 40%);
+  }
+
+  /* Probability badge */
+  .prob-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.125rem 0.5rem;
+    border-radius: 9999px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.625rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    border: 1px solid currentColor;
+  }
+
+  /* ── Craft: tipografia numérica ────────────────────────────────────────────
+     Todo número em fonte mono alinha em colunas (tabular) — assinatura de
+     produto de dados. Texto corrido mantém algarismos proporcionais. */
+  .font-mono,
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum" 1;
+  }
+
+  /* Número-herói editorial: serif Playfair para probabilidades/estatísticas em
+     destaque — cria o tom de "revista quant", não de dashboard genérico. */
+  .numeric-hero {
+    font-family: var(--font-serif);
+    font-variant-numeric: lining-nums tabular-nums;
+    letter-spacing: -0.015em;
+    font-feature-settings: "lnum" 1, "tnum" 1;
+  }
+
+  /* ── Craft: hierarquia de elevação ─────────────────────────────────────────
+     .panel = superfície sólida e quieta (conteúdo de fundo); .glass-card =
+     elevada (destaque). Ter os dois evita o "tudo é glass-card" que entrega
+     cara de template. */
+  .panel {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+  }
+  .panel-inset {
+    background: color-mix(in oklch, var(--secondary) 55%, transparent);
+    border: 1px solid color-mix(in oklch, var(--border) 70%, transparent);
+    border-radius: var(--radius);
+  }
+
+  /* Linha-fio: divisória 1px ultra-sutil e precisa (craft de planta técnica) */
+  .hairline {
+    border-color: color-mix(in oklch, var(--border) 60%, transparent);
+  }
+}

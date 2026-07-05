@@ -1,0 +1,370 @@
+/**
+ * JLB Analytics — Server entry point
+ * Registers CORS, routes, WebSocket and starts the HTTP server.
+ */
+
+import express from "express";
+import { createServer } from "http";
+import { WebSocketServer, WebSocket } from "ws";
+import cors from "cors";
+import path from "path";
+import { fileURLToPath } from "url";
+import { spawn } from "child_process";
+
+import { cache } from "./lib/cache.ts";
+import { fetchBrapiQuotes } from "./lib/brapi.ts";
+import { fetchYahooQuotes } from "./lib/yahoo.ts";
+
+import marketRouter   from "./routes/market.ts";
+import polymarketRouter from "./routes/polymarket.ts";
+import kalshiRouter   from "./routes/kalshi.ts";
+import redditRouter   from "./routes/reddit.ts";
+import newsRouter     from "./routes/news.ts";
+import aiRouter, { sendWeeklyDigests } from "./routes/ai.ts";
+import { scoreAiForecasts, seedAiForecasts } from "./lib/aiForecasts.ts";
+import stripeRouter   from "./routes/stripe.ts";
+import pythonRouter   from "./routes/python.ts";
+import manifoldRouter from "./routes/manifold.ts";
+import snapshotsRouter from "./routes/snapshots.ts";
+import levelsRouter   from "./routes/levels.ts";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// ── Cerebro + Snapshots scheduler ─────────────────────────────────────────────
+
+const PYTHON_DIR = path.resolve(__dirname, "..", "python");
+const CEREBRO_INTERVAL_MS = 2 * 60 * 60 * 1000;  // 2 horas
+const SNAPSHOT_INTERVAL_MS = 24 * 60 * 60 * 1000; // 24 horas
+
+function runPythonScript(script: string, args: string[] = []): Promise<void> {
+  return new Promise((resolve) => {
+    const py = spawn("python", [path.join(PYTHON_DIR, script), ...args], {
+      env: { ...process.env },
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+    py.stdout.on("data", (d: Buffer) => process.stdout.write(`[cerebro:${script}] ${d}`));
+    py.stderr.on("data", (d: Buffer) => process.stderr.write(`[cerebro:${script}] ${d}`));
+    py.on("close", (code) => {
+      if (code !== 0) console.warn(`[cerebro] ${script} saiu com código ${code}`);
+      resolve();
+    });
+    py.on("error", (err) => {
+      console.warn(`[cerebro] Não foi possível iniciar ${script}: ${err.message}`);
+      resolve();
+    });
+  });
+}
+
+async function runCerebroCollection() {
+  if (!process.env.SUPABASE_SERVICE_KEY) {
+    console.warn("[cerebro] SUPABASE_SERVICE_KEY não configurada — coleta automática desativada.");
+    return;
+  }
+  console.log("[cerebro] Iniciando coleta RSS...");
+  await runPythonScript("rss_collector.py", ["--limit", "30"]);
+  console.log("[cerebro] Coleta concluída. Iniciando síntese IA...");
+  await runPythonScript("cerebro_synthesizer.py");
+  console.log("[cerebro] Síntese concluída.");
+}
+
+async function runMarketSnapshots() {
+  if (!process.env.SUPABASE_SERVICE_KEY) {
+    console.warn("[snapshots] SUPABASE_SERVICE_KEY ausente — snapshots desativados.");
+    return;
+  }
+  console.log("[snapshots] Coletando snapshots diários de mercados...");
+  await runPythonScript("market_snapshots.py", ["--limit", "100"]);
+  console.log("[snapshots] Snapshots concluídos.");
+}
+
+async function startServer() {
+  // ── Env validation ─────────────────────────────────────────────────────────
+  const REQUIRED_ENV: Array<{ key: string; feature: string }> = [
+    { key: "ANTHROPIC_API_KEY", feature: "AI endpoints (/api/ai/*, /api/market/analyze)" },
+    { key: "NEWS_API_KEY",      feature: "news context in market analysis" },
+  ];
+  for (const { key, feature } of REQUIRED_ENV) {
+    if (!process.env[key]) console.warn(`⚠️  [env] ${key} not set — ${feature} will be degraded`);
+  }
+
+  const app = express();
+
+  // ── CORS ───────────────────────────────────────────────────────────────────
+  // Restrict API access to known origins only.
+  const allowedOrigins =
+    process.env.NODE_ENV === "production"
+      ? (process.env.APP_URL ? [process.env.APP_URL] : [])
+      : [
+          "http://localhost:3000",
+          "http://localhost:3001",
+          "http://localhost:3002",
+          "http://localhost:5173",
+        ];
+
+  app.use(
+    cors({
+      origin: (origin, callback) => {
+        // Allow same-origin requests (origin is undefined for server-to-server, curl, etc.)
+        if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
+        callback(new Error(`CORS: origin ${origin} not allowed`));
+      },
+      credentials: true,
+      methods: ["GET", "POST", "OPTIONS"],
+      allowedHeaders: ["Content-Type", "Authorization", "x-user-level"],
+    }),
+  );
+
+  // ── Body parsing ───────────────────────────────────────────────────────────
+  // Stripe webhook needs raw body for HMAC signature verification — skip json() for that path.
+  app.use((req, res, next) => {
+    if (req.path === "/api/stripe/webhook") return next();
+    express.json()(req, res, next);
+  });
+
+  // ── Routes ─────────────────────────────────────────────────────────────────
+  app.use("/api",             marketRouter);
+  app.use("/api/polymarket",  polymarketRouter);
+  app.use("/api/kalshi",      kalshiRouter);
+  app.use("/api/reddit",      redditRouter);
+  app.use("/api",             newsRouter);       // /api/translate, /api/news, /api/articles
+  app.use("/api/ai",          aiRouter);         // /api/ai/chat, analyze, model-predict, reddit-context, daily-briefing, fair-value
+  app.use("/api/stripe",      stripeRouter);
+  app.use("/api",             levelsRouter);     // /api/level1–5/* — TypeScript nativo (sem dependência Python)
+  app.use("/api",             pythonRouter);     // /api/models/health — proxy Python como fallback
+  app.use("/api/manifold",    manifoldRouter);
+  app.use("/api/snapshots",   snapshotsRouter);  // /api/snapshots/history/:marketId
+
+  // ── Cache stats (debug) ────────────────────────────────────────────────────
+  app.get("/api/cache/stats", (_req, res) => {
+    const now = Date.now();
+    const entries = Array.from(cache.entries()).map(([key, entry]) => ({
+      key,
+      expiresIn: Math.max(0, Math.round(((entry as { expiresAt: number }).expiresAt - now) / 1000)),
+      expired: (entry as { expiresAt: number }).expiresAt < now,
+    }));
+    res.json({
+      total: cache.size,
+      live: entries.filter((e) => !e.expired).length,
+      expired: entries.filter((e) => e.expired).length,
+      entries: entries.sort((a, b) => b.expiresIn - a.expiresIn),
+    });
+  });
+
+  // ── Static files + SPA fallback ────────────────────────────────────────────
+  const staticPath =
+    process.env.NODE_ENV === "production"
+      ? path.resolve(__dirname, "public")
+      : path.resolve(__dirname, "..", "dist", "public");
+
+  app.use(express.static(staticPath));
+
+  app.get("*", (_req, res) => res.sendFile(path.join(staticPath, "index.html")));
+
+  // ── HTTP server + WebSocket ────────────────────────────────────────────────
+  const httpServer = createServer(app);
+  const wss = new WebSocketServer({ server: httpServer, path: "/ws/quotes" });
+  const wsClients = new Set<WebSocket>();
+
+  // Probabilidades anteriores dos mercados — para detectar variações ≥ threshold
+  const prevMarketProbs = new Map<string, number>();
+
+  wss.on("connection", (ws) => {
+    wsClients.add(ws);
+    void broadcastQuotes();
+    ws.on("close", () => wsClients.delete(ws));
+    ws.on("error", () => wsClients.delete(ws));
+  });
+
+  function broadcast(payload: unknown) {
+    const msg = JSON.stringify(payload);
+    wsClients.forEach((ws) => { if (ws.readyState === WebSocket.OPEN) ws.send(msg); });
+  }
+
+  async function broadcastQuotes() {
+    if (wsClients.size === 0) return;
+    try {
+      const [brRaw, usRaw] = await Promise.allSettled([
+        fetchBrapiQuotes(["PETR4", "VALE3", "ITUB4"]),
+        fetchYahooQuotes(["AAPL", "MSFT", "^BVSP", "^GSPC"]),
+      ]);
+      broadcast({
+        type: "quotes",
+        updatedAt: new Date().toISOString(),
+        br: brRaw.status === "fulfilled" ? brRaw.value.map((q) => ({ ticker: q.symbol, price: q.regularMarketPrice, change: q.regularMarketChangePercent })) : [],
+        us: usRaw.status === "fulfilled" ? usRaw.value.map((q) => ({ ticker: q.symbol, price: q.regularMarketPrice ?? 0, change: q.regularMarketChangePercent ?? 0 })) : [],
+      });
+    } catch (err) {
+      console.error("[WS] Broadcast error:", err);
+    }
+  }
+
+  // Detecta variações ≥ ALERT_THRESHOLD_PP nos mercados Polymarket+Kalshi
+  // e envia alerta via WS para todos os clientes conectados.
+  // O cliente filtra pelos itens da watchlist local.
+  const ALERT_THRESHOLD_PP = 3;
+
+  const alertContextCache = new Map<string, { ts: number; context: string }>();
+
+  async function generateAlertContext(alert: { title: string; prob: number; prevProb: number; delta: number }): Promise<string> {
+    try {
+      const apiKey = process.env.ANTHROPIC_API_KEY ?? "";
+      if (!apiKey) return "";
+      const response = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": apiKey,
+          "anthropic-version": "2023-06-01",
+        },
+        body: JSON.stringify({
+          model: "claude-haiku-4-5-20251001",
+          max_tokens: 80,
+          messages: [{
+            role: "user",
+            content: `Mercado: "${alert.title.slice(0, 80)}", era ${Math.round(alert.prevProb * 100)}%, agora ${Math.round(alert.prob * 100)}%. Em 1 frase curta (pt-BR), qual a hipótese mais provável para este movimento?`,
+          }],
+        }),
+        signal: AbortSignal.timeout(10_000),
+      });
+      if (!response.ok) return "";
+      const data = await response.json() as { content: Array<{ type: string; text: string }> };
+      const block = data.content.find((b) => b.type === "text");
+      return block ? block.text.trim() : "";
+    } catch { return ""; }
+  }
+
+  async function broadcastMarketAlerts() {
+    if (wsClients.size === 0) return;
+    try {
+      const [polyRaw, kalshiRaw] = await Promise.allSettled([
+        fetch("http://localhost:" + (process.env.PORT ?? 3001) + "/api/polymarket/markets?limit=50")
+          .then((r) => r.ok ? r.json() as Promise<{ markets: Array<{ id: string; question: string; outcomePrices?: string | string[] }> }> : { markets: [] }),
+        fetch("http://localhost:" + (process.env.PORT ?? 3001) + "/api/kalshi/markets?limit=40")
+          .then((r) => r.ok ? r.json() as Promise<{ markets: Array<{ ticker: string; title: string; yesProb: number }> }> : { markets: [] }),
+      ]);
+
+      const alerts: Array<{ id: string; title: string; source: string; prob: number; prevProb: number; delta: number; context?: string }> = [];
+      // Mapa completo de preços ao vivo (chaveado como os cards: poly-/kalshi-)
+      const livePrices: Record<string, number> = {};
+
+      if (polyRaw.status === "fulfilled") {
+        for (const m of (polyRaw.value.markets ?? [])) {
+          const prices = m.outcomePrices;
+          let prob: number | null = null;
+          if (prices) {
+            try {
+              const arr = typeof prices === "string" ? JSON.parse(prices) as string[] : prices as string[];
+              prob = Math.round(parseFloat(String(arr[0])) * 100);
+            } catch { /* skip */ }
+          }
+          if (prob === null || !isFinite(prob)) continue;
+          livePrices[`poly-${m.id}`] = prob;
+          const key = `poly:${m.id}`;
+          const prev = prevMarketProbs.get(key);
+          if (prev !== undefined && Math.abs(prob - prev) >= ALERT_THRESHOLD_PP) {
+            alerts.push({ id: m.id, title: m.question, source: "polymarket", prob, prevProb: prev, delta: prob - prev });
+          }
+          prevMarketProbs.set(key, prob);
+        }
+      }
+
+      if (kalshiRaw.status === "fulfilled") {
+        for (const m of (kalshiRaw.value.markets ?? [])) {
+          const prob = m.yesProb;
+          if (isFinite(prob)) livePrices[`kalshi-${m.ticker}`] = prob;
+          const key = `kalshi:${m.ticker}`;
+          const prev = prevMarketProbs.get(key);
+          if (prev !== undefined && Math.abs(prob - prev) >= ALERT_THRESHOLD_PP) {
+            alerts.push({ id: m.ticker, title: m.title, source: "kalshi", prob, prevProb: prev, delta: prob - prev });
+          }
+          prevMarketProbs.set(key, prob);
+        }
+      }
+
+      // Transmite o mapa de preços a cada ciclo (cards atualizam ao vivo + flash)
+      if (Object.keys(livePrices).length > 0) {
+        broadcast({ type: "market_prices", updatedAt: new Date().toISOString(), prices: livePrices });
+      }
+
+      if (alerts.length > 0) {
+        const biggestMover = alerts.reduce((prev, curr) =>
+          Math.abs(curr.delta) > Math.abs(prev.delta) ? curr : prev, alerts[0]);
+
+        const contextCacheKey = `${biggestMover.id}:${Math.round(biggestMover.prob * 100)}`;
+        const cachedCtx = alertContextCache.get(contextCacheKey);
+
+        if (cachedCtx && Date.now() - cachedCtx.ts < 5 * 60 * 1000) {
+          biggestMover.context = cachedCtx.context;
+        } else {
+          generateAlertContext(biggestMover).then(ctx => {
+            alertContextCache.set(contextCacheKey, { ts: Date.now(), context: ctx });
+            biggestMover.context = ctx;
+          }).catch(() => {});
+        }
+
+        broadcast({ type: "market_alerts", updatedAt: new Date().toISOString(), alerts });
+        console.log(`[WS] Market alerts: ${alerts.length} movimentos ≥${ALERT_THRESHOLD_PP}pp`);
+      }
+    } catch (err) {
+      console.error("[WS] Market alerts error:", err);
+    }
+  }
+
+  setInterval(() => { void broadcastQuotes(); }, 30_000);
+  setInterval(() => { void broadcastMarketAlerts(); }, 90_000); // 90s: preços ao vivo + alertas
+
+  // ── Start ──────────────────────────────────────────────────────────────────
+  const port = process.env.PORT ?? 3001;
+  httpServer.listen(port, () => {
+    console.log(`✅ Server running on http://localhost:${port}/`);
+    console.log("   Routes: market | polymarket | kalshi | reddit | news | ai | stripe");
+    console.log("   WebSocket: ws://localhost:3001/ws/quotes");
+  });
+
+  // ── Cerebro auto-collection ────────────────────────────────────────────────
+  if (process.env.SUPABASE_SERVICE_KEY) {
+    setTimeout(() => { void runCerebroCollection(); }, 30_000);
+    setInterval(() => { void runCerebroCollection(); }, CEREBRO_INTERVAL_MS);
+    console.log("   Cerebro: coleta automática a cada 2h ✅");
+
+    // Snapshots de mercado: primeira coleta 2min após o boot, depois 1× por dia
+    setTimeout(() => { void runMarketSnapshots(); }, 2 * 60_000);
+    setInterval(() => { void runMarketSnapshots(); }, SNAPSHOT_INTERVAL_MS);
+    console.log("   Snapshots: coleta diária de mercados ✅");
+
+    // Scoring das previsões da IA: resolve contra preços extremos (track record)
+    setTimeout(() => { void scoreAiForecasts(); }, 3 * 60_000);
+    setInterval(() => { void scoreAiForecasts(); }, 6 * 60 * 60 * 1000); // a cada 6h
+    console.log("   AI track record: scoring automático a cada 6h ✅");
+
+    // Seed de previsões da IA: 4min após o boot (mercados já em cache), depois 1×/dia
+    setTimeout(() => { void seedAiForecasts(); }, 4 * 60_000);
+    setInterval(() => { void seedAiForecasts(); }, 24 * 60 * 60 * 1000);
+    console.log("   AI seed: previsões nos top mercados (Consenso/Divergências) ✅");
+
+    // Resumo semanal por email: checa 1×/dia, RPC entrega só a quem está há 6+ dias sem receber
+    setInterval(() => { void sendWeeklyDigests(); }, 24 * 60 * 60 * 1000);
+    console.log("   Resumo semanal: email aos inscritos (precisa RESEND_API_KEY) ✅");
+  } else {
+    console.warn("   Cerebro/Snapshots: SUPABASE_SERVICE_KEY ausente — coleta manual apenas.");
+  }
+
+  // Graceful shutdown so node --watch can restart without EADDRINUSE
+  const shutdown = () => {
+    wss.close();
+    httpServer.close(() => process.exit(0));
+  };
+  process.once("SIGTERM", shutdown);
+  process.once("SIGINT", shutdown);
+}
+
+startServer().catch(console.error);
+
+// Keep the process alive through unhandled errors instead of crashing.
+process.on("uncaughtException", (err) => {
+  console.error("[process] uncaughtException — servidor continua:", err);
+});
+process.on("unhandledRejection", (reason) => {
+  console.error("[process] unhandledRejection — servidor continua:", reason);
+});

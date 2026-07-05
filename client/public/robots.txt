@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+
+# Páginas privadas / de conta — não indexar
+Disallow: /login
+Disallow: /reset-password
+Disallow: /dashboard
+Disallow: /perfil
+
+Sitemap: https://jlbasset.com/sitemap.xml

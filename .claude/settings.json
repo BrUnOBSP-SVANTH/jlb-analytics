@@ -1,0 +1,53 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__claude_ai_Supabase__list_tables",
+      "mcp__claude_ai_Supabase__execute_sql",
+      "mcp__claude_ai_Supabase__apply_migration",
+      "Bash(curl -s \"http://localhost:3001/api/kalshi/markets?limit=5\")",
+      "Bash(curl -s \"http://localhost:3001/api/polymarket/markets?limit=5\")",
+      "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); [print\\(m.get\\('category','?'\\), '|', m.get\\('question',''\\)[:60]\\) for m in d.get\\('markets',[]\\)]\")",
+      "Bash(Get-ChildItem -Path \"c:\\\\jlb-completo\" -Directory)",
+      "Bash(Select-Object Name)",
+      "Bash(pnpm tsc *)",
+      "WebSearch",
+      "WebFetch(domain:klementoninvesting.substack.com)",
+      "WebFetch(domain:panmureliberum.com)",
+      "WebFetch(domain:www.sbs.com.au)",
+      "Bash(Remove-Item \"c:\\\\jlb-completo\\\\client\\\\src\\\\pages\\\\Copa2026.tsx\" -Force)",
+      "Bash(Remove-Item \"c:\\\\jlb-completo\\\\client\\\\src\\\\pages\\\\Compartilhar.tsx\" -Force)",
+      "Bash(Remove-Item \"c:\\\\jlb-completo\\\\client\\\\src\\\\pages\\\\Oportunidades.tsx\" -Force)",
+      "Bash(Write-Output \"Done\")",
+      "Bash(Get-ChildItem -Path \"c:\\\\jlb-completo\" -Recurse -ErrorAction SilentlyContinue)",
+      "Bash(Select-Object -First 20)",
+      "Bash(Get-ChildItem -Path \"c:\\\\jlb-completo\" -Recurse -Directory)",
+      "Bash(Format-Table FullName)",
+      "mcp__claude_ai_Supabase__list_projects",
+      "PowerShell(cd c:\\\\jlb-completo\\\\client && npx tsc --noEmit 2>&1; echo \"CLIENT_EXIT:$LASTEXITCODE\")",
+      "PowerShell(cd c:\\\\jlb-completo\\\\server && npx tsc --noEmit 2>&1; echo \"SERVER_EXIT:$LASTEXITCODE\")",
+      "PowerShell(cd c:\\\\jlb-completo\\\\client && npx tsc --noEmit 2>&1; echo \"CLIENT:$LASTEXITCODE\")",
+      "PowerShell(cd c:\\\\jlb-completo\\\\server && npx tsc --noEmit 2>&1; echo \"SERVER:$LASTEXITCODE\")",
+      "Bash(Format-List FullName)",
+      "Bash(curl -s -X POST http://localhost:3001/api/snapshots/seed -H \"Content-Type: application/json\")",
+      "PowerShell(head -20)",
+      "Bash(node scripts/jlb-doctor.mjs --quick)",
+      "Bash(node scripts/jlb-doctor.mjs --quick --no-live)",
+      "PowerShell(cd c:\\\\jlb-completo && npx vite build 2>&1 | Select-Object -Last 15; echo \"EXIT:$LASTEXITCODE\")",
+      "Bash(awk -F: '{s+=$2} END {print s\" classes responsivas\"}')",
+      "Bash(awk -F: '{s+=$2} END {print s\" usos de rate limit\"}')",
+      "Bash(npx vitest *)",
+      "Bash(npx vite *)",
+      "Bash(cp client/src/pages/Apostas.tsx /tmp/Apostas.bak.tsx)",
+      "Bash(sed -i '25,154d; 157,165d; 172,182d; 195,473d' client/src/pages/Apostas.tsx)",
+      "Bash(sed -n '20,55p' client/src/pages/Apostas.tsx)",
+      "Bash(node -e \"console.log\\(JSON.stringify\\(require\\('./package.json'\\).scripts,null,2\\)\\)\")",
+      "Bash(node _tmp_extractjson_test.mjs)",
+      "Bash(rm -f _tmp_extractjson_test.mjs)",
+      "Bash(echo \"SERVER_TSC:$?\")",
+      "Bash(echo \"CLIENT_TSC:$?\")"
+    ],
+    "additionalDirectories": [
+      "c:\\Users\\vitor\\.claude\\projects\\c--jlb-completo\\memory"
+    ]
+  }
+}

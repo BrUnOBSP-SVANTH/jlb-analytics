@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://jlbasset.com/</loc><changefreq>daily</changefreq><priority>1.0</priority></url>
+  <url><loc>https://jlbasset.com/apostas</loc><changefreq>hourly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://jlbasset.com/noticias</loc><changefreq>hourly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://jlbasset.com/previsao</loc><changefreq>daily</changefreq><priority>0.9</priority></url>
+  <url><loc>https://jlbasset.com/briefing</loc><changefreq>daily</changefreq><priority>0.7</priority></url>
+  <url><loc>https://jlbasset.com/cerebro</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
+  <url><loc>https://jlbasset.com/leaderboard</loc><changefreq>daily</changefreq><priority>0.7</priority></url>
+  <url><loc>https://jlbasset.com/educacao</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://jlbasset.com/nivel/1</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://jlbasset.com/nivel/2</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://jlbasset.com/nivel/3</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://jlbasset.com/nivel/4</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://jlbasset.com/nivel/5</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://jlbasset.com/calculadoras</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://jlbasset.com/simulador</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://jlbasset.com/backtester</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://jlbasset.com/portfolio</loc><changefreq>weekly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://jlbasset.com/sobre</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://jlbasset.com/termos</loc><changefreq>yearly</changefreq><priority>0.3</priority></url>
+  <url><loc>https://jlbasset.com/privacidade</loc><changefreq>yearly</changefreq><priority>0.3</priority></url>
+</urlset>

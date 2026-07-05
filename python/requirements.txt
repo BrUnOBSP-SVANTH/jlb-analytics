@@ -1,0 +1,23 @@
+fastapi>=0.111.0
+uvicorn[standard]>=0.29.0
+pydantic>=2.7.0
+
+# rss_collector.py + cerebro_synthesizer.py
+feedparser>=6.0.11
+httpx>=0.27.0
+python-dotenv>=1.0.0
+anthropic>=0.26.0
+
+# Modelos avançados (substitui os stubs em produção)
+# Descomentar quando ambiente de produção estiver configurado:
+# statsmodels>=0.14.0   # ARIMA, VAR, testes de estacionariedade (ADF)
+# arch>=6.3.0           # GARCH(p,q) com distribuição t de Student
+# numpy>=1.26.0         # operações vetorizadas (necessário por statsmodels/arch)
+# scipy>=1.13.0         # distribuições de probabilidade, otimização (Poisson MLE)
+# pandas>=2.2.0         # manipulação de séries temporais
+
+# Notas de produção:
+# - statsmodels.tsa.statespace.SARIMAX substitui arima_forecast_stub()
+# - arch.arch_model substitui garch_volatility_stub()
+# - scipy.stats.poisson substitui o loop manual em poisson_double_match_probabilities()
+# - PyMC >= 5.0 para modelos Bayesianos hierárquicos (eleições, calibração)

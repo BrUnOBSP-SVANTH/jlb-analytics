@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="pt-BR">
+
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1" />
+    <title>JLB Analytics — Educação em Mercados Preditivos</title>
+    <meta name="description" content="Plataforma de educação quantitativa para mercados preditivos. Aprenda Valor Esperado, calibração, modelos Poisson, GARCH e ensemble com dados reais." />
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://jlbasset.com/" />
+    <meta property="og:title" content="JLB Analytics — Educação em Mercados Preditivos" />
+    <meta property="og:description" content="Plataforma de educação quantitativa para mercados preditivos. Aprenda Valor Esperado, calibração, modelos Poisson, GARCH e ensemble com dados reais." />
+    <meta property="og:image" content="https://d2xsxph8kpxj0f.cloudfront.net/310419663032591208/PLaZ8Q4er6RrsQwHgPFvYK/market-dashboard-XUS9ov8mGV2yd4pNMaFkHd.webp" />
+
+    <!-- Twitter / X -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:url" content="https://jlbasset.com/" />
+    <meta name="twitter:title" content="JLB Analytics — Educação em Mercados Preditivos" />
+    <meta name="twitter:description" content="Plataforma de educação quantitativa para mercados preditivos. Aprenda Valor Esperado, calibração, modelos Poisson, GARCH e ensemble com dados reais." />
+    <meta name="twitter:image" content="https://d2xsxph8kpxj0f.cloudfront.net/310419663032591208/PLaZ8Q4er6RrsQwHgPFvYK/market-dashboard-XUS9ov8mGV2yd4pNMaFkHd.webp" />
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/favicon.svg" />
+
+    <!-- Theme color para mobile -->
+    <meta name="theme-color" content="#16161f" />
+    <link rel="manifest" href="/manifest.json" />
+    <!-- PWA / Apple -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="JLB Assets" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter+Tight:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  </head>
+
+  <body>
+    <!-- Aplica o tema salvo ANTES do React montar — elimina o flash de tema errado -->
+    <script>
+      (function () {
+        try {
+          var t = localStorage.getItem("jlb-theme") || "dark";
+          var r = document.documentElement;
+          r.classList.add(t === "light" ? "light" : "dark");
+        } catch (e) { document.documentElement.classList.add("dark"); }
+      })();
+    </script>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+    <script
+      defer
+      src="%VITE_ANALYTICS_ENDPOINT%/umami"
+      data-website-id="%VITE_ANALYTICS_WEBSITE_ID%"></script>
+  </body>
+
+</html>
