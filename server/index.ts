@@ -8,6 +8,7 @@ import { createServer } from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import cors from "cors";
 import helmet from "helmet";
+import compression from "compression";
 import path from "path";
 import { fileURLToPath } from "url";
 import { spawn } from "child_process";
@@ -131,6 +132,17 @@ async function startServer() {
     crossOriginEmbedderPolicy: false,
   }));
 
+  // ── Compressão ─────────────────────────────────────────────────────────────
+  // Gzip para JSON grande (mercados) e estáticos. SSE NUNCA pode ser
+  // comprimido — o buffer do gzip segura os eventos e o streaming congela.
+  app.use(compression({
+    filter: (req, res) => {
+      if (req.path.endsWith("/stream")) return false;
+      if (String(res.getHeader("Content-Type") ?? "").includes("text/event-stream")) return false;
+      return compression.filter(req, res);
+    },
+  }));
+
   // ── CORS ───────────────────────────────────────────────────────────────────
   // Restrict API access to known origins only.
   const allowedOrigins =
@@ -207,12 +219,28 @@ async function startServer() {
       ? path.resolve(__dirname, "public")
       : path.resolve(__dirname, "..", "dist", "public");
 
-  app.use(express.static(staticPath));
+  // Assets com hash no nome são imutáveis (cache 1 ano); index.html e sw.js
+  // sempre revalidam (senão deploy novo não chega); resto fica 1h.
+  app.use(express.static(staticPath, {
+    setHeaders: (res, filePath) => {
+      const f = filePath.replace(/\\/g, "/");
+      if (f.includes("/assets/")) {
+        res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+      } else if (f.endsWith("index.html") || f.endsWith("sw.js")) {
+        res.setHeader("Cache-Control", "no-cache");
+      } else {
+        res.setHeader("Cache-Control", "public, max-age=3600");
+      }
+    },
+  }));
 
   // Endpoint de API inexistente responde 404 JSON — não o index.html do SPA.
   app.use("/api", (_req, res) => res.status(404).json({ error: "not_found" }));
 
-  app.get("*", (_req, res) => res.sendFile(path.join(staticPath, "index.html")));
+  app.get("*", (_req, res) => {
+    res.setHeader("Cache-Control", "no-cache");
+    res.sendFile(path.join(staticPath, "index.html"));
+  });
 
   // ── HTTP server + WebSocket ────────────────────────────────────────────────
   const httpServer = createServer(app);
@@ -222,12 +250,27 @@ async function startServer() {
   // Probabilidades anteriores dos mercados — para detectar variações ≥ threshold
   const prevMarketProbs = new Map<string, number>();
 
+  // Heartbeat: cliente que não responde ping em 30s é terminado — sem isso,
+  // sockets mortos (rede caiu sem FIN) ficam no Set para sempre e todo
+  // broadcast tenta escrever neles.
+  const wsAlive = new WeakMap<WebSocket, boolean>();
+
   wss.on("connection", (ws) => {
     wsClients.add(ws);
+    wsAlive.set(ws, true);
+    ws.on("pong", () => wsAlive.set(ws, true));
     void broadcastQuotes();
     ws.on("close", () => wsClients.delete(ws));
     ws.on("error", () => wsClients.delete(ws));
   });
+
+  setInterval(() => {
+    wss.clients.forEach((ws) => {
+      if (wsAlive.get(ws) === false) return ws.terminate();
+      wsAlive.set(ws, false);
+      ws.ping();
+    });
+  }, 30_000);
 
   function broadcast(payload: unknown) {
     const msg = JSON.stringify(payload);

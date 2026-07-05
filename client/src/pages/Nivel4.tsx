@@ -16,7 +16,6 @@ import { useSEO } from "@/hooks/useSEO";
 interface ProspectResult { ev_objective: number; subjective_value: number; gap: number; loss_aversion_lambda: number; signal: string; bias_diagnosis: string; explanation: string; }
 interface BrierResult { brier_score: number; skill_score: number; resolution: number; reliability: number; n: number; stable: boolean; signal: string; explanation: string; calibration_by_decile?: { confidence_range: string; avg_confidence: number; actual_accuracy: number; n: number; calibration_error: number }[]; }
 interface GamblerResult { max_run: number; n_runs: number; expected_runs: number; fallacy_risk: string; signal: string; explanation: string; n: number; }
-interface OverconfidenceResult { mean_confidence: number; accuracy: number; overconfidence_index: number; signal: string; explanation: string; }
 interface MaturityResult { stage: number; label: string; score: number; max_score: number; priority_improvements: string[]; signal: string; explanation: string; }
 
 function PointsGate({ level, required, current }: { level: number; required: number; current: number }) {
@@ -353,7 +352,7 @@ export default function Nivel4() {
     if (progress.totalPoints >= required) {
       awardPoints("level_visited", "Visitou o Nível 4 — Vieses e Psicologia", "level_visited_4");
     }
-  }, []);
+  }, [progress.totalPoints, required]);
 
   if (progress.totalPoints < required) {
     return <PointsGate level={4} required={required} current={progress.totalPoints} />;

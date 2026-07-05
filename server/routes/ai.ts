@@ -3,12 +3,12 @@ import { getCache, setCache, isRateLimited } from "../lib/cache.ts";
 import { fetchJSON } from "../lib/fetcher.ts";
 import { fetchBcbSerie } from "../lib/bcb.ts";
 import type { NewsApiResponse, PolyEvent, KalshiEventsResponse } from "../lib/types.ts";
-import { aiCreditsMiddleware } from "../middleware/aiCredits.ts";
+import { aiCreditsMiddleware, verifyUserId } from "../middleware/aiCredits.ts";
 import { sendEmail, emailEnabled, renderWeeklyDigestHtml } from "../lib/email.ts";
 import { extractJson } from "../lib/extractJson.ts";
 import { callClaude, streamClaude, type ClaudeMessage } from "../lib/anthropic.ts";
 import { getNewsForMarket } from "../lib/news.ts";
-import { SUPABASE_URL, SUPABASE_KEY } from "../lib/supabaseRest.ts";
+import { SUPABASE_URL, SUPABASE_KEY, supaWriteHeaders } from "../lib/supabaseRest.ts";
 import { CATEGORY_BASE_RATES } from "../lib/categoryRates.ts";
 import { fetchCerebroContext, fetchMarketMomentum } from "../lib/cerebro.ts";
 import { logAiForecast, seedAiForecasts, computeDivergences, getTrackRecordData, getClosingSoon, parsePolyPrices } from "../lib/aiForecasts.ts";
@@ -282,6 +282,38 @@ router.post("/chat/stream", aiCreditsMiddleware, async (req, res) => {
     send("error", { message: "O assistente está indisponível agora. Tente de novo em instantes." });
   }
   res.end();
+});
+
+// Avaliação 👍/👎 de uma resposta — alimenta chat_feedback (base para refinar
+// prompt/RAG com dados reais). Escrita só pelo backend; anônimo é permitido.
+router.post("/chat/feedback", async (req, res) => {
+  const ip = req.ip ?? "unknown";
+  if (isRateLimited(`chat-fb:${ip}`, 6, 60_000)) return res.status(429).json({ error: "rate_limited" });
+
+  const { question, answer, rating } = (req.body ?? {}) as { question?: string; answer?: string; rating?: number };
+  if (!question?.trim() || !answer?.trim() || (rating !== 1 && rating !== -1)) {
+    return res.status(400).json({ error: "invalid_feedback" });
+  }
+  if (!SUPABASE_URL || !SUPABASE_KEY) return res.json({ ok: true }); // degrada sem Supabase
+
+  const authHeader = String(req.headers.authorization ?? "");
+  const userId = authHeader ? await verifyUserId(authHeader) : null;
+  try {
+    await fetch(`${SUPABASE_URL}/rest/v1/chat_feedback`, {
+      method: "POST",
+      headers: supaWriteHeaders(),
+      body: JSON.stringify({
+        user_id: userId,
+        question: question.slice(0, 2_000),
+        answer: answer.slice(0, 4_000),
+        rating,
+      }),
+      signal: AbortSignal.timeout(6_000),
+    });
+  } catch (err) {
+    log.warn("[chat-feedback] insert falhou:", err instanceof Error ? err.message : err);
+  }
+  res.json({ ok: true });
 });
 
 // ── Market Analyze ────────────────────────────────────────────────────────────

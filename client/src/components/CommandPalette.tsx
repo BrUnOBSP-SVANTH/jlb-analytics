@@ -3,7 +3,7 @@
  * Busca global ativada com Cmd+K (Mac) ou Ctrl+K (Windows/Linux).
  * Busca em: páginas, artigos do Cerebro (Supabase full-text).
  */
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useLocation } from "wouter";
 import { Search, X, FileText, LayoutDashboard, Brain, Zap, BookOpen, BarChart3, Activity, Calculator, Briefcase, GraduationCap, Newspaper } from "lucide-react";
 import { supabase } from "@/lib/supabase";
@@ -87,13 +87,14 @@ export default function CommandPalette() {
     }
   }, [open]);
 
-  // Filtra páginas por query
-  const filteredPages = query.trim()
+  // Filtra páginas por query (memoizado: o efeito de navegação por teclado
+  // depende de allItems — sem memo ele re-subscreve a cada render)
+  const filteredPages = useMemo(() => query.trim()
     ? PAGES.filter((p) => {
         const q = query.toLowerCase();
         return p.label.toLowerCase().includes(q) || p.keywords.includes(q);
       }).slice(0, 5)
-    : PAGES.slice(0, 6);
+    : PAGES.slice(0, 6), [query]);
 
   // Busca artigos no Cerebro (debounced)
   const searchArticles = useCallback(async (q: string) => {
@@ -124,7 +125,7 @@ export default function CommandPalette() {
     return () => { if (searchTimer.current) clearTimeout(searchTimer.current); };
   }, [query, searchArticles]);
 
-  const allItems: CmdItem[] = [...filteredPages, ...articles];
+  const allItems: CmdItem[] = useMemo(() => [...filteredPages, ...articles], [filteredPages, articles]);
 
   // Navegação por teclado
   useEffect(() => {

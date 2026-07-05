@@ -13,29 +13,42 @@ function topKeywords(text: string, n = 3): string {
     .slice(0, n).join(" ");
 }
 
+/** Busca full-text PT: sínteses (maior valor) primeiro, depois artigos recentes. */
+async function queryCerebro(kw: string): Promise<CerebroHit[]> {
+  const headers = { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` };
+  const enc = encodeURIComponent(kw);
+
+  const [synthRes, artRes] = await Promise.allSettled([
+    fetch(`${SUPABASE_URL}/rest/v1/cerebro_analyses?fts=plfts(portuguese).${enc}&status=eq.active&select=title,content&limit=2`, { headers, signal: AbortSignal.timeout(6_000) }),
+    fetch(`${SUPABASE_URL}/rest/v1/cerebro_articles?fts=plfts(portuguese).${enc}&status=eq.active&select=title,summary,source&order=published_at.desc&limit=4`, { headers, signal: AbortSignal.timeout(6_000) }),
+  ]);
+
+  const hits: CerebroHit[] = [];
+  if (synthRes.status === "fulfilled" && synthRes.value.ok) {
+    const rows = await synthRes.value.json() as Array<{ title: string; content: string }>;
+    for (const r of rows) hits.push({ title: r.title, summary: (r.content ?? "").slice(0, 400), source: "Cerebro IA", kind: "síntese" });
+  }
+  if (artRes.status === "fulfilled" && artRes.value.ok) {
+    const rows = await artRes.value.json() as Array<{ title: string; summary: string | null; source: string }>;
+    for (const r of rows) hits.push({ title: r.title, summary: (r.summary ?? "").slice(0, 250), source: r.source, kind: "artigo" });
+  }
+  return hits;
+}
+
 export async function fetchCerebroContext(title: string, description?: string): Promise<{ context: string; hits: CerebroHit[] }> {
   if (!SUPABASE_URL || !SUPABASE_KEY) return { context: "", hits: [] };
   const kw = topKeywords(title + " " + (description ?? ""));
   if (!kw) return { context: "", hits: [] };
 
-  const headers = { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` };
-  const enc = encodeURIComponent(kw);
-
   try {
-    // Sínteses (maior valor) primeiro, depois artigos recentes — busca full-text PT
-    const [synthRes, artRes] = await Promise.allSettled([
-      fetch(`${SUPABASE_URL}/rest/v1/cerebro_analyses?fts=plfts(portuguese).${enc}&status=eq.active&select=title,content&limit=2`, { headers, signal: AbortSignal.timeout(6_000) }),
-      fetch(`${SUPABASE_URL}/rest/v1/cerebro_articles?fts=plfts(portuguese).${enc}&status=eq.active&select=title,summary,source&order=published_at.desc&limit=4`, { headers, signal: AbortSignal.timeout(6_000) }),
-    ]);
+    let hits = await queryCerebro(kw);
 
-    const hits: CerebroHit[] = [];
-    if (synthRes.status === "fulfilled" && synthRes.value.ok) {
-      const rows = await synthRes.value.json() as Array<{ title: string; content: string }>;
-      for (const r of rows) hits.push({ title: r.title, summary: (r.content ?? "").slice(0, 400), source: "Cerebro IA", kind: "síntese" });
-    }
-    if (artRes.status === "fulfilled" && artRes.value.ok) {
-      const rows = await artRes.value.json() as Array<{ title: string; summary: string | null; source: string }>;
-      for (const r of rows) hits.push({ title: r.title, summary: (r.summary ?? "").slice(0, 250), source: r.source, kind: "artigo" });
+    // plfts faz AND de todos os termos — consulta composta demais zera o
+    // recall. No miss, segunda tentativa só com o termo mais forte (o maior).
+    const words = kw.split(" ");
+    if (hits.length === 0 && words.length > 1) {
+      const strongest = [...words].sort((a, b) => b.length - a.length)[0];
+      hits = await queryCerebro(strongest);
     }
 
     if (hits.length === 0) return { context: "", hits: [] };

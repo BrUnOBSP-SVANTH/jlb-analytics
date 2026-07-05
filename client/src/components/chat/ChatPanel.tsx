@@ -9,7 +9,7 @@
  *   amigável com botão de tentar de novo.
  */
 import { memo, useCallback, useEffect, useRef, useState } from "react";
-import { RefreshCw, Send, Sparkles, Trash2 } from "lucide-react";
+import { RefreshCw, Send, Sparkles, Square, ThumbsDown, ThumbsUp, Trash2 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
 interface ChatMessage { role: "user" | "assistant"; content: string }
@@ -55,8 +55,11 @@ export default function ChatPanel({ open, onClose, onReady }: { open: boolean; o
   const [streaming, setStreaming] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lastFailed, setLastFailed] = useState<string | null>(null);
+  const [credits, setCredits] = useState<{ used: string; limit: string } | null>(null);
+  const [voted, setVoted] = useState<Record<number, 1 | -1>>({});
 
   const abortRef = useRef<AbortController | null>(null);
+  const stoppedRef = useRef(false);
   const logRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -83,6 +86,7 @@ export default function ChatPanel({ open, onClose, onReady }: { open: boolean; o
     setLastFailed(null);
     setInput("");
     setStreaming(true);
+    stoppedRef.current = false;
 
     // Otimista: mensagem do usuário + balão vazio do assistente (vira "pensando…")
     let base: ChatMessage[] = [];
@@ -95,6 +99,7 @@ export default function ChatPanel({ open, onClose, onReady }: { open: boolean; o
     const controller = new AbortController();
     abortRef.current = controller;
     const timeoutId = setTimeout(() => controller.abort(), 60_000);
+    let acc = "";
 
     try {
       const { data: { session } } = await supabase.auth.getSession().catch(() => ({ data: { session: null } }));
@@ -120,10 +125,14 @@ export default function ChatPanel({ open, onClose, onReady }: { open: boolean; o
         throw new Error(err.message ?? (res.status === 429 ? "Limite de mensagens atingido. Aguarde um instante." : `HTTP ${res.status}`));
       }
 
+      // Contador de créditos de IA (plano free) — o middleware devolve nos headers
+      const used = res.headers.get("X-AI-Credits-Used");
+      const limit = res.headers.get("X-AI-Credits-Limit");
+      if (used && limit) setCredits({ used, limit });
+
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       let buffer = "";
-      let acc = "";
       for (;;) {
         const { done, value } = await reader.read();
         if (done) break;
@@ -155,12 +164,20 @@ export default function ChatPanel({ open, onClose, onReady }: { open: boolean; o
       setMessages(finalMsgs);
       saveHistory(finalMsgs);
     } catch (e) {
+      // Parada manual com texto parcial = resultado válido, não erro
+      if (stoppedRef.current && acc.trim()) {
+        const partial: ChatMessage[] = [...base, { role: "assistant", content: acc }];
+        setMessages(partial);
+        saveHistory(partial);
+        return;
+      }
       const aborted = e instanceof DOMException && e.name === "AbortError";
       setMessages(base); // remove o balão vazio
-      setError(aborted
+      setError(aborted && !stoppedRef.current
         ? "A resposta demorou demais. Tente uma pergunta mais curta."
+        : stoppedRef.current ? null
         : e instanceof Error ? e.message : "Não consegui falar com o assistente agora.");
-      setLastFailed(message);
+      if (!stoppedRef.current) setLastFailed(message);
     } finally {
       clearTimeout(timeoutId);
       setStreaming(false);
@@ -168,11 +185,35 @@ export default function ChatPanel({ open, onClose, onReady }: { open: boolean; o
     }
   }, [streaming]);
 
+  const stop = useCallback(() => {
+    stoppedRef.current = true;
+    abortRef.current?.abort();
+  }, []);
+
   const clear = useCallback(() => {
     setMessages([]);
     setError(null);
+    setVoted({});
     saveHistory([]);
   }, []);
+
+  // Fire-and-forget: marca o voto na hora e envia em background
+  const sendFeedback = useCallback((index: number, rating: 1 | -1) => {
+    const answer = messages[index]?.content;
+    const question = messages[index - 1]?.content;
+    if (!answer || !question) return;
+    setVoted((v) => ({ ...v, [index]: rating }));
+    void supabase.auth.getSession().catch(() => ({ data: { session: null } })).then(({ data }) =>
+      fetch("/api/ai/chat/feedback", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(data.session?.access_token ? { Authorization: `Bearer ${data.session.access_token}` } : {}),
+        },
+        body: JSON.stringify({ question, answer, rating }),
+      }),
+    ).catch(() => { /* feedback é best-effort */ });
+  }, [messages]);
 
   if (!open) return null;
 
@@ -216,7 +257,28 @@ export default function ChatPanel({ open, onClose, onReady }: { open: boolean; o
             ))}
           </div>
         )}
-        {messages.map((m, i) => <Bubble key={i} msg={m} />)}
+        {messages.map((m, i) => (
+          <div key={i}>
+            <Bubble msg={m} />
+            {/* 👍/👎 na última resposta concluída — alimenta o loop de qualidade */}
+            {m.role === "assistant" && m.content && i === messages.length - 1 && !streaming && (
+              <div className="flex items-center gap-1 mt-1 pl-1">
+                {voted[i] ? (
+                  <span className="text-[10px] text-muted-foreground">Obrigado pelo feedback!</span>
+                ) : (
+                  <>
+                    <button onClick={() => sendFeedback(i, 1)} aria-label="Resposta útil" className="p-1 rounded text-muted-foreground/60 hover:text-positive transition-colors">
+                      <ThumbsUp className="w-3 h-3" aria-hidden="true" />
+                    </button>
+                    <button onClick={() => sendFeedback(i, -1)} aria-label="Resposta ruim" className="p-1 rounded text-muted-foreground/60 hover:text-negative transition-colors">
+                      <ThumbsDown className="w-3 h-3" aria-hidden="true" />
+                    </button>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+        ))}
         {error && (
           <div className="text-xs text-negative bg-negative/10 border border-negative/20 rounded-xl px-3 py-2 flex items-center justify-between gap-2">
             <span>{error}</span>
@@ -245,15 +307,31 @@ export default function ChatPanel({ open, onClose, onReady }: { open: boolean; o
           disabled={streaming}
           className="flex-1 bg-secondary/40 border border-border/40 rounded-xl px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50 disabled:opacity-60"
         />
-        <button
-          type="submit"
-          disabled={streaming || !input.trim()}
-          aria-label="Enviar mensagem"
-          className="w-9 h-9 rounded-xl bg-primary text-primary-foreground flex items-center justify-center disabled:opacity-40 hover:opacity-90 transition-opacity shrink-0"
-        >
-          {streaming ? <RefreshCw className="w-4 h-4 animate-spin" aria-hidden="true" /> : <Send className="w-4 h-4" aria-hidden="true" />}
-        </button>
+        {streaming ? (
+          <button
+            type="button"
+            onClick={stop}
+            aria-label="Parar geração"
+            className="w-9 h-9 rounded-xl bg-secondary text-foreground border border-border/50 flex items-center justify-center hover:bg-secondary/70 transition-colors shrink-0"
+          >
+            <Square className="w-3.5 h-3.5 fill-current" aria-hidden="true" />
+          </button>
+        ) : (
+          <button
+            type="submit"
+            disabled={!input.trim()}
+            aria-label="Enviar mensagem"
+            className="w-9 h-9 rounded-xl bg-primary text-primary-foreground flex items-center justify-center disabled:opacity-40 hover:opacity-90 transition-opacity shrink-0"
+          >
+            <Send className="w-4 h-4" aria-hidden="true" />
+          </button>
+        )}
       </form>
+      {credits && credits.limit !== "unlimited" && (
+        <p className="text-[10px] text-muted-foreground text-center pb-1.5 -mt-0.5">
+          {credits.used}/{credits.limit} análises de IA neste mês
+        </p>
+      )}
     </div>
   );
 }

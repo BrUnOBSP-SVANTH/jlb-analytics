@@ -75,7 +75,7 @@ async function incrementCredits(userId: string) {
 const tokenCache = new Map<string, { userId: string | null; expiresAt: number }>();
 const TOKEN_CACHE_TTL_MS = 5 * 60 * 1000;
 
-async function verifyUserId(authHeader: string): Promise<string | null> {
+export async function verifyUserId(authHeader: string): Promise<string | null> {
   const token = authHeader.replace(/^Bearer\s+/i, "").trim();
   if (!token) return null;
 
