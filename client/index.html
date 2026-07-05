@@ -3,9 +3,7 @@
 
   <head>
     <meta charset="UTF-8" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1.0, maximum-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>JLB Analytics — Educação em Mercados Preditivos</title>
     <meta name="description" content="Plataforma de educação quantitativa para mercados preditivos. Aprenda Valor Esperado, calibração, modelos Poisson, GARCH e ensemble com dados reais." />
 
@@ -27,8 +25,9 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="apple-touch-icon" href="/favicon.svg" />
 
-    <!-- Theme color para mobile -->
-    <meta name="theme-color" content="#16161f" />
+    <!-- Theme color para mobile — acompanha o tema do sistema -->
+    <meta name="theme-color" content="#16161f" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#faf8f2" media="(prefers-color-scheme: light)" />
     <link rel="manifest" href="/manifest.json" />
     <!-- PWA / Apple -->
     <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -52,10 +51,6 @@
     </script>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
-    <script
-      defer
-      src="%VITE_ANALYTICS_ENDPOINT%/umami"
-      data-website-id="%VITE_ANALYTICS_WEBSITE_ID%"></script>
   </body>
 
 </html>

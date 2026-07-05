@@ -7,6 +7,7 @@ import express from "express";
 import { createServer } from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import cors from "cors";
+import helmet from "helmet";
 import path from "path";
 import { fileURLToPath } from "url";
 import { spawn } from "child_process";
@@ -90,6 +91,15 @@ async function startServer() {
 
   const app = express();
 
+  // Atrás de proxy/CDN em produção — sem isso req.ip vira o IP do proxy e
+  // todo o rate limiting por IP colapsa num balde só.
+  app.set("trust proxy", 1);
+
+  // ── Security headers ───────────────────────────────────────────────────────
+  // CSP desligado por ora: o script inline do tema, Google Fonts e o WS
+  // same-origin exigem uma policy dedicada (follow-up).
+  app.use(helmet({ contentSecurityPolicy: false, crossOriginEmbedderPolicy: false }));
+
   // ── CORS ───────────────────────────────────────────────────────────────────
   // Restrict API access to known origins only.
   const allowedOrigins =
@@ -135,6 +145,15 @@ async function startServer() {
   app.use("/api/manifold",    manifoldRouter);
   app.use("/api/snapshots",   snapshotsRouter);  // /api/snapshots/history/:marketId
 
+  // ── Health check ───────────────────────────────────────────────────────────
+  app.get("/api/health", (_req, res) => {
+    res.json({
+      status: "ok",
+      uptime: Math.round(process.uptime()),
+      timestamp: new Date().toISOString(),
+    });
+  });
+
   // ── Cache stats (debug) ────────────────────────────────────────────────────
   app.get("/api/cache/stats", (_req, res) => {
     const now = Date.now();
@@ -158,6 +177,9 @@ async function startServer() {
       : path.resolve(__dirname, "..", "dist", "public");
 
   app.use(express.static(staticPath));
+
+  // Endpoint de API inexistente responde 404 JSON — não o index.html do SPA.
+  app.use("/api", (_req, res) => res.status(404).json({ error: "not_found" }));
 
   app.get("*", (_req, res) => res.sendFile(path.join(staticPath, "index.html")));
 

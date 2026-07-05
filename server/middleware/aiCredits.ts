@@ -15,6 +15,7 @@
  */
 
 import type { Request, Response, NextFunction } from "express";
+import { createHash } from "crypto";
 
 const SUPABASE_URL = process.env.SUPABASE_URL ?? process.env.VITE_SUPABASE_URL ?? "";
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY ?? "";
@@ -66,17 +67,39 @@ async function incrementCredits(userId: string) {
   });
 }
 
-// Extrai user_id do JWT Supabase sem verificar assinatura (verificação fica no Supabase)
-function extractUserIdFromJwt(authHeader: string): string | null {
+// Verifica o JWT no Supabase Auth (assinatura + expiração) e devolve o user id.
+// Decodificar o payload sem verificar permitiria forjar qualquer `sub` e minerar
+// cotas ilimitadas — a verificação TEM que acontecer no servidor.
+// Cache curto por hash do token evita uma ida ao Auth a cada request.
+const tokenCache = new Map<string, { userId: string | null; expiresAt: number }>();
+const TOKEN_CACHE_TTL_MS = 5 * 60 * 1000;
+
+async function verifyUserId(authHeader: string): Promise<string | null> {
+  const token = authHeader.replace(/^Bearer\s+/i, "").trim();
+  if (!token) return null;
+
+  const cacheKey = createHash("sha256").update(token).digest("hex");
+  const hit = tokenCache.get(cacheKey);
+  if (hit && hit.expiresAt > Date.now()) return hit.userId;
+
+  let userId: string | null = null;
   try {
-    const token = authHeader.replace(/^Bearer\s+/i, "");
-    const [, payload] = token.split(".");
-    if (!payload) return null;
-    const decoded = JSON.parse(Buffer.from(payload, "base64url").toString("utf-8")) as { sub?: string };
-    return decoded.sub ?? null;
-  } catch {
-    return null;
+    const r = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${token}` },
+      signal: AbortSignal.timeout(5_000),
+    });
+    if (r.ok) {
+      const user = await r.json() as { id?: string };
+      userId = user.id ?? null;
+    }
+  } catch { /* Auth indisponível → trata como anônimo */ }
+
+  if (tokenCache.size > 1000) {
+    const now = Date.now();
+    tokenCache.forEach((v, k) => { if (v.expiresAt <= now) tokenCache.delete(k); });
   }
+  tokenCache.set(cacheKey, { userId, expiresAt: Date.now() + TOKEN_CACHE_TTL_MS });
+  return userId;
 }
 
 export function aiCreditsMiddleware(req: Request, res: Response, next: NextFunction) {
@@ -84,38 +107,38 @@ export function aiCreditsMiddleware(req: Request, res: Response, next: NextFunct
   if (!SUPABASE_URL || !SUPABASE_KEY) return next();
 
   const authHeader = String(req.headers["authorization"] ?? "");
-  const userId = authHeader ? extractUserIdFromJwt(authHeader) : null;
-  const ip = req.ip ?? "unknown";
 
-  // Usuários não autenticados: rate limit por IP (10/mês — generoso o suficiente)
-  if (!userId) {
-    // Deixa o isRateLimited existente cuidar dos IPs anônimos
-    return next();
-  }
+  // Sem token (ou token inválido/forjado, abaixo): anônimo — o isRateLimited
+  // por IP das rotas cuida do abuso.
+  if (!authHeader) return next();
 
-  getOrCreateCredits(userId).then((credits) => {
-    if (!credits) return next(); // Supabase indisponível → pass through
+  verifyUserId(authHeader).then((userId) => {
+    if (!userId) return next();
 
-    if (credits.limit !== Infinity && credits.used >= credits.limit) {
-      return res.status(429).json({
-        error: "credits_exhausted",
-        message: `Você usou ${credits.used}/${credits.limit} análises de IA este mês. Faça upgrade para Premium para acesso ilimitado.`,
-        used: credits.used,
-        limit: credits.limit,
-        plan: credits.plan,
-      });
-    }
+    return getOrCreateCredits(userId).then((credits) => {
+      if (!credits) return next(); // Supabase indisponível → pass through
 
-    // Incrementa de forma assíncrona — não bloqueia a resposta
-    void incrementCredits(userId);
+      if (credits.limit !== Infinity && credits.used >= credits.limit) {
+        return res.status(429).json({
+          error: "credits_exhausted",
+          message: `Você usou ${credits.used}/${credits.limit} análises de IA este mês. Faça upgrade para Premium para acesso ilimitado.`,
+          used: credits.used,
+          limit: credits.limit,
+          plan: credits.plan,
+        });
+      }
 
-    // Expõe info no header para o cliente poder mostrar contador
-    res.setHeader("X-AI-Credits-Used", String(credits.used + 1));
-    res.setHeader("X-AI-Credits-Limit", credits.limit === Infinity ? "unlimited" : String(credits.limit));
-    res.setHeader("X-AI-Plan", credits.plan);
+      // Incrementa de forma assíncrona — não bloqueia a resposta
+      void incrementCredits(userId);
 
-    next();
-  }).catch(() => next()); // Erro → pass through
+      // Expõe info no header para o cliente poder mostrar contador
+      res.setHeader("X-AI-Credits-Used", String(credits.used + 1));
+      res.setHeader("X-AI-Credits-Limit", credits.limit === Infinity ? "unlimited" : String(credits.limit));
+      res.setHeader("X-AI-Plan", credits.plan);
+
+      next();
+    });
+  }).catch(() => next()); // Erro (verificação ou Supabase) → pass through
 }
 
 // RPC helper — adicionar ao Supabase se quiser atomicidade no incremento
