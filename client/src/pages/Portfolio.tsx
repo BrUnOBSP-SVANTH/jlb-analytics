@@ -11,9 +11,8 @@ import AnimatedSection from "@/components/AnimatedSection";
 import MercadosTabs from "@/components/MercadosTabs";
 import { getAllMarkets } from "@/lib/marketsCache";
 import {
-  TrendingUp, TrendingDown, Plus, Trash2, ExternalLink,
-  RefreshCw, Info, AlertTriangle, BarChart2, Target,
-  ChevronDown, ChevronUp, Download, Sparkles,
+  Plus, Trash2, ExternalLink,
+  RefreshCw, Info, BarChart2, Download, Sparkles,
 } from "lucide-react";
 import { useSEO } from "@/hooks/useSEO";
 
@@ -600,7 +599,6 @@ export default function Portfolio() {
     return pnl !== null ? s + pnl : s;
   }, 0);
   const pnlColor_ = totalPnl >= 0 ? "text-positive" : "text-negative";
-  const openPositions = positions.filter((p) => p.currentProb !== undefined && p.currentProb > 0.01 && p.currentProb < 0.99);
 
   return (
     <div>

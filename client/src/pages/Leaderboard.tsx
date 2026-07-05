@@ -10,7 +10,7 @@ import AnimatedSection from "@/components/AnimatedSection";
 import { useSEO } from "@/hooks/useSEO";
 import { supabase } from "@/lib/supabase";
 import {
-  Trophy, Medal, Target, BarChart2, User, TrendingUp,
+  Trophy, Medal, Target, User, TrendingUp,
   RefreshCw, AlertCircle, Star, Zap,
 } from "lucide-react";
 import ContaTabs from "@/components/ContaTabs";

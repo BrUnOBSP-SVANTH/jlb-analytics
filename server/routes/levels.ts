@@ -372,7 +372,6 @@ router.post("/level3/polling", (req, res) => {
   if (!polls || polls.length === 0) return res.status(422).json({ error: "Forneça pelo menos uma pesquisa" });
 
   const now = Date.now();
-  const halfLifeMs = 30 * 86400 * 1000;
   let totalWeight = 0, sumA = 0, sumB = 0;
 
   for (const poll of polls) {
@@ -426,7 +425,6 @@ router.post("/level4/prospect", (req, res) => {
   }, 0);
   const evObjective = outcomes.reduce((acc, o, i) => acc + o * probabilities[i], 0);
   const gap = subjValue - evObjective;
-  const hasLosses = outcomes.some((o) => o < 0);
 
   let signal = "neutral", biasDiagnosis: string;
   if (evObjective > 0 && subjValue < 0) {
@@ -548,8 +546,8 @@ router.post("/level4/maturity", (req, res) => {
 // ── Nível 5 ───────────────────────────────────────────────────────────────────
 
 router.post("/level5/divergence", (req, res) => {
-  const { model_probability: mp, market_probability: mkp, model_confidence = 0.5, context = "genérico" } = req.body as {
-    model_probability: number; market_probability: number; model_confidence?: number; context?: string;
+  const { model_probability: mp, market_probability: mkp, model_confidence = 0.5 } = req.body as {
+    model_probability: number; market_probability: number; model_confidence?: number;
   };
 
   const div = mp - mkp;

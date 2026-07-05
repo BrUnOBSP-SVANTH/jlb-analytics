@@ -3,7 +3,7 @@
  * Cobre a lógica financeira mais crítica do site.
  */
 import { describe, it, expect } from "vitest";
-import { computeConsensus, marketWeight, aiWeight, communityWeight, type ConsensusSignal } from "./consensus";
+import { computeConsensus, marketWeight, aiWeight, communityWeight } from "./consensus";
 
 describe("computeConsensus", () => {
   it("retorna null sem sinais válidos", () => {

@@ -5,30 +5,24 @@
 import { useState, useEffect, useCallback, useMemo, useRef, memo, useDeferredValue } from "react";
 import { Link } from "wouter";
 import { toast } from "sonner";
-import { getMarkets } from "@/lib/marketsCache";
 import AnimatedSection from "@/components/AnimatedSection";
 import { useSEO } from "@/hooks/useSEO";
 import {
   Flame, TrendingUp, MessageSquare, ExternalLink,
   RefreshCw, BarChart2, AlertCircle, Clock, Languages,
-  ChevronDown, ChevronUp, Calculator, Target, Zap, Info,
-  Newspaper, Sparkles, AlertTriangle, Bookmark, BookmarkCheck, Bell, BellOff,
-  LayoutGrid, List, ArrowUpDown, ArrowUp, ArrowDown,
-  Scale, X as CloseX, AlignJustify, Link2,
+  ChevronDown, ChevronUp, Calculator, Target, Info,
+  Sparkles, Bookmark, BookmarkCheck, Bell, BellOff,
+  LayoutGrid, List, ArrowUpDown, Scale, X as CloseX, AlignJustify, Link2,
 } from "lucide-react";
-import { analyzeSentiment } from "@/lib/predictions";
-import { awardPoints } from "@/lib/userProgress";
 import MercadosTabs from "@/components/MercadosTabs";
-import { addToWatchlist, removeFromWatchlist, isWatched, loadWatchlist, updateWatchlistProbs, cycleAlertThreshold } from "@/lib/watchlist";
+import { addToWatchlist, removeFromWatchlist, isWatched, loadWatchlist, updateWatchlistProbs } from "@/lib/watchlist";
 import { useMarketAlerts } from "@/hooks/useMarketAlerts";
 import { useLivePrice } from "@/lib/livePrices";
 import {
-  type TrendingItem, type Source, type CategoryFilter, type DynamicBadge,
-  CATEGORY_LABELS, formatVolume, formatOdds,
-  fetchRedditSub, fetchPolymarketSports, fetchManifold, fetchKalshi, REDDIT_SUBS,
+  type TrendingItem, type CategoryFilter, CATEGORY_LABELS, formatVolume, fetchRedditSub, fetchPolymarketSports, fetchManifold, fetchKalshi, REDDIT_SUBS,
 } from "@/lib/trending";
 import {
-  ProbSparkline, MarketBadge, VolumeTrend, HypeBar,
+  ProbSparkline, MarketBadge, HypeBar,
   SentimentBadge, SourceBadge, ProbPill, MultiOutcomePills, BADGE_CONFIG,
 } from "@/components/apostas/cards";
 import { MarketAnalysis, NewsAnalysisPanel } from "@/components/apostas/panels";

@@ -11,7 +11,7 @@ import {
   AlertCircle, Loader2, BookmarkPlus, Check, X as XIcon,
   ChevronUp, Target, Languages, BarChart2,
   Search, BookOpen, Clock, Globe, Brain, ChevronRight,
-  TrendingDown, Minus, Zap,
+  Zap,
 } from "lucide-react";
 import { Link } from "wouter";
 import { getMarkets } from "@/lib/marketsCache";

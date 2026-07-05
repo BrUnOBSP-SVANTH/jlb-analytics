@@ -26,6 +26,9 @@ jobs:
       - name: TypeScript
         run: pnpm check
 
+      - name: ESLint
+        run: pnpm lint --max-warnings=60
+
       - name: Testes
         run: pnpm test
 

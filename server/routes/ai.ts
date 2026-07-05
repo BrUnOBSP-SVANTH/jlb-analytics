@@ -2,7 +2,7 @@ import { Router } from "express";
 import { getCache, setCache, isRateLimited } from "../lib/cache.ts";
 import { fetchJSON } from "../lib/fetcher.ts";
 import { fetchBcbSerie } from "../lib/bcb.ts";
-import type { NewsArticle, NewsApiResponse, PolyEvent, KalshiEventsResponse } from "../lib/types.ts";
+import type { NewsApiResponse, PolyEvent, KalshiEventsResponse } from "../lib/types.ts";
 import { aiCreditsMiddleware } from "../middleware/aiCredits.ts";
 import { sendEmail, emailEnabled, renderWeeklyDigestHtml } from "../lib/email.ts";
 import { extractJson } from "../lib/extractJson.ts";
@@ -248,7 +248,7 @@ async function runMarketAnalysis(p: AnalyzeParams, onPhase: PhaseEmit = () => {}
     onPhase("analyzing");
 
     // ── IA: motor analítico completo ──────────────────────────────────────────
-    let analysis = ""; let keyFactors: string[] = []; let watchFor: string | undefined;
+    let analysis: string; let keyFactors: string[] = []; let watchFor: string | undefined;
     let biasAlert: string | null = null; let newsRelevance: string = "low";
     let probabilityAssessment: "fair" | "underpriced" | "overpriced" | "uncertain" = "uncertain";
     let edgeSignal: string | null = null;

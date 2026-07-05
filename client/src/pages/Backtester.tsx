@@ -8,9 +8,8 @@ import { useState, useCallback, useEffect } from "react";
 import PageHeader from "@/components/PageHeader";
 import AnimatedSection from "@/components/AnimatedSection";
 import {
-  ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip,
-  ReferenceLine, ComposedChart, Line, Scatter,
-} from "recharts";
+  ResponsiveContainer, Area, XAxis, YAxis, Tooltip,
+  ReferenceLine, ComposedChart, Line, } from "recharts";
 import { CHART_COLORS, CHART_TOOLTIP_STYLE, CHART_TICK_STYLE } from "@/lib/data";
 import {
   Play, RefreshCw, AlertCircle, TrendingUp,
@@ -409,7 +408,6 @@ export default function Backtester() {
 
   // Entry/exit scatter overlays
   const entryDots = trades.map((t) => ({ i: t.entryIdx, price: t.entryPrice * 100, type: "entry" }));
-  const exitDots = trades.map((t) => ({ i: t.exitIdx, price: t.exitPrice * 100, type: "exit" }));
 
   const profitColor = metrics && metrics.totalReturn >= 0 ? CHART_COLORS.tertiary : "#ef4444";
   const visibleTrades = showAllTrades ? trades : trades.slice(0, 10);

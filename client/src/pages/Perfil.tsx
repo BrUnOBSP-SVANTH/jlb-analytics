@@ -17,7 +17,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { loadProgress, UNLOCK_THRESHOLDS, type ActivityType } from "@/lib/userProgress";
 import { loadPredictions, meanBrierScore, skillScore } from "@/lib/predictions";
 import {
-  User, LogIn, Star, Trophy, Target, CheckCircle, X as XIcon,
+  LogIn, Star, Trophy, Target, CheckCircle, X as XIcon,
   Zap, Calculator, Brain, BarChart2, TrendingUp, ArrowRight,
   Calendar, Clock, BookOpen, Lock, Shield, Award, Flame,
   Layers, Eye, Sigma, Globe, Save,
@@ -896,6 +896,20 @@ interface DigestPreview {
   closingSoon: Array<{ title: string; daysLeft: number }>;
 }
 
+function Toggle({ on, label, onClick }: { on: boolean; label: string; onClick: () => void }) {
+  return (
+    <button
+      role="switch"
+      aria-checked={on}
+      aria-label={label}
+      onClick={onClick}
+      className={`relative w-11 h-6 rounded-full transition-colors shrink-0 ${on ? "bg-positive" : "bg-secondary/60"}`}
+    >
+      <span className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-transform ${on ? "left-6" : "left-1"}`} />
+    </button>
+  );
+}
+
 function EmailPreferences({ userId }: { userId: string }) {
   const [weekly, setWeekly] = useState(false);
   const [resolution, setResolution] = useState(false);
@@ -930,12 +944,6 @@ function EmailPreferences({ userId }: { userId: string }) {
 
   if (!loaded) return null;
 
-  const Toggle = ({ on, onClick }: { on: boolean; onClick: () => void }) => (
-    <button onClick={onClick} className={`relative w-11 h-6 rounded-full transition-colors shrink-0 ${on ? "bg-positive" : "bg-secondary/60"}`}>
-      <span className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-transform ${on ? "left-6" : "left-1"}`} />
-    </button>
-  );
-
   return (
     <AnimatedSection>
       <div className="glass-card rounded-2xl p-6 space-y-5">
@@ -950,14 +958,14 @@ function EmailPreferences({ userId }: { userId: string }) {
               <p className="text-sm font-medium text-foreground">Resumo semanal</p>
               <p className="text-xs text-muted-foreground mt-0.5">Track record da IA, onde a JLB discorda do mercado e mercados encerrando.</p>
             </div>
-            <Toggle on={weekly} onClick={() => setWeekly((v) => !v)} />
+            <Toggle on={weekly} label="Resumo semanal por email" onClick={() => setWeekly((v) => !v)} />
           </div>
           <div className="flex items-center justify-between gap-3 p-3 rounded-xl border border-border/30 bg-secondary/10">
             <div>
               <p className="text-sm font-medium text-foreground">Alertas de resolução</p>
               <p className="text-xs text-muted-foreground mt-0.5">Aviso quando uma previsão sua estiver pronta para resolver.</p>
             </div>
-            <Toggle on={resolution} onClick={() => setResolution((v) => !v)} />
+            <Toggle on={resolution} label="Alertas de resolução por email" onClick={() => setResolution((v) => !v)} />
           </div>
         </div>
 

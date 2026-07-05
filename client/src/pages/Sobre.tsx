@@ -9,7 +9,7 @@ import { Link } from "wouter";
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import {
-  Target, GraduationCap, BarChart3, TrendingUp, Brain, GitMerge,
+  Target, GraduationCap, BarChart3, Brain, GitMerge,
   Calculator, Activity, ArrowRight, Zap, DollarSign, Users,
   Map, CheckCircle, Clock, Rocket,
 } from "lucide-react";

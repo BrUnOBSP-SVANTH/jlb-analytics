@@ -896,7 +896,7 @@ export default function Previsao() {
         awardPoints("market_analyzed", `Análise preditiva: ${question.slice(0, 50)}`);
       } catch (e) {
         if (e instanceof DOMException && e.name === "AbortError")
-          throw new Error("A análise está demorando mais que o normal. Tente uma pergunta mais objetiva ou tente novamente.");
+          throw new Error("A análise está demorando mais que o normal. Tente uma pergunta mais objetiva ou tente novamente.", { cause: e });
         throw e;
       } finally {
         clearTimeout(timeoutId);

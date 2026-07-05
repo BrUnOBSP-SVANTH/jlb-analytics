@@ -7,7 +7,7 @@
  */
 
 import { useState, useEffect } from "react";
-import { TrendingUp, Zap, Cloud, BarChart2, Users, Info, AlertCircle } from "lucide-react";
+import { TrendingUp, Zap, Cloud, BarChart2, Info, AlertCircle } from "lucide-react";
 import { useModelCall } from "@/hooks/useModels";
 import { awardPoints } from "@/lib/userProgress";
 import { useSEO } from "@/hooks/useSEO";

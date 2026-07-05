@@ -10,7 +10,7 @@ import { getFocusable, trapTab } from "@/lib/focusTrap";
  */
 export function useModalA11y(onClose: () => void, panelRef?: RefObject<HTMLElement | null>): void {
   const onCloseRef = useRef(onClose);
-  onCloseRef.current = onClose;
+  useEffect(() => { onCloseRef.current = onClose; });
 
   useEffect(() => {
     const trigger = document.activeElement as HTMLElement | null;

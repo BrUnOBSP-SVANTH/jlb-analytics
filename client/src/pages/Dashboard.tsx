@@ -56,18 +56,6 @@ function fmt(v: number, decimals = 2): string {
 
 // ── Sub-components ─────────────────────────────────────────────────────────
 
-function StatCard({ label, value, sub, color = "text-foreground" }: {
-  label: string; value: string; sub?: string; color?: string;
-}) {
-  return (
-    <div className="glass-card rounded-xl p-4">
-      <p className="text-xs text-muted-foreground mb-1">{label}</p>
-      <p className={`text-2xl font-bold font-mono ${color}`}>{value}</p>
-      {sub && <p className="text-xs text-muted-foreground mt-0.5">{sub}</p>}
-    </div>
-  );
-}
-
 function GuestView() {
   return (
     <div className="max-w-5xl mx-auto px-4 py-8 space-y-8">
