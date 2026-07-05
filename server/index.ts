@@ -14,6 +14,7 @@ import { fileURLToPath } from "url";
 import { spawn } from "child_process";
 
 import { cache } from "./lib/cache.ts";
+import { emailEnabled } from "./lib/email.ts";
 import { fetchBrapiQuotes } from "./lib/brapi.ts";
 import { fetchYahooQuotes } from "./lib/yahoo.ts";
 
@@ -29,6 +30,7 @@ import pythonRouter   from "./routes/python.ts";
 import manifoldRouter from "./routes/manifold.ts";
 import snapshotsRouter from "./routes/snapshots.ts";
 import levelsRouter   from "./routes/levels.ts";
+import analyticsRouter from "./routes/analytics.ts";
 import { log } from "./lib/log.ts";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -185,6 +187,7 @@ async function startServer() {
   app.use("/api/stripe",      stripeRouter);
   app.use("/api",             levelsRouter);     // /api/level1–5/* — TypeScript nativo (sem dependência Python)
   app.use("/api",             pythonRouter);     // /api/models/health — proxy Python como fallback
+  app.use("/api",             analyticsRouter);  // /api/track — telemetria first-party
   app.use("/api/manifold",    manifoldRouter);
   app.use("/api/snapshots",   snapshotsRouter);  // /api/snapshots/history/:marketId
 
@@ -197,11 +200,24 @@ async function startServer() {
     });
   });
 
+  // ── Config pública (capacidades do servidor) ───────────────────────────────
+  // O cliente usa para esconder features cuja infra não está configurada —
+  // ex.: toggles de email sem RESEND_API_KEY prometeriam algo que nunca chega.
+  app.get("/api/config", (_req, res) => {
+    res.json({ emailEnabled: emailEnabled() });
+  });
+
   // ── Cache stats (debug) ────────────────────────────────────────────────────
-  app.get("/api/cache/stats", (_req, res) => {
+  // Contém chaves com conteúdo de usuário (ex.: perguntas do chat em
+  // chat-cerebro:*) — em produção exige DEBUG_STATS_KEY; chaves truncadas.
+  app.get("/api/cache/stats", (req, res) => {
+    const debugKey = process.env.DEBUG_STATS_KEY ?? "";
+    if (process.env.NODE_ENV === "production" && (!debugKey || req.headers["x-debug-key"] !== debugKey)) {
+      return res.status(404).json({ error: "not_found" });
+    }
     const now = Date.now();
     const entries = Array.from(cache.entries()).map(([key, entry]) => ({
-      key,
+      key: key.length > 40 ? `${key.slice(0, 40)}…` : key,
       expiresIn: Math.max(0, Math.round(((entry as { expiresAt: number }).expiresAt - now) / 1000)),
       expired: (entry as { expiresAt: number }).expiresAt < now,
     }));

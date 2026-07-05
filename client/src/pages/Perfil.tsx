@@ -16,6 +16,7 @@ import { useSEO } from "@/hooks/useSEO";
 import { useAuth } from "@/contexts/AuthContext";
 import { loadProgress, UNLOCK_THRESHOLDS, type ActivityType } from "@/lib/userProgress";
 import { loadPredictions, meanBrierScore, skillScore } from "@/lib/predictions";
+import { track } from "@/lib/analytics";
 import {
   LogIn, Star, Trophy, Target, CheckCircle, X as XIcon,
   Zap, Calculator, Brain, BarChart2, TrendingUp, ArrowRight,
@@ -479,6 +480,7 @@ function PremiumUpgrade({ userId, userEmail }: { userId: string; userEmail: stri
 
   async function handleUpgrade() {
     if (!priceId) return;
+    track("premium_click");
     setLoading(true);
     try {
       const res = await fetch("/api/stripe/checkout", {
@@ -917,6 +919,16 @@ function EmailPreferences({ userId }: { userId: string }) {
   const [saving, setSaving] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [preview, setPreview] = useState<DigestPreview | null>(null);
+  const [emailEnabled, setEmailEnabled] = useState<boolean | null>(null);
+
+  // Sem RESEND configurado no servidor, os toggles prometeriam emails que
+  // nunca chegam — o card inteiro se esconde até a infra existir.
+  useEffect(() => {
+    fetch("/api/config")
+      .then((r) => r.ok ? r.json() as Promise<{ emailEnabled: boolean }> : null)
+      .then((c) => setEmailEnabled(c?.emailEnabled ?? false))
+      .catch(() => setEmailEnabled(false));
+  }, []);
 
   useEffect(() => {
     void supabase.from("profiles").select("email_weekly_digest, email_resolution_alert").eq("id", userId).maybeSingle()
@@ -942,7 +954,7 @@ function EmailPreferences({ userId }: { userId: string }) {
     } catch { /* silent */ } finally { setSaving(false); }
   }
 
-  if (!loaded) return null;
+  if (!loaded || !emailEnabled) return null;
 
   return (
     <AnimatedSection>

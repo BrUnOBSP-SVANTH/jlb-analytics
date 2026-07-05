@@ -1,0 +1,11 @@
+node_modules
+dist
+.git
+.env
+.env.*
+*.log
+.manus-logs
+.webdev
+coverage
+**/__pycache__
+*.pyc

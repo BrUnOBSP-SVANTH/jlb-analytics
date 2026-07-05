@@ -8,6 +8,7 @@ import { useLocation } from "wouter";
 import { TrendingUp, Mail, Lock, Eye, EyeOff, Chrome, ArrowLeft, AlertCircle, CheckCircle } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSEO } from "@/hooks/useSEO";
+import { track } from "@/lib/analytics";
 
 type Mode = "login" | "signup" | "reset";
 
@@ -50,6 +51,7 @@ export default function Login() {
       if (error) {
         setErrorMsg(translateError(error));
       } else {
+        track("login");
         navigate("/dashboard");
       }
     } else if (mode === "signup") {
@@ -62,6 +64,7 @@ export default function Login() {
       if (error) {
         setErrorMsg(translateError(error));
       } else {
+        track("signup");
         setSuccessMsg("Conta criada! Verifique seu e-mail para confirmar o cadastro.");
       }
     } else {

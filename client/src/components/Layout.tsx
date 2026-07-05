@@ -20,6 +20,7 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useMarketAlerts } from "@/hooks/useMarketAlerts";
 import { prefetchRoute } from "@/lib/prefetch";
+import { track } from "@/lib/analytics";
 // ── Nav structure ────────────────────────────────────────────────────────────
 
 interface NavChild {
@@ -652,6 +653,11 @@ function Footer() {
 // ── Layout root ───────────────────────────────────────────────────────────────
 
 export default function Layout({ children }: { children: ReactNode }) {
+  const [location] = useLocation();
+
+  // page_view a cada mudança de rota (SPA não dispara navegação do browser)
+  useEffect(() => { track("page_view"); }, [location]);
+
   return (
     <div className="min-h-screen flex flex-col bg-background">
       {/* Skip-link (WCAG 2.4.1): visível só ao receber foco via teclado */}

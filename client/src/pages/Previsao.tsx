@@ -690,8 +690,10 @@ function AiTrackRecord() {
 
   if (!data) return null;
 
-  // Histórico ainda em construção — estado honesto e substantivo (a máquina já roda)
-  if (data.resolvedCount < 5) {
+  // Histórico ainda em construção — estado honesto e substantivo (a máquina já
+  // roda). Corte em 20 resolvidas: abaixo disso o Brier é ruído estatístico,
+  // não evidência — exibir números com n pequeno mina a credibilidade.
+  if (data.resolvedCount < 20) {
     return (
       <AnimatedSection>
         <div className="panel p-5">
@@ -709,7 +711,7 @@ function AiTrackRecord() {
               Cada previsão da IA é registrada com data e <span className="text-foreground">fair value</span>, e
               comparada ao mercado <span className="text-foreground">quando ele resolve</span> — sem cherry-picking.
               O <span className="text-foreground">Brier Score</span> (calibração real, IA vs. mercado) aparece aqui
-              assim que os mercados começarem a fechar.
+              quando houver 20+ previsões resolvidas ({data.resolvedCount}/20) — antes disso é ruído, não evidência.
             </p>
           </div>
         </div>

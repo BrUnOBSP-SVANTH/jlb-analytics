@@ -23,6 +23,18 @@ const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY ?? "";
 
 const FREE_LIMIT = 30;
 
+/**
+ * O reset mensal no banco é um trigger BEFORE UPDATE — só dispara quando o
+ * contador é incrementado. Usuário que esgotou a cota leva 429 ANTES do
+ * incremento, então o UPDATE nunca roda e o mês nunca vira para ele
+ * (bloqueio permanente). Por isso o mês PRECISA ser conferido aqui na
+ * leitura: mês antigo = cota zerada, independente do que a linha diga.
+ */
+export function isStaleMonth(monthReset: string, now: Date = new Date()): boolean {
+  const current = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, "0")}`;
+  return monthReset.slice(0, 7) < current;
+}
+
 function supaHeaders() {
   return {
     apikey: SUPABASE_KEY,
@@ -53,7 +65,8 @@ async function getOrCreateCredits(userId: string): Promise<{ plan: string; used:
 
   const row = rows[0];
   const creditLimit = row.plan === "premium" ? Infinity : FREE_LIMIT;
-  return { plan: row.plan, used: row.used_this_month, limit: creditLimit };
+  const used = isStaleMonth(row.month_reset) ? 0 : row.used_this_month;
+  return { plan: row.plan, used, limit: creditLimit };
 }
 
 async function incrementCredits(userId: string) {
