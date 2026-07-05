@@ -201,6 +201,7 @@ function UserMenu() {
         onClick={signOut}
         className="p-1.5 rounded-md text-muted-foreground/60 hover:text-muted-foreground hover:bg-secondary/30 transition-colors"
         title="Sair"
+        aria-label="Sair da conta"
       >
         <LogOut className="w-3.5 h-3.5" aria-hidden="true" />
       </button>

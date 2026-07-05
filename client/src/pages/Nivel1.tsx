@@ -189,7 +189,7 @@ function HouseEdgeCalculator() {
               className="flex-1 px-3 py-2 rounded-lg bg-secondary/50 border border-border/50 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
             />
             {odds.length > 2 && (
-              <button onClick={() => setOdds((p) => p.filter((_, idx) => idx !== i))} className="text-xs text-negative">✕</button>
+              <button onClick={() => setOdds((p) => p.filter((_, idx) => idx !== i))} className="text-xs text-negative" aria-label={`Remover odd ${i + 1}`}>✕</button>
             )}
           </div>
         ))}
