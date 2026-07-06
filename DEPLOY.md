@@ -35,7 +35,31 @@ Copie de `.env.example` e preencha no painel do provedor (NÃO commitar `.env`):
 > Após o deploy, trocar `APP_URL` de `http://localhost:3000` para o domínio real
 > é **obrigatório** — sem isso o CORS bloqueia o próprio front em produção.
 
-## Opção A — Docker (Railway / Fly / Render / VPS)
+## Opção 0 — Render FREE (recomendada para começar; sem cartão)
+
+O repo tem um **Blueprint** (`render.yaml`) que configura tudo sozinho:
+
+1. [render.com](https://render.com) → login com GitHub
+2. **New +** → **Blueprint** → selecionar o repo `jlb-analytics` → **Apply**
+3. O dashboard pede os valores das envs (copiar do `.env` local):
+   `ANTHROPIC_API_KEY`, `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`,
+   `NEWS_API_KEY`, `BRAPI_TOKEN`, `STRIPE_SECRET_KEY`,
+   `STRIPE_WEBHOOK_SECRET`, `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`
+4. Build (~5-10 min) → app no ar em `https://jlb-analytics*.onrender.com`
+5. **Anti-hibernação** (free dorme após 15 min ocioso, o que mata os crons):
+   criar monitor gratuito no [UptimeRobot](https://uptimerobot.com) para
+   `https://SEU-APP.onrender.com/api/health` a cada 5 min. Mantém acordado
+   24/7 (o free dá 750h/mês = exatamente 1 serviço sempre ligado) e ainda
+   avisa por email se o site cair.
+
+Deploy automático: todo `git push` na `main` redeploya sozinho.
+`APP_URL` não precisa ser configurada — o servidor usa a
+`RENDER_EXTERNAL_URL` injetada pelo Render.
+
+Limites do free: 512MB RAM, CPU compartilhada, ~50s de cold start se chegar
+a dormir. Quando o produto validar, migrar para Fly.io/VPS (abaixo).
+
+## Opção A — Docker (Railway / Fly / Render pago / VPS)
 
 O `Dockerfile` na raiz builda Node + Python numa imagem só.
 

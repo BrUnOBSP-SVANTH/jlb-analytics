@@ -107,7 +107,10 @@ async function startServer() {
   // antigos onde 'self' não casa com WebSocket same-origin.
   const supabaseHost = (process.env.SUPABASE_URL ?? process.env.VITE_SUPABASE_URL ?? "")
     .replace(/^https?:\/\//, "").replace(/\/.*$/, "");
-  const appHost = (process.env.APP_URL ?? "").replace(/^https?:\/\//, "").replace(/\/.*$/, "");
+  // No Render, RENDER_EXTERNAL_URL é injetada automaticamente com a URL
+  // pública do serviço — dispensa configurar APP_URL à mão no free tier.
+  const APP_URL = process.env.APP_URL ?? process.env.RENDER_EXTERNAL_URL ?? "";
+  const appHost = APP_URL.replace(/^https?:\/\//, "").replace(/\/.*$/, "");
   app.use(helmet({
     contentSecurityPolicy: {
       useDefaults: false,
@@ -149,7 +152,7 @@ async function startServer() {
   // Restrict API access to known origins only.
   const allowedOrigins =
     process.env.NODE_ENV === "production"
-      ? (process.env.APP_URL ? [process.env.APP_URL] : [])
+      ? (APP_URL ? [APP_URL] : [])
       : [
           "http://localhost:3000",
           "http://localhost:3001",

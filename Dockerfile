@@ -11,6 +11,17 @@ COPY package.json pnpm-lock.yaml ./
 RUN pnpm install --frozen-lockfile
 
 COPY . .
+
+# Variáveis VITE_* são embutidas no bundle do cliente EM BUILD TIME.
+# São valores públicos por design (anon key vai ao browser de qualquer forma);
+# os segredos de verdade entram só em runtime via fly secrets.
+ARG VITE_SUPABASE_URL
+ARG VITE_SUPABASE_ANON_KEY
+ARG VITE_STRIPE_PREMIUM_PRICE_ID
+ENV VITE_SUPABASE_URL=$VITE_SUPABASE_URL \
+    VITE_SUPABASE_ANON_KEY=$VITE_SUPABASE_ANON_KEY \
+    VITE_STRIPE_PREMIUM_PRICE_ID=$VITE_STRIPE_PREMIUM_PRICE_ID
+
 RUN pnpm build
 
 # ── Stage 2: runtime ──────────────────────────────────────────────────────────

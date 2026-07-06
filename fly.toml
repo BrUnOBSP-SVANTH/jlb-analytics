@@ -1,0 +1,31 @@
+# Fly.io — JLB Analytics
+# Máquina SEMPRE ligada (auto_stop off): os crons (Cerebro, snapshots,
+# scoring) e o WebSocket dependem do processo vivo 24/7.
+app = "jlb-analytics"
+primary_region = "gru"
+
+[build]
+  # Valores públicos por design — vão embutidos no bundle do cliente.
+  # Segredos de runtime entram via `fly secrets`, nunca aqui.
+  [build.args]
+    VITE_SUPABASE_URL = "https://mthqznwwpoltsbhgoaha.supabase.co"
+    VITE_SUPABASE_ANON_KEY = "sb_publishable_ZFzHp5bAH24doU3V4adekg_9AMbH2EY"
+
+[http_service]
+  internal_port = 3001
+  force_https = true
+  auto_stop_machines = "off"
+  auto_start_machines = true
+  min_machines_running = 1
+
+  [[http_service.checks]]
+    interval = "30s"
+    timeout = "5s"
+    grace_period = "20s"
+    method = "GET"
+    path = "/api/health"
+
+[[vm]]
+  memory = "512mb"
+  cpu_kind = "shared"
+  cpus = 1

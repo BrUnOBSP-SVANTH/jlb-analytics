@@ -1,0 +1,38 @@
+# Render Blueprint — JLB Analytics (plano FREE)
+# Uso: render.com → New + → Blueprint → selecionar este repo → Apply.
+# O dashboard vai pedir os valores das envs marcadas com sync: false.
+#
+# Free tier: hiberna após 15 min sem tráfego (primeiro acesso ~50s) e os
+# crons param durante o sono. Antídoto: monitor gratuito no UptimeRobot
+# pingando /api/health a cada 5 min — mantém acordado e ainda avisa se cair.
+
+services:
+  - type: web
+    name: jlb-analytics
+    runtime: docker
+    plan: free
+    region: virginia # região dos EUA mais próxima do Brasil
+    healthCheckPath: /api/health
+    envVars:
+      # Segredos — preencher no dashboard (nunca commitados)
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_KEY
+        sync: false
+      - key: NEWS_API_KEY
+        sync: false
+      - key: BRAPI_TOKEN
+        sync: false
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      # Públicas (embutidas no bundle do cliente em build time)
+      - key: VITE_SUPABASE_URL
+        sync: false
+      - key: VITE_SUPABASE_ANON_KEY
+        sync: false
+      - key: NODE_ENV
+        value: production
