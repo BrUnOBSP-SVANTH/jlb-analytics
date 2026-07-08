@@ -21,6 +21,7 @@ const EVENTS = new Set([
   "chat_message",
   "premium_click",
   "pwa_install",
+  "client_error",
 ]);
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;

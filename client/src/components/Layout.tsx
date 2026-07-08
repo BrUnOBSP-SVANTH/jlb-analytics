@@ -556,6 +556,36 @@ function Navbar() {
 
 // ── Footer ────────────────────────────────────────────────────────────────────
 
+/** "há 2h", "há 3d" — idade amigável de um timestamp ISO. */
+function timeAgo(iso: string): string {
+  const mins = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60_000));
+  if (mins < 60) return `há ${mins}min`;
+  const h = Math.round(mins / 60);
+  if (h < 48) return `há ${h}h`;
+  return `há ${Math.round(h / 24)}d`;
+}
+
+/** Frescor real dos pipelines de dados — confiança p/ o usuário, alarme p/ nós. */
+function DataFreshness() {
+  const [data, setData] = useState<{ lastArticleAt: string | null; lastSnapshotAt: string | null } | null>(null);
+
+  useEffect(() => {
+    fetch("/api/health/data")
+      .then((r) => r.ok ? r.json() as Promise<{ available: boolean; lastArticleAt: string | null; lastSnapshotAt: string | null }> : null)
+      .then((d) => { if (d?.available) setData(d); })
+      .catch(() => {});
+  }, []);
+
+  if (!data || (!data.lastArticleAt && !data.lastSnapshotAt)) return null;
+  return (
+    <p className="text-[10px] text-muted-foreground/50 text-center tabular-nums">
+      {data.lastArticleAt && <>Cerebro atualizado {timeAgo(data.lastArticleAt)}</>}
+      {data.lastArticleAt && data.lastSnapshotAt && <span className="mx-1.5 text-border/40">·</span>}
+      {data.lastSnapshotAt && <>snapshot de mercados {timeAgo(data.lastSnapshotAt)}</>}
+    </p>
+  );
+}
+
 function Footer() {
   return (
     <footer className="border-t border-border/30 bg-card/30 mt-auto">
@@ -644,6 +674,7 @@ function Footer() {
           <p className="text-xs text-muted-foreground/40 text-center">
             &copy; {new Date().getFullYear()} JLB Analytics. Todos os direitos reservados.
           </p>
+          <DataFreshness />
         </div>
       </div>
     </footer>

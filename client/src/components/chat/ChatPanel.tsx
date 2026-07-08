@@ -11,6 +11,7 @@
 import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { RefreshCw, Send, Sparkles, Square, ThumbsDown, ThumbsUp, Trash2 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { track } from "@/lib/analytics";
 
 interface ChatMessage { role: "user" | "assistant"; content: string }
 
@@ -56,6 +57,7 @@ export default function ChatPanel({ open, onClose, onReady }: { open: boolean; o
   const [error, setError] = useState<string | null>(null);
   const [lastFailed, setLastFailed] = useState<string | null>(null);
   const [credits, setCredits] = useState<{ used: string; limit: string } | null>(null);
+  const [exhausted, setExhausted] = useState(false);
   const [voted, setVoted] = useState<Record<number, 1 | -1>>({});
 
   const abortRef = useRef<AbortController | null>(null);
@@ -122,6 +124,13 @@ export default function ChatPanel({ open, onClose, onReady }: { open: boolean; o
       }
       if (!res.ok || !res.body) {
         const err = await res.json().catch(() => ({})) as { message?: string; error?: string };
+        // Cota mensal esgotada = momento de maior intenção de upgrade do
+        // funil — merece um cartão de conversão, não um erro genérico.
+        if (err.error === "credits_exhausted") {
+          setExhausted(true);
+          setMessages(base);
+          return;
+        }
         throw new Error(err.message ?? (res.status === 429 ? "Limite de mensagens atingido. Aguarde um instante." : `HTTP ${res.status}`));
       }
 
@@ -279,6 +288,21 @@ export default function ChatPanel({ open, onClose, onReady }: { open: boolean; o
             )}
           </div>
         ))}
+        {exhausted && (
+          <div className="rounded-xl border border-gold/30 bg-gold/8 px-3.5 py-3 space-y-2">
+            <p className="text-xs font-semibold text-foreground">Você usou suas 30 análises grátis do mês 🎉</p>
+            <p className="text-[11px] text-muted-foreground leading-relaxed">
+              Isso é sinal de que o método está sendo usado de verdade. No Premium as análises de IA são ilimitadas — e você apoia a plataforma.
+            </p>
+            <a
+              href="/perfil"
+              onClick={() => track("premium_click")}
+              className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-gold text-on-accent hover:opacity-90 transition-opacity"
+            >
+              Conhecer o Premium
+            </a>
+          </div>
+        )}
         {error && (
           <div className="text-xs text-negative bg-negative/10 border border-negative/20 rounded-xl px-3 py-2 flex items-center justify-between gap-2">
             <span>{error}</span>
@@ -327,11 +351,17 @@ export default function ChatPanel({ open, onClose, onReady }: { open: boolean; o
           </button>
         )}
       </form>
-      {credits && credits.limit !== "unlimited" && (
-        <p className="text-[10px] text-muted-foreground text-center pb-1.5 -mt-0.5">
-          {credits.used}/{credits.limit} análises de IA neste mês
-        </p>
-      )}
+      {credits && credits.limit !== "unlimited" && (() => {
+        const remaining = Math.max(0, Number(credits.limit) - Number(credits.used));
+        const low = remaining <= 5;
+        return (
+          <p className={`text-[10px] text-center pb-1.5 -mt-0.5 ${low ? "text-gold font-medium" : "text-muted-foreground"}`}>
+            {low
+              ? <>Restam {remaining} análises grátis este mês · <a href="/perfil" onClick={() => track("premium_click")} className="underline underline-offset-2">Premium é ilimitado</a></>
+              : <>{credits.used}/{credits.limit} análises de IA neste mês</>}
+          </p>
+        );
+      })()}
     </div>
   );
 }

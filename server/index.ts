@@ -13,7 +13,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { spawn } from "child_process";
 
-import { cache } from "./lib/cache.ts";
+import { cache, getCache, setCache } from "./lib/cache.ts";
 import { emailEnabled } from "./lib/email.ts";
 import { fetchBrapiQuotes } from "./lib/brapi.ts";
 import { fetchYahooQuotes } from "./lib/yahoo.ts";
@@ -208,6 +208,36 @@ async function startServer() {
   // ex.: toggles de email sem RESEND_API_KEY prometeriam algo que nunca chega.
   app.get("/api/config", (_req, res) => {
     res.json({ emailEnabled: emailEnabled() });
+  });
+
+  // ── Frescor dos dados ──────────────────────────────────────────────────────
+  // Sinal de confiança no rodapé + alarme visual de cron parado. Cache 5min.
+  app.get("/api/health/data", async (_req, res) => {
+    const cached = getCache<object>("health-data");
+    if (cached) return res.json(cached);
+
+    const SUPABASE_URL = process.env.SUPABASE_URL ?? process.env.VITE_SUPABASE_URL ?? "";
+    const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY ?? "";
+    if (!SUPABASE_URL || !SUPABASE_KEY) return res.json({ available: false });
+
+    const headers = { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` };
+    const latest = async (table: string, col: string): Promise<string | null> => {
+      try {
+        const r = await fetch(`${SUPABASE_URL}/rest/v1/${table}?select=${col}&order=${col}.desc&limit=1`,
+          { headers, signal: AbortSignal.timeout(6_000) });
+        if (!r.ok) return null;
+        const rows = await r.json() as Array<Record<string, string>>;
+        return rows[0]?.[col] ?? null;
+      } catch { return null; }
+    };
+
+    const [lastArticleAt, lastSnapshotAt] = await Promise.all([
+      latest("cerebro_articles", "ingested_at"),
+      latest("market_snapshots", "snapped_at"),
+    ]);
+    const result = { available: true, lastArticleAt, lastSnapshotAt };
+    setCache("health-data", result, 300);
+    res.json(result);
   });
 
   // ── Cache stats (debug) ────────────────────────────────────────────────────
