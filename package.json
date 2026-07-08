@@ -14,6 +14,7 @@
     "check": "tsc --noEmit",
     "doctor": "node scripts/jlb-doctor.mjs",
     "icons": "node scripts/generate-icons.mjs",
+    "prerender": "node scripts/prerender.mjs",
     "doctor:quick": "node scripts/jlb-doctor.mjs --quick",
     "format": "prettier --write .",
     "lint": "eslint .",

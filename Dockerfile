@@ -44,6 +44,8 @@ RUN pip3 install --no-cache-dir --break-system-packages -r python/requirements.t
 # Artefatos de build + scripts Python (rodados via cron pelo servidor)
 COPY --from=build /app/dist ./dist
 COPY python ./python
+# Snapshots HTML p/ crawlers (gerados por `pnpm prerender`, commitados)
+COPY prerendered ./prerendered
 
 EXPOSE 3001
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s \

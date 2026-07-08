@@ -10,6 +10,7 @@ import cors from "cors";
 import helmet from "helmet";
 import compression from "compression";
 import path from "path";
+import fs from "fs";
 import { fileURLToPath } from "url";
 import { spawn } from "child_process";
 
@@ -121,7 +122,7 @@ async function startServer() {
         "script-src": ["'self'"],
         "style-src": ["'self'", "'unsafe-inline'"],
         "img-src": ["'self'", "data:", "https:"],
-        "font-src": ["'self'"],
+        "font-src": ["'self'", "data:"],
         "connect-src": [
           "'self'",
           ...(supabaseHost ? [`https://${supabaseHost}`, `wss://${supabaseHost}`] : []),
@@ -162,17 +163,20 @@ async function startServer() {
           "http://localhost:5173",
         ];
 
-  app.use(
+  // Nota: scripts `crossorigin` do Vite enviam header Origin MESMO same-origin —
+  // por isso o próprio host da requisição é sempre aceito (senão o site
+  // bloquearia os próprios assets quando APP_URL divergir do domínio servido).
+  app.use((req, res, next) =>
     cors({
       origin: (origin, callback) => {
-        // Allow same-origin requests (origin is undefined for server-to-server, curl, etc.)
-        if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
+        const self = `${req.protocol}://${req.headers.host ?? ""}`;
+        if (!origin || origin === self || allowedOrigins.includes(origin)) return callback(null, true);
         callback(new Error(`CORS: origin ${origin} not allowed`));
       },
       credentials: true,
       methods: ["GET", "POST", "OPTIONS"],
       allowedHeaders: ["Content-Type", "Authorization", "x-user-level"],
-    }),
+    })(req, res, next),
   );
 
   // ── Body parsing ───────────────────────────────────────────────────────────
@@ -292,8 +296,23 @@ async function startServer() {
   // Endpoint de API inexistente responde 404 JSON — não o index.html do SPA.
   app.use("/api", (_req, res) => res.status(404).json({ error: "not_found" }));
 
-  app.get("*", (_req, res) => {
+  // ── Dynamic rendering p/ SEO ───────────────────────────────────────────────
+  // Crawlers sem JS recebem o snapshot HTML completo (gerado por
+  // `pnpm prerender`); usuários reais seguem no SPA — sem flash de conteúdo.
+  const PRERENDER_DIR = path.resolve(__dirname, "..", "prerendered");
+  let prerenderedFiles = new Set<string>();
+  try {
+    prerenderedFiles = new Set(fs.readdirSync(PRERENDER_DIR).filter((f) => f.endsWith(".html")));
+    if (prerenderedFiles.size > 0) log.info(`[seo] ${prerenderedFiles.size} snapshots pré-renderizados disponíveis para bots`);
+  } catch { /* sem snapshots — SPA para todo mundo */ }
+  const BOT_UA = /bot|crawl|spider|slurp|bingpreview|facebookexternalhit|twitterbot|whatsapp|telegrambot|linkedin|discord|pinterest|ia_archiver|semrush|ahrefs/i;
+
+  app.get("*", (req, res) => {
     res.setHeader("Cache-Control", "no-cache");
+    if (BOT_UA.test(String(req.headers["user-agent"] ?? ""))) {
+      const f = (req.path === "/" ? "index" : req.path.replace(/^\/|\/$/g, "").replace(/\//g, "-")) + ".html";
+      if (prerenderedFiles.has(f)) return res.sendFile(path.join(PRERENDER_DIR, f));
+    }
     res.sendFile(path.join(staticPath, "index.html"));
   });
 
