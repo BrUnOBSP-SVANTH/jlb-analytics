@@ -34,5 +34,11 @@ jobs:
       - name: Build (cliente + servidor)
         run: pnpm build
 
+      - name: Instalar Chromium (E2E)
+        run: npx playwright install chromium --with-deps
+
+      - name: E2E smoke (Playwright)
+        run: pnpm test:e2e
+
       - name: Auditoria de dependências
         run: pnpm audit --prod --audit-level high

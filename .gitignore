@@ -107,3 +107,7 @@ temp/
 
 # Webdev artifacts (checkpoint zips, migrations, etc.)
 .webdev/
+
+# Playwright
+test-results/
+playwright-report/
