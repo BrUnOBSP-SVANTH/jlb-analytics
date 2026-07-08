@@ -10,6 +10,8 @@ import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 
 export interface MarketAlert {
   id: string;
+  /** Id prefixado ("poly-…"/"kalshi-…") — mesmo formato da watchlist */
+  key?: string;
   title: string;
   source: "polymarket" | "kalshi";
   prob: number;
@@ -74,7 +76,8 @@ export function useMarketAlerts(watchlistIds?: Set<string>) {
             .filter((a) => {
               // Se watchlistIds fornecido, filtra só itens salvos
               if (!watchlistIds || watchlistIds.size === 0) return true;
-              return watchlistIds.has(a.id);
+              // key = id prefixado do servidor; fallback p/ id cru (retrocompat)
+              return watchlistIds.has(a.key ?? a.id);
             })
             .map((a) => ({ ...a, receivedAt }));
 

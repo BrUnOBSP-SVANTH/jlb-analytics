@@ -57,3 +57,31 @@ self.addEventListener("fetch", (event) => {
     })
   );
 });
+
+// ── Web Push: alertas de watchlist ────────────────────────────────────────
+self.addEventListener("push", (event) => {
+  let data = {};
+  try { data = event.data ? event.data.json() : {}; } catch { /* payload inválido */ }
+  const title = data.title || "JLB Analytics";
+  event.waitUntil(
+    self.registration.showNotification(title, {
+      body: data.body || "Um mercado da sua watchlist se moveu.",
+      icon: "/icons/icon-192.png",
+      badge: "/icons/icon-192.png",
+      data: { url: data.url || "/apostas" },
+    })
+  );
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const url = (event.notification.data && event.notification.data.url) || "/apostas";
+  event.waitUntil(
+    clients.matchAll({ type: "window", includeUncontrolled: true }).then((wins) => {
+      for (const win of wins) {
+        if ("focus" in win) { win.navigate(url); return win.focus(); }
+      }
+      return clients.openWindow(url);
+    })
+  );
+});

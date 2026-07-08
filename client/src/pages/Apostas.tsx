@@ -17,6 +17,7 @@ import {
 import MercadosTabs from "@/components/MercadosTabs";
 import { addToWatchlist, removeFromWatchlist, isWatched, loadWatchlist, updateWatchlistProbs } from "@/lib/watchlist";
 import { useMarketAlerts } from "@/hooks/useMarketAlerts";
+import { syncPushWatchlist } from "@/hooks/usePushNotifications";
 import { useLivePrice } from "@/lib/livePrices";
 import {
   type TrendingItem, type CategoryFilter, CATEGORY_LABELS, formatVolume, fetchRedditSub, fetchPolymarketSports, fetchManifold, fetchKalshi, REDDIT_SUBS,
@@ -1393,6 +1394,7 @@ export default function Apostas() {
                       toast("Removido da watchlist");
                     } else {
                       addToWatchlist({ id: i.id, title: i.title, source: i.source as "polymarket" | "kalshi" | "reddit", yesProb: i.yesProb, externalUrl: i.externalUrl, category: i.normalizedCategory });
+                      void syncPushWatchlist();
                       setWatchedSet((prev) => new Set(prev).add(i.id));
                       toast("Adicionado à watchlist", { description: "Visível no Dashboard." });
                     }

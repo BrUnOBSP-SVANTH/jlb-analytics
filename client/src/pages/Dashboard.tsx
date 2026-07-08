@@ -25,6 +25,7 @@ import {
 } from "@/lib/predictions";
 import { awardPoints } from "@/lib/userProgress";
 import { loadWatchlist, removeFromWatchlist, cycleAlertThreshold, type WatchlistItem } from "@/lib/watchlist";
+import { usePushNotifications, syncPushWatchlist } from "@/hooks/usePushNotifications";
 import { pullFromSupabase, pushToSupabase, syncOne, deleteOne } from "@/lib/predictionsSync";
 import ContaTabs from "@/components/ContaTabs";
 import { CHART_COLORS, CHART_TOOLTIP_STYLE, CHART_TICK_STYLE } from "@/lib/data";
@@ -476,10 +477,12 @@ function UserVsMarket({ preds }: { preds: StoredPrediction[] }) {
 
 function WatchlistSection() {
   const [items, setItems] = useState<WatchlistItem[]>(() => loadWatchlist());
+  const push = usePushNotifications();
 
   function handleRemove(id: string) {
     removeFromWatchlist(id);
     setItems(loadWatchlist());
+    void syncPushWatchlist();
   }
 
   function handleCycleThreshold(id: string) {
@@ -504,6 +507,21 @@ function WatchlistSection() {
           Watchlist ({items.length})
         </h3>
         <div className="flex items-center gap-3">
+          {/* Web Push: alerta nativo mesmo com o site fechado */}
+          {push.supported && !push.denied && (
+            <button
+              onClick={() => void (push.enabled ? push.unsubscribe() : push.subscribe())}
+              disabled={push.busy}
+              className={`text-[10px] font-medium px-2.5 py-1 rounded-full border transition-colors flex items-center gap-1 disabled:opacity-50 ${
+                push.enabled
+                  ? "text-positive border-positive/30 bg-positive/10"
+                  : "text-muted-foreground border-border/40 hover:text-foreground hover:border-gold/40"
+              }`}
+            >
+              <Bell className="w-3 h-3" aria-hidden="true" />
+              {push.enabled ? "Notificações ativas" : "Ativar notificações"}
+            </button>
+          )}
           <span className="text-[10px] text-muted-foreground/50 flex items-center gap-1">
             <Bell className="w-3 h-3" />clique no sino para ajustar alerta
           </span>

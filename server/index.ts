@@ -31,6 +31,8 @@ import manifoldRouter from "./routes/manifold.ts";
 import snapshotsRouter from "./routes/snapshots.ts";
 import levelsRouter   from "./routes/levels.ts";
 import analyticsRouter from "./routes/analytics.ts";
+import pushRouter from "./routes/push.ts";
+import { sendAlertPushes, pushEnabled, vapidPublicKey } from "./lib/push.ts";
 import { log } from "./lib/log.ts";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -191,6 +193,7 @@ async function startServer() {
   app.use("/api",             levelsRouter);     // /api/level1–5/* — TypeScript nativo (sem dependência Python)
   app.use("/api",             pythonRouter);     // /api/models/health — proxy Python como fallback
   app.use("/api",             analyticsRouter);  // /api/track — telemetria first-party
+  app.use("/api/push",        pushRouter);       // Web Push: subscribe/unsubscribe
   app.use("/api/manifold",    manifoldRouter);
   app.use("/api/snapshots",   snapshotsRouter);  // /api/snapshots/history/:marketId
 
@@ -207,7 +210,10 @@ async function startServer() {
   // O cliente usa para esconder features cuja infra não está configurada —
   // ex.: toggles de email sem RESEND_API_KEY prometeriam algo que nunca chega.
   app.get("/api/config", (_req, res) => {
-    res.json({ emailEnabled: emailEnabled() });
+    res.json({
+      emailEnabled: emailEnabled(),
+      vapidPublicKey: pushEnabled() ? vapidPublicKey() : null,
+    });
   });
 
   // ── Frescor dos dados ──────────────────────────────────────────────────────
@@ -389,7 +395,9 @@ async function startServer() {
           .then((r) => r.ok ? r.json() as Promise<{ markets: Array<{ ticker: string; title: string; yesProb: number }> }> : { markets: [] }),
       ]);
 
-      const alerts: Array<{ id: string; title: string; source: string; prob: number; prevProb: number; delta: number; context?: string }> = [];
+      // `key` = id prefixado ("poly-…"/"kalshi-…") — MESMO formato dos ids da
+      // watchlist do cliente; é a chave de join do filtro de toast e do push.
+      const alerts: Array<{ id: string; key: string; title: string; source: string; prob: number; prevProb: number; delta: number; context?: string }> = [];
       // Mapa completo de preços ao vivo (chaveado como os cards: poly-/kalshi-)
       const livePrices: Record<string, number> = {};
 
@@ -408,7 +416,7 @@ async function startServer() {
           const key = `poly:${m.id}`;
           const prev = prevMarketProbs.get(key);
           if (prev !== undefined && Math.abs(prob - prev) >= ALERT_THRESHOLD_PP) {
-            alerts.push({ id: m.id, title: m.question, source: "polymarket", prob, prevProb: prev, delta: prob - prev });
+            alerts.push({ id: m.id, key: `poly-${m.id}`, title: m.question, source: "polymarket", prob, prevProb: prev, delta: prob - prev });
           }
           prevMarketProbs.set(key, prob);
         }
@@ -421,7 +429,7 @@ async function startServer() {
           const key = `kalshi:${m.ticker}`;
           const prev = prevMarketProbs.get(key);
           if (prev !== undefined && Math.abs(prob - prev) >= ALERT_THRESHOLD_PP) {
-            alerts.push({ id: m.ticker, title: m.title, source: "kalshi", prob, prevProb: prev, delta: prob - prev });
+            alerts.push({ id: m.ticker, key: `kalshi-${m.ticker}`, title: m.title, source: "kalshi", prob, prevProb: prev, delta: prob - prev });
           }
           prevMarketProbs.set(key, prob);
         }
@@ -450,6 +458,9 @@ async function startServer() {
 
         broadcast({ type: "market_alerts", updatedAt: new Date().toISOString(), alerts });
         log.info(`[WS] Market alerts: ${alerts.length} movimentos ≥${ALERT_THRESHOLD_PP}pp`);
+
+        // Web Push para quem tem esses mercados na watchlist (site fechado incluso)
+        void sendAlertPushes(alerts.map((a) => ({ key: a.key, title: a.title, prob: a.prob, delta: a.delta })));
       }
     } catch (err) {
       log.error("[WS] Market alerts error:", err);

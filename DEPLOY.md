@@ -31,6 +31,7 @@ Copie de `.env.example` e preencha no painel do provedor (NÃO commitar `.env`):
 | `APP_URL=https://jlbasset.com` | Origin permitido no CORS/CSP e nos links de email/OG |
 | `RESEND_API_KEY` / `EMAIL_FROM` | (Opcional) resumo semanal por email; sem isso os toggles se escondem |
 | `DEBUG_STATS_KEY` | (Opcional) libera `/api/cache/stats` em prod via header `x-debug-key` |
+| `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` / `VAPID_SUBJECT` | (Opcional) Web Push de alertas da watchlist |
 
 > Após o deploy, trocar `APP_URL` de `http://localhost:3000` para o domínio real
 > é **obrigatório** — sem isso o CORS bloqueia o próprio front em produção.
