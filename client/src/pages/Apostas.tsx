@@ -258,7 +258,8 @@ function TrendingCardBase({ item, onCompare, inCompare }: {
                   JLB {jlbEdge.edge > 0 ? "+" : ""}{jlbEdge.edge}pp
                 </span>
               )}
-              <SentimentBadge label={item.sentiment.label} />
+              {/* Neutro é o estado default — só desvios merecem badge */}
+              {item.sentiment.label !== "Neutro" && <SentimentBadge label={item.sentiment.label} />}
               {item.normalizedCategory !== "other" && item.normalizedCategory !== "all" && (
                 <span className="text-[10px] font-medium px-2 py-0.5 rounded-full border border-primary/20 bg-primary/5 text-primary/70">
                   {CATEGORY_LABELS[item.normalizedCategory]}
@@ -308,7 +309,9 @@ function TrendingCardBase({ item, onCompare, inCompare }: {
           )}
         </div>
 
-        <div className="p-3 rounded-lg bg-primary/5 border border-primary/10 mb-3">
+        {/* Container quieto — o lampejo dourado fica só no rótulo; caixa âmbar em
+            todo card virava ruído repetido em vez de destaque */}
+        <div className="p-3 rounded-lg bg-secondary/15 border border-border/15 mb-3">
           <p className="text-[10px] font-semibold text-primary/80 uppercase tracking-wider mb-1 flex items-center gap-1">
             <Flame className="w-3 h-3" />Por que está em alta
           </p>
@@ -968,7 +971,10 @@ export default function Apostas() {
     return true;
   }, []);
 
-  const load = useCallback(async (silent = false) => {
+  // Named function expression: o retry dos toasts se auto-referencia via o
+  // próprio nome (sem TDZ) — referenciar `load` dentro da própria definição
+  // fazia o React Compiler desistir do arquivo.
+  const load = useCallback(async function loadSelf(silent = false) {
     if (!silent) { setLoading(true); setError(null); }
     try {
       const [reddit, poly, kalshi, manifold] = await Promise.allSettled([
@@ -988,7 +994,7 @@ export default function Apostas() {
       if (!ok && !silent) {
         setError("Não foi possível carregar os dados agora. Tente novamente em instantes.");
         toast.error("Falha ao carregar mercados", {
-          action: { label: "Tentar novamente", onClick: () => void load(false) },
+          action: { label: "Tentar novamente", onClick: () => void loadSelf(false) },
         });
       }
     } catch {
@@ -996,7 +1002,7 @@ export default function Apostas() {
         setError("Erro ao buscar dados. Verifique sua conexão e tente novamente.");
         toast.error("Erro de conexão", {
           description: "Verifique se o servidor está ativo.",
-          action: { label: "Tentar novamente", onClick: () => void load(false) },
+          action: { label: "Tentar novamente", onClick: () => void loadSelf(false) },
         });
       }
     } finally {

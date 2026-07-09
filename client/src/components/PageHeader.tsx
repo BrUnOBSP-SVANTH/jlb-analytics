@@ -41,7 +41,11 @@ export default function PageHeader({ title, subtitle, badge, image, probability 
           <span
             key={pct}
             className="absolute bottom-2 font-mono text-[9px] text-gold/20 select-none"
-            style={{ left: `${pct}%`, transform: "translateX(-50%)" }}
+            style={{
+              left: `${pct}%`,
+              // Pontas alinhadas para dentro — centralizar em 0%/100% cortava metade do texto
+              transform: pct === 0 ? "translateX(6px)" : pct === 100 ? "translateX(calc(-100% - 6px))" : "translateX(-50%)",
+            }}
           >
             {pct}%
           </span>
