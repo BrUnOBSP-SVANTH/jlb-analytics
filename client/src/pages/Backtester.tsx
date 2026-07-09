@@ -47,7 +47,9 @@ function pct(v: number, decimals = 1): string {
 }
 
 function fmt2(v: number): string {
-  return `${v >= 0 ? "+" : ""}${v.toFixed(3)}`;
+  const s = v.toFixed(3);
+  if (s === "0.000" || s === "-0.000") return "0.000"; // evita "+0.000"/"-0.000"
+  return `${v >= 0 ? "+" : ""}${s}`;
 }
 
 function dateFromTs(ts: number): string {
@@ -280,7 +282,11 @@ export default function Backtester() {
           const list = raw
             .map(m => ({ ...m, source: "polymarket" as const }))
             .filter(m => m.closed || m.resolutionTime);
-          if (!cancelled) setMarkets(list.slice(0, 50));
+          if (!cancelled) {
+            setMarkets(list.slice(0, 50));
+            // Auto-seleciona o 1º — o select já o exibe; sem isso o painel de resultados fica morto
+            if (list.length > 0) setSelectedMarket(list[0]);
+          }
         } else {
           const raw = await getMarkets<{ ticker: string; eventTicker: string; seriesTicker: string; title: string; yesProb: number; volume: number }>("kalshi");
           const list = raw.map(m => ({
@@ -290,7 +296,10 @@ export default function Backtester() {
             volume: m.volume,
             source: "kalshi" as const,
           }));
-          if (!cancelled) setMarkets(list.slice(0, 50));
+          if (!cancelled) {
+            setMarkets(list.slice(0, 50));
+            if (list.length > 0) setSelectedMarket(list[0]);
+          }
         }
       } catch { /* lista vazia */ }
       finally { if (!cancelled) setLoadingMarkets(false); }
@@ -351,6 +360,16 @@ export default function Backtester() {
   useEffect(() => {
     if (selectedMarket) void loadSeries(selectedMarket);
   }, [selectedMarket, loadSeries]);
+
+  // Série sintética como porta de entrada — usada pelo seletor e pelo empty state
+  function loadDemoSeries() {
+    const synthetic = generateSyntheticSeries(240, 0.5, 1, 0.025, 99);
+    setSeries(synthetic);
+    setDataSource("synthetic");
+    setMetrics(null);
+    setTrades([]);
+    setSelectedMarket({ id: "demo", question: "Série sintética (demo)", slug: "demo" });
+  }
 
   // Run backtest
   function handleRun() {
@@ -464,19 +483,13 @@ export default function Backtester() {
                   ))}
                 </select>
               ) : (
-                <div
-                  className="w-full bg-secondary/50 border border-border/50 rounded-lg px-3 py-2 text-xs cursor-pointer text-gold"
-                  onClick={() => {
-                    const synthetic = generateSyntheticSeries(240, 0.5, 1, 0.025, 99);
-                    setSeries(synthetic);
-                    setDataSource("synthetic");
-                    setMetrics(null);
-                    setTrades([]);
-                    setSelectedMarket({ id: "demo", question: "Série sintética (demo)", slug: "demo" });
-                  }}
+                <button
+                  type="button"
+                  className="w-full bg-secondary/50 border border-border/50 rounded-lg px-3 py-2 text-xs cursor-pointer text-gold text-left hover:border-gold/40 transition-colors"
+                  onClick={loadDemoSeries}
                 >
                   Usar série sintética (demo)
-                </div>
+                </button>
               )}
 
               {selectedMarket && (
@@ -678,8 +691,8 @@ export default function Backtester() {
                   <MetricCard
                     label="Brier Advantage"
                     value={fmt2(metrics.brierAdvantage)}
-                    sub={metrics.brierAdvantage > 0 ? "melhor que baseline" : "abaixo do baseline"}
-                    color={metrics.brierAdvantage > 0 ? "text-positive" : "text-negative"}
+                    sub={Math.abs(metrics.brierAdvantage) < 0.0005 ? "igual ao baseline" : metrics.brierAdvantage > 0 ? "melhor que baseline" : "abaixo do baseline"}
+                    color={Math.abs(metrics.brierAdvantage) < 0.0005 ? "text-muted-foreground" : metrics.brierAdvantage > 0 ? "text-positive" : "text-negative"}
                     tooltip="Melhoria no Brier Score vs. buy-and-hold. Positivo = estratégia entra com estimativas mais precisas."
                   />
                   <MetricCard
@@ -751,6 +764,33 @@ export default function Backtester() {
               <div className="text-center py-16 glass-card rounded-xl">
                 <Play className="w-10 h-10 mx-auto text-muted-foreground/30 mb-3" />
                 <p className="text-sm text-muted-foreground">Configure a estratégia e clique em <strong>Rodar Backtest</strong>.</p>
+              </div>
+            )}
+
+            {/* Loading skeleton while series fetches */}
+            {(loadingSeries || loadingMarkets) && series.length === 0 && (
+              <div className="glass-card rounded-xl p-6 space-y-4" aria-busy="true">
+                <div className="h-4 w-40 bg-secondary/40 rounded animate-pulse" />
+                <div className="h-56 bg-secondary/20 rounded-lg animate-pulse" />
+              </div>
+            )}
+
+            {/* Empty state before any series (mercados indisponíveis / nada selecionado) */}
+            {series.length === 0 && !loadingSeries && !loadingMarkets && (
+              <div className="text-center py-16 glass-card rounded-xl px-6">
+                <Activity className="w-10 h-10 mx-auto text-muted-foreground/30 mb-3" aria-hidden="true" />
+                <p className="text-sm font-medium text-foreground/70 mb-1">Nenhuma série carregada</p>
+                <p className="text-xs text-muted-foreground mb-5">
+                  Escolha um mercado no painel ao lado — ou comece agora com uma série de demonstração.
+                </p>
+                <button
+                  type="button"
+                  onClick={loadDemoSeries}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-xs font-semibold hover:opacity-90 transition-opacity"
+                >
+                  <Play className="w-3.5 h-3.5" aria-hidden="true" />
+                  Usar série sintética (demo)
+                </button>
               </div>
             )}
           </div>
