@@ -70,6 +70,18 @@ export function formatNumber(value: number): string {
   return value.toFixed(2);
 }
 
+/** Ticks de eixo em R$ compactos — sem "R$0K" duplicado nem "R$-0K" abaixo de mil */
+export function formatAxisBRL(v: number): string {
+  if (Math.round(v) === 0) return "R$0";
+  const sign = v < 0 ? "-" : "";
+  const abs = Math.abs(v);
+  if (abs >= 1000) {
+    const k = abs / 1000;
+    return `${sign}R$${k >= 10 ? Math.round(k) : parseFloat(k.toFixed(1))}K`;
+  }
+  return `${sign}R$${Math.round(abs)}`;
+}
+
 /** Validates and clamps a numeric input — rejects NaN, Infinity and negatives */
 export function sanitizePositiveNumber(raw: number, fallback: number = 0): number {
   if (isNaN(raw) || !isFinite(raw) || raw < 0) return fallback;

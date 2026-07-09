@@ -11,6 +11,7 @@ import {
   CHART_COLORS,
   CHART_TOOLTIP_STYLE,
   CHART_TICK_STYLE,
+  formatAxisBRL,
   sanitizePositiveNumber,
 } from "@/lib/data";
 import {
@@ -193,15 +194,15 @@ function EVSimulator() {
                 Trajetória real vs. EV esperado
               </h4>
               <ResponsiveContainer width="100%" height={280}>
-                <LineChart data={chartData}>
-                  <XAxis dataKey="n" axisLine={false} tickLine={false} tick={{ ...CHART_TICK_STYLE, fontSize: 11 }} label={{ value: "apostas", position: "insideBottomRight", offset: -8, style: { fontSize: 10, fill: "#888" } }} />
+                <LineChart data={chartData} margin={{ right: 12, bottom: 4 }}>
+                  <XAxis dataKey="n" axisLine={false} tickLine={false} minTickGap={32} tick={{ ...CHART_TICK_STYLE, fontSize: 11 }} label={{ value: "apostas", position: "insideBottomRight", offset: -4, style: { fontSize: 10, fill: CHART_COLORS.muted } }} />
                   <YAxis axisLine={false} tickLine={false} tick={{ ...CHART_TICK_STYLE, fontSize: 11 }}
-                    tickFormatter={(v: number) => `R$${(v / 1000).toFixed(0)}K`} />
+                    tickFormatter={formatAxisBRL} />
                   <Tooltip contentStyle={CHART_TOOLTIP_STYLE} formatter={(v: number, name: string) => [`R$ ${v.toFixed(0)}`, name]} />
                   <Legend />
                   <ReferenceLine y={0} stroke="#666" strokeDasharray="3 3" />
-                  <Line type="monotone" dataKey="EV_esperado" stroke={CHART_COLORS.secondary} strokeWidth={2} dot={false} strokeDasharray="5 3" />
-                  <Line type="monotone" dataKey="PnL" stroke={CHART_COLORS.primary} strokeWidth={2} dot={false} />
+                  <Line type="monotone" dataKey="EV_esperado" name="EV esperado" stroke={CHART_COLORS.secondary} strokeWidth={2} dot={false} strokeDasharray="5 3" />
+                  <Line type="monotone" dataKey="PnL" name="P&L real" stroke={CHART_COLORS.primary} strokeWidth={2} dot={false} />
                 </LineChart>
               </ResponsiveContainer>
               <p className="text-xs text-muted-foreground mt-3 text-center">
@@ -334,9 +335,9 @@ function KellySimulator() {
                       <stop offset="100%" stopColor={CHART_COLORS.tertiary} stopOpacity={0} />
                     </linearGradient>
                   </defs>
-                  <XAxis dataKey="n" axisLine={false} tickLine={false} tick={{ ...CHART_TICK_STYLE, fontSize: 11 }} />
+                  <XAxis dataKey="n" axisLine={false} tickLine={false} minTickGap={32} tick={{ ...CHART_TICK_STYLE, fontSize: 11 }} />
                   <YAxis axisLine={false} tickLine={false} tick={{ ...CHART_TICK_STYLE, fontSize: 11 }}
-                    tickFormatter={(v: number) => `R$${v.toFixed(0)}`} />
+                    tickFormatter={formatAxisBRL} />
                   <Tooltip contentStyle={CHART_TOOLTIP_STYLE} formatter={(v: number, name: string) => [`R$ ${v.toFixed(2)}`, name]} />
                   <Legend />
                   <Area type="monotone" dataKey="Kelly" stroke={CHART_COLORS.primary} strokeWidth={2} fill="url(#kg1)" dot={false} />
@@ -486,7 +487,7 @@ function CalibracaoSimulator() {
               </h4>
               <ResponsiveContainer width="100%" height={220}>
                 <LineChart data={chartData}>
-                  <XAxis dataKey="n" axisLine={false} tickLine={false} tick={{ ...CHART_TICK_STYLE, fontSize: 11 }} />
+                  <XAxis dataKey="n" axisLine={false} tickLine={false} minTickGap={32} tick={{ ...CHART_TICK_STYLE, fontSize: 11 }} />
                   <YAxis axisLine={false} tickLine={false} tick={{ ...CHART_TICK_STYLE, fontSize: 11 }} domain={[0, 0.35]} />
                   <Tooltip contentStyle={CHART_TOOLTIP_STYLE} formatter={(v: number, name: string) => [v.toFixed(4), name]} />
                   <Legend />

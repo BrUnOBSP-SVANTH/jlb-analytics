@@ -1036,13 +1036,20 @@ ${marketsContext}
 MANCHETES:
 ${newsHeadlines.length > 0 ? newsHeadlines.join("\n") : "Sem manchetes disponíveis."}
 
-JSON exato (sem markdown):
+JSON exato (sem markdown). Em marketHighlights, "prob" é a probabilidade SIM do mercado em número 0-100 (nunca texto):
 {"headline":"","summary":"","topTheme":"","macroNote":"","marketHighlights":[{"market":"","prob":0,"insight":""}],"watchToday":"","calibrationTip":"","riskAlert":null}`;
 
   try {
     const raw = await callClaude({ model: "claude-haiku-4-5-20251001", maxTokens: 1000, messages: [{ role: "user", content: prompt }], timeoutMs: 25_000, prefillJson: false });
-    const parsed = extractJson(raw);
-    const result = { ...parsed, topMarkets, generatedAt: new Date().toISOString(), cached: false };
+    const parsed = extractJson(raw) as { marketHighlights?: { market?: string; prob?: unknown; insight?: string }[] };
+    // O modelo às vezes preenche "prob" com um rótulo de texto — normaliza para número 0-100 ou null
+    const marketHighlights = (Array.isArray(parsed.marketHighlights) ? parsed.marketHighlights : [])
+      .filter((h) => h?.market && h?.insight)
+      .map((h) => {
+        const n = Number(h.prob);
+        return { ...h, prob: Number.isFinite(n) ? Math.min(100, Math.max(0, Math.round(n))) : null };
+      });
+    const result = { ...parsed, marketHighlights, topMarkets, generatedAt: new Date().toISOString(), cached: false };
     setCache(cacheKey, result, 86400);
     res.json(result);
   } catch (err) {

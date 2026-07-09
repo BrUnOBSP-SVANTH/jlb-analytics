@@ -24,7 +24,7 @@ interface DailyBriefing {
   summary: string;
   topTheme: string;
   macroNote: string;
-  marketHighlights: { market: string; prob: number; insight: string }[];
+  marketHighlights: { market: string; prob: number | null; insight: string }[];
   watchToday: string;
   calibrationTip: string;
   riskAlert: string | null;
@@ -176,15 +176,15 @@ export default function Home() {
     statsRef.current = true;
     async function loadStats() {
       try {
-        const [artRes, mkts, predRes] = await Promise.allSettled([
+        const [artRes, mkts, trackRes] = await Promise.allSettled([
           supabase.from("cerebro_articles").select("id", { count: "exact", head: true }).eq("status", "active"),
           getAllMarkets(),  // cache compartilhado — conta real, sem fetch redundante
-          supabase.from("predictions").select("id", { count: "exact", head: true })
-            .gte("created_at", new Date(Date.now() - 86_400_000).toISOString()),
+          // predictions tem RLS por usuário (count anônimo = 0) — o track record da IA é público via API
+          fetch("/api/ai/track-record").then((r) => r.ok ? r.json() as Promise<{ totalCount?: number }> : null),
         ]);
         const articles = artRes.status === "fulfilled" ? (artRes.value.count ?? 0) : 0;
         const marketCount = mkts.status === "fulfilled" ? (mkts.value.polymarket.length + mkts.value.kalshi.length) : 0;
-        const predictions = predRes.status === "fulfilled" ? (predRes.value.count ?? 0) : 0;
+        const predictions = trackRes.status === "fulfilled" ? (trackRes.value?.totalCount ?? 0) : 0;
         setStats({ articles, markets: marketCount, predictions });
       } catch { /* non-critical */ }
     }
@@ -408,7 +408,9 @@ export default function Home() {
                     <div className="space-y-2">
                       {briefing.marketHighlights.map((h, i) => (
                         <div key={i} className="flex items-start gap-2.5 p-2.5 rounded-lg bg-secondary/10 border border-border/15">
-                          <span className="text-xs font-bold font-mono text-primary shrink-0 mt-0.5">{h.prob}%</span>
+                          {typeof h.prob === "number" && Number.isFinite(h.prob) && (
+                            <span className="text-xs font-bold font-mono text-primary shrink-0 mt-0.5">{h.prob}%</span>
+                          )}
                           <div className="min-w-0">
                             <p className="text-xs font-medium text-foreground truncate">{h.market}</p>
                             <p className="text-[11px] text-muted-foreground">{h.insight}</p>
@@ -590,33 +592,36 @@ export default function Home() {
             </p>
             {/* Grade editorial: divisórias hairline (gap-px sobre bg-border), números-herói
                 em serif, cor contida a um marcador por métrica. */}
-            <div className="grid grid-cols-3 gap-px rounded-2xl overflow-hidden border border-border/50 bg-border/50">
-              {stats.articles > 0 && (
-                <div className="bg-card p-6 text-center">
-                  <p className="numeric-hero text-4xl md:text-5xl text-foreground leading-none">{stats.articles.toLocaleString("pt-BR")}</p>
-                  <p className="text-xs text-muted-foreground mt-3 flex items-center justify-center gap-1.5">
-                    <span className="w-1 h-1 rounded-full bg-gold" aria-hidden="true" />artigos no Cerebro
-                  </p>
-                  <p className="text-[10px] text-muted-foreground/50 mt-0.5">atualizado diariamente</p>
+            {(() => {
+              const tiles = [
+                stats.articles > 0 && {
+                  value: <>{stats.articles.toLocaleString("pt-BR")}</>,
+                  dot: "bg-gold", label: "artigos no Cerebro", sub: "atualizado diariamente",
+                },
+                stats.markets > 0 && {
+                  value: <>{stats.markets}<span className="text-2xl text-muted-foreground/60">+</span></>,
+                  dot: "bg-neon-blue", label: "mercados monitorados", sub: "Polymarket + Kalshi",
+                },
+                stats.predictions > 0 && {
+                  value: <>{stats.predictions.toLocaleString("pt-BR")}</>,
+                  dot: "bg-positive", label: "previsões da IA acompanhadas", sub: "track record público",
+                },
+              ].filter((t): t is Exclude<typeof t, false> => Boolean(t));
+              const cols = tiles.length === 3 ? "grid-cols-3" : tiles.length === 2 ? "grid-cols-2" : "grid-cols-1";
+              return (
+                <div className={`grid ${cols} gap-px rounded-2xl overflow-hidden border border-border/50 bg-border/50`}>
+                  {tiles.map((t) => (
+                    <div key={t.label} className="bg-card p-6 text-center">
+                      <p className="numeric-hero text-4xl md:text-5xl text-foreground leading-none">{t.value}</p>
+                      <p className="text-xs text-muted-foreground mt-3 flex items-center justify-center gap-1.5">
+                        <span className={`w-1 h-1 rounded-full ${t.dot}`} aria-hidden="true" />{t.label}
+                      </p>
+                      <p className="text-[10px] text-muted-foreground/50 mt-0.5">{t.sub}</p>
+                    </div>
+                  ))}
                 </div>
-              )}
-              {stats.markets > 0 && (
-                <div className="bg-card p-6 text-center">
-                  <p className="numeric-hero text-4xl md:text-5xl text-foreground leading-none">{stats.markets}<span className="text-2xl text-muted-foreground/60">+</span></p>
-                  <p className="text-xs text-muted-foreground mt-3 flex items-center justify-center gap-1.5">
-                    <span className="w-1 h-1 rounded-full bg-neon-blue" aria-hidden="true" />mercados monitorados
-                  </p>
-                  <p className="text-[10px] text-muted-foreground/50 mt-0.5">Polymarket + Kalshi</p>
-                </div>
-              )}
-              <div className="bg-card p-6 text-center">
-                <p className="numeric-hero text-4xl md:text-5xl text-foreground leading-none">{stats.predictions > 0 ? stats.predictions : "∞"}</p>
-                <p className="text-xs text-muted-foreground mt-3 flex items-center justify-center gap-1.5">
-                  <span className="w-1 h-1 rounded-full bg-positive" aria-hidden="true" />previsões hoje
-                </p>
-                <p className="text-[10px] text-muted-foreground/50 mt-0.5">Supabase · ao vivo</p>
-              </div>
-            </div>
+              );
+            })()}
           </div>
         </section>
       )}

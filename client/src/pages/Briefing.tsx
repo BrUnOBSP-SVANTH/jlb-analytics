@@ -19,7 +19,7 @@ import { useSEO } from "@/hooks/useSEO";
 
 interface MarketHighlight {
   market: string;
-  prob: number;
+  prob: number | null; // null quando a IA não retorna probabilidade numérica
   insight: string;
 }
 
@@ -152,20 +152,27 @@ function QuickPredict({ market, marketProb }: { market: string; marketProb: numb
 // ─── Market Highlight Card ──────────────────────────────────────────────────
 
 function HighlightCard({ m }: { m: MarketHighlight }) {
+  const hasProb = typeof m.prob === "number" && Number.isFinite(m.prob);
   return (
     <div className="p-4 rounded-xl border border-border/30 bg-secondary/10 space-y-2">
       <div className="flex items-start justify-between gap-2">
         <p className="text-sm font-medium text-foreground leading-snug line-clamp-2 flex-1">{m.market}</p>
-        <span className={`text-xl font-bold font-mono shrink-0 ${probColor(m.prob)}`}>{m.prob}%</span>
+        {hasProb && (
+          <span className={`text-xl font-bold font-mono shrink-0 ${probColor(m.prob!)}`}>{m.prob}%</span>
+        )}
       </div>
       <p className="text-xs text-muted-foreground leading-relaxed">{m.insight}</p>
-      <div className="w-full h-1 bg-secondary/40 rounded-full overflow-hidden">
-        <div
-          className={`h-full rounded-full transition-all ${m.prob >= 70 ? "bg-positive" : m.prob >= 40 ? "bg-yellow-500" : "bg-negative"}`}
-          style={{ width: `${m.prob}%` }}
-        />
-      </div>
-      <QuickPredict market={m.market} marketProb={m.prob} />
+      {hasProb && (
+        <>
+          <div className="w-full h-1 bg-secondary/40 rounded-full overflow-hidden">
+            <div
+              className={`h-full rounded-full transition-all ${m.prob! >= 70 ? "bg-positive" : m.prob! >= 40 ? "bg-yellow-500" : "bg-negative"}`}
+              style={{ width: `${m.prob}%` }}
+            />
+          </div>
+          <QuickPredict market={m.market} marketProb={m.prob!} />
+        </>
+      )}
     </div>
   );
 }
