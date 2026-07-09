@@ -325,7 +325,7 @@ export function NewsAnalysisPanel({ item }: { item: TrendingItem }) {
       <button
         onClick={handleAnalyze}
         disabled={loading}
-        className="w-full flex items-center justify-between gap-1 py-1 text-xs text-neon-blue/70 hover:text-neon-blue transition-colors disabled:opacity-50"
+        className="w-full flex items-center justify-between gap-1 py-1 text-xs text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
       >
         <span className="flex items-center gap-1">
           <Sparkles className="w-3 h-3" />

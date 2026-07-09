@@ -317,7 +317,7 @@ function TrendingCardBase({ item, onCompare, inCompare }: {
 
         {/* Quantitative analysis toggle */}
         <button
-          className="w-full text-left text-xs text-primary/70 hover:text-primary transition-colors flex items-center justify-between gap-1 py-1"
+          className="w-full text-left text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center justify-between gap-1 py-1"
           onClick={() => setExpanded((v) => !v)}
         >
           <span className="flex items-center gap-1">
@@ -447,7 +447,7 @@ function ExplainEdgePanel({ item }: { item: TrendingItem }) {
     <div className="border-t border-border/10 pt-2 mt-1">
       <button
         onClick={() => setOpen((v) => !v)}
-        className="w-full text-left text-xs text-purple-400/80 hover:text-purple-400 transition-colors flex items-center justify-between gap-1 py-1"
+        className="w-full text-left text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center justify-between gap-1 py-1"
       >
         <span className="flex items-center gap-1">
           <Target className="w-3 h-3" />
@@ -457,7 +457,7 @@ function ExplainEdgePanel({ item }: { item: TrendingItem }) {
       </button>
 
       {open && (
-        <div className="mt-2 p-3 rounded-lg bg-purple-500/5 border border-purple-500/15 space-y-3">
+        <div className="mt-2 p-3 rounded-lg bg-neon-blue/5 border border-neon-blue/15 space-y-3">
           {/* User prob input */}
           <div>
             <div className="flex justify-between text-[10px] text-muted-foreground mb-1">
@@ -470,7 +470,7 @@ function ExplainEdgePanel({ item }: { item: TrendingItem }) {
               <input
                 type="range" min={1} max={99} value={userProbPct}
                 onChange={(e) => { setUserProbPct(Number(e.target.value)); setResult(null); }}
-                className="flex-1 h-1.5 accent-purple-400"
+                className="flex-1 h-1.5 accent-primary"
               />
               <span className="text-sm font-mono font-bold text-foreground w-10 text-right">{userProbPct}%</span>
             </div>
@@ -479,7 +479,7 @@ function ExplainEdgePanel({ item }: { item: TrendingItem }) {
           <button
             onClick={handleAnalyze}
             disabled={loading || edgePp === 0}
-            className="w-full flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-medium bg-purple-500/15 border border-purple-500/30 text-purple-300 hover:bg-purple-500/25 transition-colors disabled:opacity-40"
+            className="w-full flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-medium bg-neon-blue/15 border border-neon-blue/30 text-neon-blue hover:bg-neon-blue/25 transition-colors disabled:opacity-40"
           >
             {loading ? <><RefreshCw className="w-3 h-3 animate-spin" /> Analisando...</> : <><Sparkles className="w-3 h-3" /> Analisar edge com IA</>}
           </button>
@@ -487,7 +487,7 @@ function ExplainEdgePanel({ item }: { item: TrendingItem }) {
           {result && (
             <div className="space-y-2 text-[11px]">
               <div className="flex items-center justify-between">
-                <span className="font-semibold text-purple-300">Análise de Edge</span>
+                <span className="font-semibold text-neon-blue">Análise de Edge</span>
                 <span className={`${CONF_COLOR[result.confidence]} font-medium`}>Confiança: {CONF_LABEL[result.confidence]}</span>
               </div>
               <p className="text-muted-foreground leading-relaxed">{result.explanation}</p>
@@ -572,7 +572,7 @@ function FairValuePanel({ item }: { item: TrendingItem }) {
       <button
         onClick={handleFetch}
         disabled={loading}
-        className="w-full text-left flex items-center justify-between gap-1 py-1 text-xs text-primary/60 hover:text-primary transition-colors"
+        className="w-full text-left flex items-center justify-between gap-1 py-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
       >
         <span className="flex items-center gap-1">
           <Target className="w-3 h-3" />

@@ -3,7 +3,7 @@
  * Mercados Polymarket (Gamma API, direta do cliente) + Reddit (JSON API pública).
  * Prediction Tracker: registre sua estimativa, acompanhe o Brier Score acumulado.
  */
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import PageHeader from "@/components/PageHeader";
 import AnimatedSection from "@/components/AnimatedSection";
 import {
@@ -195,9 +195,11 @@ interface MarketCardProps {
   savedIds: Set<string>;
   onSaved: (p: StoredPrediction) => void;
   onAnalyze: (m: SelectedMarket) => void;
+  /** Badge "★ Destaque" — restrito aos poucos de maior volume; em todo card não destaca nada */
+  highlight?: boolean;
 }
 
-function MarketCard({ market, savedIds, onSaved, onAnalyze }: MarketCardProps) {
+function MarketCard({ market, savedIds, onSaved, onAnalyze, highlight = false }: MarketCardProps) {
   const [tracking, setTracking] = useState(false);
   const [justSaved, setJustSaved] = useState(false);
   const [translation, setTranslation] = useState<string | null>(null);
@@ -230,7 +232,7 @@ function MarketCard({ market, savedIds, onSaved, onAnalyze }: MarketCardProps) {
     }`}>
       {/* Badges: categoria + destaque + tempo */}
       <div className="flex flex-wrap items-center gap-1">
-        {market.featured && (
+        {highlight && (
           <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-semibold uppercase tracking-wider border text-gold bg-gold/10 border-gold/20">
             ★ Destaque
           </span>
@@ -747,6 +749,16 @@ export default function Noticias() {
   const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
   const [selectedMarket, setSelectedMarket] = useState<SelectedMarket | null>(null);
 
+  // O flag "featured" da Gamma API vem em ~80% dos eventos — badge em todo card
+  // não destaca nada. Estrela só nos 3 featured de maior volume.
+  const topFeaturedIds = useMemo(() => new Set(
+    markets
+      .filter((m) => m.featured)
+      .sort((a, b) => (b.volume ?? 0) - (a.volume ?? 0))
+      .slice(0, 3)
+      .map((m) => m.id)
+  ), [markets]);
+
   const fetchMarkets = useCallback(async () => {
     setLoadingMarkets(true);
     setErrorMarkets(null);
@@ -990,7 +1002,7 @@ export default function Noticias() {
           <AnimatedSection>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {markets.map((m) => (
-                <MarketCard key={m.id} market={m} savedIds={savedIds} onSaved={handleSaved} onAnalyze={setSelectedMarket} />
+                <MarketCard key={m.id} market={m} savedIds={savedIds} onSaved={handleSaved} onAnalyze={setSelectedMarket} highlight={topFeaturedIds.has(m.id)} />
               ))}
             </div>
             <p className="text-xs text-muted-foreground text-center mt-6">
