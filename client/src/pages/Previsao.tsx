@@ -929,7 +929,7 @@ export default function Previsao() {
         badge="IA + Econometria"
       />
 
-      <div className="container py-12 space-y-8 max-w-4xl">
+      <div className="container py-10 space-y-8 max-w-4xl">
 
         {/* ── Modelo Klement (inline) ── */}
         {showKlement && (

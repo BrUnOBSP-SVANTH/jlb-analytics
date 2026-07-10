@@ -42,6 +42,15 @@ function CategoryBadge({ category }: { category?: string }) {
   );
 }
 
+/** Preview de texto vindo da IA pode conter markdown cru (**negrito**, `código`, ###) — remove para exibição */
+function stripMd(text: string): string {
+  return text
+    .replace(/\*\*([^*]+)\*\*/g, "$1")
+    .replace(/\*([^*]+)\*/g, "$1")
+    .replace(/`([^`]+)`/g, "$1")
+    .replace(/^#{1,6}\s+/gm, "");
+}
+
 function timeAgo(dateStr: string): string {
   const diff = Date.now() - new Date(dateStr).getTime();
   const h = Math.floor(diff / 3_600_000);
@@ -59,7 +68,8 @@ function AnalysisCard({ analysis }: { analysis: CerebroAnalysis }) {
   return (
     <div className="glass-card rounded-xl p-5 space-y-3 border border-gold/10 hover:border-gold/30 transition-colors">
       <div className="flex items-center gap-2 flex-wrap">
-        <span className="text-[9px] font-bold px-1.5 py-0.5 rounded border uppercase tracking-wide text-gold border-gold/40 bg-gold/10">
+        {/* Chip discreto — a seção já se chama "Sínteses por IA"; 9 chips dourados brilhando juntos viram ruído */}
+        <span className="text-[9px] font-bold px-1.5 py-0.5 rounded border uppercase tracking-wide text-gold/70 border-gold/20">
           Síntese IA
         </span>
         {analysis.domains.slice(0, 2).map((d) => (
@@ -75,7 +85,7 @@ function AnalysisCard({ analysis }: { analysis: CerebroAnalysis }) {
         )}
       </div>
       <p className="text-sm font-semibold text-foreground leading-snug">{analysis.title}</p>
-      <p className="text-xs text-muted-foreground leading-relaxed line-clamp-4">{analysis.content}</p>
+      <p className="text-xs text-muted-foreground leading-relaxed line-clamp-4">{stripMd(analysis.content)}</p>
       {analysis.tags.length > 0 && (
         <div className="flex flex-wrap gap-1 pt-1">
           {analysis.tags.slice(0, 4).map((tag) => (
@@ -177,14 +187,16 @@ function ArticleCard({ article }: { article: CerebroArticle }) {
           ))}
         </div>
       )}
+      {/* Ações quietas — 60 cards × 2 links coloridos viravam um brilho constante;
+          a cor aparece no hover (mesmo padrão dos gatilhos do TrendingCard) */}
       <div className="flex items-center justify-between gap-2 pt-1">
         <a href={article.url ?? "#"} target="_blank" rel="noopener noreferrer"
-          className="flex items-center gap-1 text-[11px] text-gold font-medium hover:underline">
+          className="flex items-center gap-1 text-[11px] text-muted-foreground font-medium hover:text-gold transition-colors">
           <BookOpen className="w-3 h-3" aria-hidden="true" /> Ver fonte
           <ExternalLink className="w-3 h-3 ml-0.5" aria-hidden="true" />
         </a>
         <button onClick={loadRelated}
-          className="flex items-center gap-1 text-[11px] text-neon-blue/80 font-medium hover:text-neon-blue transition-colors">
+          className="flex items-center gap-1 text-[11px] text-muted-foreground font-medium hover:text-neon-blue transition-colors">
           <Scale className="w-3 h-3" aria-hidden="true" />
           Mercados relacionados
           <ChevronRight className={`w-3 h-3 transition-transform ${expanded ? "rotate-90" : ""}`} aria-hidden="true" />
@@ -347,7 +359,7 @@ export default function Cerebro() {
         badge="Base de Conhecimento"
       />
 
-      <div className="container py-10 space-y-10">
+      <div className="container py-10 space-y-8">
 
         {/* Stats */}
         <AnimatedSection>

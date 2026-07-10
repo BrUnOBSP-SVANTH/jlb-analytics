@@ -548,7 +548,7 @@ export default function Simulador() {
         badge="Simulador"
       />
 
-      <div className="container py-12">
+      <div className="container py-10">
         <AnimatedSection>
           <div className="flex gap-2 mb-8 overflow-x-auto pb-2" role="tablist" aria-label="Tipo de simulação">
             {tabs.map((t) => (

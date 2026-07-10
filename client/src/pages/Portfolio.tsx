@@ -609,7 +609,7 @@ export default function Portfolio() {
         badge="Simulação"
       />
 
-      <div className="container py-8 space-y-6">
+      <div className="container py-10 space-y-8">
         {/* Disclaimer */}
         <div className="flex items-start gap-3 p-4 rounded-xl border border-border/20 bg-secondary/5">
           <Info className="w-4 h-4 text-muted-foreground/50 shrink-0 mt-0.5" />

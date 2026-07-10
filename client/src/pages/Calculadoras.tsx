@@ -148,6 +148,9 @@ function ValorEsperado() {
   const evReais = ev * stake;
   const roi = ev * 100;
   const isPositive = ev > 0;
+  // EV que arredonda para zero é neutro — vermelho em "R$ 0.00" contradiz o número
+  const isNeutral = Math.abs(ev) < 0.00005;
+  const evColor = isNeutral ? "text-muted-foreground" : isPositive ? "text-positive" : "text-negative";
   const probWarning = Math.abs(totalProb - 100) > 0.5;
 
   return (
@@ -202,21 +205,23 @@ function ValorEsperado() {
         <div className="space-y-4">
           <ResultBox label="Valor Esperado por posição"
             value={`${isPositive ? "+" : ""}R$ ${evReais.toFixed(2)}`}
-            color={isPositive ? "text-positive" : "text-negative"}
+            color={evColor}
             sub={`por R$ ${stake} apostado`} />
           <ResultBox label="ROI esperado"
             value={`${isPositive ? "+" : ""}${roi.toFixed(2)}%`}
-            color={isPositive ? "text-positive" : "text-negative"} />
+            color={evColor} />
           <ResultBox label="EV por R$ 1,00 apostado"
             value={`${isPositive ? "+" : ""}R$ ${ev.toFixed(4)}`}
-            color={isPositive ? "text-positive" : "text-negative"} />
+            color={evColor} />
 
-          <div className={`p-4 rounded-xl border ${isPositive ? "bg-positive/10 border-positive/30" : "bg-negative/10 border-negative/30"}`}>
-            <p className={`text-sm font-semibold ${isPositive ? "text-positive" : "text-negative"}`}>
-              {isPositive ? "EV+ — matematicamente favorável" : "EV− — matematicamente perdedor"}
+          <div className={`p-4 rounded-xl border ${isNeutral ? "bg-secondary/20 border-border/30" : isPositive ? "bg-positive/10 border-positive/30" : "bg-negative/10 border-negative/30"}`}>
+            <p className={`text-sm font-semibold ${evColor}`}>
+              {isNeutral ? "EV zero — aposta justa" : isPositive ? "EV+ — matematicamente favorável" : "EV− — matematicamente perdedor"}
             </p>
             <p className="text-xs text-muted-foreground mt-1">
-              {isPositive
+              {isNeutral
+                ? "Retorno esperado igual ao valor apostado. Sem margem da casa e sem vantagem sua — raro no mundo real."
+                : isPositive
                 ? "No longo prazo, esta posição tende a lucrar. Mas variância de curto prazo é inevitável."
                 : "No longo prazo, toda posição EV− resulta em perda. A frequência de acerto não muda isso."}
             </p>
@@ -1057,7 +1062,7 @@ export default function Calculadoras() {
         badge="Ferramentas"
       />
 
-      <div className="container py-12">
+      <div className="container py-10">
         <AnimatedSection>
           <div className="flex flex-wrap gap-2 mb-8" role="tablist" aria-label="Tipo de calculadora">
             {tabs.map((t) => (

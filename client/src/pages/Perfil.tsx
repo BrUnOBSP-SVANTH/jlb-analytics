@@ -594,7 +594,7 @@ export default function Perfil() {
         badge="Perfil"
       />
 
-      <div className="container py-12 space-y-10">
+      <div className="container py-10 space-y-8">
 
         {/* ── Avatar + Identity ── */}
         <AnimatedSection>
