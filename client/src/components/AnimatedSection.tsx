@@ -22,18 +22,22 @@ const offsetMap: Record<NonNullable<Props["direction"]>, string> = {
  */
 export default function AnimatedSection({ children, className = "", delay = 0, direction = "up" }: Props) {
   const ref = useRef<HTMLDivElement>(null);
-  const [inView, setInView] = useState(false);
+  // Reduced-motion nasce visível já no 1º render — antes ficava opacity-0 até o
+  // efeito rodar, um flash de conteúdo invisível para quem pediu menos movimento
+  const [inView, setInView] = useState(
+    () => typeof window !== "undefined" && (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false)
+  );
 
   useEffect(() => {
     const el = ref.current;
-    if (!el) return;
-    if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) { setInView(true); return; }
+    if (!el || inView) return;
     const obs = new IntersectionObserver(
       ([entry]) => { if (entry.isIntersecting) { setInView(true); obs.disconnect(); } },
       { rootMargin: "-50px 0px", threshold: 0.01 },
     );
     obs.observe(el);
     return () => obs.disconnect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- inView só transiciona false→true; re-observar seria no-op
   }, []);
 
   return (

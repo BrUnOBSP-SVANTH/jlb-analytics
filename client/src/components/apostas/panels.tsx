@@ -32,6 +32,8 @@ function EdgeCalculator({ marketProb }: { marketProb: number }) {
   const halfKelly = kelly / 2;
   const edge = yourProb - marketProb;
   const hasValue = ev > 0;
+  // EV que arredonda para 0.0% é neutro — "+0.0%" pintado de vermelho contradiz o próprio sinal
+  const evNeutral = Math.abs(ev * 100) < 0.05;
 
   return (
     <div className="space-y-3">
@@ -56,10 +58,10 @@ function EdgeCalculator({ marketProb }: { marketProb: number }) {
         </div>
       </div>
       <div className="grid grid-cols-2 gap-2">
-        <div className={`p-2.5 rounded-lg border ${hasValue ? "border-positive/20 bg-positive/5" : "border-negative/20 bg-negative/5"}`}>
+        <div className={`p-2.5 rounded-lg border ${evNeutral ? "border-border/20 bg-secondary/10" : hasValue ? "border-positive/20 bg-positive/5" : "border-negative/20 bg-negative/5"}`}>
           <p className="text-[9px] text-muted-foreground uppercase tracking-wider mb-1">Valor Esperado (EV)</p>
-          <p className={`text-base font-mono font-bold ${hasValue ? "text-positive" : "text-negative"}`}>
-            {ev >= 0 ? "+" : ""}{(ev * 100).toFixed(1)}%
+          <p className={`text-base font-mono font-bold ${evNeutral ? "text-muted-foreground" : hasValue ? "text-positive" : "text-negative"}`}>
+            {evNeutral ? "0.0" : `${ev >= 0 ? "+" : ""}${(ev * 100).toFixed(1)}`}%
           </p>
           <p className="text-[9px] text-muted-foreground mt-0.5">por real apostado</p>
         </div>
@@ -86,6 +88,8 @@ function EdgeCalculator({ marketProb }: { marketProb: number }) {
         <p className="text-[10px] leading-relaxed">
           {hasValue
             ? `Valor positivo detectado. Com ½ Kelly: arrisque ${(halfKelly * 100).toFixed(1)}% da banca. EV de longo prazo: ${(ev * 100).toFixed(1)}% por aposta.`
+            : evNeutral
+            ? "EV zero — sua estimativa coincide com o preço do mercado. Não há vantagem matemática de nenhum lado."
             : "Sem valor com esta estimativa — o mercado está pagando menos do que sua probabilidade justifica. Reduza o tamanho ou reavalie."}
         </p>
       </div>

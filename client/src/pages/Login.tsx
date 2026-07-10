@@ -5,7 +5,7 @@
 
 import { useState } from "react";
 import { useLocation } from "wouter";
-import { TrendingUp, Mail, Lock, Eye, EyeOff, Chrome, ArrowLeft, AlertCircle, CheckCircle } from "lucide-react";
+import { Mail, Lock, Eye, EyeOff, Chrome, ArrowLeft, AlertCircle, CheckCircle } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSEO } from "@/hooks/useSEO";
 import { track } from "@/lib/analytics";
@@ -95,8 +95,12 @@ export default function Login() {
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="flex flex-col items-center mb-8">
-          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-neon-blue to-primary flex items-center justify-center mb-3">
-            <TrendingUp className="w-6 h-6 text-white" aria-hidden="true" />
+          {/* Monograma da marca (linha ascendente + ponto) — o gradiente azul era resquício de scaffold */}
+          <div className="w-12 h-12 rounded-xl bg-gold/12 border border-gold/25 flex items-center justify-center mb-3">
+            <svg viewBox="0 0 32 32" className="w-9 h-9 text-gold" aria-hidden="true">
+              <path d="M6.5 21.5 L12.5 14 L17.5 18 L25 8.5" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+              <circle cx="25" cy="8.5" r="2.2" fill="currentColor" />
+            </svg>
           </div>
           <h1 className="text-xl font-display font-bold text-foreground">JLB Analytics</h1>
           <p className="text-sm text-muted-foreground mt-1">

@@ -5,13 +5,13 @@
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
-import { Route, Switch } from "wouter";
+import { Route, Switch, useLocation } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { AuthProvider } from "./contexts/AuthContext";
 import Layout from "./components/Layout";
 import Home from "./pages/Home";
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useLayoutEffect } from "react";
 import { usePWA } from "./hooks/usePWA";
 import OnboardingTour from "./components/OnboardingTour";
 import ChatWidget from "./components/chat/ChatWidget";
@@ -63,6 +63,16 @@ function PWAInstallBanner() {
       </button>
     </div>
   );
+}
+
+/** SPA não reseta o scroll sozinha — sem isto, navegar pelo footer deixava o
+ *  usuário no meio da página seguinte. Hash (#ancora) é respeitado. */
+function ScrollToTop() {
+  const [location] = useLocation();
+  useLayoutEffect(() => {
+    if (!window.location.hash) window.scrollTo(0, 0);
+  }, [location]);
+  return null;
 }
 
 function Router() {
@@ -125,6 +135,7 @@ function App() {
         <AuthProvider>
           <TooltipProvider>
             <Toaster />
+            <ScrollToTop />
             <Router />
             <PWAInstallBanner />
             <OnboardingTour />
