@@ -1,67 +1,21 @@
 import { Router } from "express";
 import { getCache, setCache } from "../lib/cache.ts";
 import { fetchJSON } from "../lib/fetcher.ts";
+import { translateToPt } from "../lib/translate.ts";
 import type { NewsArticle, NewsApiResponse } from "../lib/types.ts";
 import { log } from "../lib/log.ts";
 
 const router = Router();
 
-// ── Translation helpers ───────────────────────────────────────────────────────
-
-function isTranslationError(text: string): boolean {
-  const t = text.toLowerCase();
-  return t.includes("mymemory warning") || t.includes("quota") ||
-    t.includes("you used all") || t.includes("invalid language pair") ||
-    t.includes("must be shorter than") || t.startsWith("http");
-}
-
-async function tryGoogleTranslate(text: string): Promise<string | null> {
-  try {
-    const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=pt-BR&dt=t&q=${encodeURIComponent(text)}`;
-    const r = await fetch(url, {
-      headers: { "User-Agent": "Mozilla/5.0" },
-      signal: AbortSignal.timeout(6000),
-    });
-    if (!r.ok) return null;
-    const data = await r.json() as Array<unknown>;
-    const chunks = (data[0] as Array<[string]> | null) ?? [];
-    const result = chunks.map((c) => c[0] ?? "").join("").trim();
-    return result && !isTranslationError(result) ? result : null;
-  } catch { return null; }
-}
-
-async function tryMyMemory(text: string): Promise<string | null> {
-  try {
-    const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=en|pt-BR`;
-    interface MyMemoryResponse { responseData: { translatedText: string }; responseStatus: number }
-    const data = await fetchJSON<MyMemoryResponse>(url);
-    if (data.responseStatus !== 200) return null;
-    const result = data.responseData?.translatedText?.trim() ?? "";
-    return result && !isTranslationError(result) ? result : null;
-  } catch { return null; }
-}
-
-// ── Translate endpoint (Google Translate → MyMemory fallback) ─────────────────
+// ── Translate endpoint (helpers compartilhados em lib/translate.ts) ──────────
 
 router.get("/translate", async (req, res) => {
   const text = String(req.query.text ?? "").trim().slice(0, 500);
   if (!text) return res.status(400).json({ error: "text required" });
 
-  const cacheKey = `translate:${text}`;
-  const cached = getCache<string>(cacheKey);
-  if (cached) { res.json({ translation: cached }); return; }
-
-  const translation =
-    await tryGoogleTranslate(text) ??
-    await tryMyMemory(text);
-
-  if (translation) {
-    setCache(cacheKey, translation, 86400);
-    res.json({ translation });
-  } else {
-    // Return original text — never cache a failure
-    res.json({ translation: text });
-  }
+  // translateToPt cacheia sucesso por 24h; falha devolve o original sem cachear
+  const translation = await translateToPt(text);
+  res.json({ translation: translation ?? text });
 });
 
 // ── NewsAPI ──────────────────────────────────────────────────────────────────

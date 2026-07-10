@@ -2,25 +2,59 @@
 // Cruza o mercado com artigos curados + sínteses IA. Também lê snapshots para
 // calcular o momentum do mercado. Extraído de routes/ai.ts.
 import { SUPABASE_URL, SUPABASE_KEY } from "./supabaseRest.ts";
+import { translateToPt } from "./translate.ts";
 
 interface CerebroHit { title: string; summary: string; source: string; kind: "síntese" | "artigo" }
 
-/** Extrai 2-3 termos significativos para busca full-text no Cerebro. */
-function topKeywords(text: string, n = 3): string {
-  const stop = new Set(["will","the","and","для","que","com","por","uma","dos","das","será","vai","ser","está","sobre","como","what","when","this","that","with","from","have","does","após","entre","mais"]);
-  return text.replace(/[^a-zA-ZÀ-ú0-9 ]/g, " ").split(/\s+/)
-    .filter((w) => w.length > 3 && !stop.has(w.toLowerCase()))
-    .slice(0, n).join(" ");
+const STOPWORDS = new Set([
+  // PT
+  "que","com","por","uma","dos","das","será","vai","ser","está","sobre","como","após","entre","mais",
+  "para","pelo","pela","seus","suas","esse","essa","este","esta","isso","antes","depois","ainda","até",
+  // EN (títulos de mercado chegam em inglês)
+  "will","the","and","what","when","this","that","with","from","have","does","over","under","than",
+  "into","more","before","after","become","announce","between","released","during","their","there","about",
+]);
+
+/**
+ * Extrai termos significativos para busca full-text, priorizando substantivos
+ * próprios (capitalizados fora do início da frase) — são as entidades do
+ * mercado (Irã, Fed, Trump) e o sinal mais forte de relevância.
+ * Exportada para teste.
+ */
+export function topKeywords(text: string, n = 4): string {
+  const tokens = text.replace(/[^a-zA-ZÀ-ú0-9 ]/g, " ").split(/\s+/).filter(Boolean);
+  const seen = new Set<string>();
+  const proper: string[] = [];
+  const common: string[] = [];
+  tokens.forEach((w, i) => {
+    const lower = w.toLowerCase();
+    if (w.length <= 3 || STOPWORDS.has(lower) || seen.has(lower)) return;
+    seen.add(lower);
+    if (i > 0 && /^[A-ZÀ-Ú]/.test(w)) proper.push(w);
+    else common.push(w);
+  });
+  return [...proper, ...common].slice(0, n).join(" ");
 }
 
-/** Busca full-text PT: sínteses (maior valor) primeiro, depois artigos recentes. */
-async function queryCerebro(kw: string): Promise<CerebroHit[]> {
+/** Heurística barata: o texto parece inglês? (o índice FTS do Cerebro é português) — exportada para teste */
+export function looksEnglish(text: string): boolean {
+  const hints = ["will","the","and","with","from","before","after","this","that","who","wins","win","announce","between","over","under","than","into","released","become","confirm"];
+  const words = text.toLowerCase().match(/[a-z']+/g) ?? [];
+  if (words.length < 3) return false;
+  const hintSet = new Set(hints);
+  const hitCount = words.filter((w) => hintSet.has(w)).length;
+  return hitCount >= 2 || hitCount / words.length > 0.2;
+}
+
+/** Busca full-text PT: sínteses (maior valor, mais recentes) primeiro, depois artigos recentes.
+ *  op: plfts = AND de todos os termos (precisão) · wfts = websearch, aceita "or" (recall) */
+async function queryCerebro(kw: string, op: "plfts" | "wfts" = "plfts"): Promise<CerebroHit[]> {
   const headers = { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` };
   const enc = encodeURIComponent(kw);
 
   const [synthRes, artRes] = await Promise.allSettled([
-    fetch(`${SUPABASE_URL}/rest/v1/cerebro_analyses?fts=plfts(portuguese).${enc}&status=eq.active&select=title,content&limit=2`, { headers, signal: AbortSignal.timeout(6_000) }),
-    fetch(`${SUPABASE_URL}/rest/v1/cerebro_articles?fts=plfts(portuguese).${enc}&status=eq.active&select=title,summary,source&order=published_at.desc&limit=4`, { headers, signal: AbortSignal.timeout(6_000) }),
+    fetch(`${SUPABASE_URL}/rest/v1/cerebro_analyses?fts=${op}(portuguese).${enc}&status=eq.active&select=title,content&order=wiki_date.desc&limit=2`, { headers, signal: AbortSignal.timeout(6_000) }),
+    fetch(`${SUPABASE_URL}/rest/v1/cerebro_articles?fts=${op}(portuguese).${enc}&status=eq.active&select=title,summary,source&order=published_at.desc&limit=4`, { headers, signal: AbortSignal.timeout(6_000) }),
   ]);
 
   const hits: CerebroHit[] = [];
@@ -37,22 +71,45 @@ async function queryCerebro(kw: string): Promise<CerebroHit[]> {
 
 export async function fetchCerebroContext(title: string, description?: string): Promise<{ context: string; hits: CerebroHit[] }> {
   if (!SUPABASE_URL || !SUPABASE_KEY) return { context: "", hits: [] };
-  const kw = topKeywords(title + " " + (description ?? ""));
-  if (!kw) return { context: "", hits: [] };
+  const original = `${title} ${description ?? ""}`.trim();
+  if (!original) return { context: "", hits: [] };
 
   try {
-    let hits = await queryCerebro(kw);
+    // Títulos de mercado chegam em inglês, mas o índice FTS é português —
+    // traduzir antes de extrair keywords multiplica o recall ("Iran"→"Irã",
+    // "withdrawal"→"retirada"). Cache 24h; falha cai no texto original.
+    let searchText = original;
+    if (looksEnglish(original)) {
+      const translated = await translateToPt(original);
+      if (translated) searchText = translated;
+    }
 
-    // plfts faz AND de todos os termos — consulta composta demais zera o
-    // recall. No miss, segunda tentativa só com o termo mais forte (o maior).
+    const kw = topKeywords(searchText);
+    if (!kw) return { context: "", hits: [] };
+
+    // Cascata precisão→recall: AND de todos os termos; sem hit, OR só dos
+    // termos distintivos (websearch); por fim, o termo mais forte (o maior).
+    let hits = await queryCerebro(kw);
+    let usedFallback = false;
     const words = kw.split(" ");
+    if (hits.length === 0 && words.length > 1) {
+      const distinctive = words.filter((w) => w.length >= 5).slice(0, 3);
+      const orTerms = distinctive.length > 0 ? distinctive : words;
+      hits = await queryCerebro(orTerms.join(" or "), "wfts");
+      usedFallback = true;
+    }
     if (hits.length === 0 && words.length > 1) {
       const strongest = [...words].sort((a, b) => b.length - a.length)[0];
       hits = await queryCerebro(strongest);
+      usedFallback = true;
     }
 
     if (hits.length === 0) return { context: "", hits: [] };
-    const context = hits.map((h, i) => `[C${i + 1}] (${h.kind} · ${h.source}) "${h.title}"\n${h.summary}`).join("\n\n");
+    // Match de fallback é mais fraco — avisa o modelo para filtrar por relevância
+    const note = usedFallback
+      ? "(correspondência parcial por palavra-chave — use APENAS itens diretamente relevantes ao tema; ignore o resto)\n\n"
+      : "";
+    const context = note + hits.map((h, i) => `[C${i + 1}] (${h.kind} · ${h.source}) "${h.title}"\n${h.summary}`).join("\n\n");
     return { context, hits };
   } catch { return { context: "", hits: [] }; }
 }

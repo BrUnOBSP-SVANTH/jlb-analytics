@@ -1094,9 +1094,14 @@ router.post("/fair-value", aiCreditsMiddleware, async (req, res) => {
   const catKey = (category ?? "other").toLowerCase().replace(/[^a-z]/g, "") || "other";
   const catInfo = CATEGORY_BASE_RATES[catKey] ?? CATEGORY_BASE_RATES["other"];
 
-  const [selic, ipca] = await Promise.allSettled([fetchBcbSerie(11), fetchBcbSerie(433)]);
+  // Cerebro em paralelo com BCB — o fair value era calculado às cegas (só base
+  // rate + macro); contexto real é o que separa estimativa de chute calibrado.
+  const [selic, ipca, cerebroSettled] = await Promise.allSettled([
+    fetchBcbSerie(11), fetchBcbSerie(433), fetchCerebroContext(title),
+  ]);
   const selicVal = selic.status === "fulfilled" ? selic.value : null;
   const ipcaVal  = ipca.status === "fulfilled"  ? ipca.value  : null;
+  const cerebroCtx = cerebroSettled.status === "fulfilled" ? cerebroSettled.value.context : "";
 
   // Sinalização de momentum: variação recente sugere tendência
   let momentumAdjust = 0;
@@ -1138,6 +1143,14 @@ NOSSO PRÉ-CÁLCULO: ${clampedPreFV}%
 MACRO BR: Selic ${selicVal ?? "~10.5"}% | IPCA ${ipcaVal ?? "~4.8"}%
 DATA: ${new Date().toLocaleDateString("pt-BR")}
 
+CONTEXTO DO CEREBRO (base de conhecimento curada própria):
+${cerebroCtx || "— sem artigos relacionados encontrados —"}
+
+REGRAS DE CALIBRAÇÃO (críticas — nosso Brier Score é medido publicamente):
+- O preço de um mercado líquido já agrega a informação disponível. Desvie dele APENAS com evidência concreta no contexto acima, e proporcional à força da evidência.
+- Sem evidência relevante: fique dentro de ±3pp do mercado e use signal "neutral".
+- NUNCA desvie mais de 15pp do preço de mercado.
+
 Ajuste o fair value considerando o contexto real do mercado. Retorne JSON exato:
 {"fairValue":65,"confidence":"medium","edge":5,"reasoning":"2-3 frases explicando a diferença entre o fair value e a prob do mercado","factors":["fator positivo","fator negativo"],"signal":"bullish|bearish|neutral","caveat":"limitação principal desta análise"}
 
@@ -1159,7 +1172,12 @@ Onde:
     interface FVParsed { fairValue?: number; confidence?: string; edge?: number; reasoning?: string; factors?: string[]; signal?: string; caveat?: string }
     const parsed = extractJson(raw) as FVParsed;
 
-    const fairValue = Math.max(5, Math.min(95, Math.round(Number(parsed.fairValue ?? clampedPreFV))));
+    // Clamp duplo: faixa 5-95 E ±15pp do mercado — guardrail de calibração no
+    // código, não só no prompt (mercado líquido raramente erra por >15pp)
+    const rawFV = Math.round(Number(parsed.fairValue ?? clampedPreFV));
+    const fairValue = Math.max(5, Math.min(95,
+      Math.max(marketProb - 15, Math.min(marketProb + 15, rawFV))
+    ));
     const result = {
       fairValue,
       confidence: parsed.confidence ?? "medium",
