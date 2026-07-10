@@ -66,7 +66,7 @@ function timeAgo(dateStr: string): string {
 
 function AnalysisCard({ analysis }: { analysis: CerebroAnalysis }) {
   return (
-    <div className="glass-card rounded-xl p-5 space-y-3 border border-gold/10 hover:border-gold/30 transition-colors">
+    <div className="glass-card card-lift rounded-xl p-5 space-y-3 border border-gold/10">
       <div className="flex items-center gap-2 flex-wrap">
         {/* Chip discreto — a seção já se chama "Sínteses por IA"; 9 chips dourados brilhando juntos viram ruído */}
         <span className="text-[9px] font-bold px-1.5 py-0.5 rounded border uppercase tracking-wide text-gold/70 border-gold/20">
@@ -156,7 +156,7 @@ function ArticleCard({ article }: { article: CerebroArticle }) {
   }
 
   return (
-    <div className="glass-card rounded-xl p-5 hover:border-gold/30 transition-colors space-y-3">
+    <div className="glass-card card-lift rounded-xl p-5 space-y-3">
       <div className="flex items-center gap-2 flex-wrap">
         <CategoryBadge category={article.category} />
         <span className="flex items-center gap-1 text-[10px] text-muted-foreground">

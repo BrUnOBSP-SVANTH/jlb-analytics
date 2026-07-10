@@ -113,7 +113,11 @@ export default function Sobre() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {metrics.map((m) => (
               <div key={m.label} className="glass-card rounded-xl p-5 text-center">
-                <p className="text-3xl font-bold font-mono text-gold mb-1">{m.value}</p>
+                {m.value === "…" ? (
+                  <div className="h-9 w-20 mx-auto mb-1 rounded bg-secondary/40 animate-pulse" aria-label="carregando" />
+                ) : (
+                  <p className="text-3xl font-bold font-mono text-gold mb-1">{m.value}</p>
+                )}
                 <p className="text-xs font-semibold text-foreground mb-0.5">{m.label}</p>
                 <p className="text-[10px] text-muted-foreground/70">{m.sub}</p>
               </div>

@@ -227,8 +227,8 @@ function MarketCard({ market, savedIds, onSaved, onAnalyze, highlight = false }:
   }
 
   return (
-    <div className={`glass-card rounded-xl p-4 flex flex-col gap-3 transition-colors ${
-      isSaved || justSaved ? "border-gold/30 bg-gold/3" : "hover:border-gold/20"
+    <div className={`glass-card card-lift rounded-xl p-4 flex flex-col gap-3 ${
+      isSaved || justSaved ? "border-gold/30 bg-gold/3" : ""
     }`}>
       {/* Badges: categoria + destaque + tempo */}
       <div className="flex flex-wrap items-center gap-1">

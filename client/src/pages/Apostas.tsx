@@ -217,7 +217,7 @@ function TrendingCardBase({ item, onCompare, inCompare }: {
 
   return (
     <AnimatedSection>
-      <div className="glass-card rounded-xl p-5 hover:border-primary/20 transition-colors">
+      <div className="glass-card card-lift rounded-xl p-5">
         <div className="flex items-start gap-3 mb-3">
           <div className={`w-2 h-2 rounded-full mt-2 shrink-0 ${
             item.score >= 70 ? "bg-positive animate-pulse" : item.score >= 40 ? "bg-gold" : "bg-primary/50"

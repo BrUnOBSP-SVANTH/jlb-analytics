@@ -260,6 +260,19 @@
     border-color: oklch(0.78 0.12 85 / 35%);
   }
 
+  /* Elevação sutil para cards interativos de lista — feedback tátil de 200ms,
+     nunca decorativo. Compõe com .glass-card (que já transiciona transform). */
+  .card-lift {
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  }
+  .card-lift:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 28px -14px oklch(0 0 0 / 40%);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .card-lift:hover { transform: none; }
+  }
+
   /* Gold gradient border — fill segue o tema (var --card) */
   .gold-border {
     border: 1px solid transparent;
