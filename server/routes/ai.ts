@@ -643,15 +643,17 @@ async function runModelPredict(p: PredictParams, onPhase: PhaseEmit = () => {}):
   const NEWS_API_KEY = process.env.NEWS_API_KEY ?? "";
 
   onPhase("context");
-  // Fase 1 em paralelo: macro (BCB) + notícias (pipeline unificado, idioma automático).
-  const [bcbSettled, predictNewsResult] = await Promise.all([
+  // Fase 1 em paralelo: macro (BCB) + notícias + Cerebro (base curada própria).
+  const [bcbSettled, predictNewsResult, cerebroSettled] = await Promise.all([
     Promise.allSettled([fetchBcbSerie(11), fetchBcbSerie(433)]),
     getNewsForMarket(question, NEWS_API_KEY, context || undefined, { maxTotal: 6, daysPrimary: 7 }),
+    fetchCerebroContext(question, context || undefined).catch(() => ({ context: "", hits: [] })),
   ]);
   const selicVal = bcbSettled[0].status === "fulfilled" ? bcbSettled[0].value : null;
   const ipcaVal = bcbSettled[1].status === "fulfilled" ? bcbSettled[1].value : null;
   const predictArticles = predictNewsResult.articles;
-  onPhase("context_done", { articles: predictArticles.length, isBR: predictNewsResult.isBR });
+  const cerebroCtx = cerebroSettled.context;
+  onPhase("context_done", { articles: predictArticles.length, isBR: predictNewsResult.isBR, cerebroHits: cerebroSettled.hits.length });
   onPhase("analyzing");
 
   const DOMAIN_LABELS: Record<string, string> = { sports: "Esportes", economy: "Economia / Macro", energy: "Energia / Commodities", politics: "Política", science: "Ciência / Tecnologia", crypto: "Cripto / Digital Assets", finance: "Finanças / Mercado", climate: "Clima / ENSO" };
@@ -839,14 +841,24 @@ AVANCADO:
 - analogyExplanation: paralelo histórico preciso (ex: "similar ao que aconteceu em X com Y%de desvio")
 - mencione grau de incerteza paramétrica e sensibilidade a premissas
 
-DATA: ${new Date().toLocaleDateString("pt-BR", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
-MACRO BR: Selic ${selicVal ?? "~10.5"}% a.a. | IPCA ${ipcaVal ?? "~4.8"}% a.a.
-${predictArticles.length > 0 ? `NOTÍCIAS RECENTES (${predictNewsResult.isBR ? "contexto BR" : "contexto global"} — cite pelo número [N] na análise):\n${predictArticles.map((a, i) => `[${i + 1}] "${a.title}" — ${a.source.name} (${a.publishedAt?.slice(0, 10) ?? ""})\n${a.description ?? ""}`).join("\n\n")}` : "SEM NOTÍCIAS RECENTES DISPONÍVEIS — baseie-se exclusivamente em dados históricos e modelos."}
-
 RESPONDA SOMENTE COM O JSON ABAIXO, SEM TEXTO ANTES OU DEPOIS, SEM MARKDOWN:
 {"modelChosen":"","modelFamily":"","formula":"","whyThisModel":"","shortTermPrediction":"","mediumTermPrediction":"","longTermPrediction":"","confidenceShort":0,"confidenceMedium":0,"confidenceLong":0,"confidenceLow80":0,"confidenceHigh80":0,"plainLanguage":"","bankrollImpact":null,"keyAssumptions":[],"limitations":"","researchBasis":"","actionableInsight":"","expertiseLevel":"intermediario","analogyExplanation":"","probabilityVerbal":"","historicalParallel":"","referenceClass":"","baseRate":0,"baseRateSource":"","decomposition":[{"question":"","probability":0,"reasoning":""}],"insideViewUp":[],"insideViewDown":[],"updateTriggers":[],"calibrationWarning":null}`;
 
-  const userMessage = `DOMÍNIO: ${DOMAIN_LABELS[domain] ?? domain}\nPERGUNTA: ${question}\nCONTEXTO ADICIONAL: ${context || "nenhum"}\nHORIZONTE: ${HORIZON_MAP[timeHorizon] ?? timeHorizon}\nBANKROLL: ${bankroll ? `R$ ${bankroll.toLocaleString("pt-BR")}` : "não informado"}`;
+  // Todo o conteúdo por-requisição vive AQUI (não no system): o system fica
+  // estático e o prompt caching realmente acerta (~2.5k tokens a ~90% menos).
+  const newsBlock = predictArticles.length > 0
+    ? `NOTÍCIAS RECENTES (${predictNewsResult.isBR ? "contexto BR" : "contexto global"} — cite pelo número [N] na análise):\n${predictArticles.map((a, i) => `[${i + 1}] "${a.title}" — ${a.source.name} (${a.publishedAt?.slice(0, 10) ?? ""})\n${a.description ?? ""}`).join("\n\n")}`
+    : "SEM NOTÍCIAS RECENTES DISPONÍVEIS — baseie-se exclusivamente em dados históricos e modelos.";
+  const cerebroBlock = cerebroCtx
+    ? `\n\nCONTEXTO DO CEREBRO (base de conhecimento curada própria — cite como [C#]):\n${cerebroCtx}`
+    : "";
+
+  const userMessage = `DOMÍNIO: ${DOMAIN_LABELS[domain] ?? domain}\nPERGUNTA: ${question}\nCONTEXTO ADICIONAL: ${context || "nenhum"}\nHORIZONTE: ${HORIZON_MAP[timeHorizon] ?? timeHorizon}\nBANKROLL: ${bankroll ? `R$ ${bankroll.toLocaleString("pt-BR")}` : "não informado"}
+
+DATA: ${new Date().toLocaleDateString("pt-BR", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
+MACRO BR: Selic ${selicVal ?? "~10.5"}% a.a. | IPCA ${ipcaVal ?? "~4.8"}% a.a.
+
+${newsBlock}${cerebroBlock}`;
 
   // Haiku 4.5 (rápido): o prompt é tão prescritivo (20 modelos + protocolo Superforecaster
   // passo a passo) que a qualidade se mantém, e a geração de ~3200 tokens cai para ~25-40s.
@@ -1308,8 +1320,21 @@ router.post("/article-crossref", async (req, res) => {
   if (cached) return res.json({ ...cached, cached: true });
 
   // Busca mercados do cache (populados pelas rotas /polymarket/markets e /kalshi/markets)
-  const polyMarkets = getCache<Array<{ id: string; question: string; outcomePrices?: string; category?: string; volume?: number; eventSlug?: string; slug?: string }>>("polymarket:markets:active") ?? [];
+  let polyMarkets = getCache<Array<{ id: string; question: string; outcomePrices?: string; category?: string; volume?: number; eventSlug?: string; slug?: string }>>("polymarket:markets:active") ?? [];
   const kalshiMarkets = getCache<Array<{ ticker: string; eventTicker: string; seriesTicker: string; title: string; yesProb: number; category?: string }>>("kalshi:markets") ?? [];
+
+  // Cache frio (ninguém abriu /apostas ainda) → aquece via a própria rota,
+  // senão o cruzamento devolvia sempre lista vazia com cara de "sem relação".
+  if (polyMarkets.length === 0 && kalshiMarkets.length === 0) {
+    try {
+      const port = process.env.PORT ?? "3001";
+      const r = await fetch(`http://localhost:${port}/api/polymarket/markets?limit=40`, { signal: AbortSignal.timeout(10_000) });
+      if (r.ok) {
+        const data = await r.json() as { markets?: typeof polyMarkets };
+        polyMarkets = data.markets ?? [];
+      }
+    } catch { /* segue com o que tiver */ }
+  }
 
   // Monta lista compacta de mercados para o Claude (máx 60 mercados)
   interface MarketEntry { idx: number; source: "Polymarket" | "Kalshi"; title: string; prob: number; id: string }
@@ -1332,6 +1357,7 @@ router.post("/article-crossref", async (req, res) => {
 Analise o artigo abaixo e identifique até 4 mercados preditivos diretamente relacionados.
 Para cada mercado relacionado, dê sua estimativa HONESTA da probabilidade real — você PODE e DEVE discordar do preço do mercado se o artigo sugerir isso.
 Seja direto e sincero: se o mercado está superestimado ou subestimado, diga.
+CALIBRAÇÃO: o desvio deve ser proporcional à força da evidência DO ARTIGO — desvios acima de 15pp exigem fato concreto citado; nunca desvie mais de 20pp do preço.
 
 ARTIGO:
 Título: "${title}"
@@ -1382,13 +1408,19 @@ Onde:
       .filter((r) => r.idx >= 0 && r.idx < allMarkets.length)
       .map((r) => {
         const m = allMarkets[r.idx];
+        // Guardrail de calibração no código (como no fair value): ±20pp do mercado
+        const jlbProb = Math.max(5, Math.min(95,
+          Math.max(m.prob - 20, Math.min(m.prob + 20, Math.round(r.jlbProb)))
+        ));
         return {
           source: m.source,
           marketTitle: m.title,
           marketProb: m.prob,
           id: m.id,
-          jlbProb: Math.max(5, Math.min(95, Math.round(r.jlbProb))),
-          verdict: r.verdict ?? "aligned",
+          jlbProb,
+          // Verdict derivado dos números finais — o do modelo às vezes contradiz
+          // a própria estimativa (e o clamp pode movê-la)
+          verdict: jlbProb > m.prob + 3 ? "higher" : jlbProb < m.prob - 3 ? "lower" : "aligned",
           reasoning: r.reasoning ?? "",
           confidence: r.confidence ?? "medium",
         };
