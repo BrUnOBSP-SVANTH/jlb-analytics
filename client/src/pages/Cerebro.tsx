@@ -78,7 +78,7 @@ function AnalysisCard({ analysis }: { analysis: CerebroAnalysis }) {
           </span>
         ))}
         {analysis.wiki_date && (
-          <span className="ml-auto text-[10px] text-muted-foreground/60 flex items-center gap-1">
+          <span className="ml-auto text-[10px] text-muted-foreground flex items-center gap-1">
             <Clock className="w-3 h-3" aria-hidden="true" />
             {timeAgo(analysis.wiki_date)}
           </span>
@@ -96,7 +96,7 @@ function AnalysisCard({ analysis }: { analysis: CerebroAnalysis }) {
         </div>
       )}
       {analysis.sources_used.length > 0 && (
-        <p className="text-[10px] text-muted-foreground/50">
+        <p className="text-[10px] text-muted-foreground">
           Fontes: {analysis.sources_used.slice(0, 3).join(", ")}
         </p>
       )}
@@ -164,7 +164,7 @@ function ArticleCard({ article }: { article: CerebroArticle }) {
           {article.source}
         </span>
         {article.published_at && (
-          <span className="ml-auto text-[10px] text-muted-foreground/60 flex items-center gap-1">
+          <span className="ml-auto text-[10px] text-muted-foreground flex items-center gap-1">
             <Clock className="w-3 h-3" aria-hidden="true" />
             {timeAgo(article.published_at)}
           </span>

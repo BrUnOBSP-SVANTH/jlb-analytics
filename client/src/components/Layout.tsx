@@ -433,7 +433,7 @@ function Navbar() {
             {/* Cmd+K trigger */}
             <button
               onClick={() => document.dispatchEvent(new KeyboardEvent("keydown", { key: "k", metaKey: true, bubbles: true }))}
-              className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-border/30 text-[11px] text-muted-foreground/60 hover:text-muted-foreground hover:border-border/50 transition-colors"
+              className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-border/30 text-[11px] text-muted-foreground hover:text-foreground hover:border-border/50 transition-colors"
               aria-label="Busca global"
             >
               <Search className="w-3 h-3" />
@@ -472,7 +472,7 @@ function Navbar() {
                 <span className={`shrink-0 text-[11px] font-medium px-3 py-1 rounded-md transition-colors whitespace-nowrap ${
                   location === l.href
                     ? "text-gold bg-gold/10"
-                    : "text-muted-foreground/70 hover:text-foreground hover:bg-secondary/30"
+                    : "text-muted-foreground hover:text-foreground hover:bg-secondary/30"
                 }`}>
                   {l.label}
                 </span>
@@ -578,7 +578,7 @@ function DataFreshness() {
 
   if (!data || (!data.lastArticleAt && !data.lastSnapshotAt)) return null;
   return (
-    <p className="text-[10px] text-muted-foreground/50 text-center tabular-nums">
+    <p className="text-[10px] text-muted-foreground text-center tabular-nums">
       {data.lastArticleAt && <>Cerebro atualizado {timeAgo(data.lastArticleAt)}</>}
       {data.lastArticleAt && data.lastSnapshotAt && <span className="mx-1.5 text-border/40">·</span>}
       {data.lastSnapshotAt && <>snapshot de mercados {timeAgo(data.lastSnapshotAt)}</>}
@@ -607,7 +607,7 @@ function Footer() {
           </div>
 
           <div>
-            <h4 className="text-xs font-semibold text-muted-foreground/70 uppercase tracking-wider mb-3">Aprender</h4>
+            <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Aprender</h4>
             <div className="space-y-1.5">
               {[
                 { label: "Trilha Completa",         href: "/educacao" },
@@ -625,7 +625,7 @@ function Footer() {
           </div>
 
           <div>
-            <h4 className="text-xs font-semibold text-muted-foreground/70 uppercase tracking-wider mb-3">Mercados & Dados</h4>
+            <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Mercados & Dados</h4>
             <div className="space-y-1.5">
               {[
                 { label: "Apostas Ao Vivo", href: "/apostas"  },
@@ -640,7 +640,7 @@ function Footer() {
           </div>
 
           <div>
-            <h4 className="text-xs font-semibold text-muted-foreground/70 uppercase tracking-wider mb-3">Ferramentas</h4>
+            <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Ferramentas</h4>
             <div className="space-y-1.5">
               {[
                 { label: "Previsão IA",   href: "/previsao"    },
@@ -660,18 +660,18 @@ function Footer() {
         </div>
 
         <div className="border-t border-border/30 pt-6 space-y-2">
-          <p className="text-xs text-muted-foreground/60 text-center leading-relaxed">
+          <p className="text-xs text-muted-foreground text-center leading-relaxed">
             Caráter educacional — não constitui recomendação de investimento ou aposta.
             Dados de mercado via APIs públicas e podem apresentar atraso.
           </p>
           <div className="flex items-center justify-center gap-4 text-xs">
-            <Link href="/termos"><span className="text-muted-foreground/60 hover:text-foreground transition-colors">Termos de Uso</span></Link>
+            <Link href="/termos"><span className="text-muted-foreground hover:text-foreground transition-colors">Termos de Uso</span></Link>
             <span className="text-border/40">·</span>
-            <Link href="/privacidade"><span className="text-muted-foreground/60 hover:text-foreground transition-colors">Política de Privacidade</span></Link>
+            <Link href="/privacidade"><span className="text-muted-foreground hover:text-foreground transition-colors">Política de Privacidade</span></Link>
             <span className="text-border/40">·</span>
-            <Link href="/sobre"><span className="text-muted-foreground/60 hover:text-foreground transition-colors">Sobre</span></Link>
+            <Link href="/sobre"><span className="text-muted-foreground hover:text-foreground transition-colors">Sobre</span></Link>
           </div>
-          <p className="text-xs text-muted-foreground/40 text-center">
+          <p className="text-xs text-muted-foreground/70 text-center">
             &copy; {new Date().getFullYear()} JLB Analytics. Todos os direitos reservados.
           </p>
           <DataFreshness />

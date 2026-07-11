@@ -351,7 +351,8 @@ export default function Home() {
               </span>
             </Link>
           </div>
-          <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-none">
+          {/* Região rolável precisa ser alcançável por teclado (axe: scrollable-region-focusable) */}
+          <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-none" tabIndex={0} role="region" aria-label="Mercados em destaque — rolagem horizontal">
             {marketsLoading
               ? Array.from({ length: 5 }).map((_, i) => <MarketCardSkeleton key={i} />)
               : markets.length > 0
@@ -462,7 +463,8 @@ export default function Home() {
               const Icon = item.icon;
               return (
                 <div key={item.step} className="relative p-6 rounded-2xl border border-border/30 bg-secondary/5 text-center">
-                  <span className="absolute -top-3 left-5 text-[10px] font-bold font-mono text-muted-foreground/40 tracking-widest">
+                  {/* Numeral decorativo (marca d'água) — fora da árvore de acessibilidade */}
+                  <span aria-hidden="true" className="absolute -top-3 left-5 text-[10px] font-bold font-mono text-muted-foreground/70 tracking-widest">
                     {item.step}
                   </span>
                   <div className={`w-12 h-12 rounded-2xl ${item.bg} flex items-center justify-center mx-auto mb-4`}>

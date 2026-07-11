@@ -829,11 +829,11 @@ function DivergencesSection() {
           <Scale className="w-4 h-4 text-gold shrink-0" />
           <span className="text-sm font-semibold text-foreground">Onde a JLB discorda do mercado</span>
           <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-gold/15 border border-gold/30 text-gold">{divs.length}</span>
-          <span className="ml-auto text-[10px] text-muted-foreground/60">{collapsed ? "mostrar" : "ocultar"}</span>
+          <span className="ml-auto text-[10px] text-muted-foreground">{collapsed ? "mostrar" : "ocultar"}</span>
         </button>
         {!collapsed && (
           <div className="px-4 pb-4 space-y-2">
-            <p className="text-[11px] text-muted-foreground/70 mb-1">
+            <p className="text-[11px] text-muted-foreground mb-1">
               Mercados onde nosso fair value de IA mais difere do preço atual. Edge = nossa estimativa − preço de mercado.
             </p>
             {divs.map((d) => {
@@ -847,11 +847,11 @@ function DivergencesSection() {
                       <p className="text-[10px] text-muted-foreground mt-0.5">
                         Mercado <span className="font-mono text-foreground">{d.currentProb}%</span> ·
                         JLB <span className="font-mono text-gold">{d.aiFairValue}%</span>
-                        <span className="ml-1 opacity-60">({d.source === "kalshi" ? "Kalshi" : "Polymarket"})</span>
+                        <span className="ml-1">({d.source === "kalshi" ? "Kalshi" : "Polymarket"})</span>
                       </p>
                     </div>
                     <div className={`text-center px-2.5 py-1 rounded-lg shrink-0 ${d.edge > 0 ? "bg-positive/10 text-positive" : "bg-negative/10 text-negative"}`}>
-                      <p className="text-[9px] uppercase opacity-70">Edge</p>
+                      <p className="text-[9px] uppercase">Edge</p>
                       <p className="text-sm font-mono font-bold">{d.edge > 0 ? "+" : ""}{d.edge}pp</p>
                     </div>
                   </div>
