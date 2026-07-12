@@ -205,7 +205,7 @@ async function buildChatDynamicContext(message: string, context?: ChatContext): 
   const cerebroKey = `chat-cerebro:${message.toLowerCase().replace(/\s+/g, " ").slice(0, 100)}`;
   const cachedCerebro = getCache<string>(cerebroKey);
   const [selic, cdi, ipca, cerebro] = await Promise.all([
-    fetchBcbSerie(11), fetchBcbSerie(12), fetchBcbSerie(433),
+    fetchBcbSerie(432), fetchBcbSerie(4389), fetchBcbSerie(13522),
     cachedCerebro !== null
       ? Promise.resolve(cachedCerebro)
       : fetchCerebroContext(message).then((c) => { setCache(cerebroKey, c.context, 600); return c.context; }),
@@ -348,7 +348,7 @@ async function runMarketAnalysis(p: AnalyzeParams, onPhase: PhaseEmit = () => {}
       getNewsForMarket(title, NEWS_API_KEY, description, { maxTotal: 10 }),
       fetchCerebroContext(title, description),
       fetchMarketMomentum(marketId, source),
-      Promise.allSettled([fetchBcbSerie(11), fetchBcbSerie(433)]),
+      Promise.allSettled([fetchBcbSerie(432), fetchBcbSerie(13522)]),
     ]);
     const allArticles = newsResult.articles;
     const selicVal = ratesSettled[0].status === "fulfilled" ? ratesSettled[0].value : null;
@@ -645,7 +645,7 @@ async function runModelPredict(p: PredictParams, onPhase: PhaseEmit = () => {}):
   onPhase("context");
   // Fase 1 em paralelo: macro (BCB) + notícias + Cerebro (base curada própria).
   const [bcbSettled, predictNewsResult, cerebroSettled] = await Promise.all([
-    Promise.allSettled([fetchBcbSerie(11), fetchBcbSerie(433)]),
+    Promise.allSettled([fetchBcbSerie(432), fetchBcbSerie(13522)]),
     getNewsForMarket(question, NEWS_API_KEY, context || undefined, { maxTotal: 6, daysPrimary: 7 }),
     fetchCerebroContext(question, context || undefined).catch(() => ({ context: "", hits: [] })),
   ]);
@@ -996,7 +996,7 @@ router.get("/daily-briefing", async (req, res) => {
   const [polyResult, kalshiResult, ratesResult] = await Promise.allSettled([
     fetchJSON<PolyEvent[]>("https://gamma-api.polymarket.com/events?active=true&closed=false&limit=15&order=volume&ascending=false&with_nested_markets=true"),
     fetchJSON<KalshiEventsResponse>("https://api.elections.kalshi.com/trade-api/v2/events?limit=15&with_nested_markets=true", { "Accept": "application/json" }),
-    Promise.all([fetchBcbSerie(11), fetchBcbSerie(433), fetchBcbSerie(1)]),
+    Promise.all([fetchBcbSerie(432), fetchBcbSerie(13522), fetchBcbSerie(1)]),
   ]);
 
   const topMarkets: { source: string; title: string; prob: number }[] = [];
@@ -1109,7 +1109,7 @@ router.post("/fair-value", aiCreditsMiddleware, async (req, res) => {
   // Cerebro em paralelo com BCB — o fair value era calculado às cegas (só base
   // rate + macro); contexto real é o que separa estimativa de chute calibrado.
   const [selic, ipca, cerebroSettled] = await Promise.allSettled([
-    fetchBcbSerie(11), fetchBcbSerie(433), fetchCerebroContext(title),
+    fetchBcbSerie(432), fetchBcbSerie(13522), fetchCerebroContext(title),
   ]);
   const selicVal = selic.status === "fulfilled" ? selic.value : null;
   const ipcaVal  = ipca.status === "fulfilled"  ? ipca.value  : null;

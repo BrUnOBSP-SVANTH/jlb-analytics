@@ -13,7 +13,7 @@ router.get("/rates", async (_req, res) => {
   const cached = getCache<object>(cacheKey);
   if (cached) return res.json(cached);
   const [selic, cdi, ipca, usdBrl, eurBrl] = await Promise.all([
-    fetchBcbSerie(11), fetchBcbSerie(12), fetchBcbSerie(433), fetchBcbSerie(1), fetchBcbSerie(21619),
+    fetchBcbSerie(432), fetchBcbSerie(4389), fetchBcbSerie(13522), fetchBcbSerie(1), fetchBcbSerie(21619),
   ]);
   const data = { selic, cdi, ipca, usdBrl, eurBrl, updatedAt: new Date().toISOString() };
   setCache(cacheKey, data, 3600);
