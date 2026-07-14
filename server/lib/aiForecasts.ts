@@ -6,8 +6,41 @@ import { SUPABASE_URL, SUPABASE_KEY, supaWriteHeaders } from "./supabaseRest.ts"
 import { CATEGORY_BASE_RATES } from "./categoryRates.ts";
 import { callClaude } from "./anthropic.ts";
 import { extractJson } from "./extractJson.ts";
-import { getCache } from "./cache.ts";
+import { getCache, setCache } from "./cache.ts";
 import { log } from "./log.ts";
+
+// ── Auto-calibração: o viés medido nas resolvidas volta para o prompt ────────
+// Erro médio assinado (estimativa − resultado) é a medida padrão de viés de
+// calibração. Injetado nos prompts de fair value, fecha o loop: a IA corrige
+// na direção oposta ao erro que ELA MESMA cometeu no track record público.
+export async function getCalibrationMemo(): Promise<string> {
+  if (!SUPABASE_URL || !SUPABASE_KEY) return "";
+  const cached = getCache<string>("ai-calibration-memo");
+  if (cached !== null) return cached;
+  try {
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/ai_forecasts?resolved=eq.true&select=ai_fair_value,market_prob,outcome&order=resolved_at.desc&limit=200`,
+      { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }, signal: AbortSignal.timeout(6_000) },
+    );
+    if (!res.ok) return "";
+    const rows = await res.json() as Array<{ ai_fair_value: number; market_prob: number; outcome: boolean }>;
+    if (rows.length < 5) { setCache("ai-calibration-memo", "", 3600); return ""; }
+
+    const mean = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length;
+    const aiErr = mean(rows.map((r) => r.ai_fair_value - (r.outcome ? 100 : 0)));
+    const mktErr = mean(rows.map((r) => r.market_prob - (r.outcome ? 100 : 0)));
+    const aiBrier = mean(rows.map((r) => (r.ai_fair_value / 100 - (r.outcome ? 1 : 0)) ** 2));
+    const dir = aiErr > 2 ? "SUPERESTIMAR probabilidades" : aiErr < -2 ? "SUBESTIMAR probabilidades" : "viés direcional pequeno";
+    const sign = (v: number) => `${v >= 0 ? "+" : ""}${v.toFixed(1)}`;
+
+    const memo = `AUTO-CALIBRAÇÃO (medida no nosso track record público, ${rows.length} previsões resolvidas):
+- Erro médio assinado da nossa IA: ${sign(aiErr)}pp (tendência histórica a ${dir}); do mercado: ${sign(mktErr)}pp.
+- Brier da nossa IA: ${aiBrier.toFixed(3)} (mercado costuma ser mais calibrado).
+- Antes de responder, corrija seu palpite na direção OPOSTA ao viés medido acima.`;
+    setCache("ai-calibration-memo", memo, 3600);
+    return memo;
+  } catch { return ""; }
+}
 
 export async function logAiForecast(f: {
   marketId: string; source: string; title: string; category?: string;
@@ -165,6 +198,9 @@ export async function seedAiForecasts(maxMarkets = 18): Promise<{ started: boole
   // Roda em background — não bloqueia a resposta
   (async () => {
     let done = 0;
+    // O seed gera a MAIORIA das previsões do track record público — era o
+    // caminho sem guardrail nenhum (fonte principal do Brier ruim da IA).
+    const memo = await getCalibrationMemo();
     for (const t of queue) {
       try {
         const catKey = t.category.toLowerCase().replace(/[^a-z]/g, "") || "other";
@@ -172,12 +208,19 @@ export async function seedAiForecasts(maxMarkets = 18): Promise<{ started: boole
         const prompt = `Mercado preditivo: "${t.title}"
 Preço atual do mercado: ${t.marketProb}% SIM
 Categoria: ${t.category} (base rate histórica ~${baseRate}%)
+${memo ? `\n${memo}\n` : ""}
+REGRAS DE CALIBRAÇÃO (nosso Brier é medido publicamente):
+- O preço de um mercado líquido já agrega a informação disponível — ele é sua âncora principal, não a base rate.
+- Desvie do preço APENAS se souber de fato concreto que o justifique; sem isso, fique a ±3pp do mercado.
+- NUNCA desvie mais de 15pp do preço.
 
-Dê seu fair value independente — sua melhor estimativa honesta da probabilidade real de SIM (5-95). Considere a base rate como âncora e ajuste pelo que sabe do tema. Você PODE discordar do mercado.
+Dê seu fair value independente — sua melhor estimativa honesta da probabilidade real de SIM (5-95).
 JSON apenas: {"fairValue": <inteiro 5-95>, "confidence": "baixa|media|alta"}`;
         const raw = await callClaude({ model: "claude-haiku-4-5-20251001", maxTokens: 80, messages: [{ role: "user", content: prompt }], timeoutMs: 12_000 });
         const parsed = extractJson(raw) as { fairValue?: number; confidence?: string };
-        const fv = Math.max(5, Math.min(95, Math.round(Number(parsed.fairValue))));
+        // Clamp duplo no código (como no endpoint de fair value): 5-95 E ±15pp do mercado
+        const rawFv = Math.round(Number(parsed.fairValue));
+        const fv = Math.max(5, Math.min(95, Math.max(t.marketProb - 15, Math.min(t.marketProb + 15, rawFv))));
         if (!isNaN(fv)) {
           const conf = (parsed.confidence === "alta" || parsed.confidence === "baixa") ? parsed.confidence : "media";
           await logAiForecast({ marketId: t.marketId, source: t.source, title: t.title, category: t.category, marketProb: t.marketProb, aiFairValue: fv, confidence: conf });

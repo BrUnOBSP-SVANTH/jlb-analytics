@@ -11,7 +11,7 @@ import { getNewsForMarket } from "../lib/news.ts";
 import { SUPABASE_URL, SUPABASE_KEY, supaWriteHeaders } from "../lib/supabaseRest.ts";
 import { CATEGORY_BASE_RATES } from "../lib/categoryRates.ts";
 import { fetchCerebroContext, fetchMarketMomentum } from "../lib/cerebro.ts";
-import { logAiForecast, seedAiForecasts, computeDivergences, getTrackRecordData, getClosingSoon, parsePolyPrices } from "../lib/aiForecasts.ts";
+import { logAiForecast, seedAiForecasts, computeDivergences, getTrackRecordData, getClosingSoon, parsePolyPrices, getCalibrationMemo } from "../lib/aiForecasts.ts";
 import { log } from "../lib/log.ts";
 
 const router = Router();
@@ -200,7 +200,29 @@ function sanitizeHistory(history: unknown): ClaudeMessage[] {
     .map((m) => ({ role: m.role, content: m.content.slice(0, 4_000) }));
 }
 
-/** Contexto dinâmico do system: data, BCB (cache 1h) e Cerebro (cache 10min) em PARALELO. */
+/** Top mercados ao vivo (do cache do servidor) — o Analista JLB responde sobre
+ *  preços reais em vez de dizer que não tem acesso. Cache 3 min. */
+function buildLiveMarketsBlock(): string {
+  const cached = getCache<string>("chat-live-markets");
+  if (cached !== null) return cached;
+  const poly = getCache<Array<{ question: string; outcomePrices?: string; volume?: number }>>("polymarket:markets:active") ?? [];
+  const kalshi = getCache<Array<{ title: string; yesProb: number; volume?: number }>>("kalshi:markets") ?? [];
+  const items: { t: string; p: number; v: number; src: string }[] = [];
+  for (const m of poly) {
+    const p = parsePolyPrices(m.outcomePrices)[0];
+    if (m.question && p !== undefined) items.push({ t: m.question, p: Math.round(p * 100), v: m.volume ?? 0, src: "Polymarket" });
+  }
+  for (const m of kalshi) {
+    if (m.title) items.push({ t: m.title, p: Math.round(m.yesProb > 1 ? m.yesProb : m.yesProb * 100), v: m.volume ?? 0, src: "Kalshi" });
+  }
+  const top = items.sort((a, b) => b.v - a.v).slice(0, 10);
+  if (top.length === 0) return ""; // cache frio de mercados — NÃO cachear o vazio
+  const block = `MERCADOS PREDITIVOS AO VIVO (probabilidade de SIM agora — use quando a pergunta tocar nesses temas; são os preços reais):\n${top.map((i) => `- [${i.src}] "${i.t}" — ${i.p}%`).join("\n")}`;
+  setCache("chat-live-markets", block, 180);
+  return block;
+}
+
+/** Contexto dinâmico do system: data, BCB (cache 1h), Cerebro (cache 10min) e mercados ao vivo em PARALELO. */
 async function buildChatDynamicContext(message: string, context?: ChatContext): Promise<string> {
   const cerebroKey = `chat-cerebro:${message.toLowerCase().replace(/\s+/g, " ").slice(0, 100)}`;
   const cachedCerebro = getCache<string>(cerebroKey);
@@ -218,6 +240,8 @@ async function buildChatDynamicContext(message: string, context?: ChatContext): 
   ];
   if (context?.levelContext) parts.push(`CONTEXTO DO USUÁRIO:\n${String(context.levelContext).slice(0, 800)}`);
   if (context?.portfolio) parts.push(`CARTEIRA SIMULADA DO USUÁRIO:\n${String(context.portfolio).slice(0, 800)}`);
+  const liveMarkets = buildLiveMarketsBlock();
+  if (liveMarkets) parts.push(liveMarkets);
   parts.push(cerebro
     ? `BASE DE CONHECIMENTO CEREBRO (material curado; cite como [C1], [C2]…):\n${cerebro}`
     : "BASE DE CONHECIMENTO CEREBRO: nenhum material relevante para esta pergunta. NÃO invente notícias, números de mercado ou eventos recentes — responda com o conhecimento conceitual e, se o dado recente fizer falta, diga isso ao usuário.");
@@ -1108,12 +1132,13 @@ router.post("/fair-value", aiCreditsMiddleware, async (req, res) => {
 
   // Cerebro em paralelo com BCB — o fair value era calculado às cegas (só base
   // rate + macro); contexto real é o que separa estimativa de chute calibrado.
-  const [selic, ipca, cerebroSettled] = await Promise.allSettled([
-    fetchBcbSerie(432), fetchBcbSerie(13522), fetchCerebroContext(title),
+  const [selic, ipca, cerebroSettled, memoSettled] = await Promise.allSettled([
+    fetchBcbSerie(432), fetchBcbSerie(13522), fetchCerebroContext(title), getCalibrationMemo(),
   ]);
   const selicVal = selic.status === "fulfilled" ? selic.value : null;
   const ipcaVal  = ipca.status === "fulfilled"  ? ipca.value  : null;
   const cerebroCtx = cerebroSettled.status === "fulfilled" ? cerebroSettled.value.context : "";
+  const calibMemo = memoSettled.status === "fulfilled" ? memoSettled.value : "";
 
   // Sinalização de momentum: variação recente sugere tendência
   let momentumAdjust = 0;
@@ -1157,7 +1182,7 @@ DATA: ${new Date().toLocaleDateString("pt-BR")}
 
 CONTEXTO DO CEREBRO (base de conhecimento curada própria):
 ${cerebroCtx || "— sem artigos relacionados encontrados —"}
-
+${calibMemo ? `\n${calibMemo}\n` : ""}
 REGRAS DE CALIBRAÇÃO (críticas — nosso Brier Score é medido publicamente):
 - O preço de um mercado líquido já agrega a informação disponível. Desvie dele APENAS com evidência concreta no contexto acima, e proporcional à força da evidência.
 - Sem evidência relevante: fique dentro de ±3pp do mercado e use signal "neutral".

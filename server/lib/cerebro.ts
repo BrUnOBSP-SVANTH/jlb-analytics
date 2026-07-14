@@ -3,6 +3,9 @@
 // calcular o momentum do mercado. Extraído de routes/ai.ts.
 import { SUPABASE_URL, SUPABASE_KEY } from "./supabaseRest.ts";
 import { translateToPt } from "./translate.ts";
+import { getCache, setCache } from "./cache.ts";
+import { callClaude } from "./anthropic.ts";
+import { extractJson } from "./extractJson.ts";
 
 interface CerebroHit { title: string; summary: string; source: string; kind: "síntese" | "artigo" }
 
@@ -69,6 +72,30 @@ async function queryCerebro(kw: string, op: "plfts" | "wfts" = "plfts"): Promise
   return hits;
 }
 
+/** Último recurso do RAG: Haiku expande a consulta em termos PT correlatos
+ *  (entidades, sinônimos). Só roda em miss total; cache 24h por consulta. */
+async function expandQueryTerms(text: string): Promise<string[]> {
+  const key = `rag-expand:${text.toLowerCase().replace(/\s+/g, " ").slice(0, 80)}`;
+  const cached = getCache<string[]>(key);
+  if (cached !== null) return cached;
+  if (!process.env.ANTHROPIC_API_KEY) return [];
+  try {
+    const raw = await callClaude({
+      model: "claude-haiku-4-5-20251001",
+      maxTokens: 120,
+      timeoutMs: 8_000,
+      messages: [{
+        role: "user",
+        content: `Tema: "${text.slice(0, 200)}"\nListe 4 termos de busca em português (entidades envolvidas, sinônimos, temas correlatos) para achar notícias sobre isso num índice full-text.\nJSON apenas: {"termos":["termo1","termo2","termo3","termo4"]}`,
+      }],
+    });
+    const parsed = extractJson(raw) as { termos?: string[] };
+    const termos = (parsed.termos ?? []).filter((t) => typeof t === "string" && t.length >= 4).slice(0, 4);
+    setCache(key, termos, 86_400);
+    return termos;
+  } catch { return []; }
+}
+
 export async function fetchCerebroContext(title: string, description?: string): Promise<{ context: string; hits: CerebroHit[] }> {
   if (!SUPABASE_URL || !SUPABASE_KEY) return { context: "", hits: [] };
   const original = `${title} ${description ?? ""}`.trim();
@@ -102,6 +129,14 @@ export async function fetchCerebroContext(title: string, description?: string): 
       const strongest = [...words].sort((a, b) => b.length - a.length)[0];
       hits = await queryCerebro(strongest);
       usedFallback = true;
+    }
+    // Miss total mesmo após tradução e OR: expande a consulta com a IA
+    if (hits.length === 0) {
+      const expanded = await expandQueryTerms(searchText);
+      if (expanded.length > 0) {
+        hits = await queryCerebro(expanded.join(" or "), "wfts");
+        usedFallback = true;
+      }
     }
 
     if (hits.length === 0) return { context: "", hits: [] };
