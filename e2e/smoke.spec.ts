@@ -56,3 +56,9 @@ test("níveis educacionais montam", async ({ page }) => {
   await expect(page.getByText("Fundamentos").first()).toBeVisible();
   await expect(page.getByText(CRASH_TEXT)).toHaveCount(0);
 });
+
+test("duelos: gate de login renderiza para anônimo", async ({ page }) => {
+  await page.goto("/duelos");
+  await expect(page.getByText("Entre para duelar")).toBeVisible();
+  await expect(page.getByText(CRASH_TEXT)).toHaveCount(0);
+});

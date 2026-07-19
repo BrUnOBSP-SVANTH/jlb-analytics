@@ -30,6 +30,7 @@ import stripeRouter   from "./routes/stripe.ts";
 import pythonRouter   from "./routes/python.ts";
 import manifoldRouter from "./routes/manifold.ts";
 import snapshotsRouter from "./routes/snapshots.ts";
+import duelsRouter from "./routes/duels.ts";
 import levelsRouter   from "./routes/levels.ts";
 import analyticsRouter from "./routes/analytics.ts";
 import pushRouter from "./routes/push.ts";
@@ -200,6 +201,7 @@ async function startServer() {
   app.use("/api/push",        pushRouter);       // Web Push: subscribe/unsubscribe
   app.use("/api/manifold",    manifoldRouter);
   app.use("/api/snapshots",   snapshotsRouter);  // /api/snapshots/history/:marketId
+  app.use("/api/duels",       duelsRouter);      // Duelos de Previsão Fase 1 (pontos) — DUELOS.md
 
   // ── Health check ───────────────────────────────────────────────────────────
   app.get("/api/health", (_req, res) => {

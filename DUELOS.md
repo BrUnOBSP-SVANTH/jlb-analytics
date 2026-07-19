@@ -119,11 +119,11 @@ Consequências diretas para o desenho:
 ## 7. Fases propostas
 
 - **Fase 0 — já feita**: motor de previsões, Brier, resolução, leaderboard.
-- **Fase 1 — Duelos por PONTOS (beta)**: moeda virtual do site (pts já
-  existem), matchmaking simples, página `/duelos`, selagem de previsões,
-  histórico H2H no perfil. **Zero risco regulatório**, valida o engajamento e
-  gera dados de retenção para decidir a Fase 3. Esforço estimado: pequeno —
-  reusa ~80% do que existe.
+- **Fase 1 — Duelos por PONTOS (beta)** ✅ **LANÇADA (2026-07-19)**: página
+  `/duelos` (lobby, criação com baralho de 2-5 mercados, aceite), previsões
+  seladas server-side (tabela `duels` sem policies públicas — migration 014),
+  resolução por preço extremo (mesmo critério do track record da IA), menor
+  Brier vence, +25 pts ao vencedor. **Zero risco regulatório.**
 - **Fase 2 — Torneios com prêmio garantido** (patrocinado/fixo semanal, ex.:
   R$500 garantidos ao melhor Brier da rodada): aproxima-se do formato do
   carve-out, receita via inscrição + assinatura premium para multientrada.

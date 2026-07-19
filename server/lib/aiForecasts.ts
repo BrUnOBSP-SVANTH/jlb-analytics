@@ -89,7 +89,7 @@ export function getLiveMarketPrices(): Map<string, number> {
  * Se a escala/formato divergir, o pior caso é mapa vazio (0 resoluções) — nunca
  * uma resolução falsa.
  */
-async function getSnapshotExtremes(): Promise<Map<string, boolean>> {
+export async function getSnapshotExtremes(): Promise<Map<string, boolean>> {
   const map = new Map<string, boolean>();
   if (!SUPABASE_URL || !SUPABASE_KEY) return map;
   try {

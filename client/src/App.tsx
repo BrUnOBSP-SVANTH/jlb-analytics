@@ -38,6 +38,7 @@ const Cerebro       = lazy(() => import("./pages/Cerebro"));
 const Portfolio     = lazy(() => import("./pages/Portfolio"));
 const MarketDetail  = lazy(() => import("./pages/MarketDetail"));
 const Leaderboard   = lazy(() => import("./pages/Leaderboard"));
+const Duelos        = lazy(() => import("./pages/Duelos"));
 const Termos        = lazy(() => import("./pages/Termos"));
 const Privacidade   = lazy(() => import("./pages/Privacidade"));
 
@@ -104,6 +105,7 @@ function Router() {
               <Route path="/dashboard"    component={Dashboard} />
               <Route path="/perfil"       component={Perfil} />
               <Route path="/leaderboard"  component={Leaderboard} />
+              <Route path="/duelos"       component={Duelos} />
               <Route path="/previsao"     component={Previsao} />
               <Route path="/briefing"     component={Briefing} />
               <Route path="/cerebro"      component={Cerebro} />

@@ -23,7 +23,8 @@ export type ActivityType =
   | "calculator_used"
   | "market_analyzed"
   | "level_visited"
-  | "first_login";
+  | "first_login"
+  | "duel_won";
 
 export interface ActivityEntry {
   id: string;
@@ -51,6 +52,7 @@ const POINTS: Record<ActivityType, number> = {
   market_analyzed: 3,
   level_visited: 10,
   first_login: 10,
+  duel_won: 25, // vitória em duelo de previsão (one-time por duelo, ver DUELOS.md)
 };
 
 const DAILY_LIMITS: Partial<Record<ActivityType, number>> = {

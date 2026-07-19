@@ -53,6 +53,7 @@ const ACTIVITY_META: Record<ActivityType, { label: string; icon: typeof Zap; col
   market_analyzed:     { label: "Mercado analisado com IA", icon: Brain,     color: "text-purple-400" },
   level_visited:       { label: "Nível visitado",         icon: BookOpen,    color: "text-primary" },
   first_login:         { label: "Primeiro acesso",        icon: Star,        color: "text-gold" },
+  duel_won:            { label: "Duelo vencido",          icon: Star,        color: "text-positive" },
 };
 
 const LEVELS = [
