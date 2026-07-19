@@ -223,6 +223,7 @@ async function checkSupabase(env) {
     ["market_snapshots", "", "snapshots de mercado (backtester)", 50],
     ["predictions", "", "previsões de usuários", 0],
     ["ai_forecasts", "", "previsões da IA registradas", 0],
+    ["duels", "", "duelos de previsão (Fase 1)", 0],
   ];
   for (const [table, filter, label, min] of checks) {
     const n = await count(table, filter);

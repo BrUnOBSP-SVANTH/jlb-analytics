@@ -11,7 +11,7 @@ import { log } from "../lib/log.ts";
 
 const router = Router();
 
-interface DuelMarket { marketId: string; source: string; title: string; probAtCreate?: number }
+interface DuelMarket { marketId: string; source: string; title: string; probAtCreate?: number; endDate?: string }
 interface DuelPred { marketId: string; prob: number }
 
 interface DuelRow {
@@ -134,7 +134,7 @@ router.post("/", async (req, res) => {
         creator_id: userId,
         creator_name: String(displayName ?? "Desafiante").slice(0, 40) || "Desafiante",
         stake_pts: stake,
-        markets: markets.map((m) => ({ marketId: m.marketId, source: m.source, title: String(m.title).slice(0, 200), probAtCreate: m.probAtCreate })),
+        markets: markets.map((m) => ({ marketId: m.marketId, source: m.source, title: String(m.title).slice(0, 200), probAtCreate: m.probAtCreate, endDate: m.endDate })),
         creator_preds: preds,
       }),
       signal: AbortSignal.timeout(8_000),
@@ -208,10 +208,88 @@ router.post("/:id/cancel", async (req, res) => {
   }
 });
 
-// ── Resolver (qualquer participante dispara; idempotente) ───────────────────
+// ── Núcleo de resolução (rota + cron compartilham) ──────────────────────────
 // Uma perna resolve quando o mercado bate preço extremo (≥97 SIM / ≤3 NÃO),
 // ao vivo ou nos snapshots — o MESMO critério do track record da IA.
 // O duelo finaliza quando TODAS as pernas resolvem; menor Brier vence.
+
+function computeOutcomes(markets: DuelMarket[], priceMap: Map<string, number>, extremeMap: Map<string, boolean>): Map<string, boolean> {
+  const outcomes = new Map<string, boolean>();
+  for (const m of markets) {
+    const live = priceMap.get(m.marketId);
+    if (live !== undefined) {
+      if (live >= 97) { outcomes.set(m.marketId, true); continue; }
+      if (live <= 3) { outcomes.set(m.marketId, false); continue; }
+    }
+    const rawId = m.marketId.replace(/^(poly-|kalshi-)/, "");
+    const hist = extremeMap.get(`${m.source}:${rawId}`);
+    if (hist !== undefined) outcomes.set(m.marketId, hist);
+  }
+  return outcomes;
+}
+
+function brierOf(preds: DuelPred[], outcomes: Map<string, boolean>): number {
+  const errs = preds.map((p) => (p.prob / 100 - (outcomes.get(p.marketId) ? 1 : 0)) ** 2);
+  return errs.reduce((a, b) => a + b, 0) / errs.length;
+}
+
+/** Finaliza um duelo completo. `status=eq.active` na escrita = idempotente sob corrida. */
+async function finalizeDuel(duel: DuelRow, outcomes: Map<string, boolean>): Promise<DuelRow | null> {
+  const cb = brierOf(duel.creator_preds, outcomes);
+  const ob = brierOf(duel.opponent_preds!, outcomes);
+  // Menor Brier vence; empate exato → ninguém ganha (winner_id null)
+  const winnerId = cb < ob ? duel.creator_id : ob < cb ? duel.opponent_id : null;
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/duels?id=eq.${duel.id}&status=eq.active`, {
+    method: "PATCH",
+    headers: { ...supaWriteHeaders(), Prefer: "return=representation" },
+    body: JSON.stringify({
+      status: "resolved",
+      creator_brier: Number(cb.toFixed(4)),
+      opponent_brier: Number(ob.toFixed(4)),
+      resolved_legs: duel.markets.length,
+      winner_id: winnerId,
+      resolved_at: new Date().toISOString(),
+    }),
+    signal: AbortSignal.timeout(8_000),
+  });
+  if (!r.ok) return null;
+  const rows = await r.json() as DuelRow[];
+  return rows[0] ?? null;
+}
+
+/** Varredura de cron: resolve duelos ativos sem depender de clique de usuário. */
+export async function resolveActiveDuels(): Promise<{ resolved: number }> {
+  if (!SUPABASE_URL || !SUPABASE_KEY) return { resolved: 0 };
+  try {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/duels?status=eq.active&select=*&limit=100`, {
+      headers: headers(), signal: AbortSignal.timeout(8_000),
+    });
+    if (!r.ok) return { resolved: 0 };
+    const rows = await r.json() as DuelRow[];
+    if (rows.length === 0) return { resolved: 0 };
+
+    const priceMap = getLiveMarketPrices();
+    const extremeMap = await getSnapshotExtremes();
+    let resolved = 0;
+    for (const duel of rows) {
+      if (!duel.opponent_preds) continue;
+      const outcomes = computeOutcomes(duel.markets, priceMap, extremeMap);
+      if (outcomes.size === duel.markets.length) {
+        if (await finalizeDuel(duel, outcomes)) resolved++;
+      } else if ((duel.resolved_legs ?? 0) !== outcomes.size) {
+        await fetch(`${SUPABASE_URL}/rest/v1/duels?id=eq.${duel.id}`, {
+          method: "PATCH", headers: supaWriteHeaders(),
+          body: JSON.stringify({ resolved_legs: outcomes.size }),
+          signal: AbortSignal.timeout(6_000),
+        }).catch(() => {});
+      }
+    }
+    if (resolved > 0) log.info(`[duels] ${resolved} duelo(s) resolvido(s) automaticamente`);
+    return { resolved };
+  } catch { return { resolved: 0 }; }
+}
+
+// ── Resolver (qualquer participante dispara; idempotente) ───────────────────
 router.post("/:id/resolve", async (req, res) => {
   if (!ready(res)) return;
   const userId = await verifyUserId(String(req.headers.authorization ?? ""));
@@ -228,17 +306,7 @@ router.post("/:id/resolve", async (req, res) => {
 
     const priceMap = getLiveMarketPrices();
     const extremeMap = await getSnapshotExtremes();
-    const outcomes = new Map<string, boolean>();
-    for (const m of duel.markets) {
-      const live = priceMap.get(m.marketId);
-      if (live !== undefined) {
-        if (live >= 97) { outcomes.set(m.marketId, true); continue; }
-        if (live <= 3) { outcomes.set(m.marketId, false); continue; }
-      }
-      const rawId = m.marketId.replace(/^(poly-|kalshi-)/, "");
-      const hist = extremeMap.get(`${m.source}:${rawId}`);
-      if (hist !== undefined) outcomes.set(m.marketId, hist);
-    }
+    const outcomes = computeOutcomes(duel.markets, priceMap, extremeMap);
 
     if (outcomes.size < duel.markets.length) {
       // Parcial: registra progresso, mantém ativo
@@ -250,33 +318,8 @@ router.post("/:id/resolve", async (req, res) => {
       return res.json({ pending: true, resolvedLegs: outcomes.size, totalLegs: duel.markets.length });
     }
 
-    const brier = (preds: DuelPred[]) => {
-      const errs = preds.map((p) => {
-        const o = outcomes.get(p.marketId)! ? 1 : 0;
-        return (p.prob / 100 - o) ** 2;
-      });
-      return errs.reduce((a, b) => a + b, 0) / errs.length;
-    };
-    const cb = brier(duel.creator_preds);
-    const ob = brier(duel.opponent_preds);
-    // Menor Brier vence; empate exato → ninguém ganha (winner_id null)
-    const winnerId = cb < ob ? duel.creator_id : ob < cb ? duel.opponent_id : null;
-
-    const r = await fetch(`${SUPABASE_URL}/rest/v1/duels?id=eq.${id}&status=eq.active`, {
-      method: "PATCH",
-      headers: { ...supaWriteHeaders(), Prefer: "return=representation" },
-      body: JSON.stringify({
-        status: "resolved",
-        creator_brier: Number(cb.toFixed(4)),
-        opponent_brier: Number(ob.toFixed(4)),
-        resolved_legs: duel.markets.length,
-        winner_id: winnerId,
-        resolved_at: new Date().toISOString(),
-      }),
-      signal: AbortSignal.timeout(8_000),
-    });
-    const rows = await r.json() as DuelRow[];
-    res.json({ duel: sanitize(rows[0] ?? duel, userId) });
+    const done = await finalizeDuel(duel, outcomes);
+    res.json({ duel: sanitize(done ?? duel, userId) });
   } catch (err) {
     log.error("[duels/resolve] error:", err);
     res.status(500).json({ error: "internal" });

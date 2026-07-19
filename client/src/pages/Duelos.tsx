@@ -19,7 +19,7 @@ import {
 
 // ── Tipos ──────────────────────────────────────────────────────────────────
 
-interface DuelMarket { marketId: string; source: string; title: string; probAtCreate?: number }
+interface DuelMarket { marketId: string; source: string; title: string; probAtCreate?: number; endDate?: string }
 interface DuelPred { marketId: string; prob: number }
 
 interface OpenDuel { id: string; creatorName: string; stakePts: number; markets: DuelMarket[]; createdAt: string }
@@ -33,7 +33,7 @@ interface MyDuel {
   resolvedLegs: number | null; winnerId: string | null; won: boolean;
 }
 
-interface PolyApiMarket { id: string; question: string; outcomePrices?: string; volume?: number }
+interface PolyApiMarket { id: string; question: string; outcomePrices?: string; volume?: number; endDate?: string }
 
 type Tab = "lobby" | "meus" | "como";
 
@@ -51,6 +51,13 @@ function timeAgo(iso: string): string {
   if (h < 1) return "agora há pouco";
   if (h < 24) return `${h}h atrás`;
   return `${Math.floor(h / 24)}d atrás`;
+}
+
+/** Dias até o mercado encerrar — null quando sem data ou já passou. */
+function daysToEnd(endDate?: string): number | null {
+  if (!endDate) return null;
+  const d = Math.ceil((new Date(endDate).getTime() - Date.now()) / 86_400_000);
+  return Number.isFinite(d) && d >= 0 ? d : null;
 }
 
 // ── Sliders de previsão para um baralho ────────────────────────────────────
@@ -132,10 +139,16 @@ export default function Duelos() {
     if (pickable.length === 0) {
       try {
         const raw = await getMarkets<PolyApiMarket>("polymarket");
-        setPickable(raw.slice(0, 20).map((m) => ({
+        // Duelo bom resolve rápido: mercados que encerram em ≤30d vêm primeiro
+        // (ordenados pelo prazo); os demais mantêm a ordem de volume.
+        const mapped = raw.slice(0, 30).map((m) => ({
           marketId: `poly-${m.id}`, source: "polymarket",
-          title: m.question, probAtCreate: parseProb(m.outcomePrices),
-        })));
+          title: m.question, probAtCreate: parseProb(m.outcomePrices), endDate: m.endDate,
+        }));
+        const soon = mapped.filter((m) => { const d = daysToEnd(m.endDate); return d !== null && d <= 30; })
+          .sort((a, b) => (daysToEnd(a.endDate) ?? 99) - (daysToEnd(b.endDate) ?? 99));
+        const rest = mapped.filter((m) => !soon.includes(m));
+        setPickable([...soon, ...rest].slice(0, 20));
       } catch { toast.error("Não foi possível carregar os mercados agora."); }
     }
   }
@@ -318,6 +331,11 @@ export default function Duelos() {
                           }`}>
                           <span className="font-mono text-[10px] text-neon-blue mr-1.5">{m.probAtCreate}%</span>
                           {m.title}
+                          {(() => { const d = daysToEnd(m.endDate); return d !== null && d <= 30 ? (
+                            <span className={`ml-1.5 text-[9px] font-semibold ${d <= 7 ? "text-gold" : "text-muted-foreground"}`}>
+                              · encerra em {d === 0 ? "horas" : `${d}d`}
+                            </span>
+                          ) : null; })()}
                         </button>
                       );
                     })}

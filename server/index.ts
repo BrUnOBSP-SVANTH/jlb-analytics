@@ -30,7 +30,7 @@ import stripeRouter   from "./routes/stripe.ts";
 import pythonRouter   from "./routes/python.ts";
 import manifoldRouter from "./routes/manifold.ts";
 import snapshotsRouter from "./routes/snapshots.ts";
-import duelsRouter from "./routes/duels.ts";
+import duelsRouter, { resolveActiveDuels } from "./routes/duels.ts";
 import levelsRouter   from "./routes/levels.ts";
 import analyticsRouter from "./routes/analytics.ts";
 import pushRouter from "./routes/push.ts";
@@ -510,10 +510,10 @@ async function startServer() {
     setInterval(() => { void runMarketSnapshots(); }, SNAPSHOT_INTERVAL_MS);
     log.info("   Snapshots: coleta diária de mercados ✅");
 
-    // Scoring das previsões da IA: resolve contra preços extremos (track record)
-    setTimeout(() => { void scoreAiForecasts(); }, 3 * 60_000);
-    setInterval(() => { void scoreAiForecasts(); }, 6 * 60 * 60 * 1000); // a cada 6h
-    log.info("   AI track record: scoring automático a cada 6h ✅");
+    // Scoring das previsões da IA + resolução de duelos: mesmos preços extremos
+    setTimeout(() => { void scoreAiForecasts(); void resolveActiveDuels(); }, 3 * 60_000);
+    setInterval(() => { void scoreAiForecasts(); void resolveActiveDuels(); }, 6 * 60 * 60 * 1000); // a cada 6h
+    log.info("   AI track record + duelos: scoring automático a cada 6h ✅");
 
     // Seed de previsões da IA: 4min após o boot (mercados já em cache), depois 1×/dia
     setTimeout(() => { void seedAiForecasts(); }, 4 * 60_000);
