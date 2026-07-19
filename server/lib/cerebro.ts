@@ -49,6 +49,32 @@ export function looksEnglish(text: string): boolean {
   return hitCount >= 2 || hitCount / words.length > 0.2;
 }
 
+const normText = (s: string) => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+
+/** Re-rank barato sem LLM: ordena por nº de termos da consulta presentes no
+ *  título+resumo (sínteses ganham meio ponto — são mais densas). É o que
+ *  salva a relevância do fallback OR, que casa por UM termo só. Exportada p/ teste. */
+export function rankHits<T extends { title: string; summary: string; kind?: string }>(hits: T[], terms: string[]): T[] {
+  const nterms = Array.from(new Set(terms.map(normText).filter((t) => t.length >= 4)));
+  if (nterms.length === 0) return hits;
+  const score = (h: T) => {
+    const text = normText(`${h.title} ${h.summary}`);
+    return nterms.reduce((acc, t) => acc + (text.includes(t) ? 1 : 0), 0) + (h.kind === "síntese" ? 0.5 : 0);
+  };
+  return hits.map((h) => ({ h, s: score(h) })).sort((a, b) => b.s - a.s).map(({ h }) => h);
+}
+
+/** Remove duplicatas por título normalizado (mesmo artigo sindicalizado em fontes diferentes). Exportada p/ teste. */
+export function dedupeByTitle<T extends { title: string }>(hits: T[]): T[] {
+  const seen = new Set<string>();
+  return hits.filter((h) => {
+    const key = normText(h.title).slice(0, 80);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
 /** Busca full-text PT: sínteses (maior valor, mais recentes) primeiro, depois artigos recentes.
  *  op: plfts = AND de todos os termos (precisão) · wfts = websearch, aceita "or" (recall) */
 async function queryCerebro(kw: string, op: "plfts" | "wfts" = "plfts"): Promise<CerebroHit[]> {
@@ -56,8 +82,8 @@ async function queryCerebro(kw: string, op: "plfts" | "wfts" = "plfts"): Promise
   const enc = encodeURIComponent(kw);
 
   const [synthRes, artRes] = await Promise.allSettled([
-    fetch(`${SUPABASE_URL}/rest/v1/cerebro_analyses?fts=${op}(portuguese).${enc}&status=eq.active&select=title,content&order=wiki_date.desc&limit=2`, { headers, signal: AbortSignal.timeout(6_000) }),
-    fetch(`${SUPABASE_URL}/rest/v1/cerebro_articles?fts=${op}(portuguese).${enc}&status=eq.active&select=title,summary,source&order=published_at.desc&limit=4`, { headers, signal: AbortSignal.timeout(6_000) }),
+    fetch(`${SUPABASE_URL}/rest/v1/cerebro_analyses?fts=${op}(portuguese).${enc}&status=eq.active&select=title,content&order=wiki_date.desc&limit=3`, { headers, signal: AbortSignal.timeout(6_000) }),
+    fetch(`${SUPABASE_URL}/rest/v1/cerebro_articles?fts=${op}(portuguese).${enc}&status=eq.active&select=title,summary,source&order=published_at.desc&limit=6`, { headers, signal: AbortSignal.timeout(6_000) }),
   ]);
 
   const hits: CerebroHit[] = [];
@@ -140,6 +166,14 @@ export async function fetchCerebroContext(title: string, description?: string): 
     }
 
     if (hits.length === 0) return { context: "", hits: [] };
+    // Dedupe + re-rank por sobreposição de termos DENTRO de cada grupo:
+    // sínteses continuam na frente (são o ancoradouro de qualidade — misturar
+    // deixava artigo-ruído com 2 termos genéricos passar na frente delas).
+    const deduped = dedupeByTitle(hits);
+    hits = [
+      ...rankHits(deduped.filter((h) => h.kind === "síntese"), words),
+      ...rankHits(deduped.filter((h) => h.kind === "artigo"), words),
+    ].slice(0, 6);
     // Match de fallback é mais fraco — avisa o modelo para filtrar por relevância
     const note = usedFallback
       ? "(correspondência parcial por palavra-chave — use APENAS itens diretamente relevantes ao tema; ignore o resto)\n\n"

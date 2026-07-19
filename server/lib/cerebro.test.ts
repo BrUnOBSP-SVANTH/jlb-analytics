@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { topKeywords, looksEnglish } from "./cerebro.ts";
+import { topKeywords, looksEnglish, rankHits, dedupeByTitle } from "./cerebro.ts";
 
 describe("topKeywords", () => {
   it("prioriza substantivos próprios (entidades do mercado)", () => {
@@ -38,5 +38,43 @@ describe("looksEnglish", () => {
 
   it("texto curto demais não dispara", () => {
     expect(looksEnglish("Fed decision")).toBe(false);
+  });
+});
+
+describe("rankHits", () => {
+  const hits = [
+    { title: "IPO da SpaceX movimenta Wall Street", summary: "ações de tecnologia" },
+    { title: "Selic e inflação pressionam mercados", summary: "Copom avalia juros e inflação no Brasil" },
+    { title: "Eleição americana agita apostas", summary: "Trump lidera pesquisas" },
+  ];
+
+  it("coloca o hit com mais termos da consulta primeiro (ignorando acentos)", () => {
+    const ranked = rankHits(hits, ["Selic", "inflacao", "juros"]);
+    expect(ranked[0].title).toContain("Selic");
+  });
+
+  it("síntese ganha desempate sobre artigo com mesma sobreposição", () => {
+    const mixed = [
+      { title: "Juros em alta", summary: "", kind: "artigo" },
+      { title: "Juros em alta na semana", summary: "", kind: "síntese" },
+    ];
+    const ranked = rankHits(mixed, ["juros"]);
+    expect(ranked[0].kind).toBe("síntese");
+  });
+
+  it("sem termos válidos, preserva a ordem original", () => {
+    const ranked = rankHits(hits, ["ab", "de"]);
+    expect(ranked.map((h) => h.title)).toEqual(hits.map((h) => h.title));
+  });
+});
+
+describe("dedupeByTitle", () => {
+  it("remove o mesmo artigo sindicalizado com variação de caixa/acentos", () => {
+    const hits = [
+      { title: "Petróleo sobe com tensão no Golfo" },
+      { title: "PETRÓLEO SOBE COM TENSÃO NO GOLFO" },
+      { title: "Outro assunto qualquer" },
+    ];
+    expect(dedupeByTitle(hits)).toHaveLength(2);
   });
 });
