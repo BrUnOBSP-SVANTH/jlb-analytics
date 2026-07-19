@@ -103,11 +103,14 @@ export default function Duelos() {
 
   // criação
   const [creating, setCreating] = useState(false);
-  const [pickable, setPickable] = useState<DuelMarket[]>([]);
+  const [duelMode, setDuelMode] = useState<"lobby" | "ia">("lobby");
+  const [pickLobby, setPickLobby] = useState<DuelMarket[]>([]);
+  const [pickIA, setPickIA] = useState<DuelMarket[]>([]);
   const [picked, setPicked] = useState<DuelMarket[]>([]);
   const [preds, setPreds] = useState<Record<string, number>>({});
   const [stake, setStake] = useState(50);
   const [submitting, setSubmitting] = useState(false);
+  const pickable = duelMode === "ia" ? pickIA : pickLobby;
 
   // aceitar duelo
   const [joining, setJoining] = useState<OpenDuel | null>(null);
@@ -134,9 +137,21 @@ export default function Duelos() {
 
   useEffect(() => { void loadAll(); }, [loadAll]);
 
-  async function openCreate() {
+  async function openCreate(mode: "lobby" | "ia" = "lobby") {
     setCreating(true);
-    if (pickable.length === 0) {
+    if (mode !== duelMode) { setPicked([]); setPreds({}); }
+    setDuelMode(mode);
+
+    if (mode === "ia" && pickIA.length === 0) {
+      try {
+        const r = await fetch("/api/duels/ia-markets");
+        const data = await r.json() as { markets?: DuelMarket[] };
+        setPickIA(data.markets ?? []);
+        if ((data.markets ?? []).length < 2) toast("A IA ainda não tem previsões recentes suficientes — tente o modo lobby.");
+      } catch { toast.error("Não foi possível carregar os mercados da IA agora."); }
+      return;
+    }
+    if (mode === "lobby" && pickLobby.length === 0) {
       try {
         const raw = await getMarkets<PolyApiMarket>("polymarket");
         // Duelo bom resolve rápido: mercados que encerram em ≤30d vêm primeiro
@@ -148,7 +163,7 @@ export default function Duelos() {
         const soon = mapped.filter((m) => { const d = daysToEnd(m.endDate); return d !== null && d <= 30; })
           .sort((a, b) => (daysToEnd(a.endDate) ?? 99) - (daysToEnd(b.endDate) ?? 99));
         const rest = mapped.filter((m) => !soon.includes(m));
-        setPickable([...soon, ...rest].slice(0, 20));
+        setPickLobby([...soon, ...rest].slice(0, 20));
       } catch { toast.error("Não foi possível carregar os mercados agora."); }
     }
   }
@@ -169,14 +184,18 @@ export default function Duelos() {
       const res = await fetch("/api/duels", {
         method: "POST", headers: authHeaders,
         body: JSON.stringify({
-          stakePts: stake, displayName,
+          stakePts: stake, displayName, vsIA: duelMode === "ia",
           markets: picked,
           preds: picked.map((m) => ({ marketId: m.marketId, prob: preds[m.marketId] ?? 50 })),
         }),
       });
       const data = await res.json() as { duel?: unknown; message?: string };
       if (!res.ok) throw new Error(data.message ?? "Falha ao criar duelo");
-      toast.success("Duelo criado e previsões seladas!", { description: "Ele aparece no lobby até alguém aceitar." });
+      if (duelMode === "ia") {
+        toast.success("Duelo contra a IA iniciado!", { description: "As previsões da IA já estavam seladas no track record. Que vença o menor Brier." });
+      } else {
+        toast.success("Duelo criado e previsões seladas!", { description: "Ele aparece no lobby até alguém aceitar." });
+      }
       setCreating(false); setPicked([]); setPreds({});
       setTab("meus");
       void loadAll();
@@ -314,6 +333,24 @@ export default function Duelos() {
                 </button>
               </div>
 
+              <div className="flex gap-2" role="radiogroup" aria-label="Tipo de oponente">
+                {([["lobby", "Contra a comunidade"], ["ia", "Contra a IA JLB"]] as const).map(([m, label]) => (
+                  <button key={m} role="radio" aria-checked={duelMode === m}
+                    onClick={() => void openCreate(m)}
+                    className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                      duelMode === m ? "bg-neon-blue/15 border border-neon-blue/40 text-neon-blue" : "bg-secondary/30 border border-transparent text-muted-foreground hover:text-foreground"
+                    }`}>
+                    {label}
+                  </button>
+                ))}
+              </div>
+              {duelMode === "ia" && (
+                <p className="text-[11px] text-muted-foreground leading-relaxed -mt-2">
+                  Você duela contra o fair value que a nossa IA já selou no track record público —
+                  o duelo começa na hora, sem esperar oponente.
+                </p>
+              )}
+
               <div>
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
                   1 · Baralho — escolha de 2 a 5 mercados ({picked.length}/5)
@@ -407,11 +444,17 @@ export default function Duelos() {
               <div className="text-center py-14 glass-card rounded-xl px-6">
                 <Swords className="w-10 h-10 mx-auto text-muted-foreground/30 mb-3" aria-hidden="true" />
                 <p className="text-sm font-medium text-foreground/70 mb-1">Nenhum duelo aberto agora</p>
-                <p className="text-xs text-muted-foreground mb-5">Seja o primeiro: crie um duelo e desafie a comunidade.</p>
-                <button onClick={() => void openCreate()}
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-xs font-semibold hover:opacity-90 transition-opacity">
-                  <Plus className="w-3.5 h-3.5" aria-hidden="true" /> Criar duelo
-                </button>
+                <p className="text-xs text-muted-foreground mb-5">Seja o primeiro: desafie a comunidade — ou meça-se contra a nossa IA agora mesmo.</p>
+                <div className="flex items-center justify-center gap-3 flex-wrap">
+                  <button onClick={() => void openCreate()}
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-xs font-semibold hover:opacity-90 transition-opacity">
+                    <Plus className="w-3.5 h-3.5" aria-hidden="true" /> Criar duelo
+                  </button>
+                  <button onClick={() => void openCreate("ia")}
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-neon-blue/15 border border-neon-blue/30 text-neon-blue text-xs font-semibold hover:bg-neon-blue/25 transition-colors">
+                    <Swords className="w-3.5 h-3.5" aria-hidden="true" /> Duelar contra a IA
+                  </button>
+                </div>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -539,6 +582,7 @@ export default function Duelos() {
                 <li><strong className="text-foreground">Resolução:</strong> cada mercado resolve quando bate preço extremo (≥97% = SIM, ≤3% = NÃO) — o mesmo critério do track record da nossa IA.</li>
                 <li><strong className="text-foreground">Menor Brier vence:</strong> Brier = média de (sua probabilidade − resultado)². Dizer o que você realmente acredita é matematicamente a melhor estratégia — impossível blefar.</li>
                 <li><strong className="text-foreground">Pontos:</strong> nesta fase beta, o vencedor ganha <span className="font-mono text-gold">+25 pts</span> no perfil. Os "pontos em jogo" são o placar do desafio — nenhum dinheiro real circula.</li>
+                <li><strong className="text-foreground">Contra a IA:</strong> você também pode duelar contra o fair value da nossa IA — as previsões dela já estão seladas no track record público (transparência total: elas são auditáveis, e vencer copiando dá no máximo empate).</li>
               </ol>
               <p className="text-xs text-muted-foreground/80 leading-relaxed pt-2 border-t border-border/15">
                 Caráter educacional: o duelo mede calibração, não sorte. Dica: mercados que fecham em breve resolvem mais rápido.

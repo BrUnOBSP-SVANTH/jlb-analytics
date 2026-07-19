@@ -27,6 +27,11 @@ interface DuelRow {
 
 const headers = () => ({ apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` });
 
+// Oponente-IA: uuid sentinela (não colide com auth.users). As previsões da IA
+// vêm do track record público (ai_forecasts) — já estavam "seladas" lá.
+const IA_OPPONENT_ID = "00000000-0000-0000-0000-000000000000";
+const IA_OPPONENT_NAME = "IA JLB";
+
 function ready(res: import("express").Response): boolean {
   if (!SUPABASE_URL || !SUPABASE_KEY) { res.status(503).json({ error: "supabase_unavailable" }); return false; }
   return true;
@@ -64,6 +69,40 @@ function validPreds(markets: DuelMarket[], preds: unknown): preds is DuelPred[] 
   }
   return true;
 }
+
+/** Fair values recentes da IA (≤14d), 1 por mercado. NUNCA expõe ai_fair_value. */
+async function fetchIaForecasts(): Promise<Map<string, { marketId: string; source: string; title: string; marketProb: number; aiFairValue: number }>> {
+  const since = new Date(Date.now() - 14 * 86_400_000).toISOString();
+  const r = await fetch(
+    `${SUPABASE_URL}/rest/v1/ai_forecasts?resolved=eq.false&created_at=gte.${since}&select=market_id,source,title,market_prob,ai_fair_value,created_at&order=created_at.desc&limit=120`,
+    { headers: headers(), signal: AbortSignal.timeout(8_000) },
+  );
+  if (!r.ok) throw new Error(`supabase ${r.status}`);
+  const rows = await r.json() as Array<{ market_id: string; source: string; title: string; market_prob: number; ai_fair_value: number; created_at: string }>;
+  const map = new Map<string, { marketId: string; source: string; title: string; marketProb: number; aiFairValue: number }>();
+  for (const row of rows) {
+    if (!map.has(row.market_id)) {
+      map.set(row.market_id, { marketId: row.market_id, source: row.source, title: row.title, marketProb: row.market_prob, aiFairValue: row.ai_fair_value });
+    }
+  }
+  return map;
+}
+
+// ── Mercados disponíveis para duelo vs IA (público) ─────────────────────────
+// Expõe só título e prob de MERCADO — o fair value da IA fica selado no server
+// (ele é consultável no track record público, mas não entregamos de bandeja).
+router.get("/ia-markets", async (_req, res) => {
+  if (!ready(res)) return;
+  try {
+    const map = await fetchIaForecasts();
+    const markets = Array.from(map.values()).slice(0, 20)
+      .map((m) => ({ marketId: m.marketId, source: m.source, title: m.title, probAtCreate: m.marketProb }));
+    res.json({ markets });
+  } catch (err) {
+    log.error("[duels/ia-markets] error:", err);
+    res.status(500).json({ error: "internal" });
+  }
+});
 
 // ── Lobby: duelos abertos (público, sem previsões) ──────────────────────────
 router.get("/open", async (_req, res) => {
@@ -115,8 +154,8 @@ router.post("/", async (req, res) => {
     return res.status(429).json({ error: "rate_limited" });
   }
 
-  const { stakePts, markets, preds, displayName } = req.body as {
-    stakePts?: number; markets?: DuelMarket[]; preds?: DuelPred[]; displayName?: string;
+  const { stakePts, markets, preds, displayName, vsIA } = req.body as {
+    stakePts?: number; markets?: DuelMarket[]; preds?: DuelPred[]; displayName?: string; vsIA?: boolean;
   };
   const stake = Math.round(Number(stakePts ?? 50));
   if (!Number.isFinite(stake) || stake < 10 || stake > 500) return res.status(400).json({ error: "stake_invalid", message: "Pontos em jogo: 10 a 500." });
@@ -127,6 +166,26 @@ router.post("/", async (req, res) => {
   if (!validPreds(markets, preds)) return res.status(400).json({ error: "preds_invalid", message: "Envie uma probabilidade (1-99) para cada mercado." });
 
   try {
+    // vs IA: oponente é o fair value que a IA já selou no track record —
+    // o duelo nasce ativo (não vai para o lobby).
+    let iaFields: Record<string, unknown> = {};
+    if (vsIA) {
+      const iaMap = await fetchIaForecasts();
+      const iaPreds: DuelPred[] = [];
+      for (const m of markets) {
+        const f = iaMap.get(m.marketId);
+        if (!f) return res.status(400).json({ error: "ia_unavailable", message: "A IA não tem previsão recente para um dos mercados escolhidos — use a lista 'vs IA'." });
+        iaPreds.push({ marketId: m.marketId, prob: Math.max(1, Math.min(99, Math.round(f.aiFairValue))) });
+      }
+      iaFields = {
+        opponent_id: IA_OPPONENT_ID,
+        opponent_name: IA_OPPONENT_NAME,
+        opponent_preds: iaPreds,
+        status: "active",
+        locked_at: new Date().toISOString(),
+      };
+    }
+
     const r = await fetch(`${SUPABASE_URL}/rest/v1/duels`, {
       method: "POST",
       headers: { ...supaWriteHeaders(), Prefer: "return=representation" },
@@ -136,6 +195,7 @@ router.post("/", async (req, res) => {
         stake_pts: stake,
         markets: markets.map((m) => ({ marketId: m.marketId, source: m.source, title: String(m.title).slice(0, 200), probAtCreate: m.probAtCreate, endDate: m.endDate })),
         creator_preds: preds,
+        ...iaFields,
       }),
       signal: AbortSignal.timeout(8_000),
     });
