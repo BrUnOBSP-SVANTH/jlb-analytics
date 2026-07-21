@@ -11,7 +11,7 @@ import { useSEO } from "@/hooks/useSEO";
 import { supabase } from "@/lib/supabase";
 import {
   Trophy, Medal, Target, User, TrendingUp,
-  RefreshCw, AlertCircle, Star, Zap,
+  RefreshCw, AlertCircle, Star, Zap, Swords,
 } from "lucide-react";
 import ContaTabs from "@/components/ContaTabs";
 
@@ -62,6 +62,61 @@ function SkillBar({ ss }: { ss: number }) {
         {ss >= 0 ? "+" : ""}{(ss * 100).toFixed(0)}%
       </span>
     </div>
+  );
+}
+
+interface DuelRank {
+  id: string; name: string; wins: number; losses: number; ties: number;
+  duels: number; avgBrier: number; winRate: number; isIA: boolean;
+}
+
+/** Ranking de duelistas — só aparece quando há duelos resolvidos. */
+function DuelRanking() {
+  const [rows, setRows] = useState<DuelRank[]>([]);
+
+  useEffect(() => {
+    fetch("/api/duels/ranking")
+      .then((r) => r.ok ? r.json() as Promise<{ ranking: DuelRank[] }> : null)
+      .then((d) => { if (d) setRows(d.ranking ?? []); })
+      .catch(() => {});
+  }, []);
+
+  if (rows.length === 0) return null;
+
+  return (
+    <AnimatedSection>
+      <div className="glass-card rounded-xl overflow-hidden">
+        <div className="flex items-center justify-between gap-2 px-3 sm:px-5 py-3 border-b border-border/20">
+          <p className="text-xs font-semibold text-foreground flex items-center gap-2">
+            <Swords className="w-3.5 h-3.5 text-gold" aria-hidden="true" /> Ranking de duelistas
+          </p>
+          <Link href="/duelos">
+            <span className="text-[11px] text-muted-foreground hover:text-foreground transition-colors cursor-pointer">Duelar →</span>
+          </Link>
+        </div>
+        <div className="grid grid-cols-[28px_1fr_64px_80px] gap-3 px-3 sm:px-5 py-2 border-b border-border/10 text-[10px] font-semibold text-muted-foreground/60 uppercase tracking-wider">
+          <span>#</span><span>Duelista</span><span className="text-right">Brier</span><span className="text-right">V-D-E</span>
+        </div>
+        {rows.map((r, i) => (
+          <div key={r.id} className={`grid grid-cols-[28px_1fr_64px_80px] gap-3 px-3 sm:px-5 py-3 items-center border-b border-border/10 last:border-0 ${i === 0 ? "bg-gold/3" : ""}`}>
+            <span className="text-xs font-mono text-muted-foreground text-center">{i + 1}</span>
+            <div className="flex items-center gap-2 min-w-0">
+              <p className="text-sm font-medium text-foreground truncate">{r.name}</p>
+              {r.isIA && <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded bg-neon-blue/10 text-neon-blue border border-neon-blue/20 shrink-0">IA</span>}
+            </div>
+            <span className={`text-xs font-mono font-bold text-right ${r.avgBrier < 0.18 ? "text-positive" : r.avgBrier < 0.25 ? "text-gold" : "text-muted-foreground"}`}>
+              {r.avgBrier.toFixed(3)}
+            </span>
+            <span className="text-xs font-mono text-right text-muted-foreground">
+              <span className="text-positive">{r.wins}</span>-{r.losses}-{r.ties}
+            </span>
+          </div>
+        ))}
+        <p className="text-[10px] text-muted-foreground/50 text-center py-2.5">
+          Ordenado por calibração média nos duelos resolvidos — vitórias desempatam.
+        </p>
+      </div>
+    </AnimatedSection>
   );
 }
 
@@ -132,6 +187,8 @@ export default function Leaderboard() {
             </div>
           </div>
         </AnimatedSection>
+
+        <DuelRanking />
 
         {/* Filtros + Atualizar */}
         <div className="flex items-center justify-between gap-3 flex-wrap">

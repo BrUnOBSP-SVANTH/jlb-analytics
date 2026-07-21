@@ -198,6 +198,37 @@ function checkEnv() {
   return env;
 }
 
+// ── 7b. Acesso real à API da Anthropic ───────────────────────────────────────
+// Chave PRESENTE não significa chave FUNCIONANDO: com créditos esgotados a API
+// devolve 400 e todo endpoint de IA cai no fallback ("análise IA temporariamente
+// indisponível") — sem nenhum alarme. Este probe custa ~5 tokens.
+async function checkAnthropic(env) {
+  section("Acesso à IA (Anthropic)");
+  if (NO_LIVE) { line("⏭️", paint("Pulado (--no-live)", c.dim)); return; }
+  const key = env.ANTHROPIC_API_KEY;
+  if (!key) { line("⚠️", paint("ANTHROPIC_API_KEY ausente", c.yellow)); return; }
+  try {
+    const r = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "x-api-key": key, "anthropic-version": "2023-06-01", "content-type": "application/json" },
+      body: JSON.stringify({ model: "claude-haiku-4-5-20251001", max_tokens: 5, messages: [{ role: "user", content: "ok" }] }),
+      signal: AbortSignal.timeout(15_000),
+    });
+    if (r.ok) { line("✅", `API respondendo — ${paint("créditos OK", c.green)}`); return; }
+    const body = await r.json().catch(() => ({}));
+    const msg = body?.error?.message ?? `HTTP ${r.status}`;
+    if (/credit balance/i.test(msg)) {
+      line("🔴", paint("SEM CRÉDITOS — toda a IA do site está degradada", c.red), "recarregue em console.anthropic.com → Plans & Billing");
+      add("crit", "IA", "Créditos Anthropic esgotados: chat, análises, briefing e sínteses do Cerebro fora do ar");
+    } else {
+      line("🔴", paint(`API inacessível: ${msg.slice(0, 90)}`, c.red));
+      add("crit", "IA", `Anthropic inacessível: ${msg.slice(0, 60)}`);
+    }
+  } catch (e) {
+    line("⚠️", paint(`probe falhou: ${String(e.message).slice(0, 60)}`, c.yellow));
+  }
+}
+
 // ── 8. Saúde dos dados no Supabase ───────────────────────────────────────────
 async function checkSupabase(env) {
   section("Saúde dos dados (Supabase)");
@@ -322,6 +353,7 @@ function report() {
   try { checkBigFiles(); } catch (e) { add("warn", "Doctor", "checkBigFiles falhou: " + e.message); }
   let env = {};
   try { env = checkEnv(); } catch (e) { add("warn", "Doctor", "checkEnv falhou: " + e.message); }
+  try { await checkAnthropic(env); } catch (e) { add("warn", "Doctor", "checkAnthropic falhou: " + e.message); }
   try { await checkSupabase(env); } catch (e) { add("warn", "Doctor", "checkSupabase falhou: " + e.message); }
   try { checkInventory(); } catch (e) { add("warn", "Doctor", "checkInventory falhou: " + e.message); }
   const code = report();

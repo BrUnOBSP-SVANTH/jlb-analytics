@@ -6,7 +6,8 @@ import { Router } from "express";
 import { SUPABASE_URL, SUPABASE_KEY, supaWriteHeaders } from "../lib/supabaseRest.ts";
 import { verifyUserId } from "../middleware/aiCredits.ts";
 import { getLiveMarketPrices, getSnapshotExtremes } from "../lib/aiForecasts.ts";
-import { isRateLimited } from "../lib/cache.ts";
+import { sendDuelResultPush } from "../lib/push.ts";
+import { isRateLimited, getCache, setCache } from "../lib/cache.ts";
 import { log } from "../lib/log.ts";
 
 const router = Router();
@@ -100,6 +101,54 @@ router.get("/ia-markets", async (_req, res) => {
     res.json({ markets });
   } catch (err) {
     log.error("[duels/ia-markets] error:", err);
+    res.status(500).json({ error: "internal" });
+  }
+});
+
+// ── Ranking de duelistas (público) ──────────────────────────────────────────
+// Só duelos RESOLVIDOS entram; nada de previsão vaza. Cache 5min.
+router.get("/ranking", async (_req, res) => {
+  if (!ready(res)) return;
+  const cached = getCache<object>("duels-ranking");
+  if (cached) return res.json(cached);
+  try {
+    const r = await fetch(
+      `${SUPABASE_URL}/rest/v1/duels?status=eq.resolved&select=creator_id,creator_name,opponent_id,opponent_name,creator_brier,opponent_brier,winner_id&order=resolved_at.desc&limit=500`,
+      { headers: headers(), signal: AbortSignal.timeout(8_000) },
+    );
+    if (!r.ok) throw new Error(`supabase ${r.status}`);
+    const rows = await r.json() as DuelRow[];
+
+    const stats = new Map<string, { name: string; wins: number; losses: number; ties: number; brierSum: number; n: number }>();
+    const bump = (id: string | null, name: string | null, brier: number | null, winnerId: string | null) => {
+      if (!id || brier === null) return;
+      const s = stats.get(id) ?? { name: name ?? "Forecaster", wins: 0, losses: 0, ties: 0, brierSum: 0, n: 0 };
+      if (winnerId === null) s.ties++; else if (winnerId === id) s.wins++; else s.losses++;
+      s.brierSum += brier; s.n++;
+      if (name) s.name = name;
+      stats.set(id, s);
+    };
+    for (const d of rows) {
+      bump(d.creator_id, d.creator_name, d.creator_brier, d.winner_id);
+      bump(d.opponent_id, d.opponent_name, d.opponent_brier, d.winner_id);
+    }
+
+    const ranking = Array.from(stats.entries())
+      .map(([id, s]) => ({
+        id, name: s.name, wins: s.wins, losses: s.losses, ties: s.ties,
+        duels: s.n, avgBrier: Number((s.brierSum / s.n).toFixed(4)),
+        winRate: s.n > 0 ? Math.round((s.wins / s.n) * 100) : 0,
+        isIA: id === IA_OPPONENT_ID,
+      }))
+      // Calibração ordena o ranking (menor Brier); vitórias desempatam
+      .sort((a, b) => a.avgBrier - b.avgBrier || b.wins - a.wins)
+      .slice(0, 20);
+
+    const result = { ranking, totalResolved: rows.length };
+    setCache("duels-ranking", result, 300);
+    res.json(result);
+  } catch (err) {
+    log.error("[duels/ranking] error:", err);
     res.status(500).json({ error: "internal" });
   }
 });
@@ -314,7 +363,16 @@ async function finalizeDuel(duel: DuelRow, outcomes: Map<string, boolean>): Prom
   });
   if (!r.ok) return null;
   const rows = await r.json() as DuelRow[];
-  return rows[0] ?? null;
+  const done = rows[0] ?? null;
+  // Só notifica se ESTA chamada finalizou (rows vazio = outra corrida ganhou)
+  if (done) {
+    void sendDuelResultPush({
+      creatorId: done.creator_id, opponentId: done.opponent_id, winnerId: winnerId,
+      creatorBrier: cb, opponentBrier: ob,
+      creatorName: done.creator_name, opponentName: done.opponent_name,
+    }).catch(() => {});
+  }
+  return done;
 }
 
 /** Varredura de cron: resolve duelos ativos sem depender de clique de usuário. */
