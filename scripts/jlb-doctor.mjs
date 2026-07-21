@@ -214,11 +214,24 @@ async function checkAnthropic(env) {
       body: JSON.stringify({ model: "claude-haiku-4-5-20251001", max_tokens: 5, messages: [{ role: "user", content: "ok" }] }),
       signal: AbortSignal.timeout(15_000),
     });
-    if (r.ok) { line("✅", `API respondendo — ${paint("créditos OK", c.green)}`); return; }
+    const hasFallback = !!env.GEMINI_API_KEY;
+    if (r.ok) {
+      line("✅", `Anthropic respondendo — ${paint("créditos OK", c.green)}`);
+      line(hasFallback ? "✅" : "ℹ️", hasFallback
+        ? `fallback Gemini configurado ${paint("(rede de segurança ativa)", c.green)}`
+        : paint("sem fallback: GEMINI_API_KEY não configurada", c.dim));
+      return;
+    }
     const body = await r.json().catch(() => ({}));
     const msg = body?.error?.message ?? `HTTP ${r.status}`;
-    if (/credit balance/i.test(msg)) {
-      line("🔴", paint("SEM CRÉDITOS — toda a IA do site está degradada", c.red), "recarregue em console.anthropic.com → Plans & Billing");
+    const isCredit = /credit balance/i.test(msg);
+    // Com fallback configurado o site continua respondendo pelo Gemini — grave,
+    // mas não é apagão: vira ⚠️ em vez de 🔴.
+    if (hasFallback) {
+      line("⚠️", paint(`Anthropic fora (${isCredit ? "sem créditos" : msg.slice(0, 50)})`, c.yellow), "→ site respondendo pelo fallback Gemini");
+      add("warn", "IA", `Anthropic indisponível — rodando no fallback Gemini${isCredit ? " (recarregue os créditos)" : ""}`);
+    } else if (isCredit) {
+      line("🔴", paint("SEM CRÉDITOS e SEM FALLBACK — toda a IA do site está degradada", c.red), "recarregue em console.anthropic.com ou configure GEMINI_API_KEY");
       add("crit", "IA", "Créditos Anthropic esgotados: chat, análises, briefing e sínteses do Cerebro fora do ar");
     } else {
       line("🔴", paint(`API inacessível: ${msg.slice(0, 90)}`, c.red));

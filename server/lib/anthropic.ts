@@ -1,4 +1,8 @@
 // ── Wrapper compartilhado da API do Claude (Anthropic) ───────────────────────
+// Com fallback automático para o Gemini (free tier) quando a Anthropic falha
+// por crédito/rate limit/instabilidade — ver lib/gemini.ts. Sem GEMINI_API_KEY
+// o comportamento é idêntico ao de antes (erro propaga).
+import { callGemini, geminiEnabled, shouldFallback, logFallback } from "./gemini.ts";
 
 export interface ClaudeMessage { role: "user" | "assistant"; content: string }
 interface ClaudeResp { content: { type: string; text: string }[] }
@@ -49,6 +53,20 @@ export async function streamClaude(opts: {
     });
   }
 
+  /** Gemini não faz streaming aqui: emite o texto inteiro num delta só.
+   *  Só é seguro ANTES do primeiro byte — depois disso duplicaria conteúdo. */
+  async function fallbackToGemini(err: unknown): Promise<string> {
+    logFallback("streamClaude", err);
+    const text = await callGemini({
+      messages: opts.messages.map((m) => ({ role: m.role, content: m.content })),
+      system: [opts.system, opts.systemDynamic].filter(Boolean).join("\n\n"),
+      maxTokens: opts.maxTokens,
+      timeoutMs: opts.timeoutMs,
+    });
+    opts.onDelta?.(text);
+    return text;
+  }
+
   let response: Response;
   try {
     response = await connect();
@@ -59,7 +77,9 @@ export async function streamClaude(opts: {
   }
   if (!response.ok || !response.body) {
     const err = await response.text().catch(() => "");
-    throw new Error(`Claude HTTP ${response.status}: ${err.slice(0, 300)}`);
+    const error = new Error(`Claude HTTP ${response.status}: ${err.slice(0, 300)}`);
+    if (geminiEnabled() && shouldFallback(error)) return fallbackToGemini(error);
+    throw error;
   }
 
   const reader = response.body.getReader();
@@ -132,18 +152,31 @@ export async function callClaude(opts: {
     });
   }
 
-  let response = await doFetch(true);
-  // Defensivo: se o caching não for aceito, refaz sem cache uma vez (não quebra).
-  if (!response.ok && response.status === 400 && opts.cacheSystem) {
-    const errText = await response.text();
-    if (/cache/i.test(errText)) response = await doFetch(false);
-    else throw new Error(`Claude HTTP 400: ${errText}`);
+  try {
+    let response = await doFetch(true);
+    // Defensivo: se o caching não for aceito, refaz sem cache uma vez (não quebra).
+    if (!response.ok && response.status === 400 && opts.cacheSystem) {
+      const errText = await response.text();
+      if (/cache/i.test(errText)) response = await doFetch(false);
+      else throw new Error(`Claude HTTP 400: ${errText}`);
+    }
+    if (!response.ok) {
+      const err = await response.text();
+      throw new Error(`Claude HTTP ${response.status}: ${err}`);
+    }
+    const data = await response.json() as ClaudeResp;
+    const text = data.content.find((b) => b.type === "text")?.text ?? "";
+    return opts.prefillJson ? "{" + text : text;
+  } catch (err) {
+    // Fallback de provedor: sem crédito/rate limit/instabilidade, o site
+    // responde pelo Gemini em vez de degradar. Inerte sem GEMINI_API_KEY.
+    if (!geminiEnabled() || !shouldFallback(err)) throw err;
+    logFallback("callClaude", err);
+    return callGemini({
+      messages: opts.messages.map((m) => ({ role: m.role, content: m.content })),
+      system: opts.system,
+      maxTokens: opts.maxTokens,
+      timeoutMs: opts.timeoutMs,
+    });
   }
-  if (!response.ok) {
-    const err = await response.text();
-    throw new Error(`Claude HTTP ${response.status}: ${err}`);
-  }
-  const data = await response.json() as ClaudeResp;
-  const text = data.content.find((b) => b.type === "text")?.text ?? "";
-  return opts.prefillJson ? "{" + text : text;
 }
