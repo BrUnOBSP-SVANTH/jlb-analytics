@@ -9,8 +9,10 @@
 import { log } from "./log.ts";
 
 const GEMINI_KEY = () => process.env.GEMINI_API_KEY ?? "";
-// Configurável: IDs de modelo do Google mudam de nome com frequência.
-const GEMINI_MODEL = () => process.env.GEMINI_MODEL ?? "gemini-2.5-flash";
+// ⚠️ Usar SEMPRE o alias "-latest": IDs fixos são descontinuados para chaves
+// novas (gemini-2.5-flash já responde 404 "no longer available to new users",
+// verificado 2026-07-21). O alias acompanha o Flash atual sozinho.
+const GEMINI_MODEL = () => process.env.GEMINI_MODEL ?? "gemini-flash-latest";
 
 export function geminiEnabled(): boolean {
   return GEMINI_KEY().length > 0;
@@ -28,30 +30,45 @@ export async function callGemini(opts: {
   const key = GEMINI_KEY();
   if (!key) throw new Error("GEMINI_API_KEY ausente");
 
-  const body: Record<string, unknown> = {
-    contents: opts.messages.map((m) => ({
-      role: m.role === "assistant" ? "model" : "user",
-      parts: [{ text: m.content }],
-    })),
-    generationConfig: { maxOutputTokens: opts.maxTokens },
-  };
-  if (opts.system) body.system_instruction = { parts: [{ text: opts.system }] };
+  // ⚠️ Os modelos Flash atuais pensam por padrão, e o "thinking" consome do
+  // MESMO orçamento de saída: com maxOutputTokens pequeno (o seed usa 80) a
+  // resposta volta vazia ou truncada. Duas defesas: thinkingLevel baixo e
+  // folga generosa no orçamento (verificado 2026-07-21).
+  const maxOutputTokens = Math.max(1024, opts.maxTokens * 4);
 
-  const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL()}:generateContent?key=${encodeURIComponent(key)}`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-      signal: AbortSignal.timeout(opts.timeoutMs ?? 30_000),
-    },
-  );
+  async function doFetch(withThinking: boolean): Promise<Response> {
+    const generationConfig: Record<string, unknown> = { maxOutputTokens };
+    if (withThinking) generationConfig.thinkingConfig = { thinkingLevel: "low" };
+    const body: Record<string, unknown> = {
+      contents: opts.messages.map((m) => ({
+        role: m.role === "assistant" ? "model" : "user",
+        parts: [{ text: m.content }],
+      })),
+      generationConfig,
+    };
+    if (opts.system) body.system_instruction = { parts: [{ text: opts.system }] };
+
+    return fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL()}:generateContent?key=${encodeURIComponent(key)}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+        signal: AbortSignal.timeout(opts.timeoutMs ?? 30_000),
+      },
+    );
+  }
+
+  // thinkingLevel não existe em modelos mais antigos → 400: refaz sem ele.
+  let res = await doFetch(true);
+  if (!res.ok && res.status === 400) res = await doFetch(false);
   if (!res.ok) throw new Error(`Gemini HTTP ${res.status}: ${(await res.text()).slice(0, 200)}`);
 
-  interface GeminiResp { candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }> }
+  interface GeminiResp { candidates?: Array<{ content?: { parts?: Array<{ text?: string }> }; finishReason?: string }> }
   const data = await res.json() as GeminiResp;
-  const text = (data.candidates?.[0]?.content?.parts ?? []).map((p) => p.text ?? "").join("").trim();
-  if (!text) throw new Error("Gemini retornou resposta vazia");
+  const cand = data.candidates?.[0];
+  const text = (cand?.content?.parts ?? []).map((p) => p.text ?? "").join("").trim();
+  if (!text) throw new Error(`Gemini retornou resposta vazia (finishReason=${cand?.finishReason ?? "?"})`);
   return text;
 }
 
