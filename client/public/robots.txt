@@ -7,4 +7,4 @@ Disallow: /reset-password
 Disallow: /dashboard
 Disallow: /perfil
 
-Sitemap: https://jlbasset.com/sitemap.xml
+Sitemap: https://jlb-analytics.onrender.com/sitemap.xml

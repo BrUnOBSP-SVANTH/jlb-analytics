@@ -233,6 +233,24 @@ async function checkSupabase(env) {
     if (min > 0 && n < min) add("warn", "Dados", `${label} baixo (${n} < ${min})`);
   }
 
+  // Frescor dos snapshots — o cron falhou SILENCIOSAMENTE por 44 dias (jun-jul/2026,
+  // env sem fallback VITE_ no market_snapshots.py); este alarme evita a repetição.
+  try {
+    const r = await fetch(`${url}/rest/v1/market_snapshots?select=snapped_at&order=snapped_at.desc&limit=1`, { headers: h });
+    if (r.ok) {
+      const [row] = await r.json();
+      if (row?.snapped_at) {
+        const ageDays = Math.floor((Date.now() - new Date(row.snapped_at).getTime()) / 86_400_000);
+        if (ageDays > 3) {
+          line("⚠️", `último snapshot há ${paint(ageDays + " dias", c.yellow)} — cron de coleta parado?`);
+          add("warn", "Dados", `Snapshots parados há ${ageDays}d — verificar cron market_snapshots.py`);
+        } else {
+          line("✅", `último snapshot: ${paint(ageDays === 0 ? "hoje" : `${ageDays}d atrás`, c.green)}`);
+        }
+      }
+    }
+  } catch { /* silencioso */ }
+
   // Track record da IA
   try {
     const r = await fetch(`${url}/rest/v1/ai_track_record?select=*`, { headers: h });

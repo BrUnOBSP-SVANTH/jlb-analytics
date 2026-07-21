@@ -15,6 +15,7 @@ import { fileURLToPath } from "url";
 import { spawn } from "child_process";
 
 import { cache, getCache, setCache } from "./lib/cache.ts";
+import { registerSnapshotJob } from "./lib/triggers.ts";
 import { emailEnabled } from "./lib/email.ts";
 import { fetchBrapiQuotes } from "./lib/brapi.ts";
 import { fetchYahooQuotes } from "./lib/yahoo.ts";
@@ -86,6 +87,7 @@ async function runMarketSnapshots() {
   await runPythonScript("market_snapshots.py", ["--limit", "100"]);
   log.info("[snapshots] Snapshots concluídos.");
 }
+registerSnapshotJob(runMarketSnapshots); // POST /api/snapshots/trigger dispara este job
 
 async function startServer() {
   // ── Env validation ─────────────────────────────────────────────────────────

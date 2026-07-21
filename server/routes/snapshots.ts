@@ -5,6 +5,7 @@
 
 import { Router } from "express";
 import { log } from "../lib/log.ts";
+import { triggerSnapshotJob } from "../lib/triggers.ts";
 
 const router = Router();
 
@@ -114,14 +115,19 @@ router.get("/top", async (req, res) => {
   }
 });
 
-// POST /api/snapshots/trigger — dispara coleta manual (requer service key)
+// POST /api/snapshots/trigger — dispara coleta manual (requer service key).
+// Antes era um STUB que respondia "triggered" sem fazer nada — agora dispara
+// o job real registrado pelo index (fire-and-forget, a coleta leva minutos).
 router.post("/trigger", async (req, res) => {
   const authHeader = req.headers["authorization"] ?? "";
   const serviceKey = process.env.SUPABASE_SERVICE_KEY ?? "";
   if (!serviceKey || authHeader !== `Bearer ${serviceKey}`) {
     return res.status(401).json({ error: "Unauthorized" });
   }
-  res.json({ triggered: true, message: "Snapshot collection initiated" });
+  const job = triggerSnapshotJob();
+  if (!job) return res.status(503).json({ error: "job_not_ready" });
+  job.catch((err) => log.error("[snapshots/trigger] job error:", err));
+  res.json({ triggered: true, message: "Coleta iniciada em background (leva alguns minutos)" });
 });
 
 // POST /api/snapshots/seed — popula market_snapshots com histórico real do Polymarket CLOB

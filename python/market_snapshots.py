@@ -21,7 +21,10 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-SUPABASE_URL = os.environ.get("SUPABASE_URL", "")
+# Fallback VITE_: o .env define só a variante VITE_SUPABASE_URL — sem o
+# fallback (que rss_collector e synthesizer sempre tiveram), este script
+# morreu SILENCIOSAMENTE no cron por 44 dias (jun-jul/2026).
+SUPABASE_URL = os.environ.get("SUPABASE_URL") or os.environ.get("VITE_SUPABASE_URL", "")
 SUPABASE_KEY = os.environ.get("SUPABASE_SERVICE_KEY", "")
 
 POLYMARKET_URL = (
@@ -32,7 +35,9 @@ KALSHI_URL = (
     "https://api.elections.kalshi.com/trade-api/v2/events"
     "?with_nested_markets=true&limit={limit}&status=open"
 )
-MANIFOLD_URL = "https://api.manifold.markets/v0/markets?limit={limit}&sort=liquidity"
+# sort=liquidity foi removido do enum da API do Manifold (jul/2026) — last-bet-time
+# aproxima "mais ativos" e é aceito
+MANIFOLD_URL = "https://api.manifold.markets/v0/markets?limit={limit}&sort=last-bet-time"
 
 
 def supabase_headers() -> dict:
