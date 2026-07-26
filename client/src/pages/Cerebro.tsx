@@ -42,13 +42,17 @@ function CategoryBadge({ category }: { category?: string }) {
   );
 }
 
-/** Preview de texto vindo da IA pode conter markdown cru (**negrito**, `código`, ###) — remove para exibição */
+/** Preview de texto vindo da IA pode conter markdown cru (**negrito**, `código`, ###) — remove para exibição.
+ *  Também remove marcadores de citação órfãos ([1], [C2]) de sínteses antigas: na
+ *  página do Cerebro não há lista de fontes numerada para eles apontarem. */
 function stripMd(text: string): string {
   return text
     .replace(/\*\*([^*]+)\*\*/g, "$1")
     .replace(/\*([^*]+)\*/g, "$1")
     .replace(/`([^`]+)`/g, "$1")
-    .replace(/^#{1,6}\s+/gm, "");
+    .replace(/^#{1,6}\s+/gm, "")
+    .replace(/\s*(?:\[\s*C?\d+(?:\s*,\s*C?\d+)*\s*\])+/g, "")
+    .trim();
 }
 
 function timeAgo(dateStr: string): string {

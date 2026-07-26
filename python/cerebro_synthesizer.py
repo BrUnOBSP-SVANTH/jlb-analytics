@@ -158,6 +158,9 @@ Gere uma síntese wiki concisa (máx 250 palavras) em português brasileiro:
 2. 2-3 insights quantitativos relevantes
 3. Conexão com mercados preditivos quando aplicável
 
+IMPORTANTE: NÃO use citações numéricas como [1], [2]. Se precisar atribuir um
+fato a uma fonte, escreva o NOME dela por extenso (ex.: "segundo a Bloomberg").
+
 RETORNE SOMENTE O JSON ABAIXO, SEM TEXTO ANTES OU DEPOIS, SEM MARKDOWN:
 {{"title":"título conciso (max 60 chars)","content":"síntese em português (max 250 palavras)","tags":["tag1","tag2","tag3"],"keyInsight":"frase-chave do principal achado"}}"""
 

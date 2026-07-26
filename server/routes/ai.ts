@@ -11,6 +11,7 @@ import { getNewsForMarket } from "../lib/news.ts";
 import { SUPABASE_URL, SUPABASE_KEY, supaWriteHeaders } from "../lib/supabaseRest.ts";
 import { CATEGORY_BASE_RATES } from "../lib/categoryRates.ts";
 import { fetchCerebroContext, fetchMarketMomentum } from "../lib/cerebro.ts";
+import { humanizeCitations } from "../lib/citations.ts";
 import { logAiForecast, seedAiForecasts, computeDivergences, getTrackRecordData, getClosingSoon, parsePolyPrices, getCalibrationMemo } from "../lib/aiForecasts.ts";
 import { log } from "../lib/log.ts";
 
@@ -392,7 +393,7 @@ async function runMarketAnalysis(p: AnalyzeParams, onPhase: PhaseEmit = () => {}
 
     if (ANTHROPIC_KEY) {
       const articlesBlock = allArticles.length > 0
-        ? allArticles.map((a, i) => `[${i}] "${a.title}" — ${a.source.name} (${a.publishedAt.slice(0, 10)})\n${a.description ?? "sem descrição"}`).join("\n\n")
+        ? allArticles.map((a, i) => `[${i + 1}] "${a.title}" — ${a.source.name} (${a.publishedAt.slice(0, 10)})\n${a.description ?? "sem descrição"}`).join("\n\n")
         : "Nenhum artigo de notícias encontrado.";
 
       const prompt = `Você é o motor de análise quantitativa da JLB Analytics — combina o rigor de um Superforecaster do Good Judgment Project com a precisão de um quant de mesa proprietária.
@@ -432,8 +433,8 @@ EXECUTE O PROTOCOLO (em ordem):
 
 5. MONITORAMENTO + VIÉS cognitivo dominante neste mercado.
 
-JSON exato (sem markdown):
-{"relevantIndices":[0,2],"fairValue":62,"confidence":"baixa|media|alta","referenceClass":"qual classe de referência e base rate usada","analysis":"3-4 frases densas citando [N] e [CN] quando usados","keyFactors":["fator com nome próprio 1","fator 2","fator 3"],"watchFor":"evento/indicador concreto","biasAlert":"viés específico ou null","newsRelevance":"high|medium|low|none","probabilityAssessment":"fair|underpriced|overpriced|uncertain","edgeSignal":"1 frase: seu fairValue vs preço e por quê"}`;
+Os artigos são numerados a partir de [1]. JSON exato (sem markdown):
+{"relevantIndices":[1,3],"fairValue":62,"confidence":"baixa|media|alta","referenceClass":"qual classe de referência e base rate usada","analysis":"3-4 frases densas citando [N] e [CN] quando usados","keyFactors":["fator com nome próprio 1","fator 2","fator 3"],"watchFor":"evento/indicador concreto","biasAlert":"viés específico ou null","newsRelevance":"high|medium|low|none","probabilityAssessment":"fair|underpriced|overpriced|uncertain","edgeSignal":"1 frase: seu fairValue vs preço e por quê"}`;
 
       try {
         const raw = await callClaude({ model: "claude-haiku-4-5-20251001", maxTokens: 1000, messages: [{ role: "user", content: prompt }], timeoutMs: 22_000 });
@@ -455,8 +456,18 @@ JSON exato (sem markdown):
         if (typeof parsed.fairValue === "number") fairValue = Math.max(5, Math.min(95, Math.round(parsed.fairValue)));
         if (parsed.confidence === "baixa" || parsed.confidence === "media" || parsed.confidence === "alta") confidence = parsed.confidence;
         if (Array.isArray(parsed.relevantIndices)) {
-          relevantIndices = parsed.relevantIndices.filter((i) => typeof i === "number" && i >= 0 && i < allArticles.length);
+          // Marcadores são 1-indexed no prompt → converte para índice de array
+          relevantIndices = parsed.relevantIndices
+            .filter((i) => typeof i === "number" && i >= 1 && i <= allArticles.length)
+            .map((i) => i - 1);
         }
+        // Troca [N]/[CN] pelos nomes reais das fontes no texto visível ao usuário
+        const newsSources = allArticles.map((a) => a.source.name);
+        const cerebroSources = cerebro.hits.map((h) => h.kind === "síntese" ? "Síntese Cerebro" : `Cerebro · ${h.source}`);
+        analysis   = humanizeCitations(analysis, newsSources, cerebroSources);
+        edgeSignal = edgeSignal ? humanizeCitations(edgeSignal, newsSources, cerebroSources) : edgeSignal;
+        keyFactors = keyFactors.map((f) => humanizeCitations(f, newsSources, cerebroSources));
+        if (watchFor) watchFor = humanizeCitations(watchFor, newsSources, cerebroSources);
       } catch (e) {
         log.warn("[market-analyze] Claude analysis failed:", e instanceof Error ? e.message : e);
         analysis = `Mercado em ${probPct}% no ${platformName}. ${allArticles.length > 0 ? `${allArticles.length} artigos encontrados — análise IA temporariamente indisponível.` : "Sem notícias recentes localizadas para este mercado específico."}`;
@@ -888,7 +899,23 @@ ${newsBlock}${cerebroBlock}`;
   // passo a passo) que a qualidade se mantém, e a geração de ~3200 tokens cai para ~25-40s.
   // Timeout 55s cobre picos — callClaude aborta e perde TUDO se estourar.
   const raw = await callClaude({ model: "claude-haiku-4-5-20251001", maxTokens: 3200, system: systemPrompt, messages: [{ role: "user", content: userMessage }], timeoutMs: 55_000, cacheSystem: true });
-  const parsed = extractJson(raw);
+  const parsed = extractJson(raw) as Record<string, unknown>;
+
+  // Troca os marcadores [N]/[C#] pelos nomes reais das fontes nos campos de
+  // texto livre — o usuário lê "(Reuters)" em vez de "[1]".
+  const newsSources = predictArticles.map((a) => a.source.name);
+  const cerebroSources = (cerebroSettled.hits ?? []).map((h) => h.kind === "síntese" ? "Síntese Cerebro" : `Cerebro · ${h.source}`);
+  const humanize = (v: unknown) => typeof v === "string" ? humanizeCitations(v, newsSources, cerebroSources) : v;
+  for (const k of ["plainLanguage", "shortTermPrediction", "mediumTermPrediction", "longTermPrediction", "actionableInsight", "analogyExplanation", "historicalParallel", "limitations", "whyThisModel"]) {
+    if (typeof parsed[k] === "string") parsed[k] = humanize(parsed[k]);
+  }
+  if (Array.isArray(parsed.decomposition)) {
+    parsed.decomposition = (parsed.decomposition as Array<Record<string, unknown>>).map((d) => ({ ...d, reasoning: humanize(d.reasoning) }));
+  }
+  for (const k of ["insideViewUp", "insideViewDown", "keyAssumptions", "updateTriggers"]) {
+    if (Array.isArray(parsed[k])) parsed[k] = (parsed[k] as unknown[]).map(humanize);
+  }
+
   return { ...parsed, domain, timeHorizon, cached: false };
 }
 
