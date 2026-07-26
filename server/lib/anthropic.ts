@@ -117,6 +117,7 @@ export async function callClaude(opts: {
   timeoutMs?: number;
   prefillJson?: boolean; // força a resposta a começar com {
   cacheSystem?: boolean; // prompt caching do system (prefixo grande e estático)
+  onProvider?: (p: "anthropic" | "gemini") => void; // qual provedor respondeu (p/ track record honesto)
 }): Promise<string> {
   const apiKey = process.env.ANTHROPIC_API_KEY ?? "";
   // ⚠️ ATENÇÃO: os modelos 4.x (claude-sonnet-4-6, claude-haiku-4-5) NÃO suportam
@@ -166,17 +167,20 @@ export async function callClaude(opts: {
     }
     const data = await response.json() as ClaudeResp;
     const text = data.content.find((b) => b.type === "text")?.text ?? "";
+    opts.onProvider?.("anthropic");
     return opts.prefillJson ? "{" + text : text;
   } catch (err) {
     // Fallback de provedor: sem crédito/rate limit/instabilidade, o site
     // responde pelo Gemini em vez de degradar. Inerte sem GEMINI_API_KEY.
     if (!geminiEnabled() || !shouldFallback(err)) throw err;
     logFallback("callClaude", err);
-    return callGemini({
+    const text = await callGemini({
       messages: opts.messages.map((m) => ({ role: m.role, content: m.content })),
       system: opts.system,
       maxTokens: opts.maxTokens,
       timeoutMs: opts.timeoutMs,
     });
+    opts.onProvider?.("gemini");
+    return text;
   }
 }

@@ -44,21 +44,30 @@ export async function getCalibrationMemo(): Promise<string> {
 
 export async function logAiForecast(f: {
   marketId: string; source: string; title: string; category?: string;
-  marketProb: number; aiFairValue: number; confidence?: string;
+  marketProb: number; aiFairValue: number; confidence?: string; model?: string;
 }): Promise<void> {
   if (!SUPABASE_URL || !SUPABASE_KEY) return;
   if (!f.marketId || (!f.marketId.startsWith("poly-") && !f.marketId.startsWith("kalshi-"))) return;
-  try {
-    await fetch(`${SUPABASE_URL}/rest/v1/ai_forecasts?on_conflict=market_id,source,forecast_date`, {
-      method: "POST",
-      headers: supaWriteHeaders(),
-      body: JSON.stringify({
-        market_id: f.marketId, source: f.source, title: f.title.slice(0, 300),
-        category: f.category ?? "other", market_prob: f.marketProb,
-        ai_fair_value: f.aiFairValue, confidence: f.confidence ?? "media",
-      }),
-      signal: AbortSignal.timeout(6_000),
+  const base: Record<string, unknown> = {
+    market_id: f.marketId, source: f.source, title: f.title.slice(0, 300),
+    category: f.category ?? "other", market_prob: f.marketProb,
+    ai_fair_value: f.aiFairValue, confidence: f.confidence ?? "media",
+  };
+  // `model` só é gravado se a coluna existir (migration 015). Antes disso, o
+  // PostgREST responde 400 PGRST204 → refaz o insert sem o campo. Auto-heal:
+  // funciona igual antes e depois da migration, sem env flag.
+  const post = (row: Record<string, unknown>) =>
+    fetch(`${SUPABASE_URL}/rest/v1/ai_forecasts?on_conflict=market_id,source,forecast_date`, {
+      method: "POST", headers: supaWriteHeaders(),
+      body: JSON.stringify(row), signal: AbortSignal.timeout(6_000),
     });
+  try {
+    if (f.model) {
+      const res = await post({ ...base, model: f.model });
+      if (res.status === 400 && /PGRST204|model/i.test(await res.text())) await post(base);
+    } else {
+      await post(base);
+    }
   } catch { /* fire-and-forget */ }
 }
 
@@ -216,18 +225,22 @@ REGRAS DE CALIBRAÇÃO (nosso Brier é medido publicamente):
 
 Dê seu fair value independente — sua melhor estimativa honesta da probabilidade real de SIM (5-95).
 JSON apenas: {"fairValue": <inteiro 5-95>, "confidence": "baixa|media|alta"}`;
-        const raw = await callClaude({ model: "claude-haiku-4-5-20251001", maxTokens: 80, messages: [{ role: "user", content: prompt }], timeoutMs: 12_000 });
+        let provider: "anthropic" | "gemini" = "anthropic";
+        const raw = await callClaude({ model: "claude-haiku-4-5-20251001", maxTokens: 80, messages: [{ role: "user", content: prompt }], timeoutMs: 15_000, onProvider: (p) => { provider = p; } });
         const parsed = extractJson(raw) as { fairValue?: number; confidence?: string };
         // Clamp duplo no código (como no endpoint de fair value): 5-95 E ±15pp do mercado
         const rawFv = Math.round(Number(parsed.fairValue));
         const fv = Math.max(5, Math.min(95, Math.max(t.marketProb - 15, Math.min(t.marketProb + 15, rawFv))));
         if (!isNaN(fv)) {
           const conf = (parsed.confidence === "alta" || parsed.confidence === "baixa") ? parsed.confidence : "media";
-          await logAiForecast({ marketId: t.marketId, source: t.source, title: t.title, category: t.category, marketProb: t.marketProb, aiFairValue: fv, confidence: conf });
+          await logAiForecast({ marketId: t.marketId, source: t.source, title: t.title, category: t.category, marketProb: t.marketProb, aiFairValue: fv, confidence: conf, model: provider });
           done++;
         }
       } catch { /* pula mercado */ }
-      await sleep(300); // throttle
+      // Throttle generoso: o free tier do Gemini limita ~10 RPM. Com a chamada
+      // levando ~3s, 2.5s de pausa mantém ~11 chamadas/min. Cron em background,
+      // sem pressa — segurança de rate limit > velocidade.
+      await sleep(2_500);
     }
     log.info(`[ai-seed] ${done}/${queue.length} previsões da IA registradas`);
     seedRunning = false;

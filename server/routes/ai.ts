@@ -453,7 +453,13 @@ Os artigos são numerados a partir de [1]. JSON exato (sem markdown):
         probabilityAssessment = (parsed.probabilityAssessment ?? "uncertain") as typeof probabilityAssessment;
         edgeSignal    = parsed.edgeSignal ?? null;
         referenceClass = parsed.referenceClass ?? null;
-        if (typeof parsed.fairValue === "number") fairValue = Math.max(5, Math.min(95, Math.round(parsed.fairValue)));
+        // Mesmo guardrail de calibração do /fair-value e do seed: ±15pp do
+        // mercado (além de 5-95). Sem isto, a análise logava desvios enormes no
+        // track record — o buraco que deixava um "42% vs 21%" (21pp) passar.
+        if (typeof parsed.fairValue === "number") {
+          const fv = Math.round(parsed.fairValue);
+          fairValue = Math.max(5, Math.min(95, Math.max(probPct - 15, Math.min(probPct + 15, fv))));
+        }
         if (parsed.confidence === "baixa" || parsed.confidence === "media" || parsed.confidence === "alta") confidence = parsed.confidence;
         if (Array.isArray(parsed.relevantIndices)) {
           // Marcadores são 1-indexed no prompt → converte para índice de array
