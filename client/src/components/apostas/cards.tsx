@@ -143,18 +143,6 @@ export function VolumeTrend({ volume, volume24h }: { volume?: number; volume24h?
   );
 }
 
-export function HypeBar({ score }: { score: number }) {
-  const color = score >= 70 ? "bg-positive" : score >= 40 ? "bg-gold" : "bg-primary/50";
-  return (
-    <div className="flex items-center gap-2">
-      <div className="flex-1 h-1.5 rounded-full bg-secondary/50 overflow-hidden">
-        <div className={`h-full rounded-full transition-all duration-700 ${color}`} style={{ width: `${score}%` }} />
-      </div>
-      <span className="text-[10px] font-mono text-muted-foreground w-8 text-right">{Math.round(score)}%</span>
-    </div>
-  );
-}
-
 export function SentimentBadge({ label }: { label: string }) {
   return (
     <span className={`text-[10px] font-medium uppercase tracking-wider px-2 py-0.5 rounded-full border ${
@@ -175,30 +163,40 @@ export function SourceBadge({ source, subreddit }: { source: Source; subreddit?:
   return <span className="text-[10px] font-medium px-2 py-0.5 rounded-full border border-neon-blue/30 bg-neon-blue/10 text-neon-blue">Polymarket</span>;
 }
 
-export function ProbPill({ prob, flash }: { prob: number; flash?: "up" | "down" | null }) {
-  const pct = parseFloat((prob * 100).toFixed(1));
-  const baseColor = pct >= 70 ? "text-positive" : pct <= 30 ? "text-negative" : "text-gold";
-  const color = flash === "up" ? "text-positive" : flash === "down" ? "text-negative" : baseColor;
+
+/** Probabilidade protagonista — o número-herói do card (mercados binários).
+ *  Grande e confiante: num site de mercados preditivos, a probabilidade É o produto. */
+export function ProbHero({ prob, flash }: { prob: number; flash?: "up" | "down" | null }) {
+  const pct = Math.round(prob * 100);
+  const base = pct >= 70 ? "text-positive" : pct <= 30 ? "text-negative" : "text-gold";
+  const color = flash === "up" ? "text-positive" : flash === "down" ? "text-negative" : base;
   return (
-    <div className={`flex items-center gap-1.5 transition-all duration-300 ${flash ? "scale-110" : "scale-100"}`}>
-      <div className="relative w-8 h-8">
-        <svg viewBox="0 0 32 32" className="w-8 h-8 -rotate-90">
-          <circle cx="16" cy="16" r="12" fill="none" stroke="currentColor" strokeWidth="3" className="text-secondary/40" />
-          <circle cx="16" cy="16" r="12" fill="none" stroke="currentColor" strokeWidth="3"
-            className={`${color} transition-colors duration-300`}
-            strokeDasharray={`${2 * Math.PI * 12 * prob} ${2 * Math.PI * 12 * (1 - prob)}`}
-            strokeLinecap="round"
-          />
-        </svg>
-        {flash && (
-          <span className={`absolute -top-1 -right-1 text-[8px] font-bold leading-none ${flash === "up" ? "text-positive" : "text-negative"}`}>
-            {flash === "up" ? "▲" : "▼"}
-          </span>
-        )}
+    <div className={`text-right shrink-0 transition-transform duration-300 ${flash ? "scale-105" : "scale-100"}`}>
+      <p className={`font-mono font-bold leading-none tabular-nums ${color} transition-colors duration-300`} style={{ fontSize: "1.75rem" }}>
+        {pct}<span className="text-base align-top">%</span>
+      </p>
+      <p className="text-[9px] text-muted-foreground uppercase tracking-widest mt-1 flex items-center justify-end gap-1">
+        {flash === "up" && <span className="text-positive leading-none">▲</span>}
+        {flash === "down" && <span className="text-negative leading-none">▼</span>}
+        chance SIM
+      </p>
+    </div>
+  );
+}
+
+/** Barra de probabilidade SIM/NÃO — substitui a antiga "barra de hype" (que era
+ *  ~100% em todo card, logo inútil). Esta varia por mercado e É o sinal real. */
+export function ProbBar({ prob }: { prob: number }) {
+  const pct = Math.round(prob * 100);
+  const color = pct >= 70 ? "bg-positive" : pct <= 30 ? "bg-negative" : "bg-gold";
+  return (
+    <div>
+      <div className="h-2 rounded-full bg-secondary/40 overflow-hidden">
+        <div className={`h-full rounded-full ${color} transition-all duration-500`} style={{ width: `${pct}%` }} />
       </div>
-      <div>
-        <p className={`text-sm font-mono font-bold leading-none ${color} transition-colors duration-300`}>{pct}%</p>
-        <p className="text-[9px] text-muted-foreground leading-none mt-0.5">SIM</p>
+      <div className="flex justify-between text-[10px] mt-1">
+        <span className="text-muted-foreground">SIM <span className="text-foreground/70 font-mono font-medium">{pct}%</span></span>
+        <span className="text-muted-foreground">NÃO <span className="text-foreground/70 font-mono font-medium">{100 - pct}%</span></span>
       </div>
     </div>
   );

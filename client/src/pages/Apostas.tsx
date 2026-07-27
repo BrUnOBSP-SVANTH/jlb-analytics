@@ -23,8 +23,8 @@ import {
   type TrendingItem, type CategoryFilter, CATEGORY_LABELS, formatVolume, fetchRedditSub, fetchPolymarketSports, fetchManifold, fetchKalshi, REDDIT_SUBS,
 } from "@/lib/trending";
 import {
-  ProbSparkline, MarketBadge, HypeBar,
-  SentimentBadge, SourceBadge, ProbPill, MultiOutcomePills, BADGE_CONFIG,
+  ProbSparkline, MarketBadge,
+  SentimentBadge, SourceBadge, ProbHero, ProbBar, MultiOutcomePills, BADGE_CONFIG,
 } from "@/components/apostas/cards";
 import { MarketAnalysis, NewsAnalysisPanel } from "@/components/apostas/panels";
 
@@ -147,6 +147,7 @@ function TrendingCardBase({ item, onCompare, inCompare }: {
   inCompare?: boolean;
 }) {
   const [expanded, setExpanded] = useState(false);
+  const [analysisOpen, setAnalysisOpen] = useState(false); // botão único "Analisar" abre as ferramentas
   const [translation, setTranslation] = useState<string | null>(null);
   const [translating, setTranslating] = useState(false);
   const [watched, setWatched] = useState(() => isWatched(item.id));
@@ -218,151 +219,161 @@ function TrendingCardBase({ item, onCompare, inCompare }: {
   return (
     <AnimatedSection>
       <div className="glass-card card-lift rounded-xl p-5">
-        <div className="flex items-start gap-3 mb-3">
-          <div className={`w-2 h-2 rounded-full mt-2 shrink-0 ${
-            item.score >= 70 ? "bg-positive animate-pulse" : item.score >= 40 ? "bg-gold" : "bg-primary/50"
-          }`} />
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-foreground leading-snug mb-1">{item.title}</p>
-            {translating && !translation && isMarket && (
-              <p className="text-[10px] text-muted-foreground mb-1 flex items-center gap-1">
-                <Languages className="w-3 h-3" /> Traduzindo...
-              </p>
-            )}
-            {translation && <p className="text-xs text-gold/80 mb-1 leading-snug italic">{translation}</p>}
-            {!isMarket && (
-              <button onClick={handleTranslate} disabled={translating}
-                className="mb-1.5 flex items-center gap-1 text-[10px] text-muted-foreground hover:text-gold transition-colors disabled:opacity-50">
-                <Languages className="w-3 h-3" />
-                {translating ? "Traduzindo..." : translation ? "Ocultar tradução" : "Traduzir"}
-              </button>
-            )}
-            {isMarket && translation && (
-              <button onClick={() => setTranslation(null)}
-                className="mb-1.5 flex items-center gap-1 text-[10px] text-muted-foreground hover:text-gold transition-colors">
-                <Languages className="w-3 h-3" /> Ocultar tradução
-              </button>
-            )}
-            <div className="flex flex-wrap items-center gap-1.5">
-              <SourceBadge source={item.source} subreddit={item.subreddit} />
-              {item.badge && <MarketBadge badge={item.badge} endDate={item.endDate} />}
-              {jlbEdge && Math.abs(jlbEdge.edge) >= 4 && (
-                <span
-                  title={`Fair value JLB: ${jlbEdge.aiFairValue}% vs mercado — clique para a análise`}
-                  className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
-                    jlbEdge.edge > 0
-                      ? "border-positive/40 bg-positive/10 text-positive"
-                      : "border-negative/40 bg-negative/10 text-negative"
-                  }`}
-                >
-                  JLB {jlbEdge.edge > 0 ? "+" : ""}{jlbEdge.edge}pp
-                </span>
+        {/* ── Cabeçalho: pergunta + probabilidade protagonista ── */}
+        <div className="flex items-start justify-between gap-3 mb-2.5">
+          <div className="flex items-start gap-2 min-w-0 flex-1">
+            <div className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${
+              item.score >= 70 ? "bg-positive animate-pulse" : item.score >= 40 ? "bg-gold" : "bg-primary/50"
+            }`} />
+            <div className="min-w-0">
+              <p className="text-sm font-medium text-foreground leading-snug">{item.title}</p>
+              {translating && !translation && isMarket && (
+                <p className="text-[10px] text-muted-foreground mt-1 flex items-center gap-1">
+                  <Languages className="w-3 h-3" /> Traduzindo...
+                </p>
               )}
-              {/* Neutro é o estado default — só desvios merecem badge */}
-              {item.sentiment.label !== "Neutro" && <SentimentBadge label={item.sentiment.label} />}
-              {item.normalizedCategory !== "other" && item.normalizedCategory !== "all" && (
-                <span className="text-[10px] font-medium px-2 py-0.5 rounded-full border border-primary/20 bg-primary/5 text-primary/70">
-                  {CATEGORY_LABELS[item.normalizedCategory]}
-                </span>
-              )}
-              {item.ageHours > 0 && (
-                <span className="text-[10px] text-muted-foreground flex items-center gap-1">
-                  <Clock className="w-3 h-3" />{formatAge(item.ageHours)}
-                </span>
-              )}
+              {translation && <p className="text-xs text-gold/80 mt-1 leading-snug italic">{translation}</p>}
             </div>
-
-            {/* Multi-outcome bar chart (inline, below badges) */}
-            {item.parsedOutcomes && (
-              <div className="mt-3">
-                <p className="text-[9px] text-muted-foreground uppercase tracking-wider mb-1.5">Probabilidades</p>
-                <MultiOutcomePills outcomes={item.parsedOutcomes} />
-              </div>
-            )}
-            {item.source === "polymarket" && item.clobTokenIds && !item.parsedOutcomes && (
-              <ProbSparkline tokenIds={item.clobTokenIds} marketId={item.id} source="polymarket" />
-            )}
-            {item.source === "kalshi" && !item.parsedOutcomes && (
-              <ProbSparkline marketId={item.id} source="kalshi" />
-            )}
           </div>
-          {/* Binary prob pill — only shown when there are NOT multiple outcomes */}
+          {/* Número-herói (mercados binários) */}
           {item.yesProb !== undefined && !item.parsedOutcomes && (
-            <div className="shrink-0"><ProbPill prob={livePct / 100} flash={liveFlash ?? probFlash} /></div>
+            <ProbHero prob={livePct / 100} flash={liveFlash ?? probFlash} />
           )}
         </div>
 
-        <div className="mb-3">
-          <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1.5">Nível de Hype</p>
-          <HypeBar score={item.score} />
+        {/* ── Badges ── */}
+        <div className="flex flex-wrap items-center gap-1.5 mb-3">
+          <SourceBadge source={item.source} subreddit={item.subreddit} />
+          {item.badge && <MarketBadge badge={item.badge} endDate={item.endDate} />}
+          {jlbEdge && Math.abs(jlbEdge.edge) >= 4 && (
+            <span
+              title={`Fair value JLB: ${jlbEdge.aiFairValue}% vs mercado — clique em Analisar`}
+              className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                jlbEdge.edge > 0
+                  ? "border-positive/40 bg-positive/10 text-positive"
+                  : "border-negative/40 bg-negative/10 text-negative"
+              }`}
+            >
+              JLB {jlbEdge.edge > 0 ? "+" : ""}{jlbEdge.edge}pp
+            </span>
+          )}
+          {item.sentiment.label !== "Neutro" && <SentimentBadge label={item.sentiment.label} />}
+          {item.normalizedCategory !== "other" && item.normalizedCategory !== "all" && (
+            <span className="text-[10px] font-medium px-2 py-0.5 rounded-full border border-primary/20 bg-primary/5 text-primary/70">
+              {CATEGORY_LABELS[item.normalizedCategory]}
+            </span>
+          )}
+          {item.ageHours > 0 && (
+            <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+              <Clock className="w-3 h-3" />{formatAge(item.ageHours)}
+            </span>
+          )}
+          {/* Tradução como chip discreto no fim da linha (não gasta uma linha própria) */}
+          {isMarket && translation && (
+            <button onClick={() => setTranslation(null)}
+              className="text-[10px] text-muted-foreground/70 hover:text-gold transition-colors flex items-center gap-0.5">
+              <Languages className="w-3 h-3" />ocultar
+            </button>
+          )}
+          {!isMarket && (
+            <button onClick={handleTranslate} disabled={translating}
+              className="text-[10px] text-muted-foreground/70 hover:text-gold transition-colors flex items-center gap-0.5 disabled:opacity-50">
+              <Languages className="w-3 h-3" />
+              {translating ? "traduzindo..." : translation ? "ocultar" : "traduzir"}
+            </button>
+          )}
         </div>
 
-        <div className="flex items-center gap-4 text-xs text-muted-foreground mb-3">
+        {/* ── Probabilidade: barra SIM/NÃO (binário) ou breakdown (multi-outcome) ── */}
+        {item.parsedOutcomes ? (
+          <div className="mb-3">
+            <p className="text-[9px] text-muted-foreground uppercase tracking-wider mb-1.5">Probabilidades</p>
+            <MultiOutcomePills outcomes={item.parsedOutcomes} />
+          </div>
+        ) : item.yesProb !== undefined ? (
+          <div className="mb-3"><ProbBar prob={livePct / 100} /></div>
+        ) : null}
+
+        {/* ── Mini-tendência 7d (mercados) ── */}
+        {item.source === "polymarket" && item.clobTokenIds && !item.parsedOutcomes && (
+          <ProbSparkline tokenIds={item.clobTokenIds} marketId={item.id} source="polymarket" />
+        )}
+        {item.source === "kalshi" && !item.parsedOutcomes && (
+          <ProbSparkline marketId={item.id} source="kalshi" />
+        )}
+
+        {/* ── Stats + insight (compacto) ── */}
+        <div className="flex items-center gap-4 text-xs text-muted-foreground mt-2 mb-2">
           {item.upvotes !== undefined && (
             <span className="flex items-center gap-1"><TrendingUp className="w-3 h-3" />{item.upvotes.toLocaleString()} votos</span>
           )}
           {item.comments !== undefined && (
-            <span className="flex items-center gap-1"><MessageSquare className="w-3 h-3" />{item.comments.toLocaleString()} comentários</span>
+            <span className="flex items-center gap-1"><MessageSquare className="w-3 h-3" />{item.comments.toLocaleString()} coment.</span>
           )}
           {item.volume !== undefined && (
             <span className="flex items-center gap-1"><BarChart2 className="w-3 h-3" />{formatVolume(item.volume)} volume</span>
           )}
         </div>
+        <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2 mb-3">
+          <Flame className="w-3 h-3 text-primary/70 inline mr-1 align-[-2px]" />{item.whyTrending}
+        </p>
 
-        {/* Container quieto — o lampejo dourado fica só no rótulo; caixa âmbar em
-            todo card virava ruído repetido em vez de destaque */}
-        <div className="p-3 rounded-lg bg-secondary/15 border border-border/15 mb-3">
-          <p className="text-[10px] font-semibold text-primary/80 uppercase tracking-wider mb-1 flex items-center gap-1">
-            <Flame className="w-3 h-3" />Por que está em alta
-          </p>
-          <p className="text-xs text-muted-foreground leading-relaxed">{item.whyTrending}</p>
-        </div>
-
-        {/* Quantitative analysis toggle */}
+        {/* ── Botão único: revela as ferramentas de análise sob demanda ── */}
         <button
-          className="w-full text-left text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center justify-between gap-1 py-1"
-          onClick={() => setExpanded((v) => !v)}
+          onClick={() => setAnalysisOpen((v) => !v)}
+          className="w-full flex items-center justify-center gap-1.5 py-2 rounded-lg border border-border/30 bg-secondary/20 text-xs font-medium text-foreground/80 hover:text-foreground hover:border-primary/30 transition-colors"
+          aria-expanded={analysisOpen}
         >
-          <span className="flex items-center gap-1">
-            {isMarket
-              ? <><Calculator className="w-3 h-3" />{expanded ? "Ocultar análise quantitativa" : "Ver análise quantitativa + calculadora"}</>
-              : <><TrendingUp className="w-3 h-3" />{expanded ? "Ocultar análise de aposta" : "Ver análise de aposta"}</>
-            }
-          </span>
-          {expanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+          <Sparkles className="w-3.5 h-3.5 text-primary/70" aria-hidden="true" />
+          {analysisOpen ? "Ocultar análise" : "Analisar"}
+          {analysisOpen ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
         </button>
 
-        {expanded && (
-          <div className="mt-2 p-3 rounded-lg bg-obsidian/50 border border-border/20 mb-2">
-            {isMarket && item.yesProb !== undefined
-              ? <MarketAnalysis item={item} />
-              : <p className="text-xs text-muted-foreground leading-relaxed">{item.bestBetNote}</p>
-            }
+        {analysisOpen && (
+          <div className="mt-3 space-y-1">
+            {/* Análise quantitativa / de aposta */}
+            <button
+              className="w-full text-left text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center justify-between gap-1 py-1"
+              onClick={() => setExpanded((v) => !v)}
+            >
+              <span className="flex items-center gap-1">
+                {isMarket
+                  ? <><Calculator className="w-3 h-3" />{expanded ? "Ocultar análise quantitativa" : "Análise quantitativa + calculadora"}</>
+                  : <><TrendingUp className="w-3 h-3" />{expanded ? "Ocultar análise de aposta" : "Análise de aposta"}</>
+                }
+              </span>
+              {expanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+            </button>
+            {expanded && (
+              <div className="mt-1 p-3 rounded-lg bg-obsidian/50 border border-border/20">
+                {isMarket && item.yesProb !== undefined
+                  ? <MarketAnalysis item={item} />
+                  : <p className="text-xs text-muted-foreground leading-relaxed">{item.bestBetNote}</p>
+                }
+              </div>
+            )}
+
+            {/* IA + notícias (todas as fontes) */}
+            <NewsAnalysisPanel item={item} />
+
+            {/* Fair value + edge (mercados binários) */}
+            {(item.source === "polymarket" || item.source === "kalshi") && (
+              <FairValuePanel item={item} />
+            )}
+            {(item.source === "polymarket" || item.source === "kalshi") && (
+              <ExplainEdgePanel item={item} />
+            )}
           </div>
         )}
 
-        {/* News + AI analysis — available for all sources */}
-        <div className="border-t border-border/10 pt-2 mt-1">
-          <NewsAnalysisPanel item={item} />
-        </div>
-
-        {/* Fair Value independente JLB — apenas para mercados Polymarket/Kalshi */}
-        {(item.source === "polymarket" || item.source === "kalshi") && (
-          <FairValuePanel item={item} />
-        )}
-
-        {/* Explicar meu edge — apenas para mercados binários */}
-        {(item.source === "polymarket" || item.source === "kalshi") && (
-          <ExplainEdgePanel item={item} />
-        )}
-
+        {/* ── Rodapé ── */}
         <div className="mt-3 pt-3 border-t border-border/20 flex items-center justify-between gap-2">
           <a href={item.externalUrl} target="_blank" rel="noopener noreferrer"
             className="inline-flex items-center gap-1.5 text-xs text-primary/70 hover:text-primary transition-colors">
             <ExternalLink className="w-3 h-3" />
-            {item.source === "reddit" ? "Ver discussão no Reddit"
-              : item.source === "kalshi" ? "Ver mercado no Kalshi"
-              : "Ver mercado no Polymarket"}
+            {item.source === "reddit" ? "Ver no Reddit"
+              : item.source === "kalshi" ? "Ver no Kalshi"
+              : "Ver no Polymarket"}
           </a>
           <div className="flex items-center gap-1">
             {onCompare && (
