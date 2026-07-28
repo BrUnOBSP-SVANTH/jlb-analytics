@@ -548,7 +548,8 @@ export default function MarketDetail() {
 
   const chartData = snapshotRows.map((pt) => ({
     date: new Date(pt.t * 1000).toLocaleDateString("pt-BR", { day: "2-digit", month: "short" }),
-    prob: Math.round(pt.p * 100),
+    // yes_prob dos snapshots já é 0-100 (não 0-1) — o *100 dava "8720%" no eixo
+    prob: Math.round(pt.p),
   }));
 
   const currentProb = market?.yesProb ?? 0;
