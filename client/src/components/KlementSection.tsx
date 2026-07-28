@@ -400,7 +400,7 @@ export default function KlementSection({ onClose }: { onClose: () => void }) {
           {[
             { label: "Acurácia histórica", value: "3/3",  sub: "Copas previstas corretamente",    color: "text-positive" },
             { label: "Poder explicativo",  value: "55%",  sub: "Variância explicada pelo modelo",  color: "text-gold" },
-            { label: "Iterações MC",       value: "10k",  sub: "Simulações do torneio completo",   color: "text-neon-blue" },
+            { label: "Iterações MC",       value: `${N_SIMULATIONS / 1000}k`, sub: "Simulações do torneio completo",   color: "text-neon-blue" },
             { label: "Seleções",           value: "48",   sub: "Todas as classificadas para 2026", color: "text-foreground" },
           ].map(s => (
             <div key={s.label} className="glass-card rounded-xl p-4 text-center">
