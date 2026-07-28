@@ -7,6 +7,7 @@ import { CATEGORY_BASE_RATES } from "./categoryRates.ts";
 import { callClaude } from "./anthropic.ts";
 import { extractJson } from "./extractJson.ts";
 import { getCache, setCache } from "./cache.ts";
+import { fetchCerebroContext } from "./cerebro.ts";
 import { log } from "./log.ts";
 
 // ── Auto-calibração: o viés medido nas resolvidas volta para o prompt ────────
@@ -214,33 +215,53 @@ export async function seedAiForecasts(maxMarkets = 18): Promise<{ started: boole
       try {
         const catKey = t.category.toLowerCase().replace(/[^a-z]/g, "") || "other";
         const baseRate = (CATEGORY_BASE_RATES[catKey] ?? CATEGORY_BASE_RATES["other"]).baseRate;
+        // Contexto de notícias recentes (Cerebro): antes o seed previa no escuro,
+        // só com preço + base rate. Agora a previsão reflete o que ESTÁ ACONTECENDO
+        // — é o que liga a nossa nota (Brier) aos fatos reais, não a chutes.
+        // Enxugado a ~900 chars: o seed só devolve fairValue+confidence, então
+        // não precisa do contexto inteiro — e prompt menor = chamada mais rápida,
+        // crítica porque o Gemini (fallback) é mais lento e estourava o timeout.
+        const { context: rawCtx } = await fetchCerebroContext(t.title).catch(() => ({ context: "", hits: [] }));
+        const newsCtx = rawCtx ? rawCtx.slice(0, 900) : "";
         const prompt = `Mercado preditivo: "${t.title}"
 Preço atual do mercado: ${t.marketProb}% SIM
 Categoria: ${t.category} (base rate histórica ~${baseRate}%)
-${memo ? `\n${memo}\n` : ""}
+${newsCtx ? `\nNOTÍCIAS RECENTES E CONTEXTO (base curada do Cerebro):\n${newsCtx}\n` : ""}${memo ? `\n${memo}\n` : ""}
 REGRAS DE CALIBRAÇÃO (nosso Brier é medido publicamente):
 - O preço de um mercado líquido já agrega a informação disponível — ele é sua âncora principal, não a base rate.
-- Desvie do preço APENAS se souber de fato concreto que o justifique; sem isso, fique a ±3pp do mercado.
+- Desvie do preço APENAS se as notícias acima trouxerem um fato concreto que o justifique; sem isso, fique a ±3pp do mercado.
 - NUNCA desvie mais de 15pp do preço.
 
 Dê seu fair value independente — sua melhor estimativa honesta da probabilidade real de SIM (5-95).
 JSON apenas: {"fairValue": <inteiro 5-95>, "confidence": "baixa|media|alta"}`;
         let provider: "anthropic" | "gemini" = "anthropic";
-        const raw = await callClaude({ model: "claude-haiku-4-5-20251001", maxTokens: 80, messages: [{ role: "user", content: prompt }], timeoutMs: 15_000, onProvider: (p) => { provider = p; } });
-        const parsed = extractJson(raw) as { fairValue?: number; confidence?: string };
-        // Clamp duplo no código (como no endpoint de fair value): 5-95 E ±15pp do mercado
-        const rawFv = Math.round(Number(parsed.fairValue));
-        const fv = Math.max(5, Math.min(95, Math.max(t.marketProb - 15, Math.min(t.marketProb + 15, rawFv))));
+        // Retry (2 tentativas): o free tier do Gemini tem falhas transitórias —
+        // timeout ocasional, rate limit (429), resposta vazia. Sem retry, cada
+        // tropeço custava o mercado inteiro (rendimento caiu de 15/18 → 5/18 ao
+        // adicionar o contexto de notícias). Uma 2ª tentativa recupera a maioria.
+        let fv = NaN; let conf = "media";
+        for (let attempt = 0; attempt < 2; attempt++) {
+          try {
+            const raw = await callClaude({ model: "claude-haiku-4-5-20251001", maxTokens: 80, messages: [{ role: "user", content: prompt }], timeoutMs: 25_000, onProvider: (p) => { provider = p; } });
+            const parsed = extractJson(raw) as { fairValue?: number; confidence?: string };
+            // Clamp duplo no código (como no endpoint de fair value): 5-95 E ±15pp do mercado
+            const rawFv = Math.round(Number(parsed.fairValue));
+            const clamped = Math.max(5, Math.min(95, Math.max(t.marketProb - 15, Math.min(t.marketProb + 15, rawFv))));
+            if (!isNaN(clamped)) {
+              fv = clamped;
+              conf = (parsed.confidence === "alta" || parsed.confidence === "baixa") ? parsed.confidence : "media";
+              break;
+            }
+          } catch { if (attempt === 0) await sleep(3_000); } // backoff antes da 2ª tentativa
+        }
         if (!isNaN(fv)) {
-          const conf = (parsed.confidence === "alta" || parsed.confidence === "baixa") ? parsed.confidence : "media";
           await logAiForecast({ marketId: t.marketId, source: t.source, title: t.title, category: t.category, marketProb: t.marketProb, aiFairValue: fv, confidence: conf, model: provider });
           done++;
         }
       } catch { /* pula mercado */ }
-      // Throttle generoso: o free tier do Gemini limita ~10 RPM. Com a chamada
-      // levando ~3s, 2.5s de pausa mantém ~11 chamadas/min. Cron em background,
-      // sem pressa — segurança de rate limit > velocidade.
-      await sleep(2_500);
+      // Throttle: ~10 RPM no free tier do Gemini. Com a chamada news-aware
+      // levando ~5-8s, 3s de pausa mantém a folga. Cron em background, sem pressa.
+      await sleep(3_000);
     }
     log.info(`[ai-seed] ${done}/${queue.length} previsões da IA registradas`);
     seedRunning = false;

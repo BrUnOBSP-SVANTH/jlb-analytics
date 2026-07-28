@@ -7,7 +7,7 @@ import { getCache, setCache } from "./cache.ts";
 import { callClaude } from "./anthropic.ts";
 import { extractJson } from "./extractJson.ts";
 
-interface CerebroHit { title: string; summary: string; source: string; kind: "síntese" | "artigo" }
+interface CerebroHit { title: string; summary: string; source: string; kind: "síntese" | "artigo"; date?: string }
 
 const STOPWORDS = new Set([
   // PT
@@ -51,15 +51,26 @@ export function looksEnglish(text: string): boolean {
 
 const normText = (s: string) => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
 
+/** Frescor: notícia de hoje vale ~0.9; decai linearmente até 0 em 21 dias.
+ *  Teto < 1 de propósito — desempata hits de mesma relevância, mas NUNCA
+ *  atropela um hit com um termo a mais (que vale 1.0). Relevância > recência. */
+function recencyBoost(date?: string): number {
+  if (!date) return 0;
+  const ageDays = (Date.now() - new Date(date).getTime()) / 86_400_000;
+  if (!Number.isFinite(ageDays) || ageDays < 0) return 0;
+  return 0.9 * Math.max(0, 1 - ageDays / 21);
+}
+
 /** Re-rank barato sem LLM: ordena por nº de termos da consulta presentes no
- *  título+resumo (sínteses ganham meio ponto — são mais densas). É o que
- *  salva a relevância do fallback OR, que casa por UM termo só. Exportada p/ teste. */
-export function rankHits<T extends { title: string; summary: string; kind?: string }>(hits: T[], terms: string[]): T[] {
+ *  título+resumo (sínteses ganham meio ponto) + bônus de frescor. É o que
+ *  salva a relevância do fallback OR e faz a notícia recente subir. Exportada p/ teste. */
+export function rankHits<T extends { title: string; summary: string; kind?: string; date?: string }>(hits: T[], terms: string[]): T[] {
   const nterms = Array.from(new Set(terms.map(normText).filter((t) => t.length >= 4)));
   if (nterms.length === 0) return hits;
   const score = (h: T) => {
     const text = normText(`${h.title} ${h.summary}`);
-    return nterms.reduce((acc, t) => acc + (text.includes(t) ? 1 : 0), 0) + (h.kind === "síntese" ? 0.5 : 0);
+    const overlap = nterms.reduce((acc, t) => acc + (text.includes(t) ? 1 : 0), 0);
+    return overlap + (h.kind === "síntese" ? 0.5 : 0) + recencyBoost(h.date);
   };
   return hits.map((h) => ({ h, s: score(h) })).sort((a, b) => b.s - a.s).map(({ h }) => h);
 }
@@ -82,18 +93,18 @@ async function queryCerebro(kw: string, op: "plfts" | "wfts" = "plfts"): Promise
   const enc = encodeURIComponent(kw);
 
   const [synthRes, artRes] = await Promise.allSettled([
-    fetch(`${SUPABASE_URL}/rest/v1/cerebro_analyses?fts=${op}(portuguese).${enc}&status=eq.active&select=title,content&order=wiki_date.desc&limit=3`, { headers, signal: AbortSignal.timeout(6_000) }),
-    fetch(`${SUPABASE_URL}/rest/v1/cerebro_articles?fts=${op}(portuguese).${enc}&status=eq.active&select=title,summary,source&order=published_at.desc&limit=6`, { headers, signal: AbortSignal.timeout(6_000) }),
+    fetch(`${SUPABASE_URL}/rest/v1/cerebro_analyses?fts=${op}(portuguese).${enc}&status=eq.active&select=title,content,wiki_date&order=wiki_date.desc&limit=3`, { headers, signal: AbortSignal.timeout(6_000) }),
+    fetch(`${SUPABASE_URL}/rest/v1/cerebro_articles?fts=${op}(portuguese).${enc}&status=eq.active&select=title,summary,source,published_at&order=published_at.desc&limit=6`, { headers, signal: AbortSignal.timeout(6_000) }),
   ]);
 
   const hits: CerebroHit[] = [];
   if (synthRes.status === "fulfilled" && synthRes.value.ok) {
-    const rows = await synthRes.value.json() as Array<{ title: string; content: string }>;
-    for (const r of rows) hits.push({ title: r.title, summary: (r.content ?? "").slice(0, 400), source: "Cerebro IA", kind: "síntese" });
+    const rows = await synthRes.value.json() as Array<{ title: string; content: string; wiki_date: string | null }>;
+    for (const r of rows) hits.push({ title: r.title, summary: (r.content ?? "").slice(0, 400), source: "Cerebro IA", kind: "síntese", date: r.wiki_date ?? undefined });
   }
   if (artRes.status === "fulfilled" && artRes.value.ok) {
-    const rows = await artRes.value.json() as Array<{ title: string; summary: string | null; source: string }>;
-    for (const r of rows) hits.push({ title: r.title, summary: (r.summary ?? "").slice(0, 250), source: r.source, kind: "artigo" });
+    const rows = await artRes.value.json() as Array<{ title: string; summary: string | null; source: string; published_at: string | null }>;
+    for (const r of rows) hits.push({ title: r.title, summary: (r.summary ?? "").slice(0, 250), source: r.source, kind: "artigo", date: r.published_at ?? undefined });
   }
   return hits;
 }

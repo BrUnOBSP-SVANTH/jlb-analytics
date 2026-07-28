@@ -517,10 +517,13 @@ async function startServer() {
     setInterval(() => { void scoreAiForecasts(); void resolveActiveDuels(); }, 6 * 60 * 60 * 1000); // a cada 6h
     log.info("   AI track record + duelos: scoring automático a cada 6h ✅");
 
-    // Seed de previsões da IA: 4min após o boot (mercados já em cache), depois 1×/dia
+    // Seed de previsões da IA: 4min após o boot, depois a cada 6h. Frequência
+    // subiu de 24h→6h porque o seed agora é news-aware (lê o Cerebro): rodar
+    // mais vezes mantém as previsões coladas às notícias recentes, em vez de
+    // congeladas por um dia. Cota folgada: 18 mercados × 4/dia = 72 chamadas.
     setTimeout(() => { void seedAiForecasts(); }, 4 * 60_000);
-    setInterval(() => { void seedAiForecasts(); }, 24 * 60 * 60 * 1000);
-    log.info("   AI seed: previsões nos top mercados (Consenso/Divergências) ✅");
+    setInterval(() => { void seedAiForecasts(); }, 6 * 60 * 60 * 1000);
+    log.info("   AI seed: previsões news-aware nos top mercados, a cada 6h ✅");
 
     // Resumo semanal por email: checa 1×/dia, RPC entrega só a quem está há 6+ dias sem receber
     setInterval(() => { void sendWeeklyDigests(); }, 24 * 60 * 60 * 1000);

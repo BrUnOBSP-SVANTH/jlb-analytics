@@ -66,6 +66,26 @@ describe("rankHits", () => {
     const ranked = rankHits(hits, ["ab", "de"]);
     expect(ranked.map((h) => h.title)).toEqual(hits.map((h) => h.title));
   });
+
+  it("com mesma relevância, o mais recente vem primeiro", () => {
+    const hoje = new Date().toISOString();
+    const antigo = new Date(Date.now() - 30 * 86_400_000).toISOString();
+    const ranked = rankHits([
+      { title: "Selic sobe", summary: "juros", date: antigo },
+      { title: "Selic sobe de novo", summary: "juros", date: hoje },
+    ], ["selic", "juros"]);
+    expect(ranked[0].date).toBe(hoje);
+  });
+
+  it("recência NÃO atropela um termo a mais de relevância", () => {
+    const hoje = new Date().toISOString();
+    const antigo = new Date(Date.now() - 30 * 86_400_000).toISOString();
+    const ranked = rankHits([
+      { title: "Selic e inflação subindo", summary: "juros altos", date: antigo }, // 3 termos, antigo
+      { title: "Selic hoje", summary: "", date: hoje },                            // 1 termo, fresco
+    ], ["selic", "inflacao", "juros"]);
+    expect(ranked[0].title).toContain("inflação"); // relevância vence a recência
+  });
 });
 
 describe("dedupeByTitle", () => {
