@@ -541,11 +541,19 @@ function WatchlistSection() {
             : displayPct >= 70 ? "text-positive" : displayPct <= 30 ? "text-negative" : "text-gold";
           const delta = (liveProb !== null && savedProb !== null) ? liveProb - savedProb : null;
           const threshold = item.alertThreshold ?? 5;
+          // Polymarket/Kalshi têm tela dedicada (/apostas/:id); Reddit não — fica só título.
+          const detailHref = item.source === "polymarket" || item.source === "kalshi" ? `/apostas/${item.id}` : null;
 
           return (
             <div key={item.id} className="flex items-center gap-3 p-3 rounded-lg border border-border/30 bg-secondary/10">
               <div className="flex-1 min-w-0">
-                <p className="text-xs font-medium text-foreground leading-snug line-clamp-1">{item.title}</p>
+                {detailHref ? (
+                  <Link href={detailHref}>
+                    <p className="text-xs font-medium text-foreground leading-snug line-clamp-1 hover:text-gold transition-colors cursor-pointer">{item.title}</p>
+                  </Link>
+                ) : (
+                  <p className="text-xs font-medium text-foreground leading-snug line-clamp-1">{item.title}</p>
+                )}
                 <div className="flex items-center gap-2 mt-1 flex-wrap">
                   <span className={`text-[10px] px-1.5 py-0.5 rounded border ${SOURCE_COLOR[item.source] ?? ""}`}>
                     {SOURCE_LABEL[item.source] ?? item.source}
@@ -579,7 +587,8 @@ function WatchlistSection() {
                 </button>
                 <a href={item.externalUrl} target="_blank" rel="noopener noreferrer"
                   className="p-1.5 rounded-md text-muted-foreground/50 hover:text-primary transition-colors"
-                  title="Abrir mercado" aria-label={`Abrir mercado: ${item.title}`}>
+                  title={`Ver no ${SOURCE_LABEL[item.source] ?? item.source}`}
+                  aria-label={`Ver na fonte (${SOURCE_LABEL[item.source] ?? item.source}): ${item.title}`}>
                   <ExternalLink className="w-3.5 h-3.5" aria-hidden="true" />
                 </a>
                 <button
