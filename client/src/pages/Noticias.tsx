@@ -11,7 +11,7 @@ import {
   AlertCircle, Loader2, BookmarkPlus, Check, X as XIcon,
   ChevronUp, Target, Languages, BarChart2,
   Search, BookOpen, Clock, Globe, Brain, ChevronRight,
-  Zap,
+  Zap, ArrowRight,
 } from "lucide-react";
 import { Link } from "wouter";
 import { getMarkets } from "@/lib/marketsCache";
@@ -19,7 +19,7 @@ import MercadosTabs from "@/components/MercadosTabs";
 import { CategoryBadge } from "@/components/noticias/cards";
 import { ProbHero, ProbBar } from "@/components/apostas/cards";
 import { type Article, timeAgoISO } from "@/lib/noticiasShared";
-import { MarketAnalysisModal, ArticleDetailModal, type SelectedMarket } from "@/components/noticias/AnalysisModals";
+import { ArticleDetailModal } from "@/components/noticias/AnalysisModals";
 import {
   addPrediction, analyzeSentiment,
   edge, kellyFraction, loadPredictions,
@@ -195,12 +195,11 @@ interface MarketCardProps {
   market: PolyMarket;
   savedIds: Set<string>;
   onSaved: (p: StoredPrediction) => void;
-  onAnalyze: (m: SelectedMarket) => void;
   /** Badge "★ Destaque" — restrito aos poucos de maior volume; em todo card não destaca nada */
   highlight?: boolean;
 }
 
-function MarketCard({ market, savedIds, onSaved, onAnalyze, highlight = false }: MarketCardProps) {
+function MarketCard({ market, savedIds, onSaved, highlight = false }: MarketCardProps) {
   const [tracking, setTracking] = useState(false);
   const [justSaved, setJustSaved] = useState(false);
   const [translation, setTranslation] = useState<string | null>(null);
@@ -254,9 +253,12 @@ function MarketCard({ market, savedIds, onSaved, onAnalyze, highlight = false }:
       {/* Pergunta + probabilidade protagonista (mesmo padrão da tela de Apostas) */}
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-medium text-foreground leading-snug line-clamp-3">
-            {market.question}
-          </p>
+          {/* Título clicável → tela de detalhe (coeso com a tela de Apostas) */}
+          <Link href={`/apostas/poly-${market.id}`}>
+            <p className="text-sm font-medium text-foreground leading-snug line-clamp-3 hover:text-gold transition-colors cursor-pointer">
+              {market.question}
+            </p>
+          </Link>
           {translation && (
             <p className="text-xs text-gold/80 mt-1 leading-snug italic">{translation}</p>
           )}
@@ -330,15 +332,15 @@ function MarketCard({ market, savedIds, onSaved, onAnalyze, highlight = false }:
         />
       )}
 
-      {/* Analisar + notícias */}
+      {/* Analisar → tela de detalhe dedicada (stats, consenso, histórico, IA + notícias) */}
       {prices && (
-        <button
-          onClick={() => onAnalyze({ title: market.question, prob: Math.round(prices.yes), source: "Polymarket", id: `poly-${market.id}`, category: market.category })}
-          className="w-full flex items-center justify-center gap-1.5 py-1.5 rounded-lg border border-border/20 text-[11px] text-muted-foreground hover:text-gold hover:border-gold/20 transition-colors"
-        >
-          <Zap className="w-3 h-3" />
-          Analisar + notícias
-        </button>
+        <Link href={`/apostas/poly-${market.id}`}>
+          <span className="w-full flex items-center justify-center gap-1.5 py-1.5 rounded-lg border border-border/20 text-[11px] text-muted-foreground hover:text-gold hover:border-gold/20 transition-colors cursor-pointer">
+            <Zap className="w-3 h-3" />
+            Analisar mercado
+            <ArrowRight className="w-3 h-3" />
+          </span>
+        </Link>
       )}
     </div>
   );
@@ -385,7 +387,7 @@ function PostCard({ post }: { post: RedditPost }) {
 
 // ── Kalshi card ────────────────────────────────────────────────────────────
 
-function KalshiCard({ market, onAnalyze }: { market: KalshiMarket; onAnalyze: (m: SelectedMarket) => void }) {
+function KalshiCard({ market }: { market: KalshiMarket }) {
   const [translation, setTranslation] = useState<string | null>(null);
   const [translating, setTranslating] = useState(false);
   const [predictOpen, setPredictOpen] = useState(false);
@@ -439,7 +441,9 @@ function KalshiCard({ market, onAnalyze }: { market: KalshiMarket; onAnalyze: (m
 
       {/* Title */}
       <div>
-        <p className="text-sm font-medium text-foreground leading-snug line-clamp-3">{market.title}</p>
+        <Link href={`/apostas/kalshi-${market.ticker}`}>
+          <p className="text-sm font-medium text-foreground leading-snug line-clamp-3 hover:text-gold transition-colors cursor-pointer">{market.title}</p>
+        </Link>
         {translation && <p className="text-xs text-gold/80 mt-1 leading-snug italic">{translation}</p>}
         <button
           onClick={handleTranslate}
@@ -540,14 +544,14 @@ function KalshiCard({ market, onAnalyze }: { market: KalshiMarket; onAnalyze: (m
         </a>
       </div>
 
-      {/* Analisar + notícias */}
-      <button
-        onClick={() => onAnalyze({ title: market.title, prob: Math.round(market.yesProb), source: "Kalshi", id: `kalshi-${market.ticker}`, category: market.category })}
-        className="w-full flex items-center justify-center gap-1.5 py-1.5 rounded-lg border border-border/20 text-[11px] text-muted-foreground hover:text-gold hover:border-gold/20 transition-colors"
-      >
-        <Zap className="w-3 h-3" />
-        Analisar + notícias
-      </button>
+      {/* Analisar → tela de detalhe dedicada */}
+      <Link href={`/apostas/kalshi-${market.ticker}`}>
+        <span className="w-full flex items-center justify-center gap-1.5 py-1.5 rounded-lg border border-border/20 text-[11px] text-muted-foreground hover:text-gold hover:border-gold/20 transition-colors cursor-pointer">
+          <Zap className="w-3 h-3" />
+          Analisar mercado
+          <ArrowRight className="w-3 h-3" />
+        </span>
+      </Link>
     </div>
   );
 }
@@ -729,7 +733,6 @@ export default function Noticias() {
   const [recentSaves, setRecentSaves] = useState<StoredPrediction[]>([]);
   const feedbackRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
-  const [selectedMarket, setSelectedMarket] = useState<SelectedMarket | null>(null);
 
   // O flag "featured" da Gamma API vem em ~80% dos eventos — badge em todo card
   // não destaca nada. Estrela só nos 3 featured de maior volume.
@@ -984,7 +987,7 @@ export default function Noticias() {
           <AnimatedSection>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {markets.map((m) => (
-                <MarketCard key={m.id} market={m} savedIds={savedIds} onSaved={handleSaved} onAnalyze={setSelectedMarket} highlight={topFeaturedIds.has(m.id)} />
+                <MarketCard key={m.id} market={m} savedIds={savedIds} onSaved={handleSaved} highlight={topFeaturedIds.has(m.id)} />
               ))}
             </div>
             <p className="text-xs text-muted-foreground text-center mt-6">
@@ -1000,7 +1003,7 @@ export default function Noticias() {
           <AnimatedSection>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {kalshiMarkets.map((m) => (
-                <KalshiCard key={m.ticker} market={m} onAnalyze={setSelectedMarket} />
+                <KalshiCard key={m.ticker} market={m} />
               ))}
             </div>
             <p className="text-xs text-muted-foreground text-center mt-6">
@@ -1129,13 +1132,6 @@ export default function Noticias() {
         />
       )}
 
-      {/* Market analysis modal */}
-      {selectedMarket && (
-        <MarketAnalysisModal
-          market={selectedMarket}
-          onClose={() => setSelectedMarket(null)}
-        />
-      )}
     </div>
   );
 }
