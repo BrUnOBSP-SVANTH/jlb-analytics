@@ -12,7 +12,7 @@ import {
   RefreshCw, BarChart2, AlertCircle, Clock, Languages,
   ChevronDown, ChevronUp, Calculator, Target, Info,
   Sparkles, Bookmark, BookmarkCheck, Bell, BellOff,
-  LayoutGrid, List, ArrowUpDown, Scale, X as CloseX, AlignJustify, Link2,
+  LayoutGrid, List, ArrowUpDown, Scale, X as CloseX, AlignJustify, Link2, ArrowRight,
 } from "lucide-react";
 import MercadosTabs from "@/components/MercadosTabs";
 import { addToWatchlist, removeFromWatchlist, isWatched, loadWatchlist, updateWatchlistProbs } from "@/lib/watchlist";
@@ -26,7 +26,7 @@ import {
   ProbSparkline, MarketBadge,
   SentimentBadge, SourceBadge, ProbHero, ProbBar, MultiOutcomePills, BADGE_CONFIG,
 } from "@/components/apostas/cards";
-import { MarketAnalysis, NewsAnalysisPanel } from "@/components/apostas/panels";
+import { NewsAnalysisPanel } from "@/components/apostas/panels";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -226,7 +226,14 @@ function TrendingCardBase({ item, onCompare, inCompare }: {
               item.score >= 70 ? "bg-positive animate-pulse" : item.score >= 40 ? "bg-gold" : "bg-primary/50"
             }`} />
             <div className="min-w-0">
-              <p className="text-sm font-medium text-foreground leading-snug">{item.title}</p>
+              {/* Título clicável nos mercados (abre a tela de detalhe) — padrão Polymarket */}
+              {isMarket ? (
+                <Link href={`/apostas/${item.id}`}>
+                  <p className="text-sm font-medium text-foreground leading-snug hover:text-gold transition-colors cursor-pointer">{item.title}</p>
+                </Link>
+              ) : (
+                <p className="text-sm font-medium text-foreground leading-snug">{item.title}</p>
+              )}
               {translating && !translation && isMarket && (
                 <p className="text-[10px] text-muted-foreground mt-1 flex items-center gap-1">
                   <Languages className="w-3 h-3" /> Traduzindo...
@@ -318,52 +325,53 @@ function TrendingCardBase({ item, onCompare, inCompare }: {
           <Flame className="w-3 h-3 text-primary/70 inline mr-1 align-[-2px]" />{item.whyTrending}
         </p>
 
-        {/* ── Botão único: revela as ferramentas de análise sob demanda ── */}
-        <button
-          onClick={() => setAnalysisOpen((v) => !v)}
-          className="w-full flex items-center justify-center gap-1.5 py-2 rounded-lg border border-border/30 bg-secondary/20 text-xs font-medium text-foreground/80 hover:text-foreground hover:border-primary/30 transition-colors"
-          aria-expanded={analysisOpen}
-        >
-          <Sparkles className="w-3.5 h-3.5 text-primary/70" aria-hidden="true" />
-          {analysisOpen ? "Ocultar análise" : "Analisar"}
-          {analysisOpen ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-        </button>
-
-        {analysisOpen && (
-          <div className="mt-3 space-y-1">
-            {/* Análise quantitativa / de aposta */}
+        {/* ── Analisar ──
+            Mercados (Polymarket/Kalshi) abrem a TELA DEDICADA de detalhe
+            (/apostas/:id) — mais espaço, análise completa, histórico e consenso.
+            Reddit/Manifold não têm página própria: mantêm a análise inline. */}
+        {isMarket ? (
+          <Link href={`/apostas/${item.id}`}>
+            <span className="w-full flex items-center justify-center gap-1.5 py-2 rounded-lg border border-border/30 bg-secondary/20 text-xs font-medium text-foreground/80 hover:text-foreground hover:border-primary/40 hover:bg-secondary/30 transition-colors cursor-pointer">
+              <Sparkles className="w-3.5 h-3.5 text-primary/70" aria-hidden="true" />
+              Analisar mercado
+              <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
+            </span>
+          </Link>
+        ) : (
+          <>
             <button
-              className="w-full text-left text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center justify-between gap-1 py-1"
-              onClick={() => setExpanded((v) => !v)}
+              onClick={() => setAnalysisOpen((v) => !v)}
+              className="w-full flex items-center justify-center gap-1.5 py-2 rounded-lg border border-border/30 bg-secondary/20 text-xs font-medium text-foreground/80 hover:text-foreground hover:border-primary/30 transition-colors"
+              aria-expanded={analysisOpen}
             >
-              <span className="flex items-center gap-1">
-                {isMarket
-                  ? <><Calculator className="w-3 h-3" />{expanded ? "Ocultar análise quantitativa" : "Análise quantitativa + calculadora"}</>
-                  : <><TrendingUp className="w-3 h-3" />{expanded ? "Ocultar análise de aposta" : "Análise de aposta"}</>
-                }
-              </span>
-              {expanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+              <Sparkles className="w-3.5 h-3.5 text-primary/70" aria-hidden="true" />
+              {analysisOpen ? "Ocultar análise" : "Analisar"}
+              {analysisOpen ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
             </button>
-            {expanded && (
-              <div className="mt-1 p-3 rounded-lg bg-obsidian/50 border border-border/20">
-                {isMarket && item.yesProb !== undefined
-                  ? <MarketAnalysis item={item} />
-                  : <p className="text-xs text-muted-foreground leading-relaxed">{item.bestBetNote}</p>
-                }
+
+            {analysisOpen && (
+              <div className="mt-3 space-y-1">
+                {/* Análise de aposta (Reddit) */}
+                <button
+                  className="w-full text-left text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center justify-between gap-1 py-1"
+                  onClick={() => setExpanded((v) => !v)}
+                >
+                  <span className="flex items-center gap-1">
+                    <TrendingUp className="w-3 h-3" />{expanded ? "Ocultar análise de aposta" : "Análise de aposta"}
+                  </span>
+                  {expanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                </button>
+                {expanded && item.bestBetNote && (
+                  <div className="mt-1 p-3 rounded-lg bg-obsidian/50 border border-border/20">
+                    <p className="text-xs text-muted-foreground leading-relaxed">{item.bestBetNote}</p>
+                  </div>
+                )}
+
+                {/* IA + notícias */}
+                <NewsAnalysisPanel item={item} />
               </div>
             )}
-
-            {/* IA + notícias (todas as fontes) */}
-            <NewsAnalysisPanel item={item} />
-
-            {/* Fair value + edge (mercados binários) */}
-            {(item.source === "polymarket" || item.source === "kalshi") && (
-              <FairValuePanel item={item} />
-            )}
-            {(item.source === "polymarket" || item.source === "kalshi") && (
-              <ExplainEdgePanel item={item} />
-            )}
-          </div>
+          </>
         )}
 
         {/* ── Rodapé ── */}
@@ -412,258 +420,10 @@ function TrendingCardBase({ item, onCompare, inCompare }: {
 }
 
 
-// ─── Explain My Edge Panel ────────────────────────────────────────────────────
-
-interface ExplainEdgeResult {
-  explanation: string;
-  whyMarketMightBeMistaken: string;
-  keyInsight: string;
-  riskFactor: string;
-  confidence: "low" | "medium" | "high";
-  edge: number;
-}
-
 // Memoizado: numa lista de dezenas de cards, só re-renderiza o card cujo `item`
 // mudou (ex.: atualização de preço ao vivo) — não a lista inteira.
 const TrendingCard = memo(TrendingCardBase);
 
-function ExplainEdgePanel({ item }: { item: TrendingItem }) {
-  const [open, setOpen] = useState(false);
-  const [userProbPct, setUserProbPct] = useState<number>(() =>
-    item.yesProb !== undefined ? Math.round(item.yesProb * 100) : 50
-  );
-  const [result, setResult] = useState<ExplainEdgeResult | null>(null);
-  const [loading, setLoading] = useState(false);
-
-  const isMarket = item.source === "polymarket" || item.source === "kalshi";
-  if (!isMarket || item.yesProb === undefined) return null;
-
-  const marketPct = Math.round(item.yesProb * 100);
-  const edgePp = userProbPct - marketPct;
-  const CONF_LABEL = { low: "Baixa", medium: "Média", high: "Alta" };
-  const CONF_COLOR = { low: "text-muted-foreground", medium: "text-gold", high: "text-positive" };
-
-  async function handleAnalyze() {
-    setLoading(true);
-    setResult(null);
-    try {
-      const res = await fetch("/api/ai/explain-edge", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title: item.title, marketProb: item.yesProb, userProb: userProbPct / 100, source: item.source }),
-      });
-      const data = await res.json() as ExplainEdgeResult;
-      setResult(data);
-    } catch { /* ignore */ } finally { setLoading(false); }
-  }
-
-  return (
-    <div className="border-t border-border/10 pt-2 mt-1">
-      <button
-        onClick={() => setOpen((v) => !v)}
-        className="w-full text-left text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center justify-between gap-1 py-1"
-      >
-        <span className="flex items-center gap-1">
-          <Target className="w-3 h-3" />
-          {open ? "Ocultar análise de edge" : "Explicar meu edge vs. mercado"}
-        </span>
-        {open ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-      </button>
-
-      {open && (
-        <div className="mt-2 p-3 rounded-lg bg-neon-blue/5 border border-neon-blue/15 space-y-3">
-          {/* User prob input */}
-          <div>
-            <div className="flex justify-between text-[10px] text-muted-foreground mb-1">
-              <span>Sua estimativa de probabilidade</span>
-              <span className={`font-mono font-bold ${edgePp > 0 ? "text-positive" : edgePp < 0 ? "text-negative" : "text-muted-foreground"}`}>
-                {edgePp > 0 ? "+" : ""}{edgePp}pp vs. mercado ({marketPct}%)
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <input
-                type="range" min={1} max={99} value={userProbPct}
-                onChange={(e) => { setUserProbPct(Number(e.target.value)); setResult(null); }}
-                className="flex-1 h-1.5 accent-primary"
-              />
-              <span className="text-sm font-mono font-bold text-foreground w-10 text-right">{userProbPct}%</span>
-            </div>
-          </div>
-
-          <button
-            onClick={handleAnalyze}
-            disabled={loading || edgePp === 0}
-            className="w-full flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-medium bg-neon-blue/15 border border-neon-blue/30 text-neon-blue hover:bg-neon-blue/25 transition-colors disabled:opacity-40"
-          >
-            {loading ? <><RefreshCw className="w-3 h-3 animate-spin" /> Analisando...</> : <><Sparkles className="w-3 h-3" /> Analisar edge com IA</>}
-          </button>
-
-          {result && (
-            <div className="space-y-2 text-[11px]">
-              <div className="flex items-center justify-between">
-                <span className="font-semibold text-neon-blue">Análise de Edge</span>
-                <span className={`${CONF_COLOR[result.confidence]} font-medium`}>Confiança: {CONF_LABEL[result.confidence]}</span>
-              </div>
-              <p className="text-muted-foreground leading-relaxed">{result.explanation}</p>
-              <div className="p-2 rounded bg-secondary/20 space-y-1.5">
-                <p><span className="text-gold font-semibold">Por que o mercado pode errar: </span><span className="text-muted-foreground">{result.whyMarketMightBeMistaken}</span></p>
-                <p><span className="text-positive font-semibold">Insight principal: </span><span className="text-muted-foreground">{result.keyInsight}</span></p>
-                <p><span className="text-negative font-semibold">Risco da tese: </span><span className="text-muted-foreground">{result.riskFactor}</span></p>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ─── Fair Value Panel ─────────────────────────────────────────────────────────
-
-interface FairValueResult {
-  fairValue: number;
-  confidence: "low" | "medium" | "high";
-  edge: number;
-  signal: "bullish" | "bearish" | "neutral";
-  reasoning: string;
-  factors: string[];
-  caveat: string;
-  categoryBaseRate: number;
-  cached?: boolean;
-}
-
-function FairValuePanel({ item }: { item: TrendingItem }) {
-  const [result, setResult] = useState<FairValueResult | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const isMarket = item.source === "polymarket" || item.source === "kalshi";
-  if (!isMarket || item.yesProb === undefined) return null;
-
-  async function handleFetch() {
-    if (result) { setResult(null); return; }
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await fetch("/api/ai/fair-value", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title: item.title,
-          marketProb: item.yesProb,
-          source: item.source,
-          category: item.normalizedCategory,
-          volume24h: typeof item.volume24h === "number" ? item.volume24h : undefined,
-          weekPriceChange: item.weekPriceChange !== undefined ? Number(item.weekPriceChange) : undefined,
-          liquidity: typeof item.liquidity === "number" ? item.liquidity : undefined,
-        }),
-      });
-      if (res.status === 429) {
-        const data = await res.json() as { message?: string };
-        throw new Error(data.message ?? "RATE_LIMIT");
-      }
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      setResult(await res.json() as FairValueResult);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Erro ao calcular fair value");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  const signalColor = result
-    ? result.signal === "bullish" ? "text-positive" : result.signal === "bearish" ? "text-negative" : "text-muted-foreground"
-    : "";
-  const edgeColor = result
-    ? result.edge > 3 ? "text-positive" : result.edge < -3 ? "text-negative" : "text-muted-foreground"
-    : "";
-  const confidenceDot = result
-    ? result.confidence === "high" ? "bg-positive" : result.confidence === "medium" ? "bg-gold" : "bg-muted-foreground"
-    : "";
-
-  return (
-    <div className="border-t border-border/10 pt-2 mt-1">
-      <button
-        onClick={handleFetch}
-        disabled={loading}
-        className="w-full text-left flex items-center justify-between gap-1 py-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
-      >
-        <span className="flex items-center gap-1">
-          <Target className="w-3 h-3" />
-          {loading ? "Calculando fair value..." : result ? "Ocultar fair value JLB" : "Ver fair value independente JLB"}
-        </span>
-        {!loading && (result ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />)}
-        {loading && <div className="w-3 h-3 border border-primary/40 border-t-transparent rounded-full animate-spin" />}
-      </button>
-
-      {error && (
-        <p className="text-[10px] text-negative mt-1 px-1">{error}</p>
-      )}
-
-      {result && (
-        <div className="mt-2 p-3 rounded-lg bg-obsidian/50 border border-border/20 space-y-3">
-          {/* Header: fair value vs mercado */}
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Fair Value JLB</p>
-              <div className="flex items-baseline gap-2">
-                <span className={`text-xl font-bold font-mono ${signalColor}`}>{result.fairValue}%</span>
-                <span className="text-[10px] text-muted-foreground">mercado: {item.yesProb?.toFixed(1)}%</span>
-              </div>
-            </div>
-            <div className="text-right">
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Edge</p>
-              <p className={`text-lg font-bold font-mono ${edgeColor}`}>
-                {result.edge >= 0 ? "+" : ""}{result.edge.toFixed(1)}pp
-              </p>
-            </div>
-          </div>
-
-          {/* Confiança + sinal */}
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-1.5">
-              <span className={`w-2 h-2 rounded-full ${confidenceDot}`} />
-              <span className="text-[10px] text-muted-foreground capitalize">
-                Confiança {result.confidence === "high" ? "alta" : result.confidence === "medium" ? "média" : "baixa"}
-              </span>
-            </div>
-            <span className={`text-[10px] font-semibold uppercase ${signalColor}`}>
-              {result.signal === "bullish" ? "Subavaliado" : result.signal === "bearish" ? "Superavaliado" : "Alinhado"}
-            </span>
-            <span className="text-[10px] text-muted-foreground">
-              Base: {result.categoryBaseRate}%
-            </span>
-          </div>
-
-          {/* Reasoning */}
-          {result.reasoning && (
-            <p className="text-xs text-muted-foreground leading-relaxed">{result.reasoning}</p>
-          )}
-
-          {/* Fatores */}
-          {result.factors.length > 0 && (
-            <ul className="space-y-1">
-              {result.factors.map((f, i) => (
-                <li key={i} className="flex items-start gap-1.5 text-[10px] text-muted-foreground/80">
-                  <span className="text-primary/40 mt-0.5">•</span>
-                  {f}
-                </li>
-              ))}
-            </ul>
-          )}
-
-          {/* Caveat */}
-          {result.caveat && (
-            <div className="flex items-start gap-1.5 p-2 rounded-md bg-secondary/20 text-[10px] text-muted-foreground/70">
-              <Info className="w-3 h-3 shrink-0 mt-0.5 text-muted-foreground/50" />
-              {result.caveat}
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
 
 function CompactRow({ item, onCompare, inCompare, onWatch, watched }: {
   item: TrendingItem;
