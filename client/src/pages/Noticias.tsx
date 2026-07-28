@@ -16,7 +16,8 @@ import {
 import { Link } from "wouter";
 import { getMarkets } from "@/lib/marketsCache";
 import MercadosTabs from "@/components/MercadosTabs";
-import { CategoryBadge, ProbArc } from "@/components/noticias/cards";
+import { CategoryBadge } from "@/components/noticias/cards";
+import { ProbHero, ProbBar } from "@/components/apostas/cards";
 import { type Article, timeAgoISO } from "@/lib/noticiasShared";
 import { MarketAnalysisModal, ArticleDetailModal, type SelectedMarket } from "@/components/noticias/AnalysisModals";
 import {
@@ -250,49 +251,30 @@ function MarketCard({ market, savedIds, onSaved, onAnalyze, highlight = false }:
         )}
       </div>
 
-      {/* Question */}
-      <div>
-        <p className="text-sm font-medium text-foreground leading-snug line-clamp-3">
-          {market.question}
-        </p>
-        {translation && (
-          <p className="text-xs text-gold/80 mt-1 leading-snug italic">{translation}</p>
-        )}
-        <button
-          onClick={handleTranslate}
-          disabled={translating}
-          className="mt-1.5 flex items-center gap-1 text-[10px] text-muted-foreground hover:text-gold transition-colors disabled:opacity-50"
-        >
-          <Languages className="w-3 h-3" />
-          {translating ? "Traduzindo..." : translation ? "Ocultar tradução" : "Traduzir"}
-        </button>
+      {/* Pergunta + probabilidade protagonista (mesmo padrão da tela de Apostas) */}
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-medium text-foreground leading-snug line-clamp-3">
+            {market.question}
+          </p>
+          {translation && (
+            <p className="text-xs text-gold/80 mt-1 leading-snug italic">{translation}</p>
+          )}
+          <button
+            onClick={handleTranslate}
+            disabled={translating}
+            className="mt-1.5 flex items-center gap-1 text-[10px] text-muted-foreground hover:text-gold transition-colors disabled:opacity-50"
+          >
+            <Languages className="w-3 h-3" />
+            {translating ? "Traduzindo..." : translation ? "Ocultar tradução" : "Traduzir"}
+          </button>
+        </div>
+        {prices && <ProbHero prob={prices.yes / 100} />}
       </div>
 
-      {/* Arc gauge + YES/NO breakdown */}
+      {/* Barra SIM/NÃO — a mesma linguagem visual do card de Apostas */}
       {prices ? (
-        <div className="flex items-center gap-3">
-          <ProbArc yes={prices.yes} />
-          <div className="flex-1 space-y-1.5">
-            <div>
-              <div className="flex justify-between text-[10px] text-muted-foreground mb-0.5">
-                <span>Sim</span>
-                <span className="font-mono">{prices.yes.toFixed(1)}%</span>
-              </div>
-              <div className="h-1 rounded-full bg-secondary/50 overflow-hidden">
-                <div className="h-full bg-positive rounded-full" style={{ width: `${Math.min(prices.yes, 100)}%` }} />
-              </div>
-            </div>
-            <div>
-              <div className="flex justify-between text-[10px] text-muted-foreground mb-0.5">
-                <span>Não</span>
-                <span className="font-mono">{prices.no.toFixed(1)}%</span>
-              </div>
-              <div className="h-1 rounded-full bg-secondary/50 overflow-hidden">
-                <div className="h-full bg-negative/60 rounded-full" style={{ width: `${Math.min(prices.no, 100)}%` }} />
-              </div>
-            </div>
-          </div>
-        </div>
+        <ProbBar prob={prices.yes / 100} />
       ) : (
         <p className="text-xs text-muted-foreground">Sem dados de preço</p>
       )}
