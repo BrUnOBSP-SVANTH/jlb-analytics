@@ -2,7 +2,7 @@
  * MarketDetail — JLB Analytics
  * Página de detalhe de mercado: /apostas/:id
  */
-import { useState, useEffect } from "react";
+import { useState, useEffect, type ReactNode } from "react";
 import { useParams, Link } from "wouter";
 import {
   ChevronLeft, ExternalLink, BarChart2, TrendingUp, TrendingDown,
@@ -104,6 +104,18 @@ function calcKelly(yourProb: number, marketProb: number): number {
   return Math.max(0, (b * yourProb - (1 - yourProb)) / b);
 }
 
+// ── Explain: nota educacional de seção ───────────────────────────────────────
+// "O que é este tópico + como ele te ajuda a decidir." Sempre visível e leve —
+// a plataforma é de educação, então explicar cada número é parte do produto.
+function Explain({ children }: { children: ReactNode }) {
+  return (
+    <div className="flex items-start gap-2 rounded-lg bg-neon-blue/[0.04] border border-neon-blue/15 px-3 py-2">
+      <Info className="w-3.5 h-3.5 shrink-0 mt-0.5 text-neon-blue/70" aria-hidden="true" />
+      <p className="text-xs text-muted-foreground leading-relaxed">{children}</p>
+    </div>
+  );
+}
+
 // ── EdgeCalculator (inline) ────────────────────────────────────────────────────
 
 function EdgeCalculator({ marketProb }: { marketProb: number }) {
@@ -123,9 +135,11 @@ function EdgeCalculator({ marketProb }: { marketProb: number }) {
         <Calculator className="w-4 h-4 text-primary/70" />
         <p className="text-sm font-semibold text-foreground/80 uppercase tracking-wider">Calculadora de Edge</p>
       </div>
-      <p className="text-xs text-muted-foreground leading-relaxed">
-        Insira sua estimativa de probabilidade. O sistema calcula automaticamente o Valor Esperado e a fração de Kelly recomendada.
-      </p>
+      <Explain>
+        Esta é a ponte entre o "eu acho" e os números: diga qual chance <strong className="text-foreground">você</strong> acredita ser a real,
+        e a calculadora mostra se a aposta tem <strong className="text-foreground">Valor Esperado positivo</strong> (lucro esperado a longo prazo)
+        e <strong className="text-foreground">quanto arriscar</strong> sem quebrar a banca (a fração de Kelly). Mova o controle e veja os números reagirem.
+      </Explain>
       <div>
         <div className="flex justify-between items-center mb-1">
           <span className="text-xs text-muted-foreground">Sua estimativa</span>
@@ -237,6 +251,15 @@ function ConsensusCard({ market, community, ai, trackRecord }: {
           <span className="ml-auto text-[10px] text-muted-foreground/60">agregação logit extremizada</span>
         </div>
 
+        <div className="mb-4">
+          <Explain>
+            Aqui juntamos três opiniões — o <strong className="text-foreground">mercado</strong>, a <strong className="text-foreground">IA do JLB</strong>{" "}
+            e a <strong className="text-foreground">comunidade</strong> — num único número calibrado (cada fonte pesa conforme a confiabilidade dela).
+            Quando o consenso difere bastante do mercado, pode haver uma oportunidade — ou um erro de preço — a investigar. A barra de{" "}
+            <strong className="text-foreground">concordância</strong> mostra o quanto as fontes concordam entre si: quanto mais forte, mais sólido o número.
+          </Explain>
+        </div>
+
         {/* Número principal + intervalo */}
         <div className="flex items-end gap-4 flex-wrap mb-4">
           <div>
@@ -325,6 +348,12 @@ function ForecastEvolution({ marketId, source }: { marketId: string; source: str
             <span className={aiDelta > 0 ? "text-positive" : "text-negative"}> ({aiDelta > 0 ? "+" : ""}{aiDelta}pp)</span>
           )} conforme novas informações chegaram.
         </p>
+        <div className="mb-3">
+          <Explain>
+            Mostra como a estimativa da IA mudou ao longo do tempo, lado a lado com o mercado. Ajuda a perceber se a IA{" "}
+            <strong className="text-foreground">antecipou</strong> um movimento — sinal de que ela leu algo antes do mercado — ou se está apenas seguindo o preço.
+          </Explain>
+        </div>
         <ResponsiveContainer width="100%" height={140}>
           <AreaChart data={chartData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
             <defs>
@@ -621,6 +650,10 @@ export default function MarketDetail() {
                   </a>
                 </div>
                 <h1 className="text-2xl font-bold text-foreground leading-snug">{market.title}</h1>
+                <p className="text-xs text-muted-foreground/70 leading-relaxed">
+                  Esta tela reúne tudo sobre este mercado — o preço atual, o histórico, o consenso das fontes e as ferramentas
+                  para você decidir com lógica, não no achismo. Abaixo, cada seção explica o que mostra e como usar.
+                </p>
               </div>
             </AnimatedSection>
 
@@ -714,6 +747,15 @@ export default function MarketDetail() {
                   )}
                 </div>
               </div>
+              <div className="mt-3">
+                <Explain>
+                  Estes quatro números são o retrato rápido do mercado. A <strong className="text-foreground">Probabilidade SIM</strong> é a
+                  chance que o mercado dá para o evento acontecer. O <strong className="text-foreground">Volume</strong> mostra quanto dinheiro —
+                  e confiança — está em jogo: quanto maior, mais difícil de manipular e mais confiável o preço. A{" "}
+                  <strong className="text-foreground">Variação 7d</strong> revela se a opinião mudou na última semana — uma virada grande
+                  costuma significar que algo novo aconteceu, e vale entender o porquê.
+                </Explain>
+              </div>
             </AnimatedSection>
 
             {/* Consenso JLB — unifica mercado + IA + comunidade */}
@@ -741,6 +783,12 @@ export default function MarketDetail() {
                     )}
                   </div>
                 </div>
+
+                <Explain>
+                  A linha do tempo da probabilidade. Serve para você enxergar a <strong className="text-foreground">tendência</strong>{" "}
+                  (subindo ou caindo) em vez de olhar só o número de agora — e para não se assustar com um pico isolado. A linha
+                  tracejada em 50% marca a fronteira do "cara ou coroa": acima dela, o mercado acredita mais no SIM.
+                </Explain>
 
                 {chartData.length >= 4 ? (
                   <ResponsiveContainer width="100%" height={240}>
@@ -799,6 +847,13 @@ export default function MarketDetail() {
                   <Sparkles className="w-4 h-4 text-purple-400" />
                   <h2 className="text-sm font-semibold text-foreground">Análise por IA</h2>
                 </div>
+
+                <Explain>
+                  A IA lê <strong className="text-foreground">notícias reais</strong> e compara este evento com casos parecidos do passado para
+                  estimar um <strong className="text-foreground">valor justo</strong> independente do preço do mercado. O{" "}
+                  <strong className="text-foreground">Edge</strong> é a diferença entre esse valor justo e o mercado — é ali que pode estar a vantagem.
+                  Pense nela como uma segunda opinião fundamentada, com as fontes à mostra — nunca um palpite ou recomendação de aposta.
+                </Explain>
 
                 <button
                   onClick={handleAnalyzeAi}

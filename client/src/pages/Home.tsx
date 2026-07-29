@@ -33,6 +33,7 @@ interface DailyBriefing {
 }
 
 interface LiveMarket {
+  id: string;       // id cru do Polymarket → rota /apostas/poly-<id>
   question: string;
   yesProb: number;  // 0–1
   volume: number;
@@ -40,6 +41,7 @@ interface LiveMarket {
 }
 
 interface PolyApiMarket {
+  id?: string;
   question?: string;
   eventTitle?: string;
   outcomePrices?: string;
@@ -81,14 +83,14 @@ function LiveMarketCard({ market }: { market: LiveMarket }) {
   const probColor = pct >= 70 ? "text-positive" : pct >= 40 ? "text-yellow-500" : "text-negative";
   const barColor = pct >= 70 ? "bg-positive" : pct >= 40 ? "bg-yellow-500" : "bg-negative";
 
-  return (
-    <div className="flex-shrink-0 w-[200px] p-4 rounded-xl border border-border/30 bg-secondary/10 hover:border-border/50 transition-colors space-y-2">
+  const inner = (
+    <div className="w-[200px] h-full p-4 rounded-xl border border-border/30 bg-secondary/10 group-hover:border-primary/40 transition-colors space-y-2">
       <div className="flex items-center gap-1.5 mb-0.5">
         <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-neon-blue/10 text-neon-blue">
           Polymarket
         </span>
       </div>
-      <p className="text-xs font-medium text-foreground leading-snug line-clamp-3">
+      <p className="text-xs font-medium text-foreground leading-snug line-clamp-3 group-hover:text-gold transition-colors">
         {market.question}
       </p>
       <div className="flex items-end justify-between pt-1">
@@ -103,6 +105,15 @@ function LiveMarketCard({ market }: { market: LiveMarket }) {
         <div className={`h-full rounded-full ${barColor}`} style={{ width: `${pct}%` }} />
       </div>
     </div>
+  );
+
+  // Com id → abre a tela dedicada /apostas/poly-<id>, igual às abas Apostas e Notícias.
+  return market.id ? (
+    <Link href={`/apostas/poly-${market.id}`} className="flex-shrink-0 group rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40">
+      {inner}
+    </Link>
+  ) : (
+    <div className="flex-shrink-0">{inner}</div>
   );
 }
 
@@ -213,6 +224,7 @@ export default function Home() {
         const raw = await getMarkets<PolyApiMarket>("polymarket");
         if (cancelled) return;
         const items: LiveMarket[] = raw.slice(0, 8).map((m) => ({
+          id: m.id ?? "",
           question: (m.eventTitle && m.eventTitle.length > 10 && m.eventTitle !== m.question)
             ? m.eventTitle
             : (m.question ?? "Mercado preditivo"),
