@@ -427,13 +427,16 @@ export default function MarketDetail() {
             ticker: string; title: string; yesProb: number;
             volume?: number; volume24h?: number; openInterest?: number;
             closeTime?: string; category?: string; status?: string;
+            outcomes?: { label: string; prob: number }[];
           }>("kalshi");
           const found = data.find((m) => m.ticker === rawId || m.ticker.includes(rawId));
           if (found) {
             setMarket({
               id: found.ticker,
               title: found.title,
-              yesProb: found.yesProb,
+              // Kalshi devolve yesProb em 0-100; o resto da tela espera decimal 0-1
+              // (o *100 dava "2200%" no header/consenso/edge de todo mercado Kalshi).
+              yesProb: found.yesProb / 100,
               volume: found.volume,
               volume24h: found.volume24h,
               liquidity: found.openInterest,
@@ -441,6 +444,7 @@ export default function MarketDetail() {
               source: "kalshi",
               category: found.category,
               status: found.status,
+              parsedOutcomes: found.outcomes,
             });
           }
         } else {

@@ -70,6 +70,7 @@ export interface KalshiMarket {
   liquidity?: number;
   closeTime?: string;
   category?: string;
+  outcomes?: { label: string; prob: number }[];
 }
 
 export type Source = "reddit" | "polymarket" | "kalshi" | "manifold";
@@ -350,6 +351,7 @@ export function buildKalshiItem(m: KalshiMarket): TrendingItem | null {
     openInterest: m.openInterest,
     yesProb: yesDecimal,
     prevYesProb: prevDecimal,
+    parsedOutcomes: m.outcomes,
     externalUrl: `https://kalshi.com/markets/${m.seriesTicker}/${m.eventTicker}`,
     whyTrending: whyTrendingMarket({ volume: m.volume, volume24h: m.volume24h, liquidity: m.liquidity, yesProb: yesDecimal, prevYesProb: prevDecimal, source: "kalshi" }),
     bestBetNote: bestBetNoteMarket(yesDecimal, m.volume, "kalshi"),

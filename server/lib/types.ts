@@ -46,7 +46,7 @@ export interface PolyMarket {
 // ── Kalshi ────────────────────────────────────────────────────────────────────
 
 export interface KalshiNestedMarket {
-  ticker: string; event_ticker: string; title?: string;
+  ticker: string; event_ticker: string; title?: string; yes_sub_title?: string;
   yes_bid_dollars?: string; yes_ask_dollars?: string; last_price_dollars?: string;
   previous_price_dollars?: string;
   volume_fp?: string; volume_24h_fp?: string; open_interest_fp?: string;
@@ -54,6 +54,7 @@ export interface KalshiNestedMarket {
 }
 export interface KalshiEvent {
   event_ticker: string; series_ticker?: string; title?: string; category?: string;
+  mutually_exclusive?: boolean;
   markets?: KalshiNestedMarket[];
 }
 export interface KalshiEventsResponse { events: KalshiEvent[] }
@@ -62,6 +63,7 @@ export interface KalshiMarket {
   yesProb: number; prevYesProb?: number;
   volume: number; volume24h?: number; openInterest?: number; liquidity?: number;
   closeTime?: string; category?: string; status?: string;
+  outcomes?: { label: string; prob: number }[]; // multi-resultado agrupado (mutually_exclusive)
 }
 
 // ── Normalised quote (market data) ────────────────────────────────────────────
