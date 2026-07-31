@@ -7,7 +7,7 @@ import { useParams, Link } from "wouter";
 import {
   ChevronLeft, ExternalLink, BarChart2, TrendingUp, TrendingDown,
   Sparkles, Target, AlertTriangle, Info, Calculator, Zap, RefreshCw,
-  Clock, BookOpen, Globe, GitMerge,
+  Clock, BookOpen, Globe, GitMerge, CheckCircle,
 } from "lucide-react";
 import AnimatedSection from "@/components/AnimatedSection";
 import MercadosTabs from "@/components/MercadosTabs";
@@ -39,6 +39,7 @@ interface MarketBasic {
   active?: boolean;
   status?: string;    // Kalshi: "active" | "closed" | "settled" | "finalized" | …
   parsedOutcomes?: { label: string; prob: number }[]; // mercados multi-resultado (negRisk)
+  resolvedOutcome?: string; // desfecho vencedor quando o mercado já resolveu (SIM/NÃO/rótulo)
 }
 
 interface CerebroArticleSnippet {
@@ -446,6 +447,19 @@ export default function MarketDetail() {
               status: found.status,
               parsedOutcomes: found.outcomes,
             });
+          } else {
+            // Fora da lista ao vivo — provável mercado resolvido. Busca o mercado único
+            // (inclui resolvidos) para mostrá-lo como "Resolvido", não "não encontrado".
+            const r = await fetch(`/api/kalshi/market/${encodeURIComponent(rawId)}`);
+            if (r.ok) {
+              const fb = await r.json() as { ticker: string; title: string; yesProb: number; volume?: number; volume24h?: number; openInterest?: number; category?: string; status?: string; resolvedOutcome?: string };
+              setMarket({
+                id: fb.ticker, title: fb.title, yesProb: fb.yesProb / 100,
+                volume: fb.volume, volume24h: fb.volume24h, liquidity: fb.openInterest,
+                externalUrl: `https://kalshi.com/markets/${fb.ticker}`, source: "kalshi",
+                category: fb.category, status: fb.status, resolvedOutcome: fb.resolvedOutcome,
+              });
+            }
           }
         } else {
           const data = await getMarkets<{
@@ -496,6 +510,21 @@ export default function MarketDetail() {
               active: found.active,
               parsedOutcomes,
             });
+          } else {
+            // Idem Kalshi: mercado provavelmente resolvido → busca o mercado único.
+            const r = await fetch(`/api/polymarket/market/${encodeURIComponent(rawId)}`);
+            if (r.ok) {
+              const fb = await r.json() as { id: string; question?: string; outcomePrices?: string; volume?: number; volume24h?: number; liquidity?: number; weekPriceChange?: number; endDate?: string; category?: string; closed?: boolean; active?: boolean; resolvedOutcome?: string };
+              const yp = (() => { try { const p = JSON.parse(fb.outcomePrices ?? "[]") as string[]; return p[0] ? parseFloat(p[0]) : 0.5; } catch { return 0.5; } })();
+              setMarket({
+                id: fb.id, title: fb.question ?? "Mercado", yesProb: yp,
+                volume: fb.volume, volume24h: fb.volume24h, liquidity: fb.liquidity,
+                weekPriceChange: fb.weekPriceChange,
+                externalUrl: `https://polymarket.com/event/${fb.id}`, source: "polymarket",
+                category: fb.category, endDate: fb.endDate, closed: fb.closed, active: fb.active,
+                resolvedOutcome: fb.resolvedOutcome,
+              });
+            }
           }
         }
       } catch {
@@ -698,13 +727,19 @@ export default function MarketDetail() {
                     return (
                       <div className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-xs font-medium ${
                         ended
-                          ? "border-muted/20 bg-secondary/20 text-muted-foreground"
+                          ? (market.resolvedOutcome
+                              ? "border-positive/30 bg-positive/5 text-positive"
+                              : "border-muted/20 bg-secondary/20 text-muted-foreground")
                           : cd.urgent
                           ? "border-negative/30 bg-negative/5 text-negative"
                           : "border-border/30 bg-secondary/10 text-muted-foreground"
                       }`}>
-                        <Clock className="w-3.5 h-3.5 shrink-0" />
-                        {ended ? "Mercado encerrado" : `Encerra em: ${cd.label}`}
+                        {ended && market.resolvedOutcome
+                          ? <CheckCircle className="w-3.5 h-3.5 shrink-0" />
+                          : <Clock className="w-3.5 h-3.5 shrink-0" />}
+                        {ended
+                          ? (market.resolvedOutcome ? `Resolvido — resultado: ${market.resolvedOutcome}` : "Mercado encerrado")
+                          : `Encerra em: ${cd.label}`}
                       </div>
                     );
                   })()}

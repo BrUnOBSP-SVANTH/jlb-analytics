@@ -201,4 +201,49 @@ router.get("/clob-history", async (req, res) => {
   }
 });
 
+// ── Mercado único (inclui resolvidos) — fallback da tela de detalhe ────────────
+// A lista "ao vivo" filtra encerrados; ao abrir um mercado já resolvido, buscamos
+// ele aqui para mostrá-lo como "Resolvido" com o desfecho — em vez de "não encontrado".
+interface GammaSingleMarket {
+  id: string; question?: string; slug?: string; category?: string;
+  outcomes?: string; outcomePrices?: string;
+  volume?: number | string; volume24hr?: number | string; liquidity?: number | string;
+  oneWeekPriceChange?: number; endDate?: string;
+  closed?: boolean; active?: boolean; umaResolutionStatus?: string;
+}
+
+router.get("/market/:id", async (req, res) => {
+  const id = String(req.params.id).replace(/[^a-zA-Z0-9_-]/g, "");
+  if (!id) return res.status(400).json({ error: "id required" });
+  try {
+    const m = await swr<GammaSingleMarket | null>(`poly:market:${id}`, 120, async () => {
+      const data = await fetchJSON<GammaSingleMarket>(`https://gamma-api.polymarket.com/markets/${id}`);
+      return data && data.id ? data : null;
+    });
+    if (!m) return res.status(404).json({ error: "not_found" });
+    const toNum = (v: unknown) => (v == null ? undefined : parseFloat(String(v)) || undefined);
+    const resolved = m.closed === true || m.umaResolutionStatus === "resolved";
+    // Desfecho vencedor (binário): outcomePrices ["1","0"] = SIM, ["0","1"] = NÃO.
+    let resolvedOutcome: string | undefined;
+    if (resolved) {
+      try {
+        const labels = JSON.parse(m.outcomes ?? "[]") as string[];
+        const prices = (JSON.parse(m.outcomePrices ?? "[]") as string[]).map(parseFloat);
+        const win = prices.findIndex((p) => p >= 0.99);
+        if (win >= 0) resolvedOutcome = labels[win] === "Yes" ? "SIM" : labels[win] === "No" ? "NÃO" : labels[win];
+      } catch { /* ignore */ }
+    }
+    res.json({
+      id: m.id, question: m.question, slug: m.slug, category: m.category,
+      outcomes: m.outcomes, outcomePrices: m.outcomePrices,
+      volume: toNum(m.volume), volume24h: toNum(m.volume24hr), liquidity: toNum(m.liquidity),
+      weekPriceChange: m.oneWeekPriceChange, endDate: m.endDate,
+      closed: m.closed, active: m.active, resolved, resolvedOutcome,
+    });
+  } catch (err) {
+    log.error(`[Polymarket/market/${id}] error:`, err instanceof Error ? err.message : err);
+    res.status(502).json({ error: "unavailable" });
+  }
+});
+
 export default router;

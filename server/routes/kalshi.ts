@@ -79,4 +79,46 @@ router.get("/markets", async (req, res) => {
   }
 });
 
+// ── Mercado único (inclui resolvidos) — fallback da tela de detalhe ────────────
+interface KalshiSingleResp {
+  market?: {
+    ticker: string; title?: string; yes_sub_title?: string;
+    yes_bid_dollars?: string; yes_ask_dollars?: string; last_price_dollars?: string;
+    volume_fp?: string; volume_24h_fp?: string; open_interest_fp?: string;
+    liquidity_dollars?: string; close_time?: string; category?: string;
+    status?: string; result?: string;
+  };
+}
+
+router.get("/market/:ticker", async (req, res) => {
+  const ticker = String(req.params.ticker).replace(/[^A-Za-z0-9_-]/g, "");
+  if (!ticker) return res.status(400).json({ error: "ticker required" });
+  try {
+    const m = await swr<KalshiSingleResp["market"] | null>(`kalshi:market:${ticker}`, 120, async () => {
+      const data = await fetchWithRetry<KalshiSingleResp>(
+        `https://api.elections.kalshi.com/trade-api/v2/markets/${ticker}`, { "Accept": "application/json" });
+      return data?.market?.ticker ? data.market : null;
+    });
+    if (!m) return res.status(404).json({ error: "not_found" });
+    const bid = parseFloat(m.yes_bid_dollars ?? "0") * 100;
+    const ask = parseFloat(m.yes_ask_dollars ?? "0") * 100;
+    const last = parseFloat(m.last_price_dollars ?? "0") * 100;
+    const yesProb = Math.max(0.1, Math.min(99.9, parseFloat((bid > 0 && ask > 0 ? (bid + ask) / 2 : last || 50).toFixed(1))));
+    const resolved = !!m.status && m.status !== "active";
+    const resolvedOutcome = m.result === "yes" ? "SIM" : m.result === "no" ? "NÃO" : undefined;
+    res.json({
+      ticker: m.ticker, title: m.title ?? m.yes_sub_title ?? m.ticker,
+      yesProb, volume: Math.round(parseFloat(m.volume_fp ?? "0")),
+      volume24h: Math.round(parseFloat(m.volume_24h_fp ?? "0")),
+      openInterest: Math.round(parseFloat(m.open_interest_fp ?? "0")),
+      liquidity: parseFloat(m.liquidity_dollars ?? "0"),
+      closeTime: m.close_time, category: m.category, status: m.status,
+      resolved, resolvedOutcome,
+    });
+  } catch (err) {
+    log.error(`[Kalshi/market/${ticker}] error:`, err instanceof Error ? err.message : err);
+    res.status(502).json({ error: "unavailable" });
+  }
+});
+
 export default router;
