@@ -13,6 +13,11 @@ router.get("/markets", async (req, res) => {
     // SWR: cache fresco na hora; se venceu, devolve o velho e atualiza em bg.
     const markets = await swr<PolyMarket[]>(cacheKey, closed ? 600 : 90, async () => {
     const toNum = (v: unknown) => (v === undefined || v === null) ? undefined : parseFloat(String(v)) || undefined;
+    // Preço do "Yes" de um mercado binário = probabilidade daquele desfecho num evento negRisk.
+    const yesOf = (op?: string): number => {
+      if (!op) return 0;
+      try { return (JSON.parse(op) as string[]).map(parseFloat)[0] ?? 0; } catch { return 0; }
+    };
 
     const eventsUrl = (order: string, limit: number, extra = "") => {
       const base = closed
@@ -75,6 +80,7 @@ router.get("/markets", async (req, res) => {
             id: m.id,
             // Prefer the market question; use event title as fallback for clarity
             question: m.question,
+            groupItemTitle: m.groupItemTitle,
             eventTitle: ev.title,
             slug: m.slug,
             eventSlug: ev.slug,
@@ -96,8 +102,31 @@ router.get("/markets", async (req, res) => {
         })
         .sort((a, b) => (b.volume ?? 0) - (a.volume ?? 0));
 
-      // 1 market per event; for multi-outcome events take the top market only
-      return nested.slice(0, 1);
+      // Caso binário: 1 desfecho por evento (o de maior volume). Para eventos
+      // multi-resultado (negRisk), junta TODOS os desfechos num só card — cada
+      // mercado aninhado é um desfecho e o "Yes" dele é a probabilidade
+      // (groupItemTitle = rótulo). Assim mostramos as reais possibilidades, fiel
+      // ao Polymarket, em vez de descartar tudo menos o líder.
+      if (nested.length === 0) return [];
+      const top = nested[0];
+      if (ev.negRisk && nested.length > 1) {
+        const outcomes = nested
+          .map((m) => ({ label: m.groupItemTitle ?? m.question ?? "", yes: yesOf(m.outcomePrices) }))
+          .filter((o) => o.label && o.yes > 0.005)
+          .sort((a, b) => b.yes - a.yes)
+          .slice(0, 12);
+        if (outcomes.length > 2) {
+          return [{
+            ...top,
+            question: ev.title ?? top.question,
+            eventTitle: ev.title,
+            volume: toNum(ev.volume) ?? top.volume,
+            outcomes: JSON.stringify(outcomes.map((o) => o.label)),
+            outcomePrices: JSON.stringify(outcomes.map((o) => o.yes.toFixed(4))),
+          }];
+        }
+      }
+      return [top];
     })
     // Additional pass: drop markets with endDate > 365 days out AND zero 24h activity
     .filter((m) => {

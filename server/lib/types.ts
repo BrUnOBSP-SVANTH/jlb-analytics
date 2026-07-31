@@ -19,7 +19,7 @@ export interface NewsApiResponse {
 // ── Polymarket ────────────────────────────────────────────────────────────────
 
 export interface PolyMarketInner {
-  id: string; question: string; slug: string;
+  id: string; question: string; slug: string; groupItemTitle?: string;
   volume?: number | string; liquidity?: number | string;
   active?: boolean; closed?: boolean; acceptingOrders?: boolean;
   endDate?: string; outcomePrices?: string; outcomes?: string; clobTokenIds?: string;
@@ -29,7 +29,7 @@ export interface PolyEventTag { label?: string; slug?: string }
 export interface PolyEvent {
   id: string; title?: string; slug: string;
   volume?: number | string; liquidity?: number | string; volume24hr?: number;
-  active?: boolean; closed?: boolean; featured?: boolean;
+  active?: boolean; closed?: boolean; featured?: boolean; negRisk?: boolean;
   category?: string; tags?: PolyEventTag[];
   markets?: PolyMarketInner[];
 }

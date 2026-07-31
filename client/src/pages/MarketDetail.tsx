@@ -38,6 +38,7 @@ interface MarketBasic {
   closed?: boolean;   // status real da fonte — fidelidade acima da endDate nominal
   active?: boolean;
   status?: string;    // Kalshi: "active" | "closed" | "settled" | "finalized" | …
+  parsedOutcomes?: { label: string; prob: number }[]; // mercados multi-resultado (negRisk)
 }
 
 interface CerebroArticleSnippet {
@@ -447,7 +448,7 @@ export default function MarketDetail() {
             id: string; question: string; eventTitle?: string; slug?: string; yesProb?: number;
             volume?: number | string; liquidity?: number | string;
             volume24h?: number | string; weekPriceChange?: number | string;
-            outcomePrices?: string; category?: string; clobTokenIds?: string; endDate?: string;
+            outcomePrices?: string; outcomes?: string; category?: string; clobTokenIds?: string; endDate?: string;
             closed?: boolean; active?: boolean;
           }>("polymarket");
           const found = data.find((m) => m.id === rawId || m.slug === rawId);
@@ -462,6 +463,19 @@ export default function MarketDetail() {
               found.eventTitle && found.eventTitle.length > 10 && found.eventTitle !== found.question
                 ? found.eventTitle
                 : found.question;
+            // Multi-resultado (negRisk): o servidor manda outcomes/outcomePrices já
+            // agregados. >2 rótulos ⇒ mostramos o breakdown de desfechos, não SIM/NÃO.
+            let parsedOutcomes: { label: string; prob: number }[] | undefined;
+            try {
+              const labels = JSON.parse(found.outcomes ?? "[]") as string[];
+              const prices = (JSON.parse(found.outcomePrices ?? "[]") as string[]).map(Number);
+              if (labels.length > 2 && prices.length >= labels.length) {
+                parsedOutcomes = labels
+                  .map((label, i) => ({ label, prob: prices[i] ?? 0 }))
+                  .filter((o) => o.prob > 0.005)
+                  .sort((a, b) => b.prob - a.prob);
+              }
+            } catch { /* segue binário */ }
             setMarket({
               id: found.id,
               title: displayTitle,
@@ -476,6 +490,7 @@ export default function MarketDetail() {
               endDate: found.endDate,
               closed: found.closed,
               active: found.active,
+              parsedOutcomes,
             });
           }
         }
@@ -712,6 +727,41 @@ export default function MarketDetail() {
                       ))}
                     </div>
                   )}
+                </div>
+              </AnimatedSection>
+            )}
+
+            {/* Desfechos possíveis — mercados multi-resultado (negRisk): mostra TODAS as
+                possibilidades com sua probabilidade real, como no Polymarket. */}
+            {market.parsedOutcomes && market.parsedOutcomes.length > 2 && (
+              <AnimatedSection delay={0.09}>
+                <div className="glass-card rounded-xl p-5 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <BarChart2 className="w-4 h-4 text-neon-blue" />
+                    <h2 className="text-sm font-semibold text-foreground">Desfechos possíveis</h2>
+                    <span className="ml-auto text-[10px] text-muted-foreground/60">{market.parsedOutcomes.length} opções · fonte: {market.source}</span>
+                  </div>
+                  <Explain>
+                    Este mercado tem <strong className="text-foreground">mais de dois desfechos</strong>. Cada linha é uma
+                    possibilidade e a probabilidade real que o mercado dá a ela (somam ~100%). É o retrato honesto do que
+                    está sendo precificado — não só o "SIM/NÃO" do desfecho líder.
+                  </Explain>
+                  <div className="space-y-2">
+                    {market.parsedOutcomes.map((o) => {
+                      const pct = Math.round(o.prob * 100);
+                      const barColor = pct >= 40 ? "bg-positive" : pct >= 15 ? "bg-gold" : "bg-neon-blue/60";
+                      const txtColor = pct >= 40 ? "text-positive" : pct >= 15 ? "text-gold" : "text-muted-foreground";
+                      return (
+                        <div key={o.label} className="flex items-center gap-3">
+                          <span className="text-xs text-foreground w-40 sm:w-56 shrink-0 truncate" title={o.label}>{o.label}</span>
+                          <div className="flex-1 h-2 bg-secondary/40 rounded-full overflow-hidden">
+                            <div className={`h-full rounded-full ${barColor} transition-all duration-500`} style={{ width: `${Math.max(1, pct)}%` }} />
+                          </div>
+                          <span className={`text-sm font-mono font-bold w-11 text-right shrink-0 ${txtColor}`}>{pct}%</span>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               </AnimatedSection>
             )}
