@@ -65,6 +65,10 @@ router.get("/markets", async (req, res) => {
         .filter((m) => isDateFresh(m.endDate))
         // Skip markets that only have generic placeholder names — real names not yet published
         .filter((m) => !GENERIC_PLACEHOLDER.test(m.question ?? ""))
+        // Fidelidade ao mercado: nunca listar como "ao vivo" um mercado que a Polymarket
+        // já encerrou/resolveu. Um evento pode estar ativo enquanto um desfecho específico
+        // (mercado aninhado) já fechou antes da endDate nominal — era o que dava o falso "9h".
+        .filter((m) => m.active !== false && m.closed !== true)
         .map((m) => {
           const endMs = m.endDate ? new Date(m.endDate).getTime() : now + maxAgeMs;
           return {
@@ -81,6 +85,8 @@ router.get("/markets", async (req, res) => {
             featured: ev.featured ?? false,
             category: ev.category ?? ev.tags?.[0]?.label,
             endDate: m.endDate,
+            closed: m.closed,
+            active: m.active,
             outcomePrices: m.outcomePrices,
             outcomes: m.outcomes,
             clobTokenIds: m.clobTokenIds,

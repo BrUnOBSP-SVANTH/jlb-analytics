@@ -35,6 +35,9 @@ interface MarketBasic {
   source: string;
   category?: string;
   endDate?: string;
+  closed?: boolean;   // status real da fonte — fidelidade acima da endDate nominal
+  active?: boolean;
+  status?: string;    // Kalshi: "active" | "closed" | "settled" | "finalized" | …
 }
 
 interface CerebroArticleSnippet {
@@ -422,7 +425,7 @@ export default function MarketDetail() {
           const data = await getMarkets<{
             ticker: string; title: string; yesProb: number;
             volume?: number; volume24h?: number; openInterest?: number;
-            closeTime?: string; category?: string;
+            closeTime?: string; category?: string; status?: string;
           }>("kalshi");
           const found = data.find((m) => m.ticker === rawId || m.ticker.includes(rawId));
           if (found) {
@@ -436,6 +439,7 @@ export default function MarketDetail() {
               externalUrl: `https://kalshi.com/markets/${found.ticker}`,
               source: "kalshi",
               category: found.category,
+              status: found.status,
             });
           }
         } else {
@@ -444,6 +448,7 @@ export default function MarketDetail() {
             volume?: number | string; liquidity?: number | string;
             volume24h?: number | string; weekPriceChange?: number | string;
             outcomePrices?: string; category?: string; clobTokenIds?: string; endDate?: string;
+            closed?: boolean; active?: boolean;
           }>("polymarket");
           const found = data.find((m) => m.id === rawId || m.slug === rawId);
           if (found) {
@@ -469,6 +474,8 @@ export default function MarketDetail() {
               source: "polymarket",
               category: found.category,
               endDate: found.endDate,
+              closed: found.closed,
+              active: found.active,
             });
           }
         }
@@ -584,6 +591,10 @@ export default function MarketDetail() {
   const currentProb = market?.yesProb ?? 0;
   const probPct = Math.round(currentProb * 100);
   const probColor = probPct >= 60 ? "text-positive" : probPct >= 40 ? "text-gold" : "text-negative";
+  // Fidelidade: o status real da fonte (closed/active/status) vale mais que a endDate
+  // nominal — um mercado que a Polymarket/Kalshi já resolveu nunca mostra "faltam Xh".
+  const isResolved = !!market && (market.closed === true || market.active === false
+    || (!!market.status && market.status !== "active"));
 
   // ── Render ────────────────────────────────────────────────────────────────────
 
@@ -658,22 +669,23 @@ export default function MarketDetail() {
             </AnimatedSection>
 
             {/* Resolution countdown + Cerebro articles row */}
-            {(market.endDate || cerebroArticles.length > 0) && (
+            {(market.endDate || isResolved || cerebroArticles.length > 0) && (
               <AnimatedSection delay={0.08}>
                 <div className="flex flex-wrap gap-3">
-                  {/* Countdown */}
-                  {market.endDate && (() => {
-                    const cd = formatCountdown(market.endDate);
+                  {/* Status / Countdown — status real da fonte tem prioridade sobre a endDate */}
+                  {(market.endDate || isResolved) && (() => {
+                    const cd = market.endDate ? formatCountdown(market.endDate) : { label: "", urgent: false, ended: true };
+                    const ended = isResolved || cd.ended;
                     return (
                       <div className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-xs font-medium ${
-                        cd.ended
+                        ended
                           ? "border-muted/20 bg-secondary/20 text-muted-foreground"
                           : cd.urgent
                           ? "border-negative/30 bg-negative/5 text-negative"
                           : "border-border/30 bg-secondary/10 text-muted-foreground"
                       }`}>
                         <Clock className="w-3.5 h-3.5 shrink-0" />
-                        {cd.ended ? "Mercado encerrado" : `Encerra em: ${cd.label}`}
+                        {ended ? "Mercado encerrado" : `Encerra em: ${cd.label}`}
                       </div>
                     );
                   })()}

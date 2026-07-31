@@ -15,7 +15,11 @@ router.get("/markets", async (req, res) => {
       const data = await fetchWithRetry<KalshiEventsResponse>(url, { "Accept": "application/json" });
       const events = data.events ?? [];
       return events.flatMap((ev) =>
-        (ev.markets ?? []).map((m) => {
+        (ev.markets ?? [])
+          // Fidelidade ao mercado: só o que está realmente aberto. Kalshi marca o status
+          // como "closed"/"settled"/"finalized"/"determined" quando o mercado encerra/resolve.
+          .filter((m) => !m.status || m.status === "active")
+          .map((m) => {
           const bid = parseFloat(m.yes_bid_dollars ?? "0") * 100;
           const ask = parseFloat(m.yes_ask_dollars ?? "0") * 100;
           const last = parseFloat(m.last_price_dollars ?? "0") * 100;
@@ -36,6 +40,7 @@ router.get("/markets", async (req, res) => {
             liquidity: parseFloat(m.liquidity_dollars ?? "0"),
             closeTime: m.close_time,
             category: ev.category,
+            status: m.status,
           };
         })
       ).slice(0, limit);

@@ -20,7 +20,8 @@ export interface NewsApiResponse {
 
 export interface PolyMarketInner {
   id: string; question: string; slug: string;
-  volume?: number | string; liquidity?: number | string; active?: boolean;
+  volume?: number | string; liquidity?: number | string;
+  active?: boolean; closed?: boolean; acceptingOrders?: boolean;
   endDate?: string; outcomePrices?: string; outcomes?: string; clobTokenIds?: string;
   volume24hr?: number; oneWeekPriceChange?: number; bestBid?: number; bestAsk?: number;
 }
@@ -38,6 +39,7 @@ export interface PolyMarket {
   volume?: number; volume24hr?: number; liquidity?: number;
   weekPriceChange?: number;
   featured?: boolean; category?: string;
+  closed?: boolean; active?: boolean;
   endDate?: string; outcomePrices?: string; outcomes?: string; clobTokenIds?: string;
 }
 
@@ -59,7 +61,7 @@ export interface KalshiMarket {
   ticker: string; eventTicker: string; seriesTicker: string; title: string;
   yesProb: number; prevYesProb?: number;
   volume: number; volume24h?: number; openInterest?: number; liquidity?: number;
-  closeTime?: string; category?: string;
+  closeTime?: string; category?: string; status?: string;
 }
 
 // ── Normalised quote (market data) ────────────────────────────────────────────
