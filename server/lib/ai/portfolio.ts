@@ -2,28 +2,19 @@ import type { Request, Response } from "express";
 import { callClaude } from "../anthropic.ts";
 import { extractJson } from "../extractJson.ts";
 import { log } from "../log.ts";
+import { parseBody, portfolioBodySchema } from "./schemas.ts";
 
 const portfolioAnalysisCache = new Map<string, { ts: number; data: object }>();
 const PORTFOLIO_CACHE_TTL = 30 * 60 * 1000;
 
 export async function portfolioHandler(req: Request, res: Response) {
+  // Validação de shape na borda (fail-fast) — impede posição malformada de
+  // quebrar em runtime (.slice/.toFixed de undefined viravam 500 genérico).
+  const parsed = parseBody(portfolioBodySchema, req.body);
+  if (!parsed.ok) return res.status(400).json({ error: "invalid_body", message: parsed.message });
+  const { positions } = parsed.data;
+
   try {
-    const { positions } = req.body as {
-      positions: Array<{
-        title: string;
-        source: string;
-        position: "yes" | "no";
-        entryProb: number;
-        currentProb?: number;
-        betSize: number;
-        pnl: number | null;
-      }>;
-    };
-
-    if (!positions || positions.length === 0) {
-      return res.status(400).json({ error: "No positions provided" });
-    }
-
     const cacheKey = positions.map(p => `${p.title.slice(0, 20)}${Math.round(p.entryProb * 100)}`).join("|");
     const cached = portfolioAnalysisCache.get(cacheKey);
     if (cached && Date.now() - cached.ts < PORTFOLIO_CACHE_TTL) {
