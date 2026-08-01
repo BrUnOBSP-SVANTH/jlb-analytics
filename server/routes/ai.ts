@@ -4,6 +4,7 @@ import { aiCreditsMiddleware, verifyUserId } from "../middleware/aiCredits.ts";
 import { extractJson } from "../lib/extractJson.ts";
 import { callClaude, anthropicBreakerState } from "../lib/anthropic.ts";
 import { aiMetricsSnapshot } from "../lib/ai/metrics.ts";
+import { embedText, embeddingsEnabled } from "../lib/embeddings.ts";
 import { getNewsForMarket } from "../lib/news.ts";
 import { SUPABASE_URL, SUPABASE_KEY, supaWriteHeaders } from "../lib/supabaseRest.ts";
 import { seedAiForecasts, computeDivergences } from "../lib/aiForecasts.ts";
@@ -68,6 +69,55 @@ router.get("/credits", async (req, res) => {
 // estado do circuit breaker. Dado direcional para operar a IA (e decidir recarga).
 router.get("/metrics", (_req, res) => {
   res.json({ ...aiMetricsSnapshot(), breaker: anthropicBreakerState() });
+});
+
+// ── Backfill de embeddings do Cerebro (RAG semântico) ─────────────────────────
+// Embeda em lote os artigos ativos que ainda não têm vetor. Idempotente e
+// bounded (chame repetidamente até remaining=0; um cron pode fazer isso). Só
+// funciona após aplicar a migração 016_cerebro_embeddings.sql.
+router.post("/embed-cerebro", async (req, res) => {
+  if (!SUPABASE_URL || !SUPABASE_KEY) return res.status(503).json({ error: "supabase ausente" });
+  if (!embeddingsEnabled()) return res.status(503).json({ error: "GEMINI_API_KEY ausente" });
+  if (isRateLimited(`embed-cerebro:${req.ip ?? "?"}`, 6, 60_000)) {
+    return res.status(429).json({ error: "rate_limited" });
+  }
+  const limit = Math.min(Math.max(Number(req.query.limit ?? 50), 1), 200);
+  try {
+    const sel = await fetch(
+      `${SUPABASE_URL}/rest/v1/cerebro_articles?embedding=is.null&status=eq.active&select=id,title,summary&limit=${limit}`,
+      { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } },
+    );
+    if (!sel.ok) {
+      const msg = (await sel.text()).slice(0, 200);
+      // coluna ainda não existe → migração não aplicada
+      return res.status(400).json({ error: "select_failed", hint: "aplicou a migração 016?", detail: msg });
+    }
+    const rows = await sel.json() as Array<{ id: string; title: string; summary: string | null }>;
+    if (rows.length === 0) return res.json({ embedded: 0, remaining: 0, done: true });
+
+    let embedded = 0;
+    for (const a of rows) {
+      const vec = await embedText(`${a.title}\n${a.summary ?? ""}`.trim(), "RETRIEVAL_DOCUMENT");
+      if (!vec) continue; // rate limit/falha → pula; próxima rodada tenta de novo
+      const pr = await fetch(`${SUPABASE_URL}/rest/v1/cerebro_articles?id=eq.${a.id}`, {
+        method: "PATCH",
+        headers: supaWriteHeaders(),
+        body: JSON.stringify({ embedding: `[${vec.join(",")}]` }),
+      }).catch(() => null);
+      if (pr?.ok) embedded += 1;
+      await new Promise((r) => setTimeout(r, 150)); // throttle p/ o rate limit do Gemini
+    }
+
+    const cnt = await fetch(
+      `${SUPABASE_URL}/rest/v1/cerebro_articles?embedding=is.null&status=eq.active&select=id`,
+      { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, Prefer: "count=exact", Range: "0-0" } },
+    );
+    const remaining = Number(cnt.headers.get("content-range")?.split("/")[1] ?? "0") || 0;
+    res.json({ embedded, remaining, done: remaining === 0 });
+  } catch (err) {
+    log.error("[embed-cerebro] error:", err instanceof Error ? err.message : err);
+    res.status(500).json({ error: "embed_failed" });
+  }
 });
 
 // ── Explain My Edge ──────────────────────────────────────────────────────────

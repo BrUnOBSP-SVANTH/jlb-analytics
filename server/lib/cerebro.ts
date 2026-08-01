@@ -6,8 +6,9 @@ import { translateToPt } from "./translate.ts";
 import { getCache, setCache } from "./cache.ts";
 import { callClaude } from "./anthropic.ts";
 import { extractJson } from "./extractJson.ts";
+import { embedText, embeddingsEnabled } from "./embeddings.ts";
 
-interface CerebroHit { title: string; summary: string; source: string; kind: "síntese" | "artigo"; date?: string }
+interface CerebroHit { title: string; summary: string; source: string; kind: "síntese" | "artigo"; date?: string; _semantic?: boolean }
 
 const STOPWORDS = new Set([
   // PT
@@ -133,6 +134,39 @@ async function expandQueryTerms(text: string): Promise<string[]> {
   } catch { return []; }
 }
 
+/** Intercala dois arrays, dando vez alternada a cada fonte (FTS × semântico). */
+function interleave<T>(a: T[], b: T[]): T[] {
+  const out: T[] = [];
+  for (let i = 0; i < Math.max(a.length, b.length); i++) {
+    if (i < a.length) out.push(a[i]);
+    if (i < b.length) out.push(b[i]);
+  }
+  return out;
+}
+
+/** Busca semântica (embeddings + pgvector): acha artigos relevantes SEM match de
+ *  palavra-chave. Retorna [] se embeddings/RPC não estiverem disponíveis (migração
+ *  016 ainda não aplicada, ou sem GEMINI_API_KEY) → o FTS assume sozinho. */
+async function semanticCerebro(searchText: string): Promise<CerebroHit[]> {
+  if (!embeddingsEnabled() || !SUPABASE_URL || !SUPABASE_KEY) return [];
+  const vec = await embedText(searchText, "RETRIEVAL_QUERY", 8_000);
+  if (!vec) return [];
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/match_cerebro_articles`, {
+      method: "POST",
+      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ query_embedding: `[${vec.join(",")}]`, match_count: 5, min_similarity: 0.4 }),
+      signal: AbortSignal.timeout(6_000),
+    });
+    if (!res.ok) return []; // RPC ausente (migração não aplicada) → fallback FTS
+    const rows = await res.json() as Array<{ title: string; summary: string | null; source: string; published_at: string | null }>;
+    return rows.map((r) => ({
+      title: r.title, summary: (r.summary ?? "").slice(0, 250),
+      source: r.source, kind: "artigo" as const, date: r.published_at ?? undefined, _semantic: true,
+    }));
+  } catch { return []; }
+}
+
 export async function fetchCerebroContext(title: string, description?: string): Promise<{ context: string; hits: CerebroHit[] }> {
   if (!SUPABASE_URL || !SUPABASE_KEY) return { context: "", hits: [] };
   const original = `${title} ${description ?? ""}`.trim();
@@ -150,6 +184,9 @@ export async function fetchCerebroContext(title: string, description?: string): 
 
     const kw = topKeywords(searchText);
     if (!kw) return { context: "", hits: [] };
+
+    // Busca semântica em PARALELO com a cascata FTS (fallback gracioso: [] sem embeddings).
+    const semanticP = semanticCerebro(searchText);
 
     // Cascata precisão→recall: AND de todos os termos; sem hit, OR só dos
     // termos distintivos (websearch); por fim, o termo mais forte (o maior).
@@ -176,17 +213,23 @@ export async function fetchCerebroContext(title: string, description?: string): 
       }
     }
 
-    if (hits.length === 0) return { context: "", hits: [] };
-    // Dedupe + re-rank por sobreposição de termos DENTRO de cada grupo:
-    // sínteses continuam na frente (são o ancoradouro de qualidade — misturar
-    // deixava artigo-ruído com 2 termos genéricos passar na frente delas).
-    const deduped = dedupeByTitle(hits);
-    hits = [
-      ...rankHits(deduped.filter((h) => h.kind === "síntese"), words),
-      ...rankHits(deduped.filter((h) => h.kind === "artigo"), words),
-    ].slice(0, 6);
-    // Match de fallback é mais fraco — avisa o modelo para filtrar por relevância
-    const note = usedFallback
+    // Junta os hits semânticos (embeddings) aos do FTS. Sem embeddings disponíveis,
+    // semanticHits é [] e o resultado é IDÊNTICO ao FTS de antes (fallback gracioso).
+    const semanticHits = await semanticP;
+    if (hits.length === 0 && semanticHits.length === 0) return { context: "", hits: [] };
+
+    // Dedupe + re-rank DENTRO de cada grupo: sínteses (âncora de qualidade) na
+    // frente; nos artigos, intercala os do FTS (por sobreposição de termos) com os
+    // semânticos (por similaridade) — o semântico NÃO é rebaixado por não ter match
+    // de palavra-chave, que é exatamente o ponto dele.
+    const deduped = dedupeByTitle([...hits, ...semanticHits]);
+    const synth = rankHits(deduped.filter((h) => h.kind === "síntese"), words);
+    const ftsArts = rankHits(deduped.filter((h) => h.kind === "artigo" && !h._semantic), words);
+    const semArts = deduped.filter((h) => h.kind === "artigo" && h._semantic);
+    hits = [...synth, ...interleave(semArts, ftsArts)].slice(0, 6);
+
+    // Aviso de fallback só quando NÃO houve reforço semântico (que é relevante por si).
+    const note = usedFallback && semanticHits.length === 0
       ? "(correspondência parcial por palavra-chave — use APENAS itens diretamente relevantes ao tema; ignore o resto)\n\n"
       : "";
     const context = note + hits.map((h, i) => `[C${i + 1}] (${h.kind} · ${h.source}) "${h.title}"\n${h.summary}`).join("\n\n");
