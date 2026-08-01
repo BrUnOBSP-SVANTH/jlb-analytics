@@ -2,7 +2,8 @@ import { Router } from "express";
 import { getCache, setCache, isRateLimited } from "../lib/cache.ts";
 import { aiCreditsMiddleware, verifyUserId } from "../middleware/aiCredits.ts";
 import { extractJson } from "../lib/extractJson.ts";
-import { callClaude } from "../lib/anthropic.ts";
+import { callClaude, anthropicBreakerState } from "../lib/anthropic.ts";
+import { aiMetricsSnapshot } from "../lib/ai/metrics.ts";
 import { getNewsForMarket } from "../lib/news.ts";
 import { SUPABASE_URL, SUPABASE_KEY, supaWriteHeaders } from "../lib/supabaseRest.ts";
 import { seedAiForecasts, computeDivergences } from "../lib/aiForecasts.ts";
@@ -60,6 +61,13 @@ router.get("/credits", async (req, res) => {
   } catch {
     return res.json({ used: 0, limit: FREE_LIMIT, plan: "free" });
   }
+});
+
+// ── Observabilidade: métricas das chamadas de IA (read-only, agregado) ────────
+// Quanto roda no Claude vs. fallback Gemini, taxa de fallback, latência média e
+// estado do circuit breaker. Dado direcional para operar a IA (e decidir recarga).
+router.get("/metrics", (_req, res) => {
+  res.json({ ...aiMetricsSnapshot(), breaker: anthropicBreakerState() });
 });
 
 // ── Explain My Edge ──────────────────────────────────────────────────────────

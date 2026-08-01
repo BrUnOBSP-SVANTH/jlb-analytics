@@ -3,6 +3,7 @@
 // por crédito/rate limit/instabilidade — ver lib/gemini.ts. Sem GEMINI_API_KEY
 // o comportamento é idêntico ao de antes (erro propaga).
 import { callGemini, geminiEnabled, shouldFallback, logFallback } from "./gemini.ts";
+import { recordAiCall } from "./ai/metrics.ts";
 
 export interface ClaudeMessage { role: "user" | "assistant"; content: string }
 interface ClaudeResp { content: { type: string; text: string }[] }
@@ -61,6 +62,7 @@ export async function streamClaude(opts: {
   onDelta?: (text: string) => void;
 }): Promise<string> {
   const apiKey = process.env.ANTHROPIC_API_KEY ?? "";
+  const t0 = Date.now();
 
   async function connect(): Promise<Response> {
     return fetch("https://api.anthropic.com/v1/messages", {
@@ -95,6 +97,7 @@ export async function streamClaude(opts: {
       timeoutMs: opts.timeoutMs,
     });
     opts.onDelta?.(text);
+    recordAiCall("gemini", Date.now() - t0);
     return text;
   }
 
@@ -113,6 +116,7 @@ export async function streamClaude(opts: {
     const err = await response.text().catch(() => "");
     const error = new Error(`Claude HTTP ${response.status}: ${err.slice(0, 300)}`);
     if (geminiEnabled() && shouldFallback(error)) { recordAnthropicFailure(); return fallbackToGemini(error); }
+    recordAiCall("error", Date.now() - t0);
     throw error;
   }
 
@@ -141,6 +145,7 @@ export async function streamClaude(opts: {
     }
   }
   recordAnthropicSuccess();
+  recordAiCall("anthropic", Date.now() - t0);
   return full;
 }
 
@@ -155,6 +160,7 @@ export async function callClaude(opts: {
   onProvider?: (p: "anthropic" | "gemini") => void; // qual provedor respondeu (p/ track record honesto)
 }): Promise<string> {
   const apiKey = process.env.ANTHROPIC_API_KEY ?? "";
+  const t0 = Date.now();
   // ⚠️ ATENÇÃO: os modelos 4.x (claude-sonnet-4-6, claude-haiku-4-5) NÃO suportam
   // prefill de mensagem do assistente — a API retorna 400 "This model does not
   // support assistant message prefill". NÃO use prefillJson:true com esses modelos.
@@ -198,6 +204,7 @@ export async function callClaude(opts: {
       timeoutMs: opts.timeoutMs,
     });
     opts.onProvider?.("gemini");
+    recordAiCall("gemini", Date.now() - t0);
     return text;
   }
 
@@ -216,12 +223,13 @@ export async function callClaude(opts: {
     const data = await response.json() as ClaudeResp;
     const text = data.content.find((b) => b.type === "text")?.text ?? "";
     recordAnthropicSuccess();
+    recordAiCall("anthropic", Date.now() - t0);
     opts.onProvider?.("anthropic");
     return opts.prefillJson ? "{" + text : text;
   } catch (err) {
     // Fallback de provedor: sem crédito/rate limit/instabilidade, o site
     // responde pelo Gemini em vez de degradar. Inerte sem GEMINI_API_KEY.
-    if (!geminiEnabled() || !shouldFallback(err)) throw err;
+    if (!geminiEnabled() || !shouldFallback(err)) { recordAiCall("error", Date.now() - t0); throw err; }
     recordAnthropicFailure();
     logFallback("callClaude", err);
     const text = await callGemini({
@@ -231,6 +239,7 @@ export async function callClaude(opts: {
       timeoutMs: opts.timeoutMs,
     });
     opts.onProvider?.("gemini");
+    recordAiCall("gemini", Date.now() - t0);
     return text;
   }
 }
