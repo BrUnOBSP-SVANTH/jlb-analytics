@@ -6,7 +6,7 @@ import { fetchCerebroContext } from "../cerebro.ts";
 import { getCalibrationMemo } from "../aiForecasts.ts";
 import { callClaude } from "../anthropic.ts";
 import { extractJson } from "../extractJson.ts";
-import { clampFairValue } from "./guardrails.ts";
+import { clampFairValue, quantFairValue } from "./guardrails.ts";
 import { INJECTION_GUARD } from "./promptSafety.ts";
 import { log } from "../log.ts";
 
@@ -47,32 +47,9 @@ export async function fairValueHandler(req: Request, res: Response) {
   const cerebroCtx = cerebroSettled.status === "fulfilled" ? cerebroSettled.value.context : "";
   const calibMemo = memoSettled.status === "fulfilled" ? memoSettled.value : "";
 
-  // Sinalização de momentum: variação recente sugere tendência
-  let momentumAdjust = 0;
-  if (weekPriceChange !== undefined) {
-    // Reversão à média para movimentos extremos, momentum para movimentos moderados
-    if (Math.abs(weekPriceChange) > 10) {
-      momentumAdjust = -weekPriceChange * 0.3; // pressão de reversão
-    } else {
-      momentumAdjust = weekPriceChange * 0.2;  // leve momentum
-    }
-  }
-
-  // Sinalização de liquidez: mercado com alta liquidez → confiar mais na prob
-  let liquidityWeight = 0.5; // peso da prob de mercado no fair value
-  if (liquidity !== undefined) {
-    if (liquidity > 100_000) liquidityWeight = 0.75;
-    else if (liquidity > 10_000) liquidityWeight = 0.65;
-    else if (liquidity < 1_000) liquidityWeight = 0.35;
-  }
-
-  // Fair value pré-Claude: média ponderada entre base rate e prob do mercado
-  const preFairValue = Math.round(
-    catInfo.baseRate * (1 - liquidityWeight) +
-    marketProb * liquidityWeight +
-    momentumAdjust
-  );
-  const clampedPreFV = Math.max(5, Math.min(95, preFairValue));
+  // Fair value quantitativo (pré-IA / fallback): base rate + mercado ponderados
+  // por liquidez, com ajuste de momentum. Lógica pura e testada em guardrails.ts.
+  const { clampedPreFV } = quantFairValue(marketProb, catInfo.baseRate, { liquidity, weekPriceChange });
 
   const prompt = `Você é um analista quantitativo calculando o fair value independente de um mercado preditivo.
 

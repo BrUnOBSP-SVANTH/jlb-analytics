@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { clampFairValue } from "./guardrails.ts";
+import { clampFairValue, quantFairValue } from "./guardrails.ts";
 
 describe("clampFairValue — dentro do permitido, passa igual", () => {
   it("não mexe quando a estimativa está a ≤15pp do mercado", () => {
@@ -52,5 +52,33 @@ describe("clampFairValue — casos de borda", () => {
   it("mercado extremo alto mantém o teto", () => {
     expect(clampFairValue(50, 97)).toBe(82); // market-15 = 82
     expect(clampFairValue(99, 97)).toBe(95); // teto
+  });
+});
+
+describe("quantFairValue — fair value quantitativo (fallback do /fair-value)", () => {
+  it("sem liquidez/momentum: média 50/50 entre base rate e mercado", () => {
+    // 30*0.5 + 50*0.5 = 40
+    expect(quantFairValue(50, 30).clampedPreFV).toBe(40);
+  });
+  it("alta liquidez pesa mais o mercado (0.75)", () => {
+    // 30*0.25 + 50*0.75 = 45
+    expect(quantFairValue(50, 30, { liquidity: 200_000 }).clampedPreFV).toBe(45);
+  });
+  it("baixa liquidez pesa mais a base rate (0.35)", () => {
+    // 30*0.65 + 50*0.35 = 37
+    expect(quantFairValue(50, 30, { liquidity: 500 }).clampedPreFV).toBe(37);
+  });
+  it("momentum moderado soma leve tendência", () => {
+    // 40 + 5*0.2 = 41
+    expect(quantFairValue(50, 30, { weekPriceChange: 5 }).clampedPreFV).toBe(41);
+  });
+  it("movimento extremo vira reversão à média (sinal invertido)", () => {
+    // 40 + (-20*0.3) = 34
+    expect(quantFairValue(50, 30, { weekPriceChange: 20 }).clampedPreFV).toBe(34);
+  });
+  it("respeita o piso 5 em mercado/base rate extremos", () => {
+    const r = quantFairValue(2, 2);
+    expect(r.preFairValue).toBe(2);
+    expect(r.clampedPreFV).toBe(5);
   });
 });

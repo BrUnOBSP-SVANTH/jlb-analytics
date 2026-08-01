@@ -22,3 +22,34 @@
 export function clampFairValue(raw: number, market: number, maxDev = 15, min = 5, max = 95): number {
   return Math.max(min, Math.min(max, Math.max(market - maxDev, Math.min(market + maxDev, raw))));
 }
+
+/**
+ * Fair value quantitativo (pré-IA / fallback do /fair-value): média ponderada
+ * entre a base rate histórica da categoria e o preço do mercado, com o peso do
+ * mercado crescendo com a liquidez, mais um ajuste de momentum (reversão à média
+ * em movimentos extremos, leve momentum em moderados). É o número que a rota
+ * devolve quando a IA está indisponível — por isso precisa ser testável.
+ */
+export function quantFairValue(
+  marketProb: number,
+  baseRate: number,
+  opts: { liquidity?: number; weekPriceChange?: number } = {},
+): { preFairValue: number; clampedPreFV: number; liquidityWeight: number; momentumAdjust: number } {
+  const { liquidity, weekPriceChange } = opts;
+
+  let momentumAdjust = 0;
+  if (weekPriceChange !== undefined) {
+    momentumAdjust = Math.abs(weekPriceChange) > 10 ? -weekPriceChange * 0.3 : weekPriceChange * 0.2;
+  }
+
+  let liquidityWeight = 0.5; // peso da prob de mercado no fair value
+  if (liquidity !== undefined) {
+    if (liquidity > 100_000) liquidityWeight = 0.75;
+    else if (liquidity > 10_000) liquidityWeight = 0.65;
+    else if (liquidity < 1_000) liquidityWeight = 0.35;
+  }
+
+  const preFairValue = Math.round(baseRate * (1 - liquidityWeight) + marketProb * liquidityWeight + momentumAdjust);
+  const clampedPreFV = Math.max(5, Math.min(95, preFairValue));
+  return { preFairValue, clampedPreFV, liquidityWeight, momentumAdjust };
+}
