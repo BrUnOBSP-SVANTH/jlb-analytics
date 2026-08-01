@@ -37,10 +37,10 @@ router.get("/credits", async (req, res) => {
   if (!authHeader) return res.json({ used: 0, limit: FREE_LIMIT, plan: "free" });
 
   try {
-    const token = authHeader.replace(/^Bearer\s+/i, "");
-    const [, payload] = token.split(".");
-    const decoded = JSON.parse(Buffer.from(payload, "base64url").toString("utf-8")) as { sub?: string };
-    const userId = decoded.sub;
+    // Valida o JWT no Supabase Auth (assinatura + expiração), em vez de decodificar
+    // o payload às cegas — decodificar sem verificar permitiria forjar `sub` e ler a
+    // cota de qualquer usuário. Mesma invariante já aplicada no aiCreditsMiddleware.
+    const userId = await verifyUserId(authHeader);
     if (!userId) return res.json({ used: 0, limit: FREE_LIMIT, plan: "free" });
 
     const r = await fetch(`${SUPABASE_URL}/rest/v1/ai_credits?user_id=eq.${userId}&select=plan,used_this_month`, {
