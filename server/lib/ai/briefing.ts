@@ -4,6 +4,7 @@ import { fetchBcbSerie } from "../bcb.ts";
 import { parsePolyPrices } from "../aiForecasts.ts";
 import { callClaude } from "../anthropic.ts";
 import { extractJson } from "../extractJson.ts";
+import { INJECTION_GUARD } from "./promptSafety.ts";
 import { getCache, setCache } from "../cache.ts";
 import { log } from "../log.ts";
 import type { NewsApiResponse, PolyEvent, KalshiEventsResponse } from "../types.ts";
@@ -73,6 +74,8 @@ ${marketsContext}
 
 MANCHETES:
 ${newsHeadlines.length > 0 ? newsHeadlines.join("\n") : "Sem manchetes disponíveis."}
+
+${INJECTION_GUARD}
 
 JSON exato (sem markdown). Em marketHighlights, "prob" é a probabilidade SIM do mercado em número 0-100 (nunca texto):
 {"headline":"","summary":"","topTheme":"","macroNote":"","marketHighlights":[{"market":"","prob":0,"insight":""}],"watchToday":"","calibrationTip":"","riskAlert":null}`;

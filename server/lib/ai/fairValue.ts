@@ -7,6 +7,7 @@ import { getCalibrationMemo } from "../aiForecasts.ts";
 import { callClaude } from "../anthropic.ts";
 import { extractJson } from "../extractJson.ts";
 import { clampFairValue } from "./guardrails.ts";
+import { INJECTION_GUARD } from "./promptSafety.ts";
 import { log } from "../log.ts";
 
 export async function fairValueHandler(req: Request, res: Response) {
@@ -93,6 +94,8 @@ REGRAS DE CALIBRAÇÃO (críticas — nosso Brier Score é medido publicamente):
 - O preço de um mercado líquido já agrega a informação disponível. Desvie dele APENAS com evidência concreta no contexto acima, e proporcional à força da evidência.
 - Sem evidência relevante: fique dentro de ±3pp do mercado e use signal "neutral".
 - NUNCA desvie mais de 15pp do preço de mercado.
+
+${INJECTION_GUARD}
 
 Ajuste o fair value considerando o contexto real do mercado. Retorne JSON exato:
 {"fairValue":65,"confidence":"medium","edge":5,"reasoning":"2-3 frases explicando a diferença entre o fair value e a prob do mercado","factors":["fator positivo","fator negativo"],"signal":"bullish|bearish|neutral","caveat":"limitação principal desta análise"}

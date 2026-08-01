@@ -3,6 +3,7 @@ import { getNewsForMarket } from "../news.ts";
 import { fetchCerebroContext } from "../cerebro.ts";
 import { callClaude } from "../anthropic.ts";
 import { extractJson } from "../extractJson.ts";
+import { INJECTION_GUARD, fenceUntrusted } from "./promptSafety.ts";
 import { humanizeCitations } from "../citations.ts";
 import type { PhaseEmit } from "./marketAnalysis.ts";
 
@@ -216,6 +217,8 @@ AVANCADO:
 - analogyExplanation: paralelo histórico preciso (ex: "similar ao que aconteceu em X com Y%de desvio")
 - mencione grau de incerteza paramétrica e sensibilidade a premissas
 
+${INJECTION_GUARD}
+
 RESPONDA SOMENTE COM O JSON ABAIXO, SEM TEXTO ANTES OU DEPOIS, SEM MARKDOWN:
 {"modelChosen":"","modelFamily":"","formula":"","whyThisModel":"","shortTermPrediction":"","mediumTermPrediction":"","longTermPrediction":"","confidenceShort":0,"confidenceMedium":0,"confidenceLong":0,"confidenceLow80":0,"confidenceHigh80":0,"plainLanguage":"","bankrollImpact":null,"keyAssumptions":[],"limitations":"","researchBasis":"","actionableInsight":"","expertiseLevel":"intermediario","analogyExplanation":"","probabilityVerbal":"","historicalParallel":"","referenceClass":"","baseRate":0,"baseRateSource":"","decomposition":[{"question":"","probability":0,"reasoning":""}],"insideViewUp":[],"insideViewDown":[],"updateTriggers":[],"calibrationWarning":null}`;
 
@@ -228,7 +231,7 @@ RESPONDA SOMENTE COM O JSON ABAIXO, SEM TEXTO ANTES OU DEPOIS, SEM MARKDOWN:
     ? `\n\nCONTEXTO DO CEREBRO (base de conhecimento curada própria — cite como [C#]):\n${cerebroCtx}`
     : "";
 
-  const userMessage = `DOMÍNIO: ${DOMAIN_LABELS[domain] ?? domain}\nPERGUNTA: ${question}\nCONTEXTO ADICIONAL: ${context || "nenhum"}\nHORIZONTE: ${HORIZON_MAP[timeHorizon] ?? timeHorizon}\nBANKROLL: ${bankroll ? `R$ ${bankroll.toLocaleString("pt-BR")}` : "não informado"}
+  const userMessage = `DOMÍNIO: ${DOMAIN_LABELS[domain] ?? domain}\nPERGUNTA: ${question}\nCONTEXTO ADICIONAL: ${context ? fenceUntrusted(context, "CONTEXTO_DO_USUARIO") : "nenhum"}\nHORIZONTE: ${HORIZON_MAP[timeHorizon] ?? timeHorizon}\nBANKROLL: ${bankroll ? `R$ ${bankroll.toLocaleString("pt-BR")}` : "não informado"}
 
 DATA: ${new Date().toLocaleDateString("pt-BR", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
 MACRO BR: Selic ${selicVal ?? "~10.5"}% a.a. | IPCA ${ipcaVal ?? "~4.8"}% a.a.

@@ -5,6 +5,7 @@ import { CATEGORY_BASE_RATES } from "../categoryRates.ts";
 import { callClaude } from "../anthropic.ts";
 import { extractJson } from "../extractJson.ts";
 import { clampFairValue } from "./guardrails.ts";
+import { INJECTION_GUARD } from "./promptSafety.ts";
 import { humanizeCitations } from "../citations.ts";
 import { logAiForecast } from "../aiForecasts.ts";
 import { log } from "../log.ts";
@@ -94,6 +95,8 @@ EXECUTE O PROTOCOLO (em ordem):
    - confidence: "alta" só com notícias fortes + Cerebro convergindo; "baixa" se fontes fracas/ausentes
 
 5. MONITORAMENTO + VIÉS cognitivo dominante neste mercado.
+
+${INJECTION_GUARD}
 
 Os artigos são numerados a partir de [1]. JSON exato (sem markdown):
 {"relevantIndices":[1,3],"fairValue":62,"confidence":"baixa|media|alta","referenceClass":"qual classe de referência e base rate usada","analysis":"3-4 frases densas citando [N] e [CN] quando usados","keyFactors":["fator com nome próprio 1","fator 2","fator 3"],"watchFor":"evento/indicador concreto","biasAlert":"viés específico ou null","newsRelevance":"high|medium|low|none","probabilityAssessment":"fair|underpriced|overpriced|uncertain","edgeSignal":"1 frase: seu fairValue vs preço e por quê"}`;

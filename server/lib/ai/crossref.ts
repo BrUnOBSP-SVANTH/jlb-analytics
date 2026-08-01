@@ -4,6 +4,7 @@ import { parsePolyPrices } from "../aiForecasts.ts";
 import { callClaude } from "../anthropic.ts";
 import { extractJson } from "../extractJson.ts";
 import { clampFairValue } from "./guardrails.ts";
+import { INJECTION_GUARD } from "./promptSafety.ts";
 import { log } from "../log.ts";
 
 export async function crossrefHandler(req: Request, res: Response) {
@@ -70,6 +71,8 @@ DATA: ${new Date().toLocaleDateString("pt-BR")}
 
 MERCADOS DISPONÍVEIS:
 ${marketsList || "Nenhum mercado carregado no momento."}
+
+${INJECTION_GUARD}
 
 Retorne JSON exato (sem markdown):
 {
