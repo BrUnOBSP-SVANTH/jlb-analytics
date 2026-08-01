@@ -4,6 +4,7 @@ import { fetchBcbSerie } from "../bcb.ts";
 import { CATEGORY_BASE_RATES } from "../categoryRates.ts";
 import { callClaude } from "../anthropic.ts";
 import { extractJson } from "../extractJson.ts";
+import { clampFairValue } from "./guardrails.ts";
 import { humanizeCitations } from "../citations.ts";
 import { logAiForecast } from "../aiForecasts.ts";
 import { log } from "../log.ts";
@@ -118,8 +119,7 @@ Os artigos são numerados a partir de [1]. JSON exato (sem markdown):
         // mercado (além de 5-95). Sem isto, a análise logava desvios enormes no
         // track record — o buraco que deixava um "42% vs 21%" (21pp) passar.
         if (typeof parsed.fairValue === "number") {
-          const fv = Math.round(parsed.fairValue);
-          fairValue = Math.max(5, Math.min(95, Math.max(probPct - 15, Math.min(probPct + 15, fv))));
+          fairValue = clampFairValue(Math.round(parsed.fairValue), probPct);
         }
         if (parsed.confidence === "baixa" || parsed.confidence === "media" || parsed.confidence === "alta") confidence = parsed.confidence;
         if (Array.isArray(parsed.relevantIndices)) {

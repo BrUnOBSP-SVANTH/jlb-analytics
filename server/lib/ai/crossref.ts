@@ -3,6 +3,7 @@ import { getCache, setCache, isRateLimited } from "../cache.ts";
 import { parsePolyPrices } from "../aiForecasts.ts";
 import { callClaude } from "../anthropic.ts";
 import { extractJson } from "../extractJson.ts";
+import { clampFairValue } from "./guardrails.ts";
 import { log } from "../log.ts";
 
 export async function crossrefHandler(req: Request, res: Response) {
@@ -111,9 +112,7 @@ Onde:
       .map((r) => {
         const m = allMarkets[r.idx];
         // Guardrail de calibração no código (como no fair value): ±20pp do mercado
-        const jlbProb = Math.max(5, Math.min(95,
-          Math.max(m.prob - 20, Math.min(m.prob + 20, Math.round(r.jlbProb)))
-        ));
+        const jlbProb = clampFairValue(Math.round(r.jlbProb), m.prob, 20);
         return {
           source: m.source,
           marketTitle: m.title,

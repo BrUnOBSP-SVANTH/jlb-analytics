@@ -6,6 +6,7 @@ import { fetchCerebroContext } from "../cerebro.ts";
 import { getCalibrationMemo } from "../aiForecasts.ts";
 import { callClaude } from "../anthropic.ts";
 import { extractJson } from "../extractJson.ts";
+import { clampFairValue } from "./guardrails.ts";
 import { log } from "../log.ts";
 
 export async function fairValueHandler(req: Request, res: Response) {
@@ -117,9 +118,7 @@ Onde:
     // Clamp duplo: faixa 5-95 E ±15pp do mercado — guardrail de calibração no
     // código, não só no prompt (mercado líquido raramente erra por >15pp)
     const rawFV = Math.round(Number(parsed.fairValue ?? clampedPreFV));
-    const fairValue = Math.max(5, Math.min(95,
-      Math.max(marketProb - 15, Math.min(marketProb + 15, rawFV))
-    ));
+    const fairValue = clampFairValue(rawFV, marketProb);
     const result = {
       fairValue,
       confidence: parsed.confidence ?? "medium",
