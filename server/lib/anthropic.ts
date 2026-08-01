@@ -7,6 +7,37 @@ import { callGemini, geminiEnabled, shouldFallback, logFallback } from "./gemini
 export interface ClaudeMessage { role: "user" | "assistant"; content: string }
 interface ClaudeResp { content: { type: string; text: string }[] }
 
+// ── Circuit breaker do provedor Anthropic ────────────────────────────────────
+// Com a Anthropic fora (sem crédito/instabilidade), toda chamada pagava um
+// round-trip que falha ANTES de cair no Gemini. O breaker "abre" após N falhas
+// seguidas e, durante o cooldown, vai direto pro fallback — menos latência e
+// menos chamadas desperdiçadas. Half-open: a 1ª chamada após o cooldown testa a
+// Anthropic de novo; sucesso fecha o breaker, falha reabre.
+const BREAKER = { failures: 0, openUntil: 0 };
+const BREAKER_THRESHOLD = 3;
+const BREAKER_COOLDOWN_MS = 60_000;
+
+function anthropicBlocked(): boolean {
+  return BREAKER.openUntil > Date.now();
+}
+function recordAnthropicSuccess(): void {
+  BREAKER.failures = 0;
+  BREAKER.openUntil = 0;
+}
+function recordAnthropicFailure(): void {
+  BREAKER.failures += 1;
+  if (BREAKER.failures >= BREAKER_THRESHOLD) BREAKER.openUntil = Date.now() + BREAKER_COOLDOWN_MS;
+}
+
+/** Estado do breaker — exposto para observabilidade das métricas de IA. */
+export function anthropicBreakerState(): { open: boolean; failures: number; cooldownMsLeft: number } {
+  return {
+    open: anthropicBlocked(),
+    failures: BREAKER.failures,
+    cooldownMsLeft: Math.max(0, BREAKER.openUntil - Date.now()),
+  };
+}
+
 /**
  * Streaming da API do Claude — emite cada delta de texto via onDelta e
  * devolve o texto completo ao final.
@@ -67,6 +98,9 @@ export async function streamClaude(opts: {
     return text;
   }
 
+  // Circuit breaker: Anthropic "aberta" (falhas recentes) → direto pro Gemini.
+  if (geminiEnabled() && anthropicBlocked()) return fallbackToGemini(new Error("anthropic circuit open"));
+
   let response: Response;
   try {
     response = await connect();
@@ -78,7 +112,7 @@ export async function streamClaude(opts: {
   if (!response.ok || !response.body) {
     const err = await response.text().catch(() => "");
     const error = new Error(`Claude HTTP ${response.status}: ${err.slice(0, 300)}`);
-    if (geminiEnabled() && shouldFallback(error)) return fallbackToGemini(error);
+    if (geminiEnabled() && shouldFallback(error)) { recordAnthropicFailure(); return fallbackToGemini(error); }
     throw error;
   }
 
@@ -106,6 +140,7 @@ export async function streamClaude(opts: {
       }
     }
   }
+  recordAnthropicSuccess();
   return full;
 }
 
@@ -153,6 +188,19 @@ export async function callClaude(opts: {
     });
   }
 
+  // Circuit breaker: Anthropic "aberta" → direto pro Gemini, sem round-trip que falha.
+  if (geminiEnabled() && anthropicBlocked()) {
+    logFallback("callClaude(breaker)", new Error("anthropic circuit open"));
+    const text = await callGemini({
+      messages: opts.messages.map((m) => ({ role: m.role, content: m.content })),
+      system: opts.system,
+      maxTokens: opts.maxTokens,
+      timeoutMs: opts.timeoutMs,
+    });
+    opts.onProvider?.("gemini");
+    return text;
+  }
+
   try {
     let response = await doFetch(true);
     // Defensivo: se o caching não for aceito, refaz sem cache uma vez (não quebra).
@@ -167,12 +215,14 @@ export async function callClaude(opts: {
     }
     const data = await response.json() as ClaudeResp;
     const text = data.content.find((b) => b.type === "text")?.text ?? "";
+    recordAnthropicSuccess();
     opts.onProvider?.("anthropic");
     return opts.prefillJson ? "{" + text : text;
   } catch (err) {
     // Fallback de provedor: sem crédito/rate limit/instabilidade, o site
     // responde pelo Gemini em vez de degradar. Inerte sem GEMINI_API_KEY.
     if (!geminiEnabled() || !shouldFallback(err)) throw err;
+    recordAnthropicFailure();
     logFallback("callClaude", err);
     const text = await callGemini({
       messages: opts.messages.map((m) => ({ role: m.role, content: m.content })),
