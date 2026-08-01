@@ -17,19 +17,23 @@ export function embeddingsEnabled(): boolean {
 
 export type EmbedTaskType = "RETRIEVAL_QUERY" | "RETRIEVAL_DOCUMENT";
 
+/** vetor + status HTTP da chamada (0 = sem chave/texto ou erro de rede/timeout). */
+export interface EmbedResult { vector: number[] | null; status: number; }
+
 /**
- * Gera o embedding de um texto. Retorna `null` em qualquer falha (sem chave,
- * HTTP, timeout, dims inesperadas) — quem chama trata como "sem vetor" e usa o
- * fallback. Nunca lança, para não derrubar o caminho de RAG.
+ * Chamada crua à API de embeddings, expondo o status HTTP. Usado pelo backfill
+ * para distinguir "cota estourada" (429) de "falha pontual" e parar cedo em vez
+ * de martelar a API. Nunca lança. Para o caminho de RAG ao vivo, prefira
+ * `embedText`, que descarta o status e só devolve o vetor (ou null).
  */
-export async function embedText(
+export async function rawEmbed(
   text: string,
   taskType: EmbedTaskType = "RETRIEVAL_QUERY",
   timeoutMs = 15_000,
-): Promise<number[] | null> {
+): Promise<EmbedResult> {
   const key = process.env.GEMINI_API_KEY ?? "";
   const clean = (text ?? "").trim();
-  if (!key || !clean) return null;
+  if (!key || !clean) return { vector: null, status: 0 };
 
   try {
     const res = await fetch(
@@ -46,12 +50,29 @@ export async function embedText(
         signal: AbortSignal.timeout(timeoutMs),
       },
     );
-    if (!res.ok) throw new Error(`embed HTTP ${res.status}: ${(await res.text()).slice(0, 120)}`);
+    if (!res.ok) {
+      log.warn(`[embeddings] HTTP ${res.status}: ${(await res.text()).slice(0, 120)}`);
+      return { vector: null, status: res.status };
+    }
     const data = await res.json() as { embedding?: { values?: number[] } };
     const v = data.embedding?.values;
-    return Array.isArray(v) && v.length === EMBED_DIMS ? v : null;
+    const vector = Array.isArray(v) && v.length === EMBED_DIMS ? v : null;
+    return { vector, status: 200 };
   } catch (e) {
     log.warn("[embeddings] falhou:", e instanceof Error ? e.message : e);
-    return null;
+    return { vector: null, status: 0 };
   }
+}
+
+/**
+ * Gera o embedding de um texto. Retorna `null` em qualquer falha (sem chave,
+ * HTTP, timeout, dims inesperadas) — quem chama trata como "sem vetor" e usa o
+ * fallback. Nunca lança, para não derrubar o caminho de RAG.
+ */
+export async function embedText(
+  text: string,
+  taskType: EmbedTaskType = "RETRIEVAL_QUERY",
+  timeoutMs = 15_000,
+): Promise<number[] | null> {
+  return (await rawEmbed(text, taskType, timeoutMs)).vector;
 }

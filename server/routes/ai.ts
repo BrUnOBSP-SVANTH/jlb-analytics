@@ -4,7 +4,7 @@ import { aiCreditsMiddleware, verifyUserId } from "../middleware/aiCredits.ts";
 import { extractJson } from "../lib/extractJson.ts";
 import { callClaude, anthropicBreakerState } from "../lib/anthropic.ts";
 import { aiMetricsSnapshot } from "../lib/ai/metrics.ts";
-import { embedText, embeddingsEnabled } from "../lib/embeddings.ts";
+import { rawEmbed, embeddingsEnabled } from "../lib/embeddings.ts";
 import { getNewsForMarket } from "../lib/news.ts";
 import { SUPABASE_URL, SUPABASE_KEY, supaWriteHeaders } from "../lib/supabaseRest.ts";
 import { seedAiForecasts, computeDivergences } from "../lib/aiForecasts.ts";
@@ -96,9 +96,13 @@ router.post("/embed-cerebro", async (req, res) => {
     if (rows.length === 0) return res.json({ embedded: 0, remaining: 0, done: true });
 
     let embedded = 0;
+    let rateLimited = false;
     for (const a of rows) {
-      const vec = await embedText(`${a.title}\n${a.summary ?? ""}`.trim(), "RETRIEVAL_DOCUMENT");
-      if (!vec) continue; // rate limit/falha → pula; próxima rodada tenta de novo
+      const { vector: vec, status } = await rawEmbed(`${a.title}\n${a.summary ?? ""}`.trim(), "RETRIEVAL_DOCUMENT");
+      // 429 = cota diária do Gemini free estourada (1000/dia). Não adianta insistir
+      // hoje: para o lote e avisa quem chamou para tentar de novo depois do reset.
+      if (status === 429) { rateLimited = true; break; }
+      if (!vec) continue; // falha pontual → pula; próxima rodada tenta de novo
       const pr = await fetch(`${SUPABASE_URL}/rest/v1/cerebro_articles?id=eq.${a.id}`, {
         method: "PATCH",
         headers: supaWriteHeaders(),
@@ -113,7 +117,7 @@ router.post("/embed-cerebro", async (req, res) => {
       { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, Prefer: "count=exact", Range: "0-0" } },
     );
     const remaining = Number(cnt.headers.get("content-range")?.split("/")[1] ?? "0") || 0;
-    res.json({ embedded, remaining, done: remaining === 0 });
+    res.json({ embedded, remaining, done: remaining === 0, ...(rateLimited ? { rate_limited: true } : {}) });
   } catch (err) {
     log.error("[embed-cerebro] error:", err instanceof Error ? err.message : err);
     res.status(500).json({ error: "embed_failed" });
