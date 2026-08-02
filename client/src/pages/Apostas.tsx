@@ -3,14 +3,12 @@
  * Fontes: Reddit + Polymarket + Kalshi
  */
 import { useState, useEffect, useCallback, useMemo, useRef, useDeferredValue } from "react";
-import { Link } from "wouter";
 import { toast } from "sonner";
 import AnimatedSection from "@/components/AnimatedSection";
 import { useSEO } from "@/hooks/useSEO";
 import {
-  Flame, ExternalLink, RefreshCw, AlertCircle,
-  Bookmark, BookmarkCheck, Bell, BellOff,
-  LayoutGrid, List, ArrowUpDown, Scale, X as CloseX, AlignJustify, Link2,
+  Flame, ExternalLink, RefreshCw, AlertCircle, Bell, BellOff,
+  LayoutGrid, List, ArrowUpDown, AlignJustify,
 } from "lucide-react";
 import MercadosTabs from "@/components/MercadosTabs";
 import { addToWatchlist, removeFromWatchlist, loadWatchlist, updateWatchlistProbs } from "@/lib/watchlist";
@@ -19,205 +17,18 @@ import { syncPushWatchlist } from "@/hooks/usePushNotifications";
 import {
   type TrendingItem, type CategoryFilter, CATEGORY_LABELS, formatVolume, fetchRedditSub, fetchPolymarketSports, fetchManifold, fetchKalshi, REDDIT_SUBS,
 } from "@/lib/trending";
-import { MarketBadge, SourceBadge, BADGE_CONFIG } from "@/components/apostas/cards";
+import { SourceBadge, BADGE_CONFIG } from "@/components/apostas/cards";
 import { TrendingCard } from "@/components/apostas/TrendingCard";
-import { publishEdges, type Divergence } from "@/components/apostas/edgeStore";
+import { ComparePanel } from "@/components/apostas/ComparePanel";
+import { CompactRow } from "@/components/apostas/CompactRow";
+import { LoadingSkeleton } from "@/components/apostas/LoadingSkeleton";
+import { DivergencesSection } from "@/components/apostas/DivergencesSection";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 // formatAge foi para components/apostas/TrendingCard.tsx (único consumidor).
 
 // ─── Comparison Panel ─────────────────────────────────────────────────────────
-
-function ComparePanel({ items, onClear }: { items: TrendingItem[]; onClear: () => void }) {
-  const [a, b] = items;
-
-  function insight(): string {
-    if (!a || !b) return "";
-    const parts: string[] = [];
-    if (a.normalizedCategory === b.normalizedCategory && a.normalizedCategory !== "other")
-      parts.push(`Ambos são mercados de ${CATEGORY_LABELS[a.normalizedCategory].toLowerCase()}`);
-    const volA = a.volume ?? 0;
-    const volB = b.volume ?? 0;
-    if (volA > 0 && volB > 0) {
-      const ratio = Math.max(volA, volB) / Math.min(volA, volB);
-      if (ratio >= 2)
-        parts.push(`${volA > volB ? a.source === "polymarket" ? "Polymarket" : "Kalshi" : b.source === "polymarket" ? "Polymarket" : "Kalshi"} tem ${ratio.toFixed(0)}× mais volume`);
-    }
-    const probA = a.yesProb ?? 0.5;
-    const probB = b.yesProb ?? 0.5;
-    const bothAbove = probA > 0.6 && probB > 0.6;
-    const bothBelow = probA < 0.4 && probB < 0.4;
-    if (bothAbove) parts.push("Ambos têm consenso de probabilidade alta (>60%)");
-    if (bothBelow) parts.push("Ambos têm baixa probabilidade (<40%) — possíveis contrárias");
-    if (a.source !== b.source)
-      parts.push(`Fontes diferentes: compare a liquidez antes de entrar nos dois`);
-    return parts.length > 0 ? parts.join(" · ") : "Mercados de naturezas distintas — correlação baixa esperada.";
-  }
-
-  return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-border/40 bg-background/95 backdrop-blur-xl shadow-2xl">
-      <div className="container py-4">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <Scale className="w-4 h-4 text-neon-blue" aria-hidden="true" />
-            <span className="text-sm font-semibold text-foreground">Comparação de Mercados</span>
-            {items.length < 2 && (
-              <span className="text-xs text-muted-foreground">— selecione um segundo mercado</span>
-            )}
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => {
-                navigator.clipboard.writeText(window.location.href).then(() => {
-                  toast("Link copiado!", { description: "Cole em qualquer lugar para compartilhar a comparação." });
-                });
-              }}
-              className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded-md border border-border/30"
-            >
-              <Link2 className="w-3 h-3" />
-              Copiar link
-            </button>
-            <button onClick={onClear} className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/30 transition-colors" aria-label="Fechar comparação">
-              <CloseX className="w-4 h-4" aria-hidden="true" />
-            </button>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {items.map((item, idx) => {
-            const pct = item.yesProb !== undefined ? parseFloat((item.yesProb * 100).toFixed(1)) : null;
-            const pctColor = pct === null ? "text-muted-foreground" : pct >= 70 ? "text-positive" : pct <= 30 ? "text-negative" : "text-gold";
-            return (
-              <div key={item.id} className="flex items-center gap-3 p-3 rounded-xl border border-border/30 bg-secondary/10">
-                <div className="w-6 h-6 rounded-full bg-neon-blue/15 flex items-center justify-center shrink-0 text-xs font-bold text-neon-blue">
-                  {idx + 1}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs font-medium text-foreground leading-snug line-clamp-2">{item.title}</p>
-                  <div className="flex items-center gap-2 mt-1">
-                    <SourceBadge source={item.source} subreddit={item.subreddit} />
-                    {item.volume !== undefined && (
-                      <span className="text-[10px] text-muted-foreground">{formatVolume(item.volume)}</span>
-                    )}
-                  </div>
-                </div>
-                {pct !== null && (
-                  <div className="shrink-0 text-right">
-                    <p className={`text-xl font-bold font-mono ${pctColor}`}>{pct}%</p>
-                    <p className="text-[9px] text-muted-foreground">SIM</p>
-                  </div>
-                )}
-              </div>
-            );
-          })}
-
-          {/* Placeholder for second slot */}
-          {items.length < 2 && (
-            <div className="flex items-center justify-center p-3 rounded-xl border border-dashed border-border/30 text-muted-foreground/40">
-              <p className="text-xs">Clique em <Scale className="w-3 h-3 inline mx-0.5" /> num segundo mercado</p>
-            </div>
-          )}
-        </div>
-
-        {items.length === 2 && (
-          <div className="mt-3 px-3 py-2 rounded-lg bg-neon-blue/5 border border-neon-blue/15">
-            <p className="text-[11px] text-muted-foreground leading-relaxed">
-              <span className="text-neon-blue font-semibold">Análise: </span>{insight()}
-            </p>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-
-function CompactRow({ item, onCompare, inCompare, onWatch, watched }: {
-  item: TrendingItem;
-  onCompare?: (item: TrendingItem) => void;
-  inCompare?: boolean;
-  onWatch?: (item: TrendingItem) => void;
-  watched?: boolean;
-}) {
-  const pct = item.yesProb !== undefined ? Math.round(item.yesProb * 100) : null;
-  const pctColor = pct === null ? "text-muted-foreground" : pct >= 70 ? "text-positive" : pct <= 30 ? "text-negative" : "text-gold";
-  return (
-    <div className="flex items-center gap-2 px-3 py-2 border-b border-border/10 hover:bg-secondary/10 transition-colors text-xs">
-      <SourceBadge source={item.source} subreddit={item.subreddit} />
-      {pct !== null && (
-        <span className={`font-mono font-bold w-10 shrink-0 ${pctColor}`}>{pct}%</span>
-      )}
-      <span className="flex-1 min-w-0 truncate text-foreground/80" title={item.title}>{item.title}</span>
-      {item.volume !== undefined && (
-        <span className="hidden sm:block text-muted-foreground/60 shrink-0 w-14 text-right">{formatVolume(item.volume)}</span>
-      )}
-      {item.normalizedCategory !== "other" && item.normalizedCategory !== "all" && (
-        <span className="hidden md:block text-[9px] text-muted-foreground/50 shrink-0 w-16 truncate">{CATEGORY_LABELS[item.normalizedCategory]}</span>
-      )}
-      {item.badge && (
-        <span className="hidden lg:block"><MarketBadge badge={item.badge} endDate={item.endDate} /></span>
-      )}
-      <div className="flex items-center gap-1 shrink-0">
-        {onCompare && (
-          <button onClick={() => onCompare(item)} title={inCompare ? "Remover comparação" : "Comparar"}
-            className={`p-1 rounded transition-colors ${inCompare ? "text-neon-blue" : "text-muted-foreground/40 hover:text-neon-blue"}`}>
-            <Scale className="w-3 h-3" />
-          </button>
-        )}
-        <button onClick={() => onWatch?.(item)} title={watched ? "Remover watchlist" : "Watchlist"}
-          className={`p-1 rounded transition-colors ${watched ? "text-gold" : "text-muted-foreground/40 hover:text-gold"}`}>
-          {watched ? <BookmarkCheck className="w-3 h-3" /> : <Bookmark className="w-3 h-3" />}
-        </button>
-        <a href={item.externalUrl} target="_blank" rel="noopener noreferrer"
-          className="p-1 rounded text-muted-foreground/40 hover:text-primary transition-colors">
-          <ExternalLink className="w-3 h-3" />
-        </a>
-      </div>
-    </div>
-  );
-}
-
-function LoadingSkeleton() {
-  return (
-    <div className="glass-card rounded-xl p-5 space-y-4 animate-pulse">
-      {/* Title row + prob pill */}
-      <div className="flex items-start gap-3">
-        <div className="w-2 h-2 rounded-full bg-secondary/50 mt-1.5 shrink-0" />
-        <div className="flex-1 space-y-2">
-          <div className="h-3.5 bg-secondary/50 rounded w-11/12" />
-          <div className="h-3 bg-secondary/30 rounded w-5/12" />
-          <div className="flex gap-1.5 mt-1">
-            <div className="h-4 w-14 bg-secondary/30 rounded-full" />
-            <div className="h-4 w-10 bg-secondary/20 rounded-full" />
-          </div>
-        </div>
-        <div className="w-8 h-8 rounded-full bg-secondary/30 shrink-0" />
-      </div>
-      {/* Hype bar */}
-      <div className="space-y-1">
-        <div className="h-2.5 bg-secondary/25 rounded w-20" />
-        <div className="h-1.5 bg-secondary/30 rounded-full w-full" />
-      </div>
-      {/* Stats row */}
-      <div className="flex gap-4">
-        <div className="h-3 bg-secondary/25 rounded w-16" />
-        <div className="h-3 bg-secondary/25 rounded w-20" />
-      </div>
-      {/* Why trending box */}
-      <div className="p-3 rounded-lg bg-secondary/10 space-y-1.5">
-        <div className="h-2.5 bg-secondary/30 rounded w-24" />
-        <div className="h-3 bg-secondary/20 rounded w-full" />
-        <div className="h-3 bg-secondary/15 rounded w-10/12" />
-      </div>
-      {/* Footer */}
-      <div className="flex justify-between items-center pt-1">
-        <div className="h-3 bg-secondary/25 rounded w-32" />
-        <div className="h-5 bg-secondary/20 rounded w-16" />
-      </div>
-    </div>
-  );
-}
 
 // ─── Main page ────────────────────────────────────────────────────────────────
 
@@ -260,70 +71,6 @@ const PAGE_SIZE = 20;
 
 // ── "Onde a JLB discorda" — mercados com maior edge entre fair value IA e preço ──
 
-
-function DivergencesSection() {
-  const [divs, setDivs] = useState<Divergence[]>([]);
-  const [loaded, setLoaded] = useState(false);
-  const [collapsed, setCollapsed] = useState(false);
-
-  useEffect(() => {
-    fetch("/api/ai/divergences")
-      .then((r) => r.ok ? r.json() as Promise<{ divergences: Divergence[] }> : null)
-      .then((d) => { if (d?.divergences) { setDivs(d.divergences); publishEdges(d.divergences); } })
-      .catch(() => {})
-      .finally(() => setLoaded(true));
-  }, []);
-
-  if (!loaded || divs.length === 0) return null;
-
-  return (
-    <AnimatedSection>
-      <div className="mb-5 rounded-xl border border-gold/25 bg-gold/3 overflow-hidden">
-        <button
-          onClick={() => setCollapsed((v) => !v)}
-          className="w-full flex items-center gap-2 px-4 py-3 hover:bg-gold/5 transition-colors text-left"
-        >
-          <Scale className="w-4 h-4 text-gold shrink-0" />
-          <span className="text-sm font-semibold text-foreground">Onde a JLB discorda do mercado</span>
-          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-gold/15 border border-gold/30 text-gold">{divs.length}</span>
-          <span className="ml-auto text-[10px] text-muted-foreground">{collapsed ? "mostrar" : "ocultar"}</span>
-        </button>
-        {!collapsed && (
-          <div className="px-4 pb-4 space-y-2">
-            <p className="text-[11px] text-muted-foreground mb-1">
-              Mercados onde nosso fair value de IA mais difere do preço atual. Edge = nossa estimativa − preço de mercado.
-            </p>
-            {divs.map((d) => {
-              const slug = d.marketId.replace(/^(poly-|kalshi-)/, "");
-              const href = d.source === "kalshi" ? `/apostas/kalshi-${slug}` : `/apostas/poly-${slug}`;
-              return (
-                <Link key={d.marketId} href={href}>
-                  <div className="flex items-center gap-3 p-2.5 rounded-lg bg-secondary/20 border border-border/15 hover:border-gold/30 transition-colors cursor-pointer">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-medium text-foreground truncate">{d.title}</p>
-                      <p className="text-[10px] text-muted-foreground mt-0.5">
-                        Mercado <span className="font-mono text-foreground">{d.currentProb}%</span> ·
-                        JLB <span className="font-mono text-gold">{d.aiFairValue}%</span>
-                        <span className="ml-1">({d.source === "kalshi" ? "Kalshi" : "Polymarket"})</span>
-                      </p>
-                    </div>
-                    <div className={`text-center px-2.5 py-1 rounded-lg shrink-0 ${d.edge > 0 ? "bg-positive/10 text-positive" : "bg-negative/10 text-negative"}`}>
-                      <p className="text-[9px] uppercase">Edge</p>
-                      <p className="text-sm font-mono font-bold">{d.edge > 0 ? "+" : ""}{d.edge}pp</p>
-                    </div>
-                  </div>
-                </Link>
-              );
-            })}
-            <p className="text-[10px] text-muted-foreground/50 pt-1">
-              Edge alto não é lucro garantido — o mercado pode ter informação que o modelo não tem. Sempre verifique a análise completa.
-            </p>
-          </div>
-        )}
-      </div>
-    </AnimatedSection>
-  );
-}
 
 export default function Apostas() {
   useSEO("Apostas Ao Vivo", "Mercados preditivos em tempo real do Polymarket e Kalshi com probabilidades, volume, divergências da IA e análise contextual.");
@@ -927,4 +674,3 @@ export default function Apostas() {
     </div>
   );
 }
-
