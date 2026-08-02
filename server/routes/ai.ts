@@ -4,7 +4,8 @@ import { aiCreditsMiddleware, verifyUserId } from "../middleware/aiCredits.ts";
 import { extractJson } from "../lib/extractJson.ts";
 import { callClaude, anthropicBreakerState } from "../lib/anthropic.ts";
 import { aiMetricsSnapshot } from "../lib/ai/metrics.ts";
-import { rawEmbed, embeddingsEnabled } from "../lib/embeddings.ts";
+import { embeddingsEnabled } from "../lib/embeddings.ts";
+import { embedCerebroBatch } from "../lib/cerebroEmbeddings.ts";
 import { getNewsForMarket } from "../lib/news.ts";
 import { SUPABASE_URL, SUPABASE_KEY, supaWriteHeaders } from "../lib/supabaseRest.ts";
 import { seedAiForecasts, computeDivergences } from "../lib/aiForecasts.ts";
@@ -83,41 +84,14 @@ router.post("/embed-cerebro", async (req, res) => {
   }
   const limit = Math.min(Math.max(Number(req.query.limit ?? 50), 1), 200);
   try {
-    const sel = await fetch(
-      `${SUPABASE_URL}/rest/v1/cerebro_articles?embedding=is.null&status=eq.active&select=id,title,summary&limit=${limit}`,
-      { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } },
-    );
-    if (!sel.ok) {
-      const msg = (await sel.text()).slice(0, 200);
-      // coluna ainda não existe → migração não aplicada
-      return res.status(400).json({ error: "select_failed", hint: "aplicou a migração 016?", detail: msg });
+    // Uma leva sob demanda. A lógica vive em lib/cerebroEmbeddings.ts, compartilhada
+    // com o agendador diário (server/index.ts) — endpoint e cron rodam o mesmo código.
+    const r = await embedCerebroBatch(limit);
+    if (r.error === "select_failed") {
+      return res.status(400).json({ error: "select_failed", hint: "aplicou a migração 016?" });
     }
-    const rows = await sel.json() as Array<{ id: string; title: string; summary: string | null }>;
-    if (rows.length === 0) return res.json({ embedded: 0, remaining: 0, done: true });
-
-    let embedded = 0;
-    let rateLimited = false;
-    for (const a of rows) {
-      const { vector: vec, status } = await rawEmbed(`${a.title}\n${a.summary ?? ""}`.trim(), "RETRIEVAL_DOCUMENT");
-      // 429 = cota diária do Gemini free estourada (1000/dia). Não adianta insistir
-      // hoje: para o lote e avisa quem chamou para tentar de novo depois do reset.
-      if (status === 429) { rateLimited = true; break; }
-      if (!vec) continue; // falha pontual → pula; próxima rodada tenta de novo
-      const pr = await fetch(`${SUPABASE_URL}/rest/v1/cerebro_articles?id=eq.${a.id}`, {
-        method: "PATCH",
-        headers: supaWriteHeaders(),
-        body: JSON.stringify({ embedding: `[${vec.join(",")}]` }),
-      }).catch(() => null);
-      if (pr?.ok) embedded += 1;
-      await new Promise((r) => setTimeout(r, 150)); // throttle p/ o rate limit do Gemini
-    }
-
-    const cnt = await fetch(
-      `${SUPABASE_URL}/rest/v1/cerebro_articles?embedding=is.null&status=eq.active&select=id`,
-      { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, Prefer: "count=exact", Range: "0-0" } },
-    );
-    const remaining = Number(cnt.headers.get("content-range")?.split("/")[1] ?? "0") || 0;
-    res.json({ embedded, remaining, done: remaining === 0, ...(rateLimited ? { rate_limited: true } : {}) });
+    if (r.error) return res.status(503).json({ error: r.error });
+    res.json({ embedded: r.embedded, remaining: r.remaining, done: r.done, ...(r.rateLimited ? { rate_limited: true } : {}) });
   } catch (err) {
     log.error("[embed-cerebro] error:", err instanceof Error ? err.message : err);
     res.status(500).json({ error: "embed_failed" });

@@ -27,6 +27,7 @@ import redditRouter   from "./routes/reddit.ts";
 import newsRouter     from "./routes/news.ts";
 import aiRouter, { sendWeeklyDigests } from "./routes/ai.ts";
 import { scoreAiForecasts, seedAiForecasts } from "./lib/aiForecasts.ts";
+import { runDailyEmbedBackfill } from "./lib/cerebroEmbeddings.ts";
 import stripeRouter   from "./routes/stripe.ts";
 import pythonRouter   from "./routes/python.ts";
 import manifoldRouter from "./routes/manifold.ts";
@@ -528,6 +529,13 @@ async function startServer() {
     // Resumo semanal por email: checa 1×/dia, RPC entrega só a quem está há 6+ dias sem receber
     setInterval(() => { void sendWeeklyDigests(); }, 24 * 60 * 60 * 1000);
     log.info("   Resumo semanal: email aos inscritos (precisa RESEND_API_KEY) ✅");
+
+    // Backfill de embeddings do Cerebro: 1×/dia, ~800 (deixa folga p/ as buscas
+    // semânticas ao vivo no teto free de 1000/dia do Gemini). Auto-limita e para
+    // sozinho quando todos os artigos têm vetor. Inerte sem GEMINI_API_KEY.
+    setTimeout(() => { void runDailyEmbedBackfill(); }, 6 * 60_000);
+    setInterval(() => { void runDailyEmbedBackfill(); }, 24 * 60 * 60 * 1000);
+    log.info("   Embeddings Cerebro: backfill diário (~800/dia, respeita a cota free) ✅");
   } else {
     log.warn("   Cerebro/Snapshots: SUPABASE_SERVICE_KEY ausente — coleta manual apenas.");
   }
