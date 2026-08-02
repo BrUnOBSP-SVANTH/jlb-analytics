@@ -22,6 +22,7 @@ Copie de `.env.example` e preencha no painel do provedor (NÃO commitar `.env`):
 | Var | Para quê |
 |-----|----------|
 | `ANTHROPIC_API_KEY` | Chat, análise, previsão, briefing |
+| `GEMINI_API_KEY` | Fallback de IA (quando o Anthropic falha) + embeddings do RAG semântico do Cerebro |
 | `SUPABASE_URL` / `SUPABASE_SERVICE_KEY` | Auth, Cerebro, snapshots, analytics, feedback |
 | `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` | Cliente (injetadas no build) |
 | `NEWS_API_KEY` | Notícias contextuais na análise |

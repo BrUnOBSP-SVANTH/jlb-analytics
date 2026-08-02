@@ -17,6 +17,8 @@ services:
       # Segredos — preencher no dashboard (nunca commitados)
       - key: ANTHROPIC_API_KEY
         sync: false
+      - key: GEMINI_API_KEY # fallback de IA quando o Anthropic falha + embeddings do RAG semântico
+        sync: false
       - key: SUPABASE_URL
         sync: false
       - key: SUPABASE_SERVICE_KEY
