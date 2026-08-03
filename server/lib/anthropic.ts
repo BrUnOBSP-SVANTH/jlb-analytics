@@ -112,8 +112,18 @@ export async function streamClaude(opts: {
     response = await connect();
     if (!response.ok && response.status >= 500) throw new Error(`HTTP ${response.status}`);
   } catch {
+    // 1ª tentativa falhou (conexão/5xx) → 1 retry com backoff. Se o retry TAMBÉM
+    // lançar (rede/timeout/abort), tratamos AQUI: antes a exceção escapava das
+    // métricas E do fallback, deixando o chat "indisponível" mesmo com Gemini.
     await new Promise((r) => setTimeout(r, 500));
-    response = await connect();
+    try {
+      response = await connect();
+    } catch (retryErr) {
+      recordAnthropicFailure();
+      if (geminiEnabled()) return fallbackToGemini(retryErr); // seguro: nada foi transmitido ainda
+      recordAiCall("error", Date.now() - t0);
+      throw retryErr;
+    }
   }
   if (!response.ok || !response.body) {
     const err = await response.text().catch(() => "");

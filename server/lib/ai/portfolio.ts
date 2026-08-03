@@ -3,9 +3,7 @@ import { callClaude } from "../anthropic.ts";
 import { extractJson } from "../extractJson.ts";
 import { log } from "../log.ts";
 import { parseBody, portfolioBodySchema } from "./schemas.ts";
-
-const portfolioAnalysisCache = new Map<string, { ts: number; data: object }>();
-const PORTFOLIO_CACHE_TTL = 30 * 60 * 1000;
+import { getCache, setCache } from "../cache.ts";
 
 export async function portfolioHandler(req: Request, res: Response) {
   // Validação de shape na borda (fail-fast) — impede posição malformada de
@@ -15,11 +13,10 @@ export async function portfolioHandler(req: Request, res: Response) {
   const { positions } = parsed.data;
 
   try {
-    const cacheKey = positions.map(p => `${p.title.slice(0, 20)}${Math.round(p.entryProb * 100)}`).join("|");
-    const cached = portfolioAnalysisCache.get(cacheKey);
-    if (cached && Date.now() - cached.ts < PORTFOLIO_CACHE_TTL) {
-      return res.json({ ...cached.data, cached: true });
-    }
+    // Cache compartilhado (cache.ts) — expiry-on-read, sem o vazamento do Map próprio.
+    const cacheKey = `portfolio:${positions.map(p => `${p.title.slice(0, 20)}${Math.round(p.entryProb * 100)}`).join("|")}`;
+    const cached = getCache<object>(cacheKey);
+    if (cached) return res.json({ ...cached, cached: true });
 
     const positionsList = positions.map(p =>
       `- "${p.title.slice(0, 60)}": ${p.position.toUpperCase()} @ ${Math.round(p.entryProb * 100)}% entrada, atual ${Math.round((p.currentProb ?? p.entryProb) * 100)}%, USD ${p.betSize.toFixed(0)}, P&L: ${p.pnl != null ? (p.pnl >= 0 ? "+" : "") + p.pnl.toFixed(2) : "N/A"}`
@@ -58,7 +55,7 @@ Responda em JSON com exatamente estes campos:
       suggestions: parsed.suggestions ?? [],
     };
 
-    portfolioAnalysisCache.set(cacheKey, { ts: Date.now(), data: result });
+    setCache(cacheKey, result, 1800); // 30 min
     res.json({ ...result, cached: false });
   } catch (err) {
     log.error("[portfolio-analysis]", err);
