@@ -26,7 +26,6 @@ const Nivel5        = lazy(() => import("./pages/Nivel5"));
 const Apostas       = lazy(() => import("./pages/Apostas"));
 const Simulador     = lazy(() => import("./pages/Simulador"));
 const Noticias      = lazy(() => import("./pages/Noticias"));
-const Backtester    = lazy(() => import("./pages/Backtester"));
 const Calculadoras  = lazy(() => import("./pages/Calculadoras"));
 const Educacao      = lazy(() => import("./pages/Educacao"));
 const Dashboard     = lazy(() => import("./pages/Dashboard"));
@@ -34,7 +33,6 @@ const Perfil        = lazy(() => import("./pages/Perfil"));
 const Sobre         = lazy(() => import("./pages/Sobre"));
 const Previsao      = lazy(() => import("./pages/Previsao"));
 const Briefing      = lazy(() => import("./pages/Briefing"));
-const Cerebro       = lazy(() => import("./pages/Cerebro"));
 const Portfolio     = lazy(() => import("./pages/Portfolio"));
 const MarketDetail  = lazy(() => import("./pages/MarketDetail"));
 const Leaderboard   = lazy(() => import("./pages/Leaderboard"));
@@ -100,7 +98,6 @@ function Router() {
               <Route path="/apostas"      component={Apostas} />
               <Route path="/simulador"    component={Simulador} />
               <Route path="/noticias"     component={Noticias} />
-              <Route path="/backtester"   component={Backtester} />
               <Route path="/calculadoras" component={Calculadoras} />
               <Route path="/dashboard"    component={Dashboard} />
               <Route path="/perfil"       component={Perfil} />
@@ -108,7 +105,6 @@ function Router() {
               <Route path="/duelos"       component={Duelos} />
               <Route path="/previsao"     component={Previsao} />
               <Route path="/briefing"     component={Briefing} />
-              <Route path="/cerebro"      component={Cerebro} />
               <Route path="/portfolio"    component={Portfolio} />
               <Route path="/sobre"        component={Sobre} />
               <Route path="/termos"       component={Termos} />
@@ -116,7 +112,9 @@ function Router() {
               {/* Redirects backward compat */}
               {["/mercado","/mercados"].map(p => <Route key={p} path={p}>{() => { window.location.replace("/apostas"); return null; }}</Route>)}
               {["/minha-conta"].map(p => <Route key={p} path={p}>{() => { window.location.replace("/dashboard"); return null; }}</Route>)}
-              {["/laboratorio"].map(p => <Route key={p} path={p}>{() => { window.location.replace("/backtester"); return null; }}</Route>)}
+              {/* Backtester e a TELA do Cerebro foram retirados do site (mantido o motor do Cerebro nos bastidores). Redireciona links antigos. */}
+              {["/laboratorio","/backtester"].map(p => <Route key={p} path={p}>{() => { window.location.replace("/calculadoras"); return null; }}</Route>)}
+              {["/cerebro"].map(p => <Route key={p} path={p}>{() => { window.location.replace("/previsao"); return null; }}</Route>)}
               {["/analise"].map(p => <Route key={p} path={p}>{() => { window.location.replace("/previsao"); return null; }}</Route>)}
               {["/correlacao"].map(p => <Route key={p} path={p}>{() => { window.location.replace("/calculadoras"); return null; }}</Route>)}
               {["/premium","/contato"].map(p => <Route key={p} path={p}>{() => { window.location.replace("/sobre"); return null; }}</Route>)}

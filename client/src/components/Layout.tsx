@@ -8,7 +8,7 @@ import { ReactNode, useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "wouter";
 import {
   BarChart3, Calculator, LayoutDashboard, Menu, X,
-  LineChart, GitCompare, Activity, Sun, Moon,
+  LineChart, GitCompare, Sun, Moon,
   LogIn, LogOut, User, GraduationCap, Newspaper, Star, Brain,
   Zap, BookOpen, ChevronRight, Flame, Briefcase,
   Bell, BellRing, Sigma, Map, Search, Swords,
@@ -64,14 +64,12 @@ const NAV_GROUPS: NavGroup[] = [
     children: [
       { label: "Previsão Guiada", href: "/previsao", icon: Brain, desc: "IA detecta seu nível e escolhe o modelo certo — todos os domínios", badge: "IA" },
       { label: "Briefing IA",     href: "/briefing", icon: Zap,   desc: "Análise matinal com dados ao vivo de mercado", badge: "IA" },
-      { label: "Cerebro",         href: "/cerebro",  icon: Brain, desc: "Base de conhecimento proprietária — alimenta toda a IA do site", badge: "NOVO" },
     ],
   },
   {
     id: "ferramentas",
     label: "Ferramentas",
     children: [
-      { label: "Backtester",      href: "/backtester",   icon: Activity,   desc: "Teste estratégias contra dados históricos reais do Polymarket" },
       { label: "Simulador EV",    href: "/simulador",    icon: Sigma,      desc: "Monte Carlo · Kelly Criterion · Calibração interativa" },
       { label: "Calculadoras",    href: "/calculadoras", icon: Calculator, desc: "EV, Overround, Brier Score, Kelly e Correlação" },
       { label: "Portfólio",       href: "/portfolio",    icon: Briefcase,  desc: "Rastreie posições virtuais em mercados reais", badge: "NOVO" },
@@ -96,7 +94,6 @@ const QUICK_LINKS = [
   { label: "Apostas Ao Vivo", href: "/apostas"    },
   { label: "Análise",         href: "/noticias"   },
   { label: "Previsão IA",     href: "/previsao"   },
-  { label: "Cerebro",         href: "/cerebro"    },
   { label: "Dashboard",       href: "/dashboard"  },
   { label: "Leaderboard",     href: "/leaderboard"},
 ];
@@ -645,8 +642,6 @@ function Footer() {
             <div className="space-y-1.5">
               {[
                 { label: "Previsão IA",   href: "/previsao"    },
-                { label: "Cerebro",       href: "/cerebro"     },
-                { label: "Backtester",    href: "/backtester"  },
                 { label: "Simulador EV",  href: "/simulador"   },
                 { label: "Calculadoras",  href: "/calculadoras"},
                 { label: "Dashboard",     href: "/dashboard"   },

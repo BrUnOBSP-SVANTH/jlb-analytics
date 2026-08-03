@@ -45,7 +45,7 @@ const MARKET_FACTS = [
 
 const ROADMAP = [
   { phase: "MVP — concluído",      status: "done",    items: ["Apostas ao vivo (Polymarket + Kalshi)", "IA adaptativa por domínio e nível", "5 níveis educacionais com calculadoras", "Cerebro com 3.700+ artigos", "Dashboard de calibração pessoal"] },
-  { phase: "Q3 2026 — em andamento", status: "active",  items: ["Integração Stripe (plano premium)", "Snapshots históricos para Backtester", "Sync de previsões em nuvem (Supabase)", "Mobile app (PWA avançado)"] },
+  { phase: "Q3 2026 — em andamento", status: "active",  items: ["Integração Stripe (plano premium)", "Sync de previsões em nuvem (Supabase)", "Mobile app (PWA avançado)"] },
   { phase: "Q4 2026 — planejado",  status: "planned", items: ["Comunidade de forecasters", "Rankings de calibração públicos", "API para desenvolvedores", "Integração B3 Mercados Preditivos"] },
 ];
 
@@ -188,7 +188,7 @@ export default function Sobre() {
                 <span className="text-sm font-semibold text-foreground">Premium</span>
               </div>
               <p className="text-xs text-muted-foreground leading-relaxed">
-                Níveis 4–5, análises IA ilimitadas, Backtester com dados reais, histórico cloud e
+                Níveis 4–5, análises IA ilimitadas, histórico de previsões na nuvem e
                 relatórios de calibração exportáveis.
               </p>
             </div>

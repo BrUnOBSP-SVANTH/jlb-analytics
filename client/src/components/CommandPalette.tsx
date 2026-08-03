@@ -5,7 +5,7 @@
  */
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useLocation } from "wouter";
-import { Search, X, FileText, LayoutDashboard, Brain, Zap, BookOpen, BarChart3, Activity, Calculator, Briefcase, GraduationCap, Newspaper } from "lucide-react";
+import { Search, X, FileText, LayoutDashboard, Brain, Zap, BookOpen, BarChart3, Calculator, Briefcase, GraduationCap, Newspaper } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { trapTab } from "@/lib/focusTrap";
 
@@ -32,10 +32,8 @@ const PAGES: CmdPage[] = [
   { type: "page", label: "Análise de Mercados", href: "/noticias",    icon: Newspaper,      keywords: "noticias análise mercados preditivos" },
   { type: "page", label: "Previsão Guiada IA", href: "/previsao",    icon: Brain,          keywords: "previsão ia modelo econométrico" },
   { type: "page", label: "Briefing Diário IA", href: "/briefing",    icon: Zap,            keywords: "briefing diário análise matinal" },
-  { type: "page", label: "Cerebro",            href: "/cerebro",     icon: Brain,          keywords: "cerebro base conhecimento artigos sínteses" },
   { type: "page", label: "Dashboard",          href: "/dashboard",   icon: LayoutDashboard,keywords: "dashboard calibração brier score previsões" },
   { type: "page", label: "Portfólio",          href: "/portfolio",   icon: Briefcase,      keywords: "portfolio posições simulado" },
-  { type: "page", label: "Backtester",         href: "/backtester",  icon: Activity,       keywords: "backtester estratégias mean reversion" },
   { type: "page", label: "Simulador EV",       href: "/simulador",   icon: BarChart3,      keywords: "simulador kelly monte carlo" },
   { type: "page", label: "Calculadoras",       href: "/calculadoras",icon: Calculator,     keywords: "calculadoras ev overround brier kelly correlação" },
   { type: "page", label: "Trilha Completa",    href: "/educacao",    icon: GraduationCap,  keywords: "educação níveis aprender" },
@@ -138,7 +136,7 @@ export default function CommandPalette() {
         const item = allItems[selectedIdx];
         if (!item) return;
         if (item.type === "page") { navigate(item.href); setOpen(false); }
-        else { navigate("/cerebro"); setOpen(false); }
+        else { navigate("/noticias"); setOpen(false); }
       }
     }
     document.addEventListener("keydown", onKey);
@@ -245,7 +243,7 @@ export default function CommandPalette() {
                       return (
                         <button
                           key={art.id}
-                          onClick={() => { navigate("/cerebro"); setOpen(false); }}
+                          onClick={() => { navigate("/noticias"); setOpen(false); }}
                           className={`w-full flex items-start gap-3 px-4 py-2.5 text-left transition-colors ${
                             isSelected ? "bg-primary/10" : "hover:bg-secondary/20"
                           }`}

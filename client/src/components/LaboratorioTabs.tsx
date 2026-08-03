@@ -2,10 +2,9 @@
  * LaboratorioTabs — navegação entre as ferramentas quantitativas.
  */
 import { Link, useLocation } from "wouter";
-import { BarChart3, LineChart, Calculator } from "lucide-react";
+import { LineChart, Calculator } from "lucide-react";
 
 const TABS = [
-  { href: "/backtester",   label: "Backtester",   icon: BarChart3  },
   { href: "/simulador",    label: "Simulador EV", icon: LineChart  },
   { href: "/calculadoras", label: "Calculadoras", icon: Calculator },
 ];

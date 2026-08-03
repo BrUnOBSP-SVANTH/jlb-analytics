@@ -2,12 +2,11 @@
  * AnaliseTabs — navegação entre as ferramentas de análise com IA.
  */
 import { Link, useLocation } from "wouter";
-import { Brain, Zap, BookOpen } from "lucide-react";
+import { Brain, Zap } from "lucide-react";
 
 const TABS = [
-  { href: "/previsao", label: "Previsão IA",     icon: Brain,    badge: "IA" },
-  { href: "/briefing", label: "Briefing Diário", icon: Zap,      badge: "IA" },
-  { href: "/cerebro",  label: "Cerebro",         icon: BookOpen, badge: null },
+  { href: "/previsao", label: "Previsão IA",     icon: Brain, badge: "IA" },
+  { href: "/briefing", label: "Briefing Diário", icon: Zap,   badge: "IA" },
 ];
 
 export default function AnaliseTabs() {

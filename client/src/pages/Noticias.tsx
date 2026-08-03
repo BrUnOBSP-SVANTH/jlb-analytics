@@ -8,9 +8,8 @@ import PageHeader from "@/components/PageHeader";
 import AnimatedSection from "@/components/AnimatedSection";
 import {
   Newspaper, TrendingUp, RefreshCw, AlertCircle, Loader2, Check,
-  Target, BarChart2, Search, BookOpen, Brain, ChevronRight,
+  Target, BarChart2, Search, BookOpen,
 } from "lucide-react";
-import { Link } from "wouter";
 import MercadosTabs from "@/components/MercadosTabs";
 import { PostCard, ArticleCard, ArticleCardSkeleton, ARTICLE_TOPICS } from "@/components/noticias/cards";
 import { MarketCard } from "@/components/noticias/MarketCard";
@@ -233,16 +232,6 @@ export default function Noticias() {
             )}
           </div>
 
-          {/* Banner Cerebro */}
-          <Link href="/cerebro">
-            <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-gold/15 bg-gold/3 hover:bg-gold/8 transition-colors cursor-pointer">
-              <Brain className="w-3.5 h-3.5 text-gold shrink-0" aria-hidden="true" />
-              <span className="text-xs text-muted-foreground">
-                <span className="text-gold font-medium">Cerebro</span> — base de conhecimento curada + sínteses IA
-              </span>
-              <ChevronRight className="w-3.5 h-3.5 text-gold/50 ml-auto shrink-0" aria-hidden="true" />
-            </div>
-          </Link>
         </AnimatedSection>
 
         {/* Recent save toast */}
