@@ -2,15 +2,27 @@
  * EdgeCalculator — calculadora de EV/Kelly inline do detalhe. Extraido de pages/MarketDetail.tsx.
  */
 import { useState } from "react";
-import { Calculator, Zap, Info } from "lucide-react";
+import { Link } from "wouter";
+import { Calculator, Zap, Info, Check, BookmarkPlus } from "lucide-react";
 import { calcEV, calcKelly } from "@/components/marketDetail/utils";
 import { Explain } from "@/components/marketDetail/Explain";
+import { addPrediction } from "@/lib/predictions";
+import { awardPoints } from "@/lib/userProgress";
 
 // ── EdgeCalculator (inline) ────────────────────────────────────────────────────
 
-export function EdgeCalculator({ marketProb }: { marketProb: number }) {
+export function EdgeCalculator({ marketProb, marketId, question }: { marketProb: number; marketId: string; question: string }) {
   const [yourPct, setYourPct] = useState(Math.round(marketProb * 100));
+  const [saved, setSaved] = useState(false);
   const yourProb = yourPct / 100;
+
+  // Fecha o loop do Brier: registra a estimativa para rastrear a própria calibração
+  // no Dashboard. Antes esse fluxo só existia nos cards de Notícias, não na tela forte.
+  function handleSave() {
+    addPrediction({ marketId, question, marketProb: Math.round(marketProb * 100), userProb: yourPct });
+    awardPoints("prediction_made", `Previsão registrada: ${question.slice(0, 50)}`);
+    setSaved(true);
+  }
   const ev = calcEV(yourProb, marketProb);
   const kelly = calcKelly(yourProb, marketProb);
   const halfKelly = kelly / 2;
@@ -82,6 +94,23 @@ export function EdgeCalculator({ marketProb }: { marketProb: number }) {
             : "Sem valor com esta estimativa — o mercado está pagando menos do que sua probabilidade justifica. Reduza o tamanho ou reavalie."}
         </p>
       </div>
+      {/* Registrar a previsão — fecha o loop do Brier (rastreio de calibração no Dashboard) */}
+      {saved ? (
+        <div className="flex items-center gap-2 p-3 rounded-lg bg-positive/10 border border-positive/20">
+          <Check className="w-4 h-4 text-positive shrink-0" />
+          <p className="text-xs text-foreground">
+            Previsão registrada ({yourPct}%). Acompanhe sua calibração no{" "}
+            <Link href="/dashboard"><span className="text-gold hover:underline cursor-pointer">Dashboard</span></Link>.
+          </p>
+        </div>
+      ) : (
+        <button
+          onClick={handleSave}
+          className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity"
+        >
+          <BookmarkPlus className="w-4 h-4" /> Registrar esta previsão ({yourPct}%)
+        </button>
+      )}
       <details className="group">
         <summary className="text-xs text-muted-foreground/60 hover:text-muted-foreground cursor-pointer flex items-center gap-1 select-none">
           <Info className="w-3 h-3" />Como foi calculado

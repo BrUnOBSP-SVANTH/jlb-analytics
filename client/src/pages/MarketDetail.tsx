@@ -678,7 +678,7 @@ export default function MarketDetail() {
             {/* Kelly Calculator */}
             <AnimatedSection delay={0.25}>
               <div className="glass-card rounded-xl p-6">
-                <EdgeCalculator marketProb={market.yesProb} />
+                <EdgeCalculator marketProb={market.yesProb} marketId={market.id} question={market.title} />
               </div>
             </AnimatedSection>
           </>
