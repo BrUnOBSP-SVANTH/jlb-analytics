@@ -2,12 +2,11 @@
  * MercadosTabs — barra de navegação compartilhada entre Apostas, Notícias e Portfolio.
  */
 import { Link, useLocation } from "wouter";
-import { Flame, Newspaper, Briefcase } from "lucide-react";
+import { Flame, Newspaper } from "lucide-react";
 
 const TABS = [
   { href: "/apostas",  label: "Apostas Ao Vivo",    icon: Flame,     badge: "AO VIVO" },
   { href: "/noticias", label: "Análise de Mercados", icon: Newspaper },
-  { href: "/portfolio", label: "Portfólio",          icon: Briefcase },
 ];
 
 export default function MercadosTabs() {

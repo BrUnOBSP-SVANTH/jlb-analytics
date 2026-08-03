@@ -10,8 +10,8 @@ import {
   BarChart3, Calculator, LayoutDashboard, Menu, X,
   LineChart, GitCompare, Sun, Moon,
   LogIn, LogOut, User, GraduationCap, Newspaper, Star, Brain,
-  Zap, BookOpen, ChevronRight, Flame, Briefcase,
-  Bell, BellRing, Sigma, Map, Search, Swords,
+  Zap, BookOpen, ChevronRight, Flame,
+  Bell, BellRing, Sigma, Map, Search,
 } from "lucide-react";
 import CommandPalette from "./CommandPalette";
 import { toast } from "sonner";
@@ -72,8 +72,6 @@ const NAV_GROUPS: NavGroup[] = [
     children: [
       { label: "Simulador EV",    href: "/simulador",    icon: Sigma,      desc: "Monte Carlo · Kelly Criterion · Calibração interativa" },
       { label: "Calculadoras",    href: "/calculadoras", icon: Calculator, desc: "EV, Overround, Brier Score, Kelly e Correlação" },
-      { label: "Portfólio",       href: "/portfolio",    icon: Briefcase,  desc: "Rastreie posições virtuais em mercados reais", badge: "NOVO" },
-      { label: "Duelos",          href: "/duelos",       icon: Swords,     desc: "Desafie forecasters: previsões seladas, menor Brier vence", badge: "BETA" },
     ],
   },
   {
