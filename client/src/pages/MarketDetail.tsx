@@ -287,7 +287,9 @@ export default function MarketDetail() {
 
   const currentProb = market?.yesProb ?? 0;
   const probPct = Math.round(currentProb * 100);
-  const probColor = probPct >= 60 ? "text-positive" : probPct >= 40 ? "text-gold" : "text-negative";
+  const probColor = probPct >= 60 ? "text-positive" : probPct >= 40 ? "text-primary" : "text-negative";
+  // Cor do gráfico via token (adapta claro/escuro) e coerente com o herói — nada de hex fixo.
+  const chartStroke = probPct >= 60 ? "var(--color-positive)" : probPct >= 40 ? "var(--color-primary)" : "var(--color-negative)";
   // Fidelidade: o status real da fonte (closed/active/status) vale mais que a endDate
   // nominal — um mercado que a Polymarket/Kalshi já resolveu nunca mostra "faltam Xh".
   const isResolved = !!market && (market.closed === true || market.active === false
@@ -400,22 +402,20 @@ export default function MarketDetail() {
                   linha secundária compacta. (Multi-desfecho usa a seção de Desfechos acima.) */}
               {!market.parsedOutcomes && (
                 <div className="glass-card rounded-xl p-6 mb-3">
-                  <div className="flex items-end justify-between gap-6 flex-wrap">
-                    <div>
-                      <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-1.5">Probabilidade de SIM</p>
-                      <span className={`font-mono font-bold leading-none tabular-nums ${probColor}`} style={{ fontSize: "clamp(3.25rem, 9vw, 4.75rem)" }}>
-                        {probPct}<span className="text-3xl align-top">%</span>
-                      </span>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-1.5">Não</p>
-                      <span className="text-3xl font-mono font-bold text-muted-foreground/70 tabular-nums">{100 - probPct}%</span>
-                    </div>
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-1.5">Probabilidade de SIM</p>
+                  <div className="flex items-baseline gap-x-3 gap-y-1 flex-wrap">
+                    <span className={`font-mono font-bold leading-none tabular-nums ${probColor}`} style={{ fontSize: "clamp(3.25rem, 9vw, 4.75rem)" }}>
+                      {probPct}<span className="text-3xl align-top leading-none">%</span>
+                    </span>
+                    <span className="text-sm text-muted-foreground">de chance segundo o mercado</span>
                   </div>
-                  <div className="mt-5 h-2.5 rounded-full bg-secondary/40 overflow-hidden">
-                    <div className={`h-full rounded-full ${probColor.replace("text-", "bg-")} transition-all duration-700`} style={{ width: `${probPct}%` }} />
+                  {/* Barra SIM/NÃO — o complemento ancorado no fim (sem vazio morto no meio) */}
+                  <div className="mt-5 flex items-center gap-3">
+                    <div className="flex-1 h-2.5 rounded-full bg-secondary/40 overflow-hidden">
+                      <div className={`h-full rounded-l-full rounded-r-[2px] min-w-[6px] ${probColor.replace("text-", "bg-")} transition-all duration-700`} style={{ width: `${probPct}%` }} />
+                    </div>
+                    <span className="text-sm font-mono font-bold text-muted-foreground tabular-nums shrink-0">Não {100 - probPct}%</span>
                   </div>
-                  <p className="text-[10px] text-muted-foreground mt-2">Consenso atual do mercado</p>
                 </div>
               )}
               <div className="grid grid-cols-3 gap-3">
@@ -501,8 +501,8 @@ export default function MarketDetail() {
                     <AreaChart data={chartData} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
                       <defs>
                         <linearGradient id="probGradient" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#22c55e" stopOpacity={0.3} />
-                          <stop offset="95%" stopColor="#22c55e" stopOpacity={0.02} />
+                          <stop offset="5%" stopColor={chartStroke} stopOpacity={0.3} />
+                          <stop offset="95%" stopColor={chartStroke} stopOpacity={0.02} />
                         </linearGradient>
                       </defs>
                       <XAxis
@@ -528,11 +528,11 @@ export default function MarketDetail() {
                       <Area
                         type="monotone"
                         dataKey="prob"
-                        stroke="#22c55e"
+                        stroke={chartStroke}
                         strokeWidth={2}
                         fill="url(#probGradient)"
                         dot={false}
-                        activeDot={{ r: 4, fill: "#22c55e" }}
+                        activeDot={{ r: 4, fill: chartStroke }}
                       />
                     </AreaChart>
                   </ResponsiveContainer>

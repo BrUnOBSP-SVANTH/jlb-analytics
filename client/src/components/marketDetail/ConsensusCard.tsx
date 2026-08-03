@@ -36,6 +36,26 @@ export function ConsensusCard({ market, community, ai, trackRecord }: {
   const result = computeConsensus(signals);
   if (!result) return null;
 
+  // Fonte única (só o mercado): o "consenso" É o próprio preço do mercado, que já é o
+  // herói no topo da tela. Em vez de clonar um segundo número grande competindo com o
+  // herói, mostra um convite compacto pra enriquecer o consenso com a IA/comunidade.
+  if (result.nSources === 1) {
+    return (
+      <AnimatedSection delay={0.12}>
+        <div className="glass-card rounded-xl p-5 border border-gold/20 bg-gold/3 flex items-start gap-3">
+          <GitMerge className="w-4 h-4 text-gold shrink-0 mt-0.5" />
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-foreground">Consenso JLB</p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Só o mercado pesa por enquanto. Rode a <span className="text-gold font-medium">Análise por IA</span> abaixo
+              para somar o sinal da IA (e a comunidade) e calibrar um consenso próprio, com a divergência vs. o mercado.
+            </p>
+          </div>
+        </div>
+      </AnimatedSection>
+    );
+  }
+
   const diff = result.consensus - marketPct;
   const diffColor = Math.abs(diff) < 3 ? "text-muted-foreground" : diff > 0 ? "text-positive" : "text-negative";
   const agreePct = Math.round(result.agreement * 100);

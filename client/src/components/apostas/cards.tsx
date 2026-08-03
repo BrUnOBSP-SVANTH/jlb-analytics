@@ -82,8 +82,10 @@ export function ProbSparkline({ tokenIds, marketId, source }: {
       return `${x.toFixed(1)},${y.toFixed(1)}`;
     })
     .join(" ");
+  const deltaPp = Math.round((probs[probs.length - 1] - probs[0]) * 100);
   const trend = probs[probs.length - 1] >= probs[0];
-  const color = trend ? "#22c55e" : "#ef4444";
+  // Tokens (adaptam claro/escuro) em vez de hex fixo; neutro quando não há tendência real.
+  const color = deltaPp === 0 ? "var(--color-muted-foreground)" : trend ? "var(--color-positive)" : "var(--color-negative)";
   const spanDays = pts.length >= 2
     ? Math.round((pts[pts.length - 1].t - pts[0].t) / 86400)
     : 7;
@@ -94,8 +96,8 @@ export function ProbSparkline({ tokenIds, marketId, source }: {
       <svg width={W} height={H} className="overflow-visible shrink-0">
         <polyline points={points} fill="none" stroke={color} strokeWidth={1.5} strokeOpacity={0.75} strokeLinejoin="round" />
       </svg>
-      <span className={`text-[9px] font-mono ${trend ? "text-positive" : "text-negative"}`}>
-        {trend ? "+" : ""}{Math.round((probs[probs.length - 1] - probs[0]) * 100)}pp {displayDays}d
+      <span className={`text-[9px] font-mono ${deltaPp === 0 ? "text-muted-foreground" : trend ? "text-positive" : "text-negative"}`}>
+        {deltaPp > 0 ? "+" : ""}{deltaPp}pp {displayDays}d
       </span>
     </div>
   );
@@ -168,12 +170,14 @@ export function SourceBadge({ source, subreddit }: { source: Source; subreddit?:
  *  Grande e confiante: num site de mercados preditivos, a probabilidade É o produto. */
 export function ProbHero({ prob, flash }: { prob: number; flash?: "up" | "down" | null }) {
   const pct = Math.round(prob * 100);
-  const base = pct >= 70 ? "text-positive" : pct <= 30 ? "text-negative" : "text-gold";
+  // Mid (31-69%) usa text-primary (adapta claro/escuro) em vez de text-gold fixo,
+  // que ficava ~1.75:1 no card branco. positive/negative escurecem no .light.
+  const base = pct >= 70 ? "text-positive" : pct <= 30 ? "text-negative" : "text-primary";
   const color = flash === "up" ? "text-positive" : flash === "down" ? "text-negative" : base;
   return (
     <div className={`text-right shrink-0 transition-transform duration-300 ${flash ? "scale-105" : "scale-100"}`}>
       <p className={`font-mono font-bold leading-none tabular-nums ${color} transition-colors duration-300`} style={{ fontSize: "2.75rem" }}>
-        {pct}<span className="text-xl align-top">%</span>
+        {pct}<span className="text-xl align-top leading-none">%</span>
       </p>
       <p className="text-[9px] text-muted-foreground uppercase tracking-widest mt-1.5 flex items-center justify-end gap-1">
         {flash === "up" && <span className="text-positive leading-none">▲</span>}
@@ -188,14 +192,16 @@ export function ProbHero({ prob, flash }: { prob: number; flash?: "up" | "down" 
  *  ~100% em todo card, logo inútil). Esta varia por mercado e É o sinal real. */
 export function ProbBar({ prob }: { prob: number }) {
   const pct = Math.round(prob * 100);
-  const color = pct >= 70 ? "bg-positive" : pct <= 30 ? "bg-negative" : "bg-gold";
+  const color = pct >= 70 ? "bg-positive" : pct <= 30 ? "bg-negative" : "bg-primary";
   return (
     <div>
       <div className="h-2 rounded-full bg-secondary/40 overflow-hidden">
-        <div className={`h-full rounded-full ${color} transition-all duration-500`} style={{ width: `${pct}%` }} />
+        {/* ancorado à esquerda (rounded-l + min-w) — em prob. baixa não vira pílula solta */}
+        <div className={`h-full rounded-l-full rounded-r-[2px] min-w-[6px] ${color} transition-all duration-500`} style={{ width: `${pct}%` }} />
       </div>
+      {/* Só o complemento NÃO é dado novo — o número SIM já é o herói acima. */}
       <div className="flex justify-between text-[10px] mt-1">
-        <span className="text-muted-foreground">SIM <span className="text-foreground/70 font-mono font-medium">{pct}%</span></span>
+        <span className="text-muted-foreground">SIM</span>
         <span className="text-muted-foreground">NÃO <span className="text-foreground/70 font-mono font-medium">{100 - pct}%</span></span>
       </div>
     </div>
@@ -204,33 +210,46 @@ export function ProbBar({ prob }: { prob: number }) {
 
 /** Shown when the market has more than 2 outcomes (multi-way market). */
 export function MultiOutcomePills({ outcomes }: { outcomes: { label: string; prob: number }[] }) {
-  const top = outcomes.slice(0, 6);
-  const others = outcomes.slice(6);
+  if (outcomes.length === 0) return null;
+  const [leader, ...restAll] = outcomes;
+  const rest = restAll.slice(0, 5);
+  const others = restAll.slice(5);
   const otherProb = others.reduce((s, o) => s + o.prob, 0);
+  const leaderPct = Math.round(leader.prob * 100);
   return (
-    <div className="space-y-1.5 w-full">
-      {top.map(({ label, prob }) => {
-        const pct = Math.round(prob * 100);
-        const barColor = pct >= 40 ? "bg-positive/70" : pct >= 20 ? "bg-gold/70" : "bg-primary/40";
-        return (
-          <div key={label} className="flex items-center gap-2">
-            <span className="text-[10px] text-muted-foreground truncate shrink-0 w-28 leading-none" title={label}>{label}</span>
-            <div className="flex-1 h-1.5 bg-secondary/40 rounded-full overflow-hidden">
-              <div className={`h-full rounded-full ${barColor}`} style={{ width: `${Math.max(2, pct)}%` }} />
+    <div className="w-full space-y-2">
+      {/* Líder = protagonista: número grande e cor semântica, para TODO card
+          multi-desfecho liderar com uma probabilidade (não só os binários). */}
+      <div className="flex items-center gap-3">
+        <span className={`font-mono font-bold leading-none tabular-nums shrink-0 ${leaderPct >= 50 ? "text-positive" : "text-primary"}`} style={{ fontSize: "2.25rem" }}>
+          {leaderPct}<span className="text-sm align-top leading-none">%</span>
+        </span>
+        <span className="text-xs text-foreground/80 leading-snug min-w-0 truncate" title={leader.label}>{leader.label}</span>
+      </div>
+      {/* Demais desfechos — compactos, legíveis (foreground/70, não muted) */}
+      <div className="space-y-1">
+        {rest.map(({ label, prob }) => {
+          const pct = Math.round(prob * 100);
+          return (
+            <div key={label} className="flex items-center gap-2">
+              <span className="text-[10px] text-muted-foreground truncate shrink-0 w-24 leading-none" title={label}>{label}</span>
+              <div className="flex-1 h-1.5 bg-secondary/40 rounded-full overflow-hidden">
+                <div className={`h-full rounded-l-full rounded-r-[2px] ${pct >= 25 ? "bg-primary/60" : "bg-primary/35"}`} style={{ width: `${Math.max(2, pct)}%` }} />
+              </div>
+              <span className="text-[10px] font-mono font-bold w-8 text-right shrink-0 text-foreground/70">{pct}%</span>
             </div>
-            <span className={`text-[10px] font-mono font-bold w-8 text-right shrink-0 ${pct >= 40 ? "text-positive" : pct >= 20 ? "text-gold" : "text-muted-foreground"}`}>{pct}%</span>
+          );
+        })}
+        {otherProb > 0.01 && (
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] text-muted-foreground/60 shrink-0 w-24">+{others.length} outros</span>
+            <div className="flex-1 h-1.5 bg-secondary/30 rounded-full overflow-hidden">
+              <div className="h-full rounded-full bg-secondary/60" style={{ width: `${Math.round(otherProb * 100)}%` }} />
+            </div>
+            <span className="text-[10px] font-mono text-muted-foreground/60 w-8 text-right">{Math.round(otherProb * 100)}%</span>
           </div>
-        );
-      })}
-      {otherProb > 0.01 && (
-        <div className="flex items-center gap-2">
-          <span className="text-[10px] text-muted-foreground/60 shrink-0 w-28">+{others.length} outros</span>
-          <div className="flex-1 h-1.5 bg-secondary/30 rounded-full overflow-hidden">
-            <div className="h-full rounded-full bg-secondary/60" style={{ width: `${Math.round(otherProb * 100)}%` }} />
-          </div>
-          <span className="text-[10px] font-mono text-muted-foreground/60 w-8 text-right">{Math.round(otherProb * 100)}%</span>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }
