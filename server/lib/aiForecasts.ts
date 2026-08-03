@@ -5,6 +5,7 @@
 import { SUPABASE_URL, SUPABASE_KEY, supaWriteHeaders } from "./supabaseRest.ts";
 import { CATEGORY_BASE_RATES } from "./categoryRates.ts";
 import { callClaude } from "./anthropic.ts";
+import { clampFairValue } from "./ai/guardrails.ts";
 import { extractJson } from "./extractJson.ts";
 import { getCache, setCache } from "./cache.ts";
 import { fetchCerebroContext } from "./cerebro.ts";
@@ -244,9 +245,11 @@ JSON apenas: {"fairValue": <inteiro 5-95>, "confidence": "baixa|media|alta"}`;
           try {
             const raw = await callClaude({ model: "claude-haiku-4-5-20251001", maxTokens: 80, messages: [{ role: "user", content: prompt }], timeoutMs: 25_000, onProvider: (p) => { provider = p; } });
             const parsed = extractJson(raw) as { fairValue?: number; confidence?: string };
-            // Clamp duplo no código (como no endpoint de fair value): 5-95 E ±15pp do mercado
+            // Único ponto de verdade do clamp (5-95 E ±15pp do mercado): a mesma função
+            // testada de guardrails.ts que os endpoints usam. Antes reimplementado aqui,
+            // no caminho que gera a MAIORIA do track record público.
             const rawFv = Math.round(Number(parsed.fairValue));
-            const clamped = Math.max(5, Math.min(95, Math.max(t.marketProb - 15, Math.min(t.marketProb + 15, rawFv))));
+            const clamped = clampFairValue(rawFv, t.marketProb);
             if (!isNaN(clamped)) {
               fv = clamped;
               conf = (parsed.confidence === "alta" || parsed.confidence === "baixa") ? parsed.confidence : "media";
