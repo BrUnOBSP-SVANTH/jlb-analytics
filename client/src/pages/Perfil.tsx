@@ -5,7 +5,7 @@
  * feed de atividades. Inspirado em Metaculus / Manifold Markets.
  */
 
-import { useMemo } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "wouter";
 import PageHeader from "@/components/PageHeader";
 import ContaTabs from "@/components/ContaTabs";
@@ -14,6 +14,7 @@ import { useSEO } from "@/hooks/useSEO";
 import { useAuth } from "@/contexts/AuthContext";
 import { loadProgress, UNLOCK_THRESHOLDS, type ActivityType } from "@/lib/userProgress";
 import { loadPredictions, meanBrierScore, skillScore } from "@/lib/predictions";
+import { pullFromSupabase } from "@/lib/predictionsSync";
 import {
   LogIn, Star, Trophy, Target, CheckCircle, X as XIcon,
   Zap, Calculator, Brain, BarChart2, TrendingUp, ArrowRight,
@@ -109,8 +110,18 @@ function PointsBar({ points, target }: { points: number; target: number }) {
 export default function Perfil() {
   useSEO("Meu Perfil", "Seu progresso, calibração, conquistas e preferências na JLB Analytics.");
   const { user } = useAuth();
-  const progress = useMemo(() => loadProgress(), []);
-  const predictions = useMemo(() => loadPredictions(), []);
+  const userId = user?.id;
+  const [progress, setProgress] = useState(() => loadProgress());
+  const [predictions, setPredictions] = useState(() => loadPredictions());
+
+  // Puxa do Supabase no mount (logado) — sem isso, num dispositivo novo o Perfil
+  // aparecia vazio mesmo com histórico na nuvem (o Dashboard já fazia isso).
+  useEffect(() => {
+    if (!userId) return;
+    void pullFromSupabase(userId).then((ok) => {
+      if (ok) { setPredictions(loadPredictions()); setProgress(loadProgress()); }
+    });
+  }, [userId]);
 
   if (!user) return <GuestPrompt />;
 

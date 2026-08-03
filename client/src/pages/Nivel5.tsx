@@ -7,10 +7,9 @@
  */
 
 import { useState, useEffect } from "react";
-import { GitMerge, Layers, Lock, Info, AlertTriangle, Star, ArrowRight } from "lucide-react";
+import { GitMerge, Layers, Info, AlertTriangle } from "lucide-react";
 import { useModelCall } from "@/hooks/useModels";
-import { loadProgress, UNLOCK_THRESHOLDS, awardPoints } from "@/lib/userProgress";
-import { Link } from "wouter";
+import { awardPoints } from "@/lib/userProgress";
 import { useSEO } from "@/hooks/useSEO";
 
 interface DivergenceResult {
@@ -24,49 +23,6 @@ interface EnsembleResult {
   weights: Record<string, number>; excluded_models: string[];
   n_models_used: number; signal: string; explanation: string;
   warning?: string;
-}
-
-function PointsGate({ level, required, current }: { level: number; required: number; current: number }) {
-  const missing = required - current;
-  const pct = Math.min(100, Math.round((current / required) * 100));
-  return (
-    <div className="min-h-[60vh] flex items-center justify-center px-4">
-      <div className="text-center space-y-5 max-w-md">
-        <div className="w-16 h-16 rounded-full bg-neon-blue/10 border border-neon-blue/20 flex items-center justify-center mx-auto">
-          <Lock className="w-7 h-7 text-neon-blue" />
-        </div>
-        <div>
-          <h2 className="text-xl font-bold text-foreground">Nível {level} — Bloqueado</h2>
-          <p className="text-sm text-muted-foreground mt-2">
-            Exige <span className="font-bold text-foreground">{required} pontos</span>.
-            Você tem <span className="font-bold text-gold">{current} pts</span>. Faltam{" "}
-            <span className="font-bold text-primary">{missing} pts</span>.
-          </p>
-        </div>
-        <div className="w-full">
-          <div className="flex justify-between text-xs text-muted-foreground mb-1.5">
-            <span>{current} pts</span><span>{required} pts</span>
-          </div>
-          <div className="h-2 rounded-full bg-secondary/40 overflow-hidden">
-            <div className="h-full rounded-full bg-gradient-to-r from-neon-blue/60 to-primary transition-all duration-700"
-              style={{ width: `${pct}%` }} />
-          </div>
-        </div>
-        <div className="flex flex-col sm:flex-row gap-3 justify-center pt-1">
-          <Link href="/perfil">
-            <span className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity">
-              <Star className="w-4 h-4" /> Ver como ganhar pontos
-            </span>
-          </Link>
-          <Link href="/apostas">
-            <span className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg border border-border/50 text-foreground text-sm hover:bg-secondary/30 transition-colors">
-              Apostas em Hype <ArrowRight className="w-4 h-4" />
-            </span>
-          </Link>
-        </div>
-      </div>
-    </div>
-  );
 }
 
 function EducationalNote({ text }: { text: string }) {
@@ -267,8 +223,8 @@ function EnsembleCalculator() {
         <div className="space-y-4">
           <div className="text-center p-4 rounded-xl bg-secondary/30">
             <div className="text-xs text-muted-foreground">P ensemble (ponderado por Skill Score)</div>
-            <div className="text-4xl font-bold text-primary my-1">{(data.ensemble_probability * 100).toFixed(1)}%</div>
-            <div className="text-xs text-muted-foreground">± {(data.ensemble_std * 100).toFixed(1)}% dispersão entre modelos</div>
+            <div className="text-4xl font-bold text-primary my-1">{Number.isFinite(data.ensemble_probability) ? `${(data.ensemble_probability * 100).toFixed(1)}%` : "—"}</div>
+            <div className="text-xs text-muted-foreground">{Number.isFinite(data.ensemble_std) ? `± ${(data.ensemble_std * 100).toFixed(1)}% dispersão entre modelos` : "sem modelos válidos para combinar (todos com Skill Score ≤ 0)"}</div>
           </div>
 
           {data.warning && (
@@ -308,18 +264,11 @@ function EnsembleCalculator() {
 
 export default function Nivel5() {
   useSEO("Nível 5 — Análise Integrada", "Combine modelos, dados e julgamento calibrado numa análise completa de mercado.");
-  const progress = loadProgress();
-  const required = UNLOCK_THRESHOLDS[5];
-
+  // Gate de pontos REMOVIDO (mesmo motivo do Nível 4): o conteúdo do núcleo não deve
+  // ficar preso atrás de um grind em localStorage. Nível acessível a todos.
   useEffect(() => {
-    if (progress.totalPoints >= required) {
-      awardPoints("level_visited", "Visitou o Nível 5 — Análise Integrada", "level_visited_5");
-    }
+    awardPoints("level_visited", "Visitou o Nível 5 — Análise Integrada", "level_visited_5");
   }, []);
-
-  if (progress.totalPoints < required) {
-    return <PointsGate level={5} required={required} current={progress.totalPoints} />;
-  }
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-8 space-y-8">

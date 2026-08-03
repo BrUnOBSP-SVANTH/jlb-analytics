@@ -251,7 +251,7 @@ function EnsoCalculator() {
           <div>
             <div className="text-xs text-muted-foreground mb-1">Impactos regionais no Brasil</div>
             <ul className="space-y-1">
-              {data.regional_impacts_brazil.map((impact, i) => (
+              {(data.regional_impacts_brazil ?? []).map((impact, i) => (
                 <li key={i} className="text-xs text-muted-foreground flex items-start gap-1.5">
                   <span className="text-primary mt-0.5">•</span>{impact}
                 </li>

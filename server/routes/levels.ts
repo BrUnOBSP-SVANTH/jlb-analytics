@@ -359,10 +359,14 @@ router.post("/level3/enso", (req, res) => {
   }
 
   res.json({
-    oni_index: Math.round(oni_index * 100) / 100,
+    oni: Math.round(oni_index * 100) / 100,
     phase,
     signal,
     brazil_impact,
+    // O cliente (Nível 3) renderiza uma LISTA de impactos regionais — o texto vira
+    // bullets por frase. Antes só havia a string única e o .map quebrava a tela.
+    regional_impacts_brazil: brazil_impact.split(". ").map((s) => s.trim()).filter(Boolean)
+      .map((s) => (s.endsWith(".") ? s : s + ".")),
     explanation: `${label}. ${brazil_impact} Fonte: NOAA/CPC — Índice ONI baseado na anomalia de TSM na região Niño 3.4.`,
   });
 });
@@ -546,24 +550,32 @@ router.post("/level4/maturity", (req, res) => {
 // ── Nível 5 ───────────────────────────────────────────────────────────────────
 
 router.post("/level5/divergence", (req, res) => {
-  const { model_probability: mp, market_probability: mkp, model_confidence = 0.5 } = req.body as {
-    model_probability: number; market_probability: number; model_confidence?: number;
+  const { model_probability: mp, market_probability: mkp, model_confidence = 0.5, context = "" } = req.body as {
+    model_probability: number; market_probability: number; model_confidence?: number; context?: string;
   };
+
+  // Eficiência do mercado por segmento: mercados mais eficientes (cripto, macro)
+  // exigem divergência MAIOR para virar sinal; esportes de 1 evento têm mais ruído
+  // aleatório, então toleram um limiar menor. Antes o segmento era enviado e ignorado.
+  const SEGMENT_EFFICIENCY: Record<string, number> = {
+    cripto: 1.3, economia: 1.25, empresas: 1.2, tecnologia: 1.1, clima: 1.0, "eleições": 0.95, esportes: 0.9,
+  };
+  const eff = SEGMENT_EFFICIENCY[context] ?? 1;
 
   const div = mp - mkp;
   const absDiv = Math.abs(div);
   let tier: string, signal: string, label: string, actionNote: string;
 
-  if (absDiv < DIVERGENCE.negligible) {
+  if (absDiv < DIVERGENCE.negligible * eff) {
     tier = "negligible"; signal = "neutral"; label = "alinhamento com o mercado";
     actionNote = "Modelo e mercado concordam. Nenhuma ineficiência detectada.";
-  } else if (absDiv < DIVERGENCE.moderate) {
+  } else if (absDiv < DIVERGENCE.moderate * eff) {
     tier = "moderate"; signal = "neutral"; label = "divergência leve";
     actionNote = "Divergência pequena. Pode refletir dados ainda não precificados — investigue os drivers.";
-  } else if (absDiv < DIVERGENCE.strong) {
+  } else if (absDiv < DIVERGENCE.strong * eff) {
     tier = "strong"; signal = div > 0 ? "positive" : "negative"; label = "divergência significativa";
     actionNote = "O modelo diverge materialmente do mercado. Verifique se há assimetria de informação.";
-  } else if (absDiv < DIVERGENCE.extreme) {
+  } else if (absDiv < DIVERGENCE.extreme * eff) {
     tier = "extreme_low"; signal = div > 0 ? "positive" : "negative"; label = "divergência forte";
     actionNote = "Divergência elevada. Verifique inputs do modelo — pode haver erro de dado ou evento não modelado.";
   } else {
@@ -574,7 +586,7 @@ router.post("/level5/divergence", (req, res) => {
   const direction = div > 0 ? "acima" : "abaixo";
   const educationalNote = tier === "negligible"
     ? "O modelo está alinhado com o mercado. Isso pode significar eficiência ou que ambos cometem o mesmo erro."
-    : `Divergência de ${(absDiv * 100).toFixed(1)} pp ${direction}. O modelo sugere que o mercado está ${div > 0 ? "subestimando" : "superestimando"} o evento. ATENÇÃO: divergência não é lucro garantido. Confiança do modelo: ${(model_confidence * 100).toFixed(0)}%.`;
+    : `Divergência de ${(absDiv * 100).toFixed(1)} pp ${direction}. O modelo sugere que o mercado está ${div > 0 ? "subestimando" : "superestimando"} o evento.${eff !== 1 ? ` Ajuste de segmento (${context}): mercados ${eff > 1 ? "mais eficientes exigem divergência maior" : "de evento único têm mais ruído, então toleram menos"} para o sinal valer.` : ""} ATENÇÃO: divergência não é lucro garantido. Confiança do modelo: ${(model_confidence * 100).toFixed(0)}%.`;
 
   res.json({
     model_probability: Math.round(mp * 10000) / 10000,

@@ -7,61 +7,15 @@
  */
 
 import { useState, useEffect } from "react";
-import { Brain, Target, Shuffle, TrendingUp, Lock, Info, AlertCircle, Star, ArrowRight } from "lucide-react";
+import { Brain, Target, Shuffle, TrendingUp, Info, AlertCircle } from "lucide-react";
 import { useModelCall } from "@/hooks/useModels";
-import { loadProgress, UNLOCK_THRESHOLDS, awardPoints } from "@/lib/userProgress";
-import { Link } from "wouter";
+import { awardPoints } from "@/lib/userProgress";
 import { useSEO } from "@/hooks/useSEO";
 
 interface ProspectResult { ev_objective: number; subjective_value: number; gap: number; loss_aversion_lambda: number; signal: string; bias_diagnosis: string; explanation: string; }
 interface BrierResult { brier_score: number; skill_score: number; resolution: number; reliability: number; n: number; stable: boolean; signal: string; explanation: string; calibration_by_decile?: { confidence_range: string; avg_confidence: number; actual_accuracy: number; n: number; calibration_error: number }[]; }
 interface GamblerResult { max_run: number; n_runs: number; expected_runs: number; fallacy_risk: string; signal: string; explanation: string; n: number; }
 interface MaturityResult { stage: number; label: string; score: number; max_score: number; priority_improvements: string[]; signal: string; explanation: string; }
-
-function PointsGate({ level, required, current }: { level: number; required: number; current: number }) {
-  const missing = required - current;
-  const pct = Math.min(100, Math.round((current / required) * 100));
-  return (
-    <div className="min-h-[60vh] flex items-center justify-center px-4">
-      <div className="text-center space-y-5 max-w-md">
-        <div className="w-16 h-16 rounded-full bg-gold/10 border border-gold/20 flex items-center justify-center mx-auto">
-          <Lock className="w-7 h-7 text-gold" />
-        </div>
-        <div>
-          <h2 className="text-xl font-bold text-foreground">Nível {level} — Bloqueado</h2>
-          <p className="text-sm text-muted-foreground mt-2">
-            Este nível é gratuito, mas exige <span className="font-bold text-foreground">{required} pontos</span> para desbloquear.
-            Você tem <span className="font-bold text-gold">{current} pts</span>. Faltam <span className="font-bold text-primary">{missing} pts</span>.
-          </p>
-        </div>
-        <div className="w-full">
-          <div className="flex justify-between text-xs text-muted-foreground mb-1.5">
-            <span>{current} pts</span><span>{required} pts</span>
-          </div>
-          <div className="h-2 rounded-full bg-secondary/40 overflow-hidden">
-            <div className="h-full rounded-full bg-gradient-to-r from-gold/60 to-primary transition-all duration-700"
-              style={{ width: `${pct}%` }} />
-          </div>
-        </div>
-        <div className="flex flex-col sm:flex-row gap-3 justify-center pt-1">
-          <Link href="/perfil">
-            <span className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity">
-              <Star className="w-4 h-4" /> Ver como ganhar pontos
-            </span>
-          </Link>
-          <Link href="/calculadoras">
-            <span className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg border border-border/50 text-foreground text-sm hover:bg-secondary/30 transition-colors">
-              Usar calculadoras <ArrowRight className="w-4 h-4" />
-            </span>
-          </Link>
-        </div>
-        <p className="text-xs text-muted-foreground">
-          Ganhe pontos usando calculadoras (+2), fazendo previsões (+5) e explorando os outros níveis (+10 cada).
-        </p>
-      </div>
-    </div>
-  );
-}
 
 function ExplanationBox({ text }: { text: string }) {
   return (
@@ -345,18 +299,12 @@ function MaturityCalculator() {
 
 export default function Nivel4() {
   useSEO("Nível 4 — Vieses e Psicologia", "Loss aversion, falácia do apostador e overconfidence: domine a psicologia da decisão.");
-  const progress = loadProgress();
-  const required = UNLOCK_THRESHOLDS[4];
-
+  // Gate de pontos REMOVIDO: o conteúdo mais valioso do site (Brier/calibração) não
+  // deve ficar preso atrás de um grind em localStorage que não protege nada nem gera
+  // receita (o Premium de verdade é o Stripe, separado). Nível acessível a todos.
   useEffect(() => {
-    if (progress.totalPoints >= required) {
-      awardPoints("level_visited", "Visitou o Nível 4 — Vieses e Psicologia", "level_visited_4");
-    }
-  }, [progress.totalPoints, required]);
-
-  if (progress.totalPoints < required) {
-    return <PointsGate level={4} required={required} current={progress.totalPoints} />;
-  }
+    awardPoints("level_visited", "Visitou o Nível 4 — Vieses e Psicologia", "level_visited_4");
+  }, []);
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8 space-y-8">
