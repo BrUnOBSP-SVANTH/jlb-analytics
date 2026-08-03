@@ -21,14 +21,17 @@ const BREAKER_COOLDOWN_MS = 60_000;
 function anthropicBlocked(): boolean {
   return BREAKER.openUntil > Date.now();
 }
-function recordAnthropicSuccess(): void {
+export function recordAnthropicSuccess(): void {
   BREAKER.failures = 0;
   BREAKER.openUntil = 0;
 }
-function recordAnthropicFailure(): void {
+export function recordAnthropicFailure(): void {
   BREAKER.failures += 1;
   if (BREAKER.failures >= BREAKER_THRESHOLD) BREAKER.openUntil = Date.now() + BREAKER_COOLDOWN_MS;
 }
+
+/** Test-only: zera o breaker entre casos. */
+export function _resetBreaker(): void { BREAKER.failures = 0; BREAKER.openUntil = 0; }
 
 /** Estado do breaker — exposto para observabilidade das métricas de IA. */
 export function anthropicBreakerState(): { open: boolean; failures: number; cooldownMsLeft: number } {

@@ -75,7 +75,10 @@ export async function callGemini(opts: {
 /** Erros em que vale trocar de provedor (crédito/limite/indisponibilidade). */
 export function shouldFallback(err: unknown): boolean {
   const msg = err instanceof Error ? err.message : String(err);
-  return /credit balance|rate_limit|429|529|overloaded|HTTP 5\d\d|timeout|aborted/i.test(msg);
+  // "timed out" (com espaço) cobre a variante do AbortSignal.timeout do Node que
+  // "timeout" (uma palavra) não pega — sem isso, um timeout da Anthropic derrubaria
+  // o site em vez de cair no Gemini.
+  return /credit balance|rate_limit|429|529|overloaded|HTTP 5\d\d|timeout|timed out|aborted/i.test(msg);
 }
 
 /** Log padronizado — o fallback precisa ser VISÍVEL, não silencioso. */
