@@ -53,6 +53,7 @@ export async function runMarketAnalysis(p: AnalyzeParams, onPhase: PhaseEmit = (
     let fairValue: number | null = null;
     let confidence: "baixa" | "media" | "alta" = "media";
     let provider = "anthropic"; // provedor que respondeu — gravado no track record p/ fatiar Brier por provedor
+    let fairValueClamped = false; // o guardrail moveu o fair value? → reescreve a frase p/ não contradizer o número
     let referenceClass: string | null = null;
     let relevantIndices: number[] = allArticles.map((_, i) => i);
 
@@ -126,7 +127,7 @@ Os artigos são numerados a partir de [1]. JSON exato (sem markdown):
         if (typeof parsed.fairValue === "number") {
           const rawFv = Math.round(parsed.fairValue);
           fairValue = clampFairValue(rawFv, probPct);
-          if (fairValue !== rawFv) recordClamp(); // clamp mordeu → sinal de calibração/alucinação
+          if (fairValue !== rawFv) { recordClamp(); fairValueClamped = true; } // clamp mordeu → métrica + reescreve a frase
         }
         if (parsed.confidence === "baixa" || parsed.confidence === "media" || parsed.confidence === "alta") confidence = parsed.confidence;
         if (Array.isArray(parsed.relevantIndices)) {
@@ -152,6 +153,13 @@ Os artigos são numerados a partir de [1]. JSON exato (sem markdown):
 
     const relevantArticles = relevantIndices.map((i) => allArticles[i]).filter(Boolean);
     const edgePp = fairValue !== null ? Number((fairValue - probPct).toFixed(0)) : null;
+
+    // Quando o guardrail moveu o fair value, a frase do modelo pode citar o valor
+    // BRUTO (ex.: "+45pp") e contradizer o número exibido. Reescreve determinística-
+    // mente a partir dos números finais — fim da contradição visível ao usuário.
+    if (fairValueClamped && fairValue !== null && edgePp !== null) {
+      edgeSignal = `Fair value JLB ${fairValue}% vs ${probPct}% do mercado (${edgePp > 0 ? "+" : ""}${edgePp}pp), ajustado ao limite de ±15pp.`;
+    }
 
     const result = {
       analysis, keyFactors, watchFor, biasAlert, newsRelevance,
