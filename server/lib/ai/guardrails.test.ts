@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { clampFairValue, quantFairValue } from "./guardrails.ts";
+import { clampFairValue, quantFairValue, capConfidence, CONFIDENCE_CEILING } from "./guardrails.ts";
 
 describe("clampFairValue — dentro do permitido, passa igual", () => {
   it("não mexe quando a estimativa está a ≤15pp do mercado", () => {
@@ -80,5 +80,26 @@ describe("quantFairValue — fair value quantitativo (fallback do /fair-value)",
     const r = quantFairValue(2, 2);
     expect(r.preFairValue).toBe(2);
     expect(r.clampedPreFV).toBe(5);
+  });
+});
+
+describe("capConfidence — impõe os tetos de calibração por domínio/horizonte", () => {
+  it("corta cripto/finanças curto prazo a 62 (mercados quase-eficientes)", () => {
+    expect(capConfidence("crypto", "short", 88)).toBe(62);
+    expect(capConfidence("finance", "short", 90)).toBe(62);
+  });
+  it("corta esportes: 1 jogo a 78, torneio a 65", () => {
+    expect(capConfidence("sports", "short", 95)).toBe(78);
+    expect(capConfidence("sports", "long", 80)).toBe(65);
+  });
+  it("corta tecnologia longo prazo a 55 (disrupção imprevisível)", () => {
+    expect(capConfidence("science", "long", 82)).toBe(55);
+  });
+  it("não mexe quando a confiança já está abaixo do teto", () => {
+    expect(capConfidence("crypto", "short", 55)).toBe(55);
+  });
+  it("combo sem regra explícita cai no teto geral", () => {
+    expect(capConfidence("energy", "medium", 99)).toBe(CONFIDENCE_CEILING);
+    expect(capConfidence("crypto", "long", 99)).toBe(CONFIDENCE_CEILING); // cripto só tem regra p/ short
   });
 });

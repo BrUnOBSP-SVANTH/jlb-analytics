@@ -3,6 +3,7 @@ import { getNewsForMarket } from "../news.ts";
 import { fetchCerebroContext } from "../cerebro.ts";
 import { callClaude } from "../anthropic.ts";
 import { extractJson } from "../extractJson.ts";
+import { capConfidence } from "./guardrails.ts";
 import { INJECTION_GUARD, fenceUntrusted } from "./promptSafety.ts";
 import { humanizeCitations } from "../citations.ts";
 import type { PhaseEmit } from "./marketAnalysis.ts";
@@ -257,6 +258,18 @@ ${newsBlock}${cerebroBlock}`;
   }
   for (const k of ["insideViewUp", "insideViewDown", "keyAssumptions", "updateTriggers"]) {
     if (Array.isArray(parsed[k])) parsed[k] = (parsed[k] as unknown[]).map(humanize);
+  }
+
+  // Impõe os tetos de confiança do protocolo (bloco CALIBRAÇÃO do system): antes
+  // eram só PEDIDOS ao modelo; agora travados em código, como o clampFairValue faz
+  // com o fair value. Era o endpoint de raciocínio mais complexo e o único sem trava.
+  for (const [field, hz] of [["confidenceShort", "short"], ["confidenceMedium", "medium"], ["confidenceLong", "long"]] as const) {
+    if (typeof parsed[field] === "number") parsed[field] = capConfidence(domain, hz, parsed[field] as number);
+  }
+  // Intervalo de 80% coerente: low ≤ high (o modelo às vezes inverte).
+  if (typeof parsed.confidenceLow80 === "number" && typeof parsed.confidenceHigh80 === "number"
+      && (parsed.confidenceLow80 as number) > (parsed.confidenceHigh80 as number)) {
+    const lo = parsed.confidenceLow80; parsed.confidenceLow80 = parsed.confidenceHigh80; parsed.confidenceHigh80 = lo;
   }
 
   return { ...parsed, domain, timeHorizon, cached: false };

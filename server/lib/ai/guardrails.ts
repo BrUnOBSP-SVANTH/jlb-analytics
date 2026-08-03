@@ -53,3 +53,27 @@ export function quantFairValue(
   const clampedPreFV = Math.max(5, Math.min(95, preFairValue));
   return { preFairValue, clampedPreFV, liquidityWeight, momentumAdjust };
 }
+
+/**
+ * Tetos de confiança por (domínio, horizonte) — os MESMOS que o prompt do
+ * Superforecaster manda "nunca inflacionar", agora IMPOSTOS em código. Antes eram
+ * só pedidos ao modelo (a Previsão Guiada era o endpoint mais complexo e o único
+ * SEM trava). Combos sem regra explícita caem no teto geral. Mesma filosofia do
+ * clampFairValue: não confiar cegamente no número do modelo.
+ */
+const CONFIDENCE_CAPS: Record<string, Partial<Record<"short" | "medium" | "long", number>>> = {
+  crypto:   { short: 62 },                       // mercados quase-eficientes
+  finance:  { short: 62 },
+  economy:  { medium: 72 },                       // ciclos identificáveis, alto ruído
+  politics: { long: 68 },                         // eleições >6 meses, eventos disruptivos
+  sports:   { short: 78, medium: 65, long: 65 },  // 1 jogo (alta variância) vs. torneio
+  science:  { long: 55 },                         // disrupção tecnológica imprevisível
+  climate:  { short: 75, long: 50 },
+};
+export const CONFIDENCE_CEILING = 95; // teto geral: calibração raramente passa disto
+
+/** Limita a confiança (0-100) ao teto do (domínio, horizonte), ou ao teto geral. */
+export function capConfidence(domain: string, horizon: "short" | "medium" | "long", value: number): number {
+  const cap = CONFIDENCE_CAPS[domain]?.[horizon] ?? CONFIDENCE_CEILING;
+  return Math.max(0, Math.min(cap, value));
+}
