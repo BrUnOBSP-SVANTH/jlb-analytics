@@ -395,13 +395,30 @@ export default function MarketDetail() {
 
             {/* Stats row */}
             <AnimatedSection delay={0.1}>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                {/* Prob SIM */}
-                <div className="glass-card rounded-xl p-4 text-center">
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Probabilidade SIM</p>
-                  <p className={`text-3xl font-mono font-bold ${probColor}`}>{probPct}%</p>
-                  <p className="text-[10px] text-muted-foreground mt-1">Consenso atual</p>
+              {/* Probabilidade protagonista: nos binários vira o herói da tela — número
+                  grande, NÃO complementar e barra SIM/NÃO. Os demais números viram uma
+                  linha secundária compacta. (Multi-desfecho usa a seção de Desfechos acima.) */}
+              {!market.parsedOutcomes && (
+                <div className="glass-card rounded-xl p-6 mb-3">
+                  <div className="flex items-end justify-between gap-6 flex-wrap">
+                    <div>
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-1.5">Probabilidade de SIM</p>
+                      <span className={`font-mono font-bold leading-none tabular-nums ${probColor}`} style={{ fontSize: "clamp(3.25rem, 9vw, 4.75rem)" }}>
+                        {probPct}<span className="text-3xl align-top">%</span>
+                      </span>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-1.5">Não</p>
+                      <span className="text-3xl font-mono font-bold text-muted-foreground/70 tabular-nums">{100 - probPct}%</span>
+                    </div>
+                  </div>
+                  <div className="mt-5 h-2.5 rounded-full bg-secondary/40 overflow-hidden">
+                    <div className={`h-full rounded-full ${probColor.replace("text-", "bg-")} transition-all duration-700`} style={{ width: `${probPct}%` }} />
+                  </div>
+                  <p className="text-[10px] text-muted-foreground mt-2">Consenso atual do mercado</p>
                 </div>
+              )}
+              <div className="grid grid-cols-3 gap-3">
                 {/* Volume Total */}
                 <div className="glass-card rounded-xl p-4 text-center">
                   <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Volume Total</p>
@@ -438,7 +455,7 @@ export default function MarketDetail() {
               </div>
               <div className="mt-3">
                 <Explain>
-                  Estes quatro números são o retrato rápido do mercado. A <strong className="text-foreground">Probabilidade SIM</strong> é a
+                  Estes números são o retrato rápido do mercado. A <strong className="text-foreground">Probabilidade de SIM</strong> é a
                   chance que o mercado dá para o evento acontecer. O <strong className="text-foreground">Volume</strong> mostra quanto dinheiro —
                   e confiança — está em jogo: quanto maior, mais difícil de manipular e mais confiável o preço. A{" "}
                   <strong className="text-foreground">Variação 7d</strong> revela se a opinião mudou na última semana — uma virada grande
