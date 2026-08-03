@@ -172,10 +172,10 @@ export function ProbHero({ prob, flash }: { prob: number; flash?: "up" | "down" 
   const color = flash === "up" ? "text-positive" : flash === "down" ? "text-negative" : base;
   return (
     <div className={`text-right shrink-0 transition-transform duration-300 ${flash ? "scale-105" : "scale-100"}`}>
-      <p className={`font-mono font-bold leading-none tabular-nums ${color} transition-colors duration-300`} style={{ fontSize: "1.75rem" }}>
-        {pct}<span className="text-base align-top">%</span>
+      <p className={`font-mono font-bold leading-none tabular-nums ${color} transition-colors duration-300`} style={{ fontSize: "2.75rem" }}>
+        {pct}<span className="text-xl align-top">%</span>
       </p>
-      <p className="text-[9px] text-muted-foreground uppercase tracking-widest mt-1 flex items-center justify-end gap-1">
+      <p className="text-[9px] text-muted-foreground uppercase tracking-widest mt-1.5 flex items-center justify-end gap-1">
         {flash === "up" && <span className="text-positive leading-none">▲</span>}
         {flash === "down" && <span className="text-negative leading-none">▼</span>}
         chance SIM

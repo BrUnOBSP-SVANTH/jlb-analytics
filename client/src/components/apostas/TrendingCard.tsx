@@ -206,8 +206,8 @@ function TrendingCardBase({ item, onCompare, inCompare }: {
             <span className="flex items-center gap-1"><BarChart2 className="w-3 h-3" />{formatVolume(item.volume)} volume</span>
           )}
         </div>
-        <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2 mb-3">
-          <Flame className="w-3 h-3 text-primary/70 inline mr-1 align-[-2px]" />{item.whyTrending}
+        <p className="text-[11px] text-muted-foreground/60 leading-relaxed line-clamp-1 mb-3">
+          <Flame className="w-3 h-3 text-primary/50 inline mr-1 align-[-2px]" />{item.whyTrending}
         </p>
 
         {/* ── Analisar ──
