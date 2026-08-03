@@ -7,6 +7,7 @@
 // cosine distance a normalização é irrelevante (escala não importa), então
 // dims reduzidas podem ser usadas direto.
 import { log } from "./log.ts";
+import { recordEmbedding } from "./ai/metrics.ts";
 
 const EMBED_MODEL = "gemini-embedding-001";
 export const EMBED_DIMS = 768;
@@ -50,6 +51,7 @@ export async function rawEmbed(
         signal: AbortSignal.timeout(timeoutMs),
       },
     );
+    recordEmbedding(res.status); // observabilidade da cota (1000/dia, compartilhada com o RAG ao vivo)
     if (!res.ok) {
       log.warn(`[embeddings] HTTP ${res.status}: ${(await res.text()).slice(0, 120)}`);
       return { vector: null, status: res.status };

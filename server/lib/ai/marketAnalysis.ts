@@ -5,6 +5,7 @@ import { CATEGORY_BASE_RATES } from "../categoryRates.ts";
 import { callClaude } from "../anthropic.ts";
 import { extractJson } from "../extractJson.ts";
 import { clampFairValue } from "./guardrails.ts";
+import { recordClamp } from "./metrics.ts";
 import { INJECTION_GUARD } from "./promptSafety.ts";
 import { humanizeCitations } from "../citations.ts";
 import { logAiForecast } from "../aiForecasts.ts";
@@ -51,6 +52,7 @@ export async function runMarketAnalysis(p: AnalyzeParams, onPhase: PhaseEmit = (
     let edgeSignal: string | null = null;
     let fairValue: number | null = null;
     let confidence: "baixa" | "media" | "alta" = "media";
+    let provider = "anthropic"; // provedor que respondeu — gravado no track record p/ fatiar Brier por provedor
     let referenceClass: string | null = null;
     let relevantIndices: number[] = allArticles.map((_, i) => i);
 
@@ -102,7 +104,7 @@ Os artigos são numerados a partir de [1]. JSON exato (sem markdown):
 {"relevantIndices":[1,3],"fairValue":62,"confidence":"baixa|media|alta","referenceClass":"qual classe de referência e base rate usada","analysis":"3-4 frases densas citando [N] e [CN] quando usados","keyFactors":["fator com nome próprio 1","fator 2","fator 3"],"watchFor":"evento/indicador concreto","biasAlert":"viés específico ou null","newsRelevance":"high|medium|low|none","probabilityAssessment":"fair|underpriced|overpriced|uncertain","edgeSignal":"1 frase: seu fairValue vs preço e por quê"}`;
 
       try {
-        const raw = await callClaude({ model: "claude-haiku-4-5-20251001", maxTokens: 1000, messages: [{ role: "user", content: prompt }], timeoutMs: 22_000 });
+        const raw = await callClaude({ model: "claude-haiku-4-5-20251001", maxTokens: 1000, messages: [{ role: "user", content: prompt }], timeoutMs: 22_000, onProvider: (p) => { provider = p; } });
         interface ParsedAnalysis {
           analysis?: string; keyFactors?: string[]; watchFor?: string; biasAlert?: string | null;
           relevantIndices?: number[]; newsRelevance?: string;
@@ -122,7 +124,9 @@ Os artigos são numerados a partir de [1]. JSON exato (sem markdown):
         // mercado (além de 5-95). Sem isto, a análise logava desvios enormes no
         // track record — o buraco que deixava um "42% vs 21%" (21pp) passar.
         if (typeof parsed.fairValue === "number") {
-          fairValue = clampFairValue(Math.round(parsed.fairValue), probPct);
+          const rawFv = Math.round(parsed.fairValue);
+          fairValue = clampFairValue(rawFv, probPct);
+          if (fairValue !== rawFv) recordClamp(); // clamp mordeu → sinal de calibração/alucinação
         }
         if (parsed.confidence === "baixa" || parsed.confidence === "media" || parsed.confidence === "alta") confidence = parsed.confidence;
         if (Array.isArray(parsed.relevantIndices)) {
@@ -167,7 +171,7 @@ Os artigos são numerados a partir de [1]. JSON exato (sem markdown):
     if (fairValue !== null && marketId) {
       void logAiForecast({
         marketId, source: source ?? "polymarket", title, category,
-        marketProb: probPct, aiFairValue: fairValue, confidence,
+        marketProb: probPct, aiFairValue: fairValue, confidence, model: provider,
       });
     }
     return result;

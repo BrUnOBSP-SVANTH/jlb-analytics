@@ -16,12 +16,16 @@ interface AiMetrics {
   errors: number;    // nenhum provedor respondeu
   latencyMsTotal: number;
   latencyMsCount: number;
+  embedOk: number;          // embeddings gerados (consomem a cota Gemini de 1000/dia)
+  embedRateLimited: number; // 429 — cota diária estourada (RAG semântico cai p/ FTS)
+  clampHits: number;        // vezes que o guardrail moveu o fair value (sinal de calibração)
   since: string;     // ISO do início da coleta (reset/boot)
 }
 
 const M: AiMetrics = {
   calls: 0, anthropic: 0, gemini: 0, errors: 0,
   latencyMsTotal: 0, latencyMsCount: 0,
+  embedOk: 0, embedRateLimited: 0, clampHits: 0,
   since: new Date().toISOString(),
 };
 
@@ -37,10 +41,24 @@ export function recordAiCall(provider: Provider, latencyMs?: number): void {
   }
 }
 
+/**
+ * Registra uma chamada de embedding (Gemini). A cota free é 1000/dia e é
+ * COMPARTILHADA entre o backfill e as buscas ao vivo — sem este contador, o
+ * estouro (429 → o RAG semântico cai p/ FTS em silêncio) era invisível.
+ */
+export function recordEmbedding(status: number): void {
+  if (status === 429) M.embedRateLimited += 1;
+  else if (status >= 200 && status < 300) M.embedOk += 1;
+}
+
+/** Registra que o guardrail clampFairValue moveu o valor — sinal direto de calibração/alucinação. */
+export function recordClamp(): void { M.clampHits += 1; }
+
 /** Snapshot com métricas derivadas (média de latência, taxa de fallback). */
 export function aiMetricsSnapshot(): {
   calls: number; anthropic: number; gemini: number; errors: number;
-  avgLatencyMs: number | null; fallbackRatePct: number; errorRatePct: number; since: string;
+  avgLatencyMs: number | null; fallbackRatePct: number; errorRatePct: number;
+  embeddings: { ok: number; rateLimited: number }; clampHits: number; since: string;
 } {
   const answered = M.anthropic + M.gemini;
   return {
@@ -51,6 +69,8 @@ export function aiMetricsSnapshot(): {
     avgLatencyMs: M.latencyMsCount ? Math.round(M.latencyMsTotal / M.latencyMsCount) : null,
     fallbackRatePct: answered ? Math.round((M.gemini / answered) * 100) : 0,
     errorRatePct: M.calls ? Math.round((M.errors / M.calls) * 100) : 0,
+    embeddings: { ok: M.embedOk, rateLimited: M.embedRateLimited },
+    clampHits: M.clampHits,
     since: M.since,
   };
 }
@@ -58,5 +78,7 @@ export function aiMetricsSnapshot(): {
 /** Zera os contadores — usado nos testes. */
 export function _resetAiMetrics(): void {
   M.calls = 0; M.anthropic = 0; M.gemini = 0; M.errors = 0;
-  M.latencyMsTotal = 0; M.latencyMsCount = 0; M.since = new Date().toISOString();
+  M.latencyMsTotal = 0; M.latencyMsCount = 0;
+  M.embedOk = 0; M.embedRateLimited = 0; M.clampHits = 0;
+  M.since = new Date().toISOString();
 }

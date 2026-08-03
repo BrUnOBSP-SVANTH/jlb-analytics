@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { recordAiCall, aiMetricsSnapshot, _resetAiMetrics } from "./metrics.ts";
+import { recordAiCall, recordEmbedding, recordClamp, aiMetricsSnapshot, _resetAiMetrics } from "./metrics.ts";
 
 describe("métricas de IA", () => {
   beforeEach(() => _resetAiMetrics());
@@ -43,5 +43,21 @@ describe("métricas de IA", () => {
     expect(s.avgLatencyMs).toBeNull();
     expect(s.fallbackRatePct).toBe(0);
     expect(s.errorRatePct).toBe(0);
+  });
+
+  it("conta embeddings ok vs. cota estourada (429), ignorando status locais", () => {
+    recordEmbedding(200);
+    recordEmbedding(200);
+    recordEmbedding(429); // cota diária do Gemini estourou
+    recordEmbedding(0);   // sem chave/texto → não é chamada, não conta
+    const s = aiMetricsSnapshot();
+    expect(s.embeddings.ok).toBe(2);
+    expect(s.embeddings.rateLimited).toBe(1);
+  });
+
+  it("conta quando o guardrail de calibração morde", () => {
+    recordClamp();
+    recordClamp();
+    expect(aiMetricsSnapshot().clampHits).toBe(2);
   });
 });
