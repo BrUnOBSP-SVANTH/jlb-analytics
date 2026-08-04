@@ -227,7 +227,7 @@ export default function Noticias() {
             {totalPredictions > 0 && (
               <a href="/dashboard" className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-gold/30 bg-gold/5 text-xs text-gold hover:bg-gold/10 transition-colors">
                 <Target className="w-3.5 h-3.5" />
-                {totalPredictions} previsão{totalPredictions > 1 ? "ões" : ""} registrada{totalPredictions > 1 ? "s" : ""}
+                {totalPredictions} {totalPredictions > 1 ? "previsões registradas" : "previsão registrada"}
               </a>
             )}
           </div>

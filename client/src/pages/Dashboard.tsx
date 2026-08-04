@@ -384,7 +384,7 @@ function PredictionTracker({ userId }: { userId?: string }) {
               <CalibrationChart predictions={preds} />
               {resolved.length < 20 && (
                 <p className="text-[10px] text-muted-foreground/60 mt-1 text-center italic">
-                  Com {resolved.length} resolução{resolved.length > 1 ? "ões" : ""}, a curva ainda é ruidosa — {20 - resolved.length} previsões restantes para calibração confiável.
+                  Com {resolved.length} {resolved.length > 1 ? "resoluções" : "resolução"}, a curva ainda é ruidosa — {20 - resolved.length} previsões restantes para calibração confiável.
                 </p>
               )}
             </div>
@@ -485,7 +485,7 @@ export default function Dashboard() {
         </div>
         {preds.length > 0 && (
           <div className="text-right">
-            <p className="text-xs text-muted-foreground">{preds.length} previsão{preds.length > 1 ? "ões" : ""} registrada{preds.length > 1 ? "s" : ""}</p>
+            <p className="text-xs text-muted-foreground">{preds.length} {preds.length > 1 ? "previsões registradas" : "previsão registrada"}</p>
           </div>
         )}
       </div>
@@ -578,10 +578,9 @@ export default function Dashboard() {
       <div className="flex items-start gap-2 p-4 rounded-xl border border-border/30 bg-secondary/5">
         <AlertCircle className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
         <p className="text-xs text-muted-foreground leading-relaxed">
-          As previsões são armazenadas localmente neste browser. A migração para Supabase
-          (003_predictions.sql) está pronta para sincronização entre dispositivos.
-          Métricas comportamentais (Brier, Overconfidence) serão calculadas automaticamente
-          conforme você usa as calculadoras dos níveis.
+          Suas previsões ficam salvas neste navegador e sincronizadas com a sua conta
+          quando você está logado — acessíveis de qualquer dispositivo. O Brier Score e o
+          Skill Score são recalculados automaticamente cada vez que você resolve uma previsão.
         </p>
       </div>
     </div>

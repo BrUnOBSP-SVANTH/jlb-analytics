@@ -308,7 +308,7 @@ function KellySimulator() {
               {[
                 ["Kelly completo", `${(kelly * 100).toFixed(1)}% do bankroll`],
                 ["½ Kelly", `${(halfKelly * 100).toFixed(1)}% do bankroll`],
-                ["Overbet (2× Kelly)", `${Math.min(kelly * 2, 0.99 * 100).toFixed(1)}% do bankroll`],
+                ["Overbet (2× Kelly)", `${(Math.min(kelly * 2, 0.99) * 100).toFixed(1)}% do bankroll`],
               ].map(([l, v]) => (
                 <div key={l as string} className="flex justify-between text-xs">
                   <span className="text-muted-foreground">{l}</span>
