@@ -149,7 +149,14 @@ function interleave<T>(a: T[], b: T[]): T[] {
  *  016 ainda não aplicada, ou sem GEMINI_API_KEY) → o FTS assume sozinho. */
 async function semanticCerebro(searchText: string): Promise<CerebroHit[]> {
   if (!embeddingsEnabled() || !SUPABASE_URL || !SUPABASE_KEY) return [];
-  const vec = await embedText(searchText, "RETRIEVAL_QUERY", 8_000);
+  // Cacheia o VETOR da query (1h): a mesma busca não re-embeda — economiza a cota do
+  // Gemini (1000/dia, compartilhada com o backfill) e corta o round-trip de latência.
+  const embKey = `rag-embed:${searchText.toLowerCase().replace(/\s+/g, " ").slice(0, 120)}`;
+  let vec = getCache<number[]>(embKey);
+  if (!vec) {
+    vec = await embedText(searchText, "RETRIEVAL_QUERY", 8_000);
+    if (vec) setCache(embKey, vec, 3600);
+  }
   if (!vec) return [];
   try {
     const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/match_cerebro_articles`, {
