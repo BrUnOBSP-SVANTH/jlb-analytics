@@ -175,8 +175,12 @@ Os artigos são numerados a partir de [1]. JSON exato (sem markdown):
       isBR: newsResult.isBR,
       cached: false,
     };
+    // Caminho de "abster": um fair value de BAIXA confiança E sem nenhuma evidência
+    // (nem notícias nem Cerebro) é um chute — NÃO entra no track record público, para
+    // não poluir o Brier. Ainda é mostrado ao usuário (com o caveat), só não registrado.
+    const abstain = confidence === "baixa" && newsRelevance === "none" && cerebro.hits.length === 0;
     // Registra a previsão da IA para track record + divergências (fire-and-forget)
-    if (fairValue !== null && marketId) {
+    if (fairValue !== null && marketId && !abstain) {
       void logAiForecast({
         marketId, source: source ?? "polymarket", title, category,
         marketProb: probPct, aiFairValue: fairValue, confidence, model: provider,

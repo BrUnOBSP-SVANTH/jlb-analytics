@@ -242,8 +242,23 @@ ${newsBlock}${cerebroBlock}`;
   // Haiku 4.5 (rápido): o prompt é tão prescritivo (20 modelos + protocolo Superforecaster
   // passo a passo) que a qualidade se mantém, e a geração de ~3200 tokens cai para ~25-40s.
   // Timeout 55s cobre picos — callClaude aborta e perde TUDO se estourar.
-  const raw = await callClaude({ model: "claude-haiku-4-5-20251001", maxTokens: 3200, system: systemPrompt, messages: [{ role: "user", content: userMessage }], timeoutMs: 55_000, cacheSystem: true });
-  const parsed = extractJson(raw) as Record<string, unknown>;
+  // Validação de completude + 1 retry: sob o fallback Gemini (sem garantia de saída
+  // estruturada) o plano às vezes volta pela metade. Em vez de renderizar o esqueleto
+  // do Superforecaster vazio em silêncio, tenta de novo (o seed já prova que 1 retry
+  // recupera a maioria) e, persistindo, marca a resposta como parcial.
+  const planComplete = (p: Record<string, unknown>): boolean =>
+    typeof p.referenceClass === "string" && p.referenceClass.trim().length > 0
+    && typeof p.baseRate === "number" && p.baseRate > 0
+    && Array.isArray(p.decomposition) && p.decomposition.length >= 2
+    && typeof p.shortTermPrediction === "string" && (p.shortTermPrediction as string).length > 0;
+
+  let parsed: Record<string, unknown> = {};
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const raw = await callClaude({ model: "claude-haiku-4-5-20251001", maxTokens: 3200, system: systemPrompt, messages: [{ role: "user", content: userMessage }], timeoutMs: 55_000, cacheSystem: true });
+    parsed = extractJson(raw) as Record<string, unknown>;
+    if (planComplete(parsed) || attempt === 1) break;
+  }
+  const partial = !planComplete(parsed);
 
   // Troca os marcadores [N]/[C#] pelos nomes reais das fontes nos campos de
   // texto livre — o usuário lê "(Reuters)" em vez de "[1]".
@@ -272,5 +287,5 @@ ${newsBlock}${cerebroBlock}`;
     const lo = parsed.confidenceLow80; parsed.confidenceLow80 = parsed.confidenceHigh80; parsed.confidenceHigh80 = lo;
   }
 
-  return { ...parsed, domain, timeHorizon, cached: false };
+  return { ...parsed, domain, timeHorizon, partial, cached: false };
 }
