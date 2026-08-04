@@ -7,7 +7,7 @@
  */
 
 import { useState, useEffect } from "react";
-import { TrendingUp, Zap, Cloud, BarChart2, Info, AlertCircle } from "lucide-react";
+import { TrendingUp, Zap, Cloud, BarChart2, Info, AlertCircle, Swords } from "lucide-react";
 import { useModelCall } from "@/hooks/useModels";
 import { awardPoints } from "@/lib/userProgress";
 import { useSEO } from "@/hooks/useSEO";
@@ -17,7 +17,6 @@ interface PoissonResult { p_home_win: number; p_draw: number; p_away_win: number
 interface EloResult { p_a_wins: number; p_b_wins: number; rating_a: number; rating_b: number; signal: string; explanation: string; }
 interface GarchResult { vol_daily_pct: number; vol_annual_pct: number; signal: string; warning: string; explanation: string; model: string; }
 interface EnsoResult { phase: string; oni: number; signal: string; regional_impacts_brazil: string[]; explanation: string; }
-interface PollingResult { candidate_a_avg: number; candidate_b_avg: number; undecided: number; margin_pp: number; n_polls: number; signal: string; explanation: string; }
 
 
 function ExplanationBox({ text }: { text: string }) {
@@ -266,6 +265,60 @@ function EnsoCalculator() {
   );
 }
 
+// ─── Elo Rating ──────────────────────────────────────────────────────────────
+// Faltava a calculadora que a Trilha prometia ("Elo Rating"); o endpoint
+// /level3/elo e a interface já existiam — só a UI não tinha sido feita.
+function EloCalculator() {
+  const [ratingA, setRatingA] = useState("1600");
+  const [ratingB, setRatingB] = useState("1500");
+  const [homeAdv, setHomeAdv] = useState(true);
+  const { data, loading, error, run } = useModelCall<EloResult>("/api/level3/elo");
+  return (
+    <div className="glass-card rounded-xl p-6 space-y-4">
+      <div className="flex items-center gap-2">
+        <Swords className="w-4 h-4 text-primary" />
+        <h3 className="font-semibold text-sm text-foreground">Elo Rating — Probabilidade de vitória</h3>
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="block text-xs text-muted-foreground mb-1">Rating A (mandante)</label>
+          <input type="number" value={ratingA} onChange={(e) => setRatingA(e.target.value)}
+            className="w-full px-3 py-2 rounded-lg bg-secondary/50 border border-border/50 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary" />
+        </div>
+        <div>
+          <label className="block text-xs text-muted-foreground mb-1">Rating B (visitante)</label>
+          <input type="number" value={ratingB} onChange={(e) => setRatingB(e.target.value)}
+            className="w-full px-3 py-2 rounded-lg bg-secondary/50 border border-border/50 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary" />
+        </div>
+      </div>
+      <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer select-none">
+        <input type="checkbox" checked={homeAdv} onChange={(e) => setHomeAdv(e.target.checked)} className="accent-primary" />
+        Aplicar vantagem de casa ao time A
+      </label>
+      <button onClick={() => run({ rating_a: parseFloat(ratingA), rating_b: parseFloat(ratingB), home_advantage: homeAdv })} disabled={loading}
+        className="w-full py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 disabled:opacity-50">
+        {loading ? "Calculando..." : "Calcular probabilidade"}
+      </button>
+      {data && (
+        <div className="space-y-3">
+          <div className="grid grid-cols-2 gap-3 text-center">
+            <div className="p-3 rounded-lg bg-secondary/30">
+              <div className="text-xs text-muted-foreground">P(A vence)</div>
+              <div className={`text-2xl font-bold ${data.p_a_wins >= 0.5 ? "text-primary" : "text-muted-foreground"}`}>{(data.p_a_wins * 100).toFixed(1)}%</div>
+            </div>
+            <div className="p-3 rounded-lg bg-secondary/30">
+              <div className="text-xs text-muted-foreground">P(B vence)</div>
+              <div className={`text-2xl font-bold ${data.p_b_wins > 0.5 ? "text-primary" : "text-muted-foreground"}`}>{(data.p_b_wins * 100).toFixed(1)}%</div>
+            </div>
+          </div>
+          <ExplanationBox text={data.explanation} />
+        </div>
+      )}
+      {error && <div className="text-xs text-negative p-2">{error}</div>}
+    </div>
+  );
+}
+
 export default function Nivel3() {
   useSEO("Nível 3 — Modelos Básicos", "Poisson, regressão e Elo: os primeiros modelos quantitativos para previsões.");
   useEffect(() => {
@@ -289,6 +342,7 @@ export default function Nivel3() {
         <PoissonCalculator />
         <GarchCalculator />
         <EnsoCalculator />
+        <EloCalculator />
       </div>
     </div>
   );

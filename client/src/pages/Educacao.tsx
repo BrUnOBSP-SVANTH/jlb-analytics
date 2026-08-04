@@ -51,7 +51,7 @@ const LEVELS = [
     color: "text-yellow-500",
     bg: "bg-yellow-500/10",
     border: "border-yellow-500/30",
-    topics: ["Regra de Taylor — benchmark de política monetária", "Poisson duplo + Dixon-Coles — futebol", "Elo Rating com decaimento temporal", "GARCH — volatilidade (não direção)", "ENSO — fases climáticas e impacto regional"],
+    topics: ["Regra de Taylor — benchmark de política monetária", "Poisson duplo + Dixon-Coles — futebol", "Elo Rating — probabilidade de vitória", "GARCH — volatilidade (não direção)", "ENSO — fases climáticas e impacto regional"],
     outcome: "Você entende o que cada modelo calcula, quais são suas premissas e quando ele falha.",
   },
   {

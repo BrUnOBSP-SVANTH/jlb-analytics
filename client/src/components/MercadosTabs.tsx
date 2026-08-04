@@ -1,5 +1,5 @@
 /**
- * MercadosTabs — barra de navegação compartilhada entre Apostas, Notícias e Portfolio.
+ * MercadosTabs — barra de navegação compartilhada entre Apostas e Notícias.
  */
 import { Link, useLocation } from "wouter";
 import { Flame, Newspaper } from "lucide-react";
