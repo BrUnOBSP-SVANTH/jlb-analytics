@@ -7,6 +7,7 @@ import { getCalibrationMemo } from "../aiForecasts.ts";
 import { callClaude } from "../anthropic.ts";
 import { extractJson } from "../extractJson.ts";
 import { clampFairValue, quantFairValue } from "./guardrails.ts";
+import { recordClamp } from "./metrics.ts";
 import { INJECTION_GUARD } from "./promptSafety.ts";
 import { log } from "../log.ts";
 
@@ -99,12 +100,18 @@ Onde:
     // código, não só no prompt (mercado líquido raramente erra por >15pp)
     const rawFV = Math.round(Number(parsed.fairValue ?? clampedPreFV));
     const fairValue = clampFairValue(rawFV, marketProb);
+    const fvClamped = fairValue !== rawFV; // o guardrail moveu o valor?
+    if (fvClamped) recordClamp();
     const result = {
       fairValue,
       confidence: parsed.confidence ?? "medium",
       edge: Number((fairValue - marketProb).toFixed(1)),
       signal: parsed.signal ?? (fairValue > marketProb + 3 ? "bullish" : fairValue < marketProb - 3 ? "bearish" : "neutral"),
-      reasoning: parsed.reasoning ?? "",
+      // Quando o clamp mordeu, o texto do modelo pode citar o valor BRUTO — anexa nota
+      // honesta para não contradizer o número exibido (que é o ajustado).
+      reasoning: fvClamped
+        ? `${parsed.reasoning ?? ""} (Fair value ajustado ao limite de ±15pp vs. mercado — a estimativa exibida é a ajustada.)`.trim()
+        : (parsed.reasoning ?? ""),
       factors: parsed.factors ?? [],
       caveat: parsed.caveat ?? catInfo.note,
       categoryBaseRate: catInfo.baseRate,

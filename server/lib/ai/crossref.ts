@@ -4,6 +4,7 @@ import { parsePolyPrices } from "../aiForecasts.ts";
 import { callClaude } from "../anthropic.ts";
 import { extractJson } from "../extractJson.ts";
 import { clampFairValue } from "./guardrails.ts";
+import { recordClamp } from "./metrics.ts";
 import { INJECTION_GUARD } from "./promptSafety.ts";
 import { log } from "../log.ts";
 
@@ -115,7 +116,9 @@ Onde:
       .map((r) => {
         const m = allMarkets[r.idx];
         // Guardrail de calibração no código (como no fair value): ±20pp do mercado
-        const jlbProb = clampFairValue(Math.round(r.jlbProb), m.prob, 20);
+        const rawJlb = Math.round(r.jlbProb);
+        const jlbProb = clampFairValue(rawJlb, m.prob, 20);
+        if (jlbProb !== rawJlb) recordClamp();
         return {
           source: m.source,
           marketTitle: m.title,
@@ -125,7 +128,9 @@ Onde:
           // Verdict derivado dos números finais — o do modelo às vezes contradiz
           // a própria estimativa (e o clamp pode movê-la)
           verdict: jlbProb > m.prob + 3 ? "higher" : jlbProb < m.prob - 3 ? "lower" : "aligned",
-          reasoning: r.reasoning ?? "",
+          reasoning: jlbProb !== rawJlb
+            ? `${r.reasoning ?? ""} (Estimativa ajustada ao limite de ±20pp vs. mercado — a exibida é a ajustada.)`.trim()
+            : (r.reasoning ?? ""),
           confidence: r.confidence ?? "medium",
         };
       });
