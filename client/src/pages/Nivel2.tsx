@@ -163,14 +163,32 @@ function CICalculator() {
             </div>
             <div className="text-xs text-muted-foreground">margem ± {data.margin.toFixed(4)} | EP = {data.se.toFixed(4)}</div>
           </div>
-          {/* Linha visual do IC */}
-          <div className="relative h-8 flex items-center">
-            <div className="absolute inset-x-0 h-0.5 bg-border/30" />
-            <div className="absolute h-4 w-0.5 bg-foreground" style={{ left: "50%" }} />
-            <div className="absolute h-4 w-0.5 bg-primary/50" style={{ left: "15%" }} />
-            <div className="absolute h-4 w-0.5 bg-primary/50" style={{ left: "85%" }} />
-            <div className="absolute h-0.5 bg-primary/30" style={{ left: "15%", right: "15%" }} />
-          </div>
+          {/* Linha visual do IC — posições e rótulos derivados dos valores REAIS.
+              Antes as marcas eram fixas (15/50/85%), fingindo representar o cálculo. */}
+          {(() => {
+            const mid = (data.lower + data.upper) / 2;
+            const half = Math.abs(data.upper - data.lower) / 2 || 1;
+            // eixo centrado na estimativa, com folga para os limites não colarem na borda
+            const pos = (x: number) => Math.max(6, Math.min(94, 50 + ((x - mid) / (half * 1.6)) * 50));
+            const lo = pos(data.lower);
+            const hi = pos(data.upper);
+            return (
+              <div className="space-y-1">
+                <div className="relative h-8 flex items-center">
+                  <div className="absolute inset-x-0 h-0.5 bg-border/30" />
+                  <div className="absolute h-0.5 bg-primary/40" style={{ left: `${lo}%`, right: `${100 - hi}%` }} />
+                  <div className="absolute h-4 w-0.5 bg-primary/60" style={{ left: `${lo}%` }} />
+                  <div className="absolute h-4 w-0.5 bg-foreground" style={{ left: "50%" }} />
+                  <div className="absolute h-4 w-0.5 bg-primary/60" style={{ left: `${hi}%` }} />
+                </div>
+                <div className="relative h-4 text-[10px] font-mono text-muted-foreground">
+                  <span className="absolute -translate-x-1/2" style={{ left: `${lo}%` }}>{data.lower.toFixed(2)}</span>
+                  <span className="absolute -translate-x-1/2 text-foreground" style={{ left: "50%" }}>{mid.toFixed(2)}</span>
+                  <span className="absolute -translate-x-1/2" style={{ left: `${hi}%` }}>{data.upper.toFixed(2)}</span>
+                </div>
+              </div>
+            );
+          })()}
           <ExplanationBox text={data.explanation} />
         </div>
       )}
