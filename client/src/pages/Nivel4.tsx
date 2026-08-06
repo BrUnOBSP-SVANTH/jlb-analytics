@@ -11,6 +11,7 @@ import { Brain, Target, Shuffle, TrendingUp, Info, AlertCircle } from "lucide-re
 import { useModelCall } from "@/hooks/useModels";
 import { awardPoints } from "@/lib/userProgress";
 import { useSEO } from "@/hooks/useSEO";
+import LevelNav from "@/components/LevelNav";
 
 interface ProspectResult { ev_objective: number; subjective_value: number; gap: number; loss_aversion_lambda: number; signal: string; bias_diagnosis: string; explanation: string; }
 interface BrierResult { brier_score: number; skill_score: number; resolution: number; reliability: number; n: number; stable: boolean; signal: string; explanation: string; calibration_by_decile?: { confidence_range: string; avg_confidence: number; actual_accuracy: number; n: number; calibration_error: number }[]; }
@@ -311,7 +312,7 @@ export default function Nivel4() {
       <div>
         <div className="flex items-center gap-2 mb-2">
           <span className="px-2.5 py-0.5 rounded-full bg-primary/10 text-primary text-xs font-semibold">Nível 4</span>
-          <span className="px-2 py-0.5 rounded-full bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 text-xs font-medium">Premium</span>
+          <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary text-xs font-medium">Avançado</span>
         </div>
         <h1 className="text-2xl font-bold text-foreground">Vieses e Psicologia</h1>
         <p className="text-muted-foreground mt-1 text-sm max-w-2xl">
@@ -325,6 +326,8 @@ export default function Nivel4() {
         <GamblerCalculator />
         <MaturityCalculator />
       </div>
+
+      <LevelNav current={4} />
     </div>
   );
 }

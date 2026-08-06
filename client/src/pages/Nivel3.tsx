@@ -11,6 +11,7 @@ import { TrendingUp, Zap, Cloud, BarChart2, Info, AlertCircle, Swords } from "lu
 import { useModelCall } from "@/hooks/useModels";
 import { awardPoints } from "@/lib/userProgress";
 import { useSEO } from "@/hooks/useSEO";
+import LevelNav from "@/components/LevelNav";
 
 interface TaylorResult { selic_observed: number; taylor_implied: number; divergence_pp: number; signal: string; explanation: string; }
 interface PoissonResult { p_home_win: number; p_draw: number; p_away_win: number; lambda_home: number; lambda_away: number; top_scores: { score: string; probability: number }[]; explanation: string; }
@@ -344,6 +345,8 @@ export default function Nivel3() {
         <EnsoCalculator />
         <EloCalculator />
       </div>
+
+      <LevelNav current={3} />
     </div>
   );
 }

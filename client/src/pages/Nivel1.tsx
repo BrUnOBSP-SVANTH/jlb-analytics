@@ -12,6 +12,7 @@ import { Calculator, TrendingDown, RefreshCw, ChevronDown, ChevronUp, AlertCircl
 import { useModelCall } from "@/hooks/useModels";
 import { awardPoints } from "@/lib/userProgress";
 import { useSEO } from "@/hooks/useSEO";
+import LevelNav from "@/components/LevelNav";
 
 // ─── Tipos de resposta da API ─────────────────────────────────────────────────
 interface EVResult {
@@ -368,12 +369,11 @@ export default function Nivel1() {
           <strong className="text-foreground">O que você aprendeu neste nível:</strong>{" "}
           qualquer mercado com E[X] {"<"} 0 é matematicamente perdedor — independente da estratégia.
           A margem da casa define o piso de dificuldade. Bayes define como aprender com evidências novas
-          em vez de ancorar em opiniões antigas.{" "}
-          <span className="text-foreground font-medium">
-            Nível 2: como ler os dados que os modelos usam.
-          </span>
+          em vez de ancorar em opiniões antigas.
         </div>
       </div>
+
+      <LevelNav current={1} />
     </div>
   );
 }

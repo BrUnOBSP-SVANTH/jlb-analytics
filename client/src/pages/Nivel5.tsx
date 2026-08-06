@@ -11,6 +11,7 @@ import { GitMerge, Layers, Info, AlertTriangle } from "lucide-react";
 import { useModelCall } from "@/hooks/useModels";
 import { awardPoints } from "@/lib/userProgress";
 import { useSEO } from "@/hooks/useSEO";
+import LevelNav from "@/components/LevelNav";
 
 interface DivergenceResult {
   divergence_pct: number; signal: string; label: string;
@@ -275,7 +276,7 @@ export default function Nivel5() {
       <div>
         <div className="flex items-center gap-2 mb-2">
           <span className="px-2.5 py-0.5 rounded-full bg-primary/10 text-primary text-xs font-semibold">Nível 5</span>
-          <span className="px-2 py-0.5 rounded-full bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 text-xs font-medium">Premium</span>
+          <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary text-xs font-medium">Avançado</span>
         </div>
         <h1 className="text-2xl font-bold text-foreground">Análise Integrada</h1>
         <p className="text-muted-foreground mt-1 text-sm max-w-2xl">
@@ -303,6 +304,8 @@ export default function Nivel5() {
           <EnsembleCalculator />
         </div>
       </div>
+
+      <LevelNav current={5} />
     </div>
   );
 }

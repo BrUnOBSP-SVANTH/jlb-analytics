@@ -12,6 +12,7 @@ import { BarChart3, Activity, GitBranch, Info, AlertCircle } from "lucide-react"
 import { useModelCall } from "@/hooks/useModels";
 import { awardPoints } from "@/lib/userProgress";
 import { useSEO } from "@/hooks/useSEO";
+import LevelNav from "@/components/LevelNav";
 
 interface ZResult { z: number; p_two_tail: number; signal: string; explanation: string; }
 interface CIResult { lower: number; upper: number; margin: number; se: number; dist_used: string; level_pct: number; signal: string; explanation: string; }
@@ -294,6 +295,8 @@ export default function Nivel2() {
         <CICalculator />
         <CorrelationCalculator />
       </div>
+
+      <LevelNav current={2} />
     </div>
   );
 }
