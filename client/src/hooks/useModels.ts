@@ -5,6 +5,7 @@
  */
 
 import { useState, useCallback } from "react";
+import { loadProgress } from "@/lib/userProgress";
 
 type ModelState<T> = {
   data: T | null;
@@ -12,20 +13,24 @@ type ModelState<T> = {
   error: string | null;
 };
 
-// Acesso aos modelos Python é ABERTO por decisão de produto: os Níveis 4 e 5
-// deixaram de ser travados por pontos (o sistema de pontos segue só para
-// gamificação/progresso no Dashboard). Por isso o cliente sempre solicita o
-// nível pleno — satisfaz o require_level(1..5) do backend E faz o filter_by_level
-// devolver o conteúdo completo (behavioral_note/model_confidence) que a UI dos
-// níveis 4/5 já espera renderizar. Antes o header derivava dos pontos e devolvia
-// 3 para novos usuários → HTTP 403 nas calculadoras de L4/L5 (conteúdo mais valioso).
-const FULL_ACCESS_LEVEL = 5;
+/** Deriva o nível de acesso do Python a partir dos pontos acumulados.
+ *  Níveis 1-3 são abertos (min 3). Nível 4 → 50 pts. Nível 5 → 100 pts. */
+function userLevelFromPoints(): number {
+  try {
+    const { totalPoints } = loadProgress();
+    if (totalPoints >= 100) return 5;
+    if (totalPoints >= 50)  return 4;
+    return 3; // mínimo 3 — níveis 1, 2 e 3 são sempre acessíveis
+  } catch {
+    return 3;
+  }
+}
 
 const OFFLINE_MSG =
   "Serviço de modelos Python offline. Reinicie com: pnpm dev:all";
 
 export function useModels() {
-  const userLevel = FULL_ACCESS_LEVEL;
+  const userLevel = userLevelFromPoints();
 
   async function callModel<T>(
     endpoint: string,
