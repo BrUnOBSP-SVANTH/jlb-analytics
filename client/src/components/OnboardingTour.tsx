@@ -3,6 +3,7 @@
  * Tour de onboarding exibido uma única vez por dispositivo.
  */
 import { useState } from "react";
+import { MODEL_COUNT } from "@/lib/brand";
 import { TrendingUp, Flame, Brain, Target, BookOpen, Search, X } from "lucide-react";
 
 const STEPS = [
@@ -25,7 +26,7 @@ const STEPS = [
     iconColor: "text-purple-400",
     title: "Previsão Guiada por IA",
     description: "A IA detecta seu nível e escolhe o modelo econométrico certo.",
-    detail: "Taylor Rule, Poisson, GARCH, Elo, Prospect Theory — 16 modelos reais. Acesse em /previsao.",
+    detail: `Taylor Rule, Poisson, GARCH, Elo, Prospect Theory — ${MODEL_COUNT} modelos reais.`,
   },
   {
     icon: BookOpen,

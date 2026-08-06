@@ -4,6 +4,7 @@
  * e QuickActions (próximas ações). Comportamento idêntico.
  */
 import { Link } from "wouter";
+import { MODEL_COUNT } from "@/lib/brand";
 import {
   GraduationCap, BarChart3, TrendingUp, Brain, GitMerge, Lock,
   ArrowRight, AlertCircle, Activity, Trophy, Target, Sparkles,
@@ -264,7 +265,7 @@ export function QuickActions({ userLevel }: { userLevel: number }) {
             <Sparkles className="w-4 h-4 text-neon-blue" />
             <div className="flex-1">
               <p className="text-sm text-foreground">Previsão Guiada por IA</p>
-              <p className="text-xs text-muted-foreground">20 modelos econométricos automáticos</p>
+              <p className="text-xs text-muted-foreground">{MODEL_COUNT} modelos econométricos automáticos</p>
             </div>
             <ArrowRight className="w-3.5 h-3.5 text-muted-foreground" />
           </div>

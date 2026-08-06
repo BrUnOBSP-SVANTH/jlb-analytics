@@ -7,6 +7,7 @@ import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import { getMarkets, getAllMarkets } from "@/lib/marketsCache";
 import { useSEO } from "@/hooks/useSEO";
+import { MODEL_COUNT } from "@/lib/brand";
 import { Link } from "wouter";
 import {
   TrendingUp, Brain, BarChart3, GitMerge, GraduationCap,
@@ -545,7 +546,7 @@ export default function Home() {
                 <div className="flex items-center gap-2 mb-2">
                   <span className="text-xs font-semibold uppercase tracking-widest text-neon-blue">Método Superforecaster</span>
                   <span className="w-1 h-1 rounded-full bg-muted-foreground/30" aria-hidden="true" />
-                  <span className="text-xs text-muted-foreground">16 modelos econométricos</span>
+                  <span className="text-xs text-muted-foreground">{MODEL_COUNT} modelos econométricos</span>
                 </div>
                 <h2 className="text-xl md:text-2xl font-bold text-foreground mb-2">Previsão Guiada por IA</h2>
                 <p className="text-sm text-muted-foreground leading-relaxed max-w-xl">

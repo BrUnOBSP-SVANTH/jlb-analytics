@@ -12,6 +12,7 @@ import { useState, useEffect } from "react";
 import PageHeader from "@/components/PageHeader";
 import AnimatedSection from "@/components/AnimatedSection";
 import { useSEO } from "@/hooks/useSEO";
+import { MODEL_COUNT } from "@/lib/brand";
 import AnaliseTabs from "@/components/AnaliseTabs";
 import KlementSection from "@/components/KlementSection";
 import { supabase } from "@/lib/supabase";
@@ -62,7 +63,7 @@ const HORIZONS: { id: Horizon; label: string; desc: string }[] = [
 // ── Main Page ──────────────────────────────────────────────────────────────────
 
 export default function Previsao() {
-  useSEO("Previsão Guiada por IA", "IA com método Superforecaster: base rate, decomposição de Fermi e 16 modelos econométricos. Previsões calibradas para esportes, economia, política e mais.");
+  useSEO("Previsão Guiada por IA", `IA com método Superforecaster: base rate, decomposição de Fermi e ${MODEL_COUNT} modelos econométricos. Previsões calibradas para esportes, economia, política e mais.`);
   const { user, session } = useAuth();
   const [domain, setDomain]         = useState<Domain>("economy");
   const [question, setQuestion]     = useState("");
@@ -451,7 +452,7 @@ export default function Previsao() {
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {[
-                  { icon: FlaskConical, color: "text-primary",   title: "Seleção automática de modelo", desc: "A IA escolhe entre 20 modelos econométricos e matemáticos o mais adequado para sua pergunta — OLS, GARCH, Poisson, Elo, Taylor Rule, log-log e muito mais." },
+                  { icon: FlaskConical, color: "text-primary",   title: "Seleção automática de modelo", desc: `A IA escolhe entre ${MODEL_COUNT} modelos econométricos e matemáticos o mais adequado para sua pergunta — OLS, GARCH, Poisson, Elo, Taylor Rule, log-log e muito mais.` },
                   { icon: BookOpen,     color: "text-neon-blue",  title: "Fórmula real + base de pesquisa", desc: "Mostra a equação matemática exata e cita a linha de pesquisa acadêmica (Harvard, USP, Stanford, ITA) que sustenta a metodologia." },
                   { icon: Clock,        color: "text-gold",       title: "3 horizontes temporais", desc: "Previsão separada para curto, médio e longo prazo, cada uma com grau de confiança calibrado pelo modelo escolhido." },
                   { icon: Lightbulb,    color: "text-positive",   title: "Tradução em linguagem simples", desc: "Toda análise é traduzida para linguagem cotidiana — sem jargão — e inclui impacto no patrimônio se informado." },

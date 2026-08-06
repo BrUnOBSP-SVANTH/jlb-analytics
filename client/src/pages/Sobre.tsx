@@ -32,7 +32,7 @@ const PRINCIPLES = [
 
 // Metrics fetched dynamically from Supabase where possible
 const STATIC_METRICS = [
-  { value: "16",  label: "endpoints de modelos econométricos", sub: "TypeScript nativo, sem dependências externas" },
+  { value: "18",  label: "endpoints de modelos econométricos", sub: "TypeScript nativo, sem dependências externas" },
   { value: "5",   label: "níveis de educação progressiva",     sub: "do fundamento à análise integrada" },
 ];
 
