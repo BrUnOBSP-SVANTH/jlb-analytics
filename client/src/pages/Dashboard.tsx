@@ -23,6 +23,7 @@ import {
 import { awardPoints } from "@/lib/userProgress";
 import { pullFromSupabase, pushToSupabase, syncOne, deleteOne } from "@/lib/predictionsSync";
 import ContaTabs from "@/components/ContaTabs";
+import SignupNudge from "@/components/SignupNudge";
 import WatchlistSection from "@/components/dashboard/WatchlistSection";
 import { useSEO } from "@/hooks/useSEO";
 
@@ -38,6 +39,19 @@ function fmt(v: number, decimals = 2): string {
 // ── Sub-components ─────────────────────────────────────────────────────────
 
 function GuestView() {
+  // Convidado que JÁ registrou previsões locais: mostra os dados REAIS dele
+  // (o PredictionTracker roda em localStorage, sem conta) + convite de cadastro,
+  // em vez da prévia borrada/falsa. Fecha o beco: ele vê o que fez e é convidado.
+  const guestPreds = loadPredictions();
+  if (guestPreds.length > 0) {
+    return (
+      <div className="max-w-5xl mx-auto px-4 py-8 space-y-6">
+        <SignupNudge count={guestPreds.length} context="dashboard_guest" />
+        <PredictionTracker />
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-5xl mx-auto px-4 py-8 space-y-8">
       {/* Auth card */}
