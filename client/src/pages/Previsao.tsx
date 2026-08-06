@@ -22,6 +22,7 @@ import {
   CheckCircle, Loader2, Lightbulb, FlaskConical, Trophy,
 } from "lucide-react";
 import { awardPoints } from "@/lib/userProgress";
+import { track } from "@/lib/analytics";
 import { addPrediction } from "@/lib/predictions";
 import { syncOne } from "@/lib/predictionsSync";
 import { useAuth } from "@/contexts/AuthContext";
@@ -562,6 +563,7 @@ export default function Previsao() {
                           userProb,
                         });
                         awardPoints("prediction_made", `Previsão registrada: ${question.slice(0, 50)}`, `pred_${pred.id}`);
+                        track("prediction_registered", { source: "previsao" });
                         if (user && session?.access_token) {
                           await syncOne(pred, user.id).catch(() => {});
                         }

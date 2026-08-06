@@ -32,7 +32,7 @@ export function track(event: string, meta?: Record<string, unknown>): void {
         headers: { "Content-Type": "application/json" },
         body,
         keepalive: true,
-      });
+      }).catch(() => { /* best-effort: nunca propaga rejeição */ });
     }
   } catch { /* telemetria é best-effort */ }
 }

@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { loadPredictions, addPrediction, type StoredPrediction } from "@/lib/predictions";
 import { awardPoints } from "@/lib/userProgress";
+import { track } from "@/lib/analytics";
 import AnaliseTabs from "@/components/AnaliseTabs";
 import { useSEO } from "@/hooks/useSEO";
 
@@ -83,6 +84,7 @@ function QuickPredict({ market, marketProb }: { market: string; marketProb: numb
       userProb,
     });
     awardPoints("prediction_made", `Previsão do briefing: ${market.slice(0, 50)}`);
+    track("prediction_registered", { source: "briefing" });
     setSaved(true);
     setTimeout(() => { setSaved(false); setOpen(false); }, 1800);
   }

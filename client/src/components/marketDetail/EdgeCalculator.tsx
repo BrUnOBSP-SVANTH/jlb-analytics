@@ -8,6 +8,7 @@ import { calcEV, calcKelly } from "@/components/marketDetail/utils";
 import { Explain } from "@/components/marketDetail/Explain";
 import { addPrediction } from "@/lib/predictions";
 import { awardPoints } from "@/lib/userProgress";
+import { track } from "@/lib/analytics";
 
 // ── EdgeCalculator (inline) ────────────────────────────────────────────────────
 
@@ -21,6 +22,7 @@ export function EdgeCalculator({ marketProb, marketId, question }: { marketProb:
   function handleSave() {
     addPrediction({ marketId, question, marketProb: Math.round(marketProb * 100), userProb: yourPct });
     awardPoints("prediction_made", `Previsão registrada: ${question.slice(0, 50)}`);
+    track("prediction_registered", { source: "marketdetail" });
     setSaved(true);
   }
   const ev = calcEV(yourProb, marketProb);

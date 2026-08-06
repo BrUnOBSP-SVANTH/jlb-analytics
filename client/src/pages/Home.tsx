@@ -8,6 +8,7 @@ import { supabase } from "@/lib/supabase";
 import { getMarkets, getAllMarkets } from "@/lib/marketsCache";
 import { useSEO } from "@/hooks/useSEO";
 import { MODEL_COUNT } from "@/lib/brand";
+import { track } from "@/lib/analytics";
 import { Link } from "wouter";
 import {
   TrendingUp, Brain, BarChart3, GitMerge, GraduationCap,
@@ -269,12 +270,12 @@ export default function Home() {
               Aprenda a calcular suas chances reais antes de colocar dinheiro — sem chute, sem achismo.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-              <Link href="/apostas">
+              <Link href="/apostas" onClick={() => track("cta_click", { id: "home_hero_mercados" })}>
                 <span className="inline-flex items-center gap-2 px-6 py-3.5 rounded-xl bg-primary text-primary-foreground font-semibold hover:opacity-90 transition-opacity">
                   Explorar Mercados ao Vivo <ArrowRight className="w-4 h-4" aria-hidden="true" />
                 </span>
               </Link>
-              <Link href="/nivel/1">
+              <Link href="/nivel/1" onClick={() => track("cta_click", { id: "home_hero_nivel1" })}>
                 <span className="inline-flex items-center gap-2 px-6 py-3.5 rounded-xl border border-border/50 text-foreground hover:bg-secondary/30 transition-colors font-medium">
                   Começar grátis — Nível 1
                 </span>
@@ -332,7 +333,7 @@ export default function Home() {
               </div>
             </div>
             <div className="flex items-center gap-2 shrink-0">
-              <Link href="/nivel/1">
+              <Link href="/nivel/1" onClick={() => track("cta_click", { id: "home_banner_nivel1" })}>
                 <span className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-neon-blue/15 border border-neon-blue/30 text-neon-blue text-xs font-semibold hover:bg-neon-blue/25 transition-colors">
                   Começar pelo Nível 1 <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
                 </span>
@@ -506,7 +507,7 @@ export default function Home() {
             {LEVELS.map((level) => {
               const Icon = level.icon;
               return (
-                <Link key={level.n} href={level.href}>
+                <Link key={level.n} href={level.href} onClick={() => track("cta_click", { id: "home_nivel_card", nivel: level.n })}>
                   <div className={`p-4 rounded-xl border ${level.border} ${level.bg} hover:opacity-80 transition-opacity cursor-pointer text-center`}>
                     <div className="w-9 h-9 rounded-lg bg-background/60 flex items-center justify-center mx-auto mb-3">
                       <Icon className={`w-4 h-4 ${level.color}`} aria-hidden="true" />
@@ -524,7 +525,7 @@ export default function Home() {
             })}
           </div>
           <div className="text-center mt-8">
-            <Link href="/nivel/1">
+            <Link href="/nivel/1" onClick={() => track("cta_click", { id: "home_trilha_nivel1" })}>
               <span className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border border-positive/30 text-positive text-sm font-medium hover:bg-positive/5 transition-colors">
                 Começar pelo Nível 1 <ArrowRight className="w-4 h-4" aria-hidden="true" />
               </span>
@@ -652,12 +653,12 @@ export default function Home() {
             Você começa a aprender se está acertando ou errando com a primeira previsão registrada.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-            <Link href="/nivel/1">
+            <Link href="/nivel/1" onClick={() => track("cta_click", { id: "home_final_nivel1" })}>
               <span className="inline-flex items-center gap-2 px-8 py-3.5 rounded-xl bg-primary text-primary-foreground font-semibold hover:opacity-90 transition-opacity">
                 Ir para o Nível 1 <ArrowRight className="w-4 h-4" aria-hidden="true" />
               </span>
             </Link>
-            <Link href="/dashboard">
+            <Link href="/dashboard" onClick={() => track("cta_click", { id: "home_final_dashboard" })}>
               <span className="inline-flex items-center gap-2 px-6 py-3.5 rounded-xl border border-border/40 text-foreground hover:bg-secondary/30 transition-colors font-medium text-sm">
                 Ver Dashboard
               </span>

@@ -10,6 +10,7 @@ import { CategoryBadge } from "@/components/noticias/cards";
 import { ProbHero, ProbBar } from "@/components/apostas/cards";
 import { addPrediction, edge, kellyFraction, type StoredPrediction } from "@/lib/predictions";
 import { awardPoints } from "@/lib/userProgress";
+import { track } from "@/lib/analytics";
 
 interface TrackFormProps {
   market: PolyMarket;
@@ -32,6 +33,7 @@ function TrackForm({ market, marketProb, onSaved, onCancel }: TrackFormProps) {
       userProb,
     });
     awardPoints("prediction_made", `Previsão registrada: ${market.question.slice(0, 50)}`);
+    track("prediction_registered", { source: "noticias_poly" });
     onSaved(pred);
   }
 

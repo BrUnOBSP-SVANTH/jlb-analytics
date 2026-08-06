@@ -8,6 +8,7 @@ import { type KalshiMarket, daysLeft, formatVolume } from "@/lib/noticiasShared"
 import { CategoryBadge } from "@/components/noticias/cards";
 import { addPrediction } from "@/lib/predictions";
 import { awardPoints } from "@/lib/userProgress";
+import { track } from "@/lib/analytics";
 
 export function KalshiCard({ market }: { market: KalshiMarket }) {
   const [translation, setTranslation] = useState<string | null>(null);
@@ -36,6 +37,7 @@ export function KalshiCard({ market }: { market: KalshiMarket }) {
       userProb,
     });
     awardPoints("prediction_made", `Previsão Kalshi: ${market.title.slice(0, 50)}`);
+    track("prediction_registered", { source: "noticias_kalshi" });
     setSaved(true);
     setTimeout(() => { setSaved(false); setPredictOpen(false); }, 1800);
   }
