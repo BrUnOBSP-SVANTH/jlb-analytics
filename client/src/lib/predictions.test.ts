@@ -3,7 +3,7 @@
  * Lógica que sustenta Dashboard, Leaderboard e track record.
  */
 import { describe, it, expect } from "vitest";
-import { meanBrierScore, skillScore, calibrationBuckets, analyzeSentiment, type StoredPrediction } from "./predictions";
+import { meanBrierScore, skillScore, calibrationBuckets, analyzeSentiment, edge, kellyFraction, type StoredPrediction } from "./predictions";
 
 function pred(p: Partial<StoredPrediction>): StoredPrediction {
   return {
@@ -103,5 +103,33 @@ describe("analyzeSentiment — casa palavras inteiras (regressão do bug de subs
   });
   it("texto sem palavras-chave é neutro", () => {
     expect(analyzeSentiment("Election scheduled for October").label).toBe("Neutro");
+  });
+});
+
+describe("edge — diferença em pontos percentuais (sua prob − mercado)", () => {
+  it("positivo quando você acredita mais que o mercado", () => {
+    expect(edge(60, 45)).toBe(15);
+  });
+  it("negativo quando você acredita menos", () => {
+    expect(edge(40, 50)).toBe(-10);
+  });
+});
+
+describe("kellyFraction — fração da banca (capada em ¼ Kelly)", () => {
+  it("prob 60% vs mercado 50% → 20% da banca", () => {
+    expect(kellyFraction(60, 50)).toBeCloseTo(0.2, 6);
+  });
+  it("sem edge (prob = preço) → 0", () => {
+    expect(kellyFraction(50, 50)).toBe(0);
+  });
+  it("edge negativo → 0 (nunca aposta contra o próprio valor)", () => {
+    expect(kellyFraction(40, 50)).toBe(0);
+  });
+  it("edge enorme é capado em 0.25 (¼ Kelly conservador)", () => {
+    expect(kellyFraction(90, 50)).toBe(0.25);
+  });
+  it("marketProb inválido (0 ou 100) → 0, sem divisão por zero", () => {
+    expect(kellyFraction(60, 0)).toBe(0);
+    expect(kellyFraction(60, 100)).toBe(0);
   });
 });
