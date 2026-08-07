@@ -27,7 +27,7 @@ function userLevelFromPoints(): number {
 }
 
 const OFFLINE_MSG =
-  "Serviço de modelos Python offline. Reinicie com: pnpm dev:all";
+  "Serviço de cálculo indisponível no momento. Tente novamente em instantes.";
 
 export function useModels() {
   const userLevel = userLevelFromPoints();

@@ -374,7 +374,7 @@ export default function Home() {
                 : (
                   <div className="flex items-center gap-2 text-xs text-muted-foreground py-6">
                     <Zap className="w-3.5 h-3.5" aria-hidden="true" />
-                    Inicie o servidor para ver mercados ao vivo
+                    Mercados ao vivo indisponíveis no momento
                   </div>
                 )
             }

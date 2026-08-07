@@ -236,7 +236,7 @@ function NewsArticleList({ articles }: { articles: MarketAnalysisResult["article
   if (articles.length === 0) {
     return (
       <p className="text-[10px] text-muted-foreground/60 text-center py-1">
-        Nenhuma notícia recente encontrada. Configure NEWS_API_KEY no .env para ativar.
+        Nenhuma notícia recente encontrada.
       </p>
     );
   }

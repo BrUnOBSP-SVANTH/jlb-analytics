@@ -322,15 +322,15 @@ export default function Briefing() {
               <p className="text-sm font-medium text-foreground">Não foi possível carregar o briefing</p>
               <p className="text-xs text-muted-foreground mt-0.5">
                 {error === "ENDPOINT_NOT_FOUND"
-                  ? "Servidor precisa ser reiniciado para ativar este endpoint."
+                  ? "O briefing está temporariamente indisponível."
                   : error}
               </p>
             </div>
           </div>
           <p className="text-xs text-muted-foreground">
             {error === "ENDPOINT_NOT_FOUND"
-              ? "Pare e reinicie o servidor: pnpm dev:server (ou pnpm dev:all). O endpoint /api/ai/daily-briefing foi adicionado na sessão atual."
-              : "Verifique se ANTHROPIC_API_KEY está configurada no .env e tente novamente."}
+              ? "Tente novamente em instantes. Se persistir, o serviço pode estar em manutenção."
+              : "Não foi possível gerar o briefing agora — tente novamente em instantes."}
           </p>
           <button
             onClick={() => void fetchBriefing()}
