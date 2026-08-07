@@ -3,7 +3,7 @@
  */
 import { useState } from "react";
 import { Link } from "wouter";
-import { Calculator, Zap, Info, Check, BookmarkPlus } from "lucide-react";
+import { Calculator, Zap, Info, Check, BookmarkPlus, Sparkles, RefreshCw } from "lucide-react";
 import { calcEV, calcKelly } from "@/components/marketDetail/utils";
 import { Explain } from "@/components/marketDetail/Explain";
 import { addPrediction } from "@/lib/predictions";
@@ -12,9 +12,21 @@ import { track } from "@/lib/analytics";
 
 // ── EdgeCalculator (inline) ────────────────────────────────────────────────────
 
+interface ExplainResult {
+  explanation: string;
+  whyMarketMightBeMistaken: string;
+  keyInsight: string;
+  riskFactor: string;
+  confidence?: "low" | "medium" | "high";
+  cached?: boolean;
+}
+
 export function EdgeCalculator({ marketProb, marketId, question }: { marketProb: number; marketId: string; question: string }) {
   const [yourPct, setYourPct] = useState(Math.round(marketProb * 100));
   const [saved, setSaved] = useState(false);
+  const [explain, setExplain] = useState<ExplainResult | null>(null);
+  const [loadingExplain, setLoadingExplain] = useState(false);
+  const [explainError, setExplainError] = useState<string | null>(null);
   const yourProb = yourPct / 100;
 
   // Fecha o loop do Brier: registra a estimativa para rastrear a própria calibração
@@ -24,6 +36,30 @@ export function EdgeCalculator({ marketProb, marketId, question }: { marketProb:
     awardPoints("prediction_made", `Previsão registrada: ${question.slice(0, 50)}`);
     track("prediction_registered", { source: "marketdetail" });
     setSaved(true);
+  }
+
+  // Liga o endpoint /explain-edge (antes órfão): a ponte entre o "eu acho" do
+  // slider e o professor — a IA explica de ONDE pode vir a vantagem e o risco.
+  async function handleExplain() {
+    if (explain) { setExplain(null); return; }
+    setLoadingExplain(true);
+    setExplainError(null);
+    try {
+      const res = await fetch("/api/ai/explain-edge", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: question, marketProb, userProb: yourProb }),
+        signal: AbortSignal.timeout(20_000),
+      });
+      if (res.status === 429) throw new Error("RATE_LIMIT");
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      setExplain(await res.json() as ExplainResult);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "erro";
+      setExplainError(msg === "RATE_LIMIT" ? "Limite de requisições — aguarde ~1 min." : "Não foi possível explicar agora. Tente novamente.");
+    } finally {
+      setLoadingExplain(false);
+    }
   }
   const ev = calcEV(yourProb, marketProb);
   const kelly = calcKelly(yourProb, marketProb);
@@ -96,6 +132,30 @@ export function EdgeCalculator({ marketProb, marketId, question }: { marketProb:
             : "Sem valor com esta estimativa — o mercado está pagando menos do que sua probabilidade justifica. Reduza o tamanho ou reavalie."}
         </p>
       </div>
+
+      {/* Ponte slider->professor: pede à IA a origem do edge (endpoint /explain-edge, antes órfão). Só quando há edge relevante. */}
+      {Math.abs(edge) >= 0.02 && (
+        <div className="space-y-2">
+          <button onClick={handleExplain} disabled={loadingExplain}
+            className="w-full flex items-center justify-center gap-2 py-2 rounded-lg bg-neon-blue/10 border border-neon-blue/20 text-xs font-medium text-neon-blue hover:bg-neon-blue/20 transition-colors disabled:opacity-50">
+            {loadingExplain
+              ? <><RefreshCw className="w-3.5 h-3.5 animate-spin" />Analisando sua vantagem...</>
+              : explain
+                ? <><Sparkles className="w-3.5 h-3.5" />Ocultar explicação</>
+                : <><Sparkles className="w-3.5 h-3.5" />Por que eu tenho essa vantagem?</>}
+          </button>
+          {explainError && <p className="text-xs text-negative/80 px-1">{explainError}</p>}
+          {explain && (
+            <div className="space-y-2 p-3 rounded-lg bg-neon-blue/5 border border-neon-blue/15 text-xs leading-relaxed">
+              <p className="text-muted-foreground">{explain.explanation}</p>
+              <div><span className="font-semibold text-foreground/70">Por que o mercado pode errar: </span><span className="text-muted-foreground">{explain.whyMarketMightBeMistaken}</span></div>
+              <div><span className="font-semibold text-gold/80">💡 Insight: </span><span className="text-muted-foreground">{explain.keyInsight}</span></div>
+              <div><span className="font-semibold text-negative/70">⚠️ Risco: </span><span className="text-muted-foreground">{explain.riskFactor}</span></div>
+              <p className="text-[10px] text-muted-foreground/50 pt-1 border-t border-border/15">Análise educacional da IA — nunca uma recomendação de aposta.{explain.cached ? " (cache)" : ""}</p>
+            </div>
+          )}
+        </div>
+      )}
       {/* Registrar a previsão — fecha o loop do Brier (rastreio de calibração no Dashboard) */}
       {saved ? (
         <div className="flex items-center gap-2 p-3 rounded-lg bg-positive/10 border border-positive/20">
