@@ -212,6 +212,9 @@ interface MarketAnalysisResult {
   keyFactors: string[];
   watchFor?: string;
   biasAlert?: string | null;
+  fairValue?: number | null;
+  edgePp?: number | null;
+  confidence?: "baixa" | "media" | "alta";
   articles: { title: string; description: string | null; url: string; source: string; publishedAt: string; urlToImage: string | null }[];
   cached: boolean;
 }
@@ -394,6 +397,21 @@ export function NewsAnalysisPanel({ item }: { item: TrendingItem }) {
 
       {result && !isRedditResult(result) && (
         <div className="mt-2 space-y-3">
+          {/* Fair Value / Edge — a saída mais decisória do cérebro (antes só aparecia no Detalhe) */}
+          {result.fairValue != null && (
+            <div className="flex items-center gap-2 flex-wrap p-2.5 rounded-lg bg-gold/5 border border-gold/20">
+              <span className="text-[9px] text-gold/70 uppercase tracking-wider">Fair Value JLB</span>
+              <span className="font-mono font-bold text-gold text-sm">{result.fairValue}%</span>
+              {result.edgePp != null && Math.abs(result.edgePp) >= 1 && (
+                <span className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded ${result.edgePp > 0 ? "bg-positive/10 text-positive" : "bg-negative/10 text-negative"}`}>
+                  {result.edgePp > 0 ? "+" : ""}{result.edgePp}pp vs mercado
+                </span>
+              )}
+              {result.confidence && (
+                <span className="ml-auto text-[9px] font-bold px-1.5 py-0.5 rounded-full border border-border/30 bg-secondary/20 text-muted-foreground uppercase">conf. {result.confidence}</span>
+              )}
+            </div>
+          )}
           {/* AI analysis */}
           <div className="p-3 rounded-lg bg-neon-blue/5 border border-neon-blue/15">
             <p className="text-[10px] font-semibold text-neon-blue/80 uppercase tracking-wider mb-1.5 flex items-center gap-1">

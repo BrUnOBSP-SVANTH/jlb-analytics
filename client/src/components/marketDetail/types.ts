@@ -44,6 +44,7 @@ export interface AiResult {
   referenceClass?: string | null;
   cerebroHits?: number;
   hasMomentum?: boolean;
+  articles?: { title: string; description: string | null; url: string; source: string; publishedAt: string; urlToImage: string | null }[];
   cached: boolean;
 }
 

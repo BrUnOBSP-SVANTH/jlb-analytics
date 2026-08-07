@@ -7,6 +7,7 @@ import { useParams, Link } from "wouter";
 import {
   ChevronLeft, BarChart2, TrendingUp, TrendingDown,
   Sparkles, Target, AlertTriangle, RefreshCw, Clock, BookOpen, Globe, CheckCircle,
+  ExternalLink, Newspaper,
 } from "lucide-react";
 import AnimatedSection from "@/components/AnimatedSection";
 import MercadosTabs from "@/components/MercadosTabs";
@@ -668,6 +669,33 @@ export default function MarketDetail() {
                       <div className="p-3 rounded-lg bg-yellow-500/5 border border-yellow-500/15 flex items-start gap-2">
                         <AlertTriangle className="w-4 h-4 text-yellow-500 shrink-0 mt-0.5" />
                         <p className="text-xs text-muted-foreground leading-relaxed">{aiAnalysis.biasAlert}</p>
+                      </div>
+                    )}
+
+                    {/* Fontes que a IA leu — cumpre a promessa "com as fontes à mostra" (antes o payload trazia, a tela descartava) */}
+                    {aiAnalysis.articles && aiAnalysis.articles.length > 0 && (
+                      <div>
+                        <p className="text-[10px] font-semibold text-foreground/60 uppercase tracking-wider mb-2 flex items-center gap-1">
+                          <Newspaper className="w-3 h-3" aria-hidden="true" />Fontes que a IA leu
+                        </p>
+                        <ul className="space-y-1.5">
+                          {aiAnalysis.articles.slice(0, 5).map((a, i) => (
+                            <li key={i}>
+                              {a.url ? (
+                                <a href={a.url} target="_blank" rel="noopener noreferrer"
+                                  className="flex items-start gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors group">
+                                  <ExternalLink className="w-3 h-3 shrink-0 mt-0.5 text-muted-foreground/50 group-hover:text-primary" aria-hidden="true" />
+                                  <span className="line-clamp-2">{a.title} <span className="text-muted-foreground/50">· {a.source}</span></span>
+                                </a>
+                              ) : (
+                                <span className="flex items-start gap-2 text-xs text-muted-foreground">
+                                  <Newspaper className="w-3 h-3 shrink-0 mt-0.5 text-muted-foreground/40" aria-hidden="true" />
+                                  <span className="line-clamp-2">{a.title} <span className="text-muted-foreground/50">· {a.source}</span></span>
+                                </span>
+                              )}
+                            </li>
+                          ))}
+                        </ul>
                       </div>
                     )}
                   </div>
