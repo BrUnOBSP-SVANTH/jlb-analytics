@@ -127,11 +127,15 @@ export default function Perfil() {
 
   // Stats from predictions
   const resolved = predictions.filter((p) => p.resolved && p.outcome !== null);
-  const correct  = resolved.filter((p) => p.outcome === true).length;
+  // Acerto = o usuário escolheu o LADO certo (>=50% = previu SIM), não se o
+  // mercado deu SIM. Antes contava só outcome===true, inflando a taxa de quem
+  // errava para NÃO em mercados que davam SIM (dado real, mas métrica falsa).
+  const correct  = resolved.filter((p) => (p.userProb >= 50) === (p.outcome === true)).length;
   const accuracy = resolved.length > 0 ? Math.round((correct / resolved.length) * 100) : null;
-  const avgBrier = resolved.length > 0
-    ? (resolved.reduce((s, p) => s + (p.brierScore ?? 0), 0) / resolved.length).toFixed(3)
-    : null;
+  // Fonte única de verdade do Brier (mesmo filtro do Dashboard): meanBrierScore
+  // ignora resolvidas com brier null, em vez de conta-las como 0 e deflacionar.
+  const mb = meanBrierScore(predictions);
+  const avgBrier = mb !== null ? mb.toFixed(3) : null;
 
   // Points towards next unlock
   const nextUnlock = [4, 5].find((lvl) => progress.totalPoints < (UNLOCK_THRESHOLDS[lvl] ?? 0));
