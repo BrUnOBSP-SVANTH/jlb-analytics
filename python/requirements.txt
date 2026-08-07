@@ -1,8 +1,4 @@
-fastapi>=0.111.0
-uvicorn[standard]>=0.29.0
-pydantic>=2.7.0
-
-# rss_collector.py + cerebro_synthesizer.py
+# rss_collector.py + cerebro_synthesizer.py + market_snapshots.py
 feedparser>=6.0.11
 httpx>=0.27.0
 python-dotenv>=1.0.0

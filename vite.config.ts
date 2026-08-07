@@ -42,14 +42,9 @@ export default defineConfig({
       deny: ["**/.*"],
     },
     proxy: {
-      // Modelos Python: vai direto para o FastAPI em :8000
-      "/api/level1": { target: "http://localhost:8000", changeOrigin: true },
-      "/api/level2": { target: "http://localhost:8000", changeOrigin: true },
-      "/api/level3": { target: "http://localhost:8000", changeOrigin: true },
-      "/api/level4": { target: "http://localhost:8000", changeOrigin: true },
-      "/api/level5": { target: "http://localhost:8000", changeOrigin: true },
-      "/api/models":  { target: "http://localhost:8000", changeOrigin: true },
-      // Todo o resto da API vai para o Express em :3001
+      // Toda a API vai ao Express em :3001 — inclui /api/level1–5, servidos pelo
+      // levels.ts (TypeScript). Antes o dev desviava os níveis para o FastAPI em
+      // :8000, criando divergência dev/prod; agora dev e prod usam o mesmo código.
       "/api":        { target: "http://localhost:3001", changeOrigin: true },
       "/ws":         { target: "http://localhost:3001", changeOrigin: true, ws: true },
     },

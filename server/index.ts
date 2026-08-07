@@ -29,7 +29,6 @@ import aiRouter, { sendWeeklyDigests } from "./routes/ai.ts";
 import { scoreAiForecasts, seedAiForecasts } from "./lib/aiForecasts.ts";
 import { runDailyEmbedBackfill } from "./lib/cerebroEmbeddings.ts";
 import stripeRouter   from "./routes/stripe.ts";
-import pythonRouter   from "./routes/python.ts";
 import manifoldRouter from "./routes/manifold.ts";
 import snapshotsRouter from "./routes/snapshots.ts";
 import duelsRouter, { resolveActiveDuels } from "./routes/duels.ts";
@@ -198,8 +197,7 @@ async function startServer() {
   app.use("/api",             newsRouter);       // /api/translate, /api/news, /api/articles
   app.use("/api/ai",          aiRouter);         // /api/ai/chat, analyze, model-predict, reddit-context, daily-briefing, fair-value
   app.use("/api/stripe",      stripeRouter);
-  app.use("/api",             levelsRouter);     // /api/level1–5/* — TypeScript nativo (sem dependência Python)
-  app.use("/api",             pythonRouter);     // /api/models/health — proxy Python como fallback
+  app.use("/api",             levelsRouter);     // /api/level1–5/* — TypeScript nativo (dev e prod)
   app.use("/api",             analyticsRouter);  // /api/track — telemetria first-party
   app.use("/api/push",        pushRouter);       // Web Push: subscribe/unsubscribe
   app.use("/api/manifold",    manifoldRouter);
