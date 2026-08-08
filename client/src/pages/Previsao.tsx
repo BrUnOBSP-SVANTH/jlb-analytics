@@ -88,6 +88,7 @@ export default function Previsao() {
   const [hotMarkets, setHotMarkets] = useState<HotMarket[]>([]);
   const [predictedQuery, setPredictedQuery] = useState("");
   const [hotTab, setHotTab] = useState<"br" | "world">("br");
+  const [anchorMarket, setAnchorMarket] = useState<HotMarket | null>(null);
 
   useEffect(() => {
     awardPoints("level_visited", "Acessou a Previsão Guiada por IA", "level_visited_previsao");
@@ -151,6 +152,10 @@ export default function Previsao() {
   async function handleAnalyze() {
     if (!question.trim()) return;
     setPredictedQuery(question);
+    // Âncora: se a pergunta casa com um mercado ao vivo, a IA recebe a prob dele
+    // como base rate coletiva — estima ancorada à realidade, não no vácuo.
+    const anchor = relatedMarkets(question, hotMarkets, 1)[0] ?? null;
+    setAnchorMarket(anchor);
     setLoading(true);
     setError(null);
     setResult(null);
@@ -160,9 +165,12 @@ export default function Previsao() {
     try {
       const { context: cerebroCtx, hits } = await fetchCerebroContext(domain, question);
       setCerebroHits(hits);
-      const enrichedContext = context.trim()
+      const marketCtx = anchor && anchor.prob != null
+        ? `\n\n[Mercado ao vivo] O mercado "${anchor.title}" precifica este evento em ${anchor.prob}% agora. Ancore-se nesse valor como base rate coletiva do mercado, mas forme sua própria estimativa e explique eventuais divergências.`
+        : "";
+      const enrichedContext = (context.trim()
         ? context.trim() + cerebroCtx
-        : cerebroCtx.trimStart();
+        : cerebroCtx.trimStart()) + marketCtx;
 
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 90_000);
@@ -263,6 +271,13 @@ export default function Previsao() {
         {/* ── Formulário ── */}
         <AnimatedSection>
           <div className="glass-card rounded-2xl p-6 space-y-6">
+
+            {/* Como isso te ajuda — valor em 3 pontos, compacto */}
+            <div className="flex flex-wrap gap-x-4 gap-y-1.5 text-[11px] text-muted-foreground -mb-1">
+              <span className="flex items-center gap-1.5"><Target className="w-3 h-3 text-gold shrink-0" aria-hidden="true" /> Um valor justo calibrado pela IA</span>
+              <span className="flex items-center gap-1.5"><Zap className="w-3 h-3 text-primary shrink-0" aria-hidden="true" /> Compare com o mercado e ache vantagem</span>
+              <span className="flex items-center gap-1.5"><BarChart2 className="w-3 h-3 text-positive shrink-0" aria-hidden="true" /> Registre e meça sua calibração</span>
+            </div>
 
             {/* Domínio */}
             <div>
@@ -521,6 +536,38 @@ export default function Previsao() {
         {/* ── Resultado ── */}
         {result && (
           <div className="space-y-6">
+
+            {/* Mercado real vs. IA — a IA foi ancorada neste mercado ao vivo (previsão mais certeira e honesta) */}
+            {anchorMarket && anchorMarket.prob != null && (
+              <AnimatedSection>
+                <div className="glass-card rounded-xl p-4 border border-gold/20 bg-gold/[0.03]">
+                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-2">Mercado real vs. IA JLB</p>
+                  <div className="flex items-center gap-4 flex-wrap">
+                    <Link href={`/apostas/${anchorMarket.id}`}>
+                      <div className="text-center cursor-pointer group">
+                        <p className="text-[9px] text-muted-foreground/70 uppercase">Mercado</p>
+                        <p className="text-2xl font-mono font-bold text-foreground group-hover:text-primary transition-colors">{anchorMarket.prob}%</p>
+                      </div>
+                    </Link>
+                    <span className="text-muted-foreground/40 text-sm">vs</span>
+                    <div className="text-center">
+                      <p className="text-[9px] text-gold/70 uppercase">IA JLB</p>
+                      <p className="text-2xl font-mono font-bold text-gold">{result.confidenceMedium}%</p>
+                    </div>
+                    {Math.abs(result.confidenceMedium - anchorMarket.prob) >= 1 && (
+                      <div className={`text-center px-2.5 py-1 rounded-lg ${result.confidenceMedium - anchorMarket.prob > 0 ? "bg-positive/10 text-positive" : "bg-negative/10 text-negative"}`}>
+                        <p className="text-[9px] uppercase opacity-70">Divergência</p>
+                        <p className="text-sm font-mono font-bold">{result.confidenceMedium - anchorMarket.prob > 0 ? "+" : ""}{result.confidenceMedium - anchorMarket.prob}pp</p>
+                      </div>
+                    )}
+                    <p className="text-[10px] text-muted-foreground flex-1 min-w-[180px] leading-relaxed">
+                      A IA foi ancorada neste mercado. Divergência não é ordem de compra — é onde investigar se você (ou o mercado) tem uma informação que o outro não tem.
+                    </p>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground/50 mt-2 truncate">Mercado: {anchorMarket.title}</p>
+                </div>
+              </AnimatedSection>
+            )}
 
             {/* Modelo escolhido */}
             <ModelCard result={result} />
