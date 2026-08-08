@@ -345,8 +345,8 @@ export default function Nivel1() {
       </div>
 
       {/* Alerta pedagógico */}
-      <div className="flex items-start gap-3 p-4 rounded-xl border border-yellow-500/30 bg-yellow-500/5">
-        <AlertCircle className="w-4 h-4 text-yellow-500 shrink-0 mt-0.5" />
+      <div className="flex items-start gap-3 p-4 rounded-xl border border-warning/30 bg-warning/5">
+        <AlertCircle className="w-4 h-4 text-warning shrink-0 mt-0.5" />
         <div className="text-xs text-muted-foreground leading-relaxed">
           <strong className="text-foreground">Antes de usar qualquer calculadora:</strong>{" "}
           odds decimais já embutem a margem da casa. Uma odd de 2.00 não significa 50% de probabilidade real —

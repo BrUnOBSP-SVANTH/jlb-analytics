@@ -666,8 +666,8 @@ export default function MarketDetail() {
 
                     {/* Bias alert */}
                     {aiAnalysis.biasAlert && (
-                      <div className="p-3 rounded-lg bg-yellow-500/5 border border-yellow-500/15 flex items-start gap-2">
-                        <AlertTriangle className="w-4 h-4 text-yellow-500 shrink-0 mt-0.5" />
+                      <div className="p-3 rounded-lg bg-warning/5 border border-warning/15 flex items-start gap-2">
+                        <AlertTriangle className="w-4 h-4 text-warning shrink-0 mt-0.5" />
                         <p className="text-xs text-muted-foreground leading-relaxed">{aiAnalysis.biasAlert}</p>
                       </div>
                     )}

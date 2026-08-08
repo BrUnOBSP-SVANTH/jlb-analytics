@@ -64,7 +64,7 @@ export function PredictionRow({
             </span>
             {pred.resolved && pred.brierScore !== null && (
               <span className="text-[10px] font-mono">
-                BS: <span className={pred.brierScore < 0.1 ? "text-positive" : pred.brierScore < 0.25 ? "text-yellow-500" : "text-negative"}>
+                BS: <span className={pred.brierScore < 0.1 ? "text-positive" : pred.brierScore < 0.25 ? "text-warning" : "text-negative"}>
                   {pred.brierScore.toFixed(3)}
                 </span>
               </span>
@@ -207,7 +207,7 @@ export function UserVsMarket({ preds }: { preds: StoredPrediction[] }) {
             <p className="text-[9px] text-muted-foreground/50">sua prob − mercado</p>
           </div>
           <div className="p-3 rounded-lg bg-secondary/30 text-center">
-            <p className={`text-xl font-bold font-mono ${streak >= 3 ? "text-positive" : streak >= 1 ? "text-yellow-500" : "text-muted-foreground"}`}>
+            <p className={`text-xl font-bold font-mono ${streak >= 3 ? "text-positive" : streak >= 1 ? "text-warning" : "text-muted-foreground"}`}>
               {streak}
             </p>
             <p className="text-[10px] text-muted-foreground mt-0.5">sequência</p>
@@ -247,13 +247,13 @@ export function UserVsMarket({ preds }: { preds: StoredPrediction[] }) {
           <div className="space-y-1.5">
             {domains.map(({ cat, bs, count }) => {
               const stars = bs < 0.08 ? 5 : bs < 0.12 ? 4 : bs < 0.16 ? 3 : bs < 0.22 ? 2 : 1;
-              const color = bs < 0.1 ? "text-positive" : bs < 0.2 ? "text-yellow-500" : "text-negative";
+              const color = bs < 0.1 ? "text-positive" : bs < 0.2 ? "text-warning" : "text-negative";
               const barW = Math.max(4, Math.min(100, (1 - bs / 0.5) * 100));
               return (
                 <div key={cat} className="flex items-center gap-3">
                   <span className="text-[11px] text-muted-foreground w-24 shrink-0">{cat}</span>
                   <div className="flex-1 h-1.5 rounded-full bg-secondary/40 overflow-hidden">
-                    <div className={`h-full rounded-full ${bs < 0.1 ? "bg-positive" : bs < 0.2 ? "bg-yellow-500" : "bg-negative"}`}
+                    <div className={`h-full rounded-full ${bs < 0.1 ? "bg-positive" : bs < 0.2 ? "bg-warning" : "bg-negative"}`}
                       style={{ width: `${barW}%` }} />
                   </div>
                   <span className={`text-[11px] font-mono font-bold ${color} w-12 text-right`}>{bs.toFixed(3)}</span>

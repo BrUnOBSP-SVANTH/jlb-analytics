@@ -21,7 +21,7 @@ export function OverroundCalc() {
 
   const marginLabel = overround < 2 ? { text: "Excelente (< 2%)", color: "text-positive" }
     : overround < 4 ? { text: "Bom (2–4%)", color: "text-neon-blue" }
-    : overround < 6 ? { text: "Aceitável (4–6%)", color: "text-yellow-500" }
+    : overround < 6 ? { text: "Aceitável (4–6%)", color: "text-warning" }
     : { text: "Alto (> 6%) — evite", color: "text-negative" };
 
   return (
@@ -69,14 +69,14 @@ export function OverroundCalc() {
         <div className="space-y-4">
           <ResultBox label="Overround"
             value={`${overround.toFixed(2)}%`}
-            color={overround > 5 ? "text-negative" : overround > 2 ? "text-yellow-500" : "text-positive"}
+            color={overround > 5 ? "text-negative" : overround > 2 ? "text-warning" : "text-positive"}
             sub="excesso acima de 100% na soma das probs implícitas" />
           <ResultBox label="Margem da casa"
             value={`${margin.toFixed(2)}%`}
-            color={margin > 5 ? "text-negative" : margin > 2 ? "text-yellow-500" : "text-positive"}
+            color={margin > 5 ? "text-negative" : margin > 2 ? "text-warning" : "text-positive"}
             sub="do volume apostado que é lucro garantido da casa" />
 
-          <div className={`p-3 rounded-xl border flex items-center gap-2 ${marginLabel.color.includes("positive") ? "bg-positive/10 border-positive/30" : marginLabel.color.includes("neon") ? "bg-neon-blue/10 border-neon-blue/30" : marginLabel.color.includes("yellow") ? "bg-yellow-500/10 border-yellow-500/30" : "bg-negative/10 border-negative/30"}`}>
+          <div className={`p-3 rounded-xl border flex items-center gap-2 ${marginLabel.color.includes("positive") ? "bg-positive/10 border-positive/30" : marginLabel.color.includes("neon") ? "bg-neon-blue/10 border-neon-blue/30" : marginLabel.color.includes("yellow") ? "bg-warning/10 border-warning/30" : "bg-negative/10 border-negative/30"}`}>
             <span className={`text-sm font-semibold ${marginLabel.color}`}>{marginLabel.text}</span>
           </div>
 

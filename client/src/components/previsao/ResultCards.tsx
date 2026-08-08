@@ -161,7 +161,7 @@ export function ModelCard({ result }: { result: PredictResult }) {
             <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">
               {level === "leigo" ? "Quão segura é essa previsão?" : "Grau de confiança por horizonte"}
             </p>
-            <span className="text-[9px] px-1.5 py-0.5 rounded bg-yellow-500/10 text-yellow-500 border border-yellow-500/20 font-medium">estimativa do modelo</span>
+            <span className="text-[9px] px-1.5 py-0.5 rounded bg-warning/10 text-warning border border-warning/20 font-medium">estimativa do modelo</span>
           </div>
           <ConfidenceBar value={result.confidenceShort}  label="Curto prazo"  />
           <ConfidenceBar value={result.confidenceMedium} label="Médio prazo"  />
@@ -349,8 +349,8 @@ export function SuperforecasterCard({ result }: { result: PredictResult }) {
 
             {/* Warning de calibração */}
             {result.calibrationWarning && (
-              <div className="flex items-start gap-2 p-3 rounded-lg bg-yellow-500/5 border border-yellow-500/20">
-                <AlertTriangle className="w-4 h-4 text-yellow-500 shrink-0 mt-0.5" />
+              <div className="flex items-start gap-2 p-3 rounded-lg bg-warning/5 border border-warning/20">
+                <AlertTriangle className="w-4 h-4 text-warning shrink-0 mt-0.5" />
                 <p className="text-xs text-muted-foreground">{result.calibrationWarning}</p>
               </div>
             )}
@@ -367,15 +367,15 @@ export function PredictionTimeline({ result }: { result: PredictResult }) {
       horizon: "Curto Prazo", desc: "dias a semanas",
       prediction: result.shortTermPrediction,
       confidence: result.confidenceShort,
-      color: result.confidenceShort >= 65 ? "border-positive/30 bg-positive/5" : "border-yellow-500/30 bg-yellow-500/5",
-      iconColor: result.confidenceShort >= 65 ? "text-positive" : "text-yellow-500",
+      color: result.confidenceShort >= 65 ? "border-positive/30 bg-positive/5" : "border-warning/30 bg-warning/5",
+      iconColor: result.confidenceShort >= 65 ? "text-positive" : "text-warning",
     },
     {
       horizon: "Médio Prazo", desc: "1 a 6 meses",
       prediction: result.mediumTermPrediction,
       confidence: result.confidenceMedium,
-      color: result.confidenceMedium >= 65 ? "border-primary/30 bg-primary/5" : "border-yellow-500/30 bg-yellow-500/5",
-      iconColor: result.confidenceMedium >= 65 ? "text-primary" : "text-yellow-500",
+      color: result.confidenceMedium >= 65 ? "border-primary/30 bg-primary/5" : "border-warning/30 bg-warning/5",
+      iconColor: result.confidenceMedium >= 65 ? "text-primary" : "text-warning",
     },
     {
       horizon: "Longo Prazo", desc: "6 meses a 5 anos",

@@ -33,7 +33,7 @@ export function BrierScoreCalc() {
   const classification = brierScore < 0.05 ? { label: "Excepcional", color: "text-neon-blue" }
     : brierScore < 0.10 ? { label: "Muito bom", color: "text-positive" }
     : brierScore < 0.15 ? { label: "Bom", color: "text-primary" }
-    : brierScore < 0.20 ? { label: "Mediano", color: "text-yellow-500" }
+    : brierScore < 0.20 ? { label: "Mediano", color: "text-warning" }
     : brierScore < 0.25 ? { label: "Fraco", color: "text-orange-500" }
     : { label: "Pior que chutar 50%", color: "text-negative" };
 
@@ -76,7 +76,7 @@ export function BrierScoreCalc() {
         <div className="space-y-4">
           <ResultBox label="Brier Score"
             value={brierScore.toFixed(4)}
-            color={brierScore < 0.20 ? "text-positive" : brierScore < 0.25 ? "text-yellow-500" : "text-negative"}
+            color={brierScore < 0.20 ? "text-positive" : brierScore < 0.25 ? "text-warning" : "text-negative"}
             sub="0 = perfeito · 0.25 = equivale a chutar 50% sempre" />
           <ResultBox label="Skill Score"
             value={`${(skillScore * 100).toFixed(1)}%`}

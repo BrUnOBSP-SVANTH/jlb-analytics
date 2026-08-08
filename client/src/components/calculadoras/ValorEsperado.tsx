@@ -79,8 +79,8 @@ export function ValorEsperado() {
           </div>
 
           {probWarning && (
-            <div className="p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/20">
-              <p className="text-xs text-yellow-500">Soma das probabilidades: {totalProb.toFixed(1)}% (deveria ser 100%)</p>
+            <div className="p-3 rounded-lg bg-warning/10 border border-warning/20">
+              <p className="text-xs text-warning">Soma das probabilidades: {totalProb.toFixed(1)}% (deveria ser 100%)</p>
             </div>
           )}
 
