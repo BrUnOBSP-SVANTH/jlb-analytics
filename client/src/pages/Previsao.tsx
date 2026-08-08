@@ -8,7 +8,7 @@
  * Endpoint: POST /api/ai/model-predict
  */
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import PageHeader from "@/components/PageHeader";
 import AnimatedSection from "@/components/AnimatedSection";
 import { useSEO } from "@/hooks/useSEO";
@@ -20,12 +20,15 @@ import {
   Brain, Zap, Clock, BarChart2, AlertCircle,
   ChevronDown, ChevronUp, BookOpen, Target,
   CheckCircle, Loader2, Lightbulb, FlaskConical, Trophy,
+  Flame, ExternalLink,
 } from "lucide-react";
 import { awardPoints } from "@/lib/userProgress";
 import { track } from "@/lib/analytics";
 import { addPrediction } from "@/lib/predictions";
 import { syncOne } from "@/lib/predictionsSync";
 import { useAuth } from "@/contexts/AuthContext";
+import { Link } from "wouter";
+import { fetchHotMarkets, relatedMarkets, type HotMarket } from "@/lib/previsaoMarkets";
 
 import type { Domain, Horizon, PredictResult } from "@/components/previsao/types";
 import {
@@ -82,10 +85,19 @@ export default function Previsao() {
   const [showKlement, setShowKlement] = useState(false);
   const [elapsed, setElapsed] = useState(0);
   const [phase, setPhase] = useState<string | null>(null);
+  const [hotMarkets, setHotMarkets] = useState<HotMarket[]>([]);
+  const [predictedQuery, setPredictedQuery] = useState("");
 
   useEffect(() => {
     awardPoints("level_visited", "Acessou a Previsão Guiada por IA", "level_visited_previsao");
   }, []);
+
+  // Mercados ao vivo alimentam as sugestões "em alta" (entrada) e os relacionados (saída).
+  useEffect(() => { void fetchHotMarkets().then(setHotMarkets).catch(() => {}); }, []);
+
+  const hotMundo  = useMemo(() => hotMarkets.filter((m) => !m.isBR).slice(0, 6), [hotMarkets]);
+  const hotBrasil = useMemo(() => hotMarkets.filter((m) => m.isBR).slice(0, 4), [hotMarkets]);
+  const related   = useMemo(() => relatedMarkets(predictedQuery, hotMarkets, 3), [predictedQuery, hotMarkets]);
 
   // Contador de tempo decorrido — esta é a previsão mais profunda do site (~40-70s),
   // então comunicar progresso é essencial para a espera não parecer travada.
@@ -136,6 +148,7 @@ export default function Previsao() {
 
   async function handleAnalyze() {
     if (!question.trim()) return;
+    setPredictedQuery(question);
     setLoading(true);
     setError(null);
     setResult(null);
@@ -248,6 +261,45 @@ export default function Previsao() {
         {/* ── Formulário ── */}
         <AnimatedSection>
           <div className="glass-card rounded-2xl p-6 space-y-6">
+
+            {/* Em alta agora — sugestões vindas dos mercados AO VIVO (nunca ficam velhas) */}
+            {(hotBrasil.length > 0 || hotMundo.length > 0) && (
+              <div className="rounded-xl border border-primary/15 bg-primary/[0.03] p-4">
+                <div className="flex items-center gap-2 mb-2 flex-wrap">
+                  <Flame className="w-4 h-4 text-warning" aria-hidden="true" />
+                  <p className="text-xs font-semibold text-foreground">Em alta agora</p>
+                  <span className="text-[10px] text-muted-foreground">clique para prever · vem dos mercados ao vivo</span>
+                </div>
+                {hotBrasil.length > 0 && (
+                  <div className="mb-2">
+                    <p className="text-[10px] text-muted-foreground/70 mb-1">🇧🇷 Brasil</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {hotBrasil.map((m) => (
+                        <button key={m.id} type="button"
+                          onClick={() => { setQuestion(m.title); track("previsao_hot_pick", { source: m.source, br: true }); }}
+                          className="text-[11px] px-2.5 py-1 rounded-lg bg-secondary/40 text-muted-foreground hover:text-foreground hover:bg-secondary/70 border border-border/20 transition-colors text-left">
+                          {m.title.length > 54 ? m.title.slice(0, 52) + "…" : m.title}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {hotMundo.length > 0 && (
+                  <div>
+                    <p className="text-[10px] text-muted-foreground/70 mb-1">🌎 Mundo</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {hotMundo.map((m) => (
+                        <button key={m.id} type="button"
+                          onClick={() => { setQuestion(m.title); track("previsao_hot_pick", { source: m.source, br: false }); }}
+                          className="text-[11px] px-2.5 py-1 rounded-lg bg-secondary/40 text-muted-foreground hover:text-foreground hover:bg-secondary/70 border border-border/20 transition-colors text-left">
+                          {m.title.length > 54 ? m.title.slice(0, 52) + "…" : m.title}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Domínio */}
             <div>
@@ -492,6 +544,40 @@ export default function Previsao() {
 
             {/* Linguagem simples + impacto */}
             <PlainLanguageCard result={result} />
+
+            {/* Mercados ao vivo relacionados ao que foi pesquisado — fecha o ciclo "previu -> aposte com lógica" */}
+            {related.length > 0 && (
+              <AnimatedSection>
+                <div className="glass-card rounded-xl p-5">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Zap className="w-4 h-4 text-gold" aria-hidden="true" />
+                    <p className="text-sm font-semibold text-foreground">Mercados ao vivo sobre isso</p>
+                  </div>
+                  <p className="text-xs text-muted-foreground mb-3">
+                    Agora que você tem a estimativa da IA, compare com o que o mercado real está pagando — é ali que pode estar a vantagem.
+                  </p>
+                  <div className="space-y-2">
+                    {related.map((m) => (
+                      <Link key={m.id} href={`/apostas/${m.id}`}>
+                        <div className="flex items-center gap-3 p-3 rounded-lg bg-secondary/20 border border-border/15 hover:border-primary/30 transition-colors cursor-pointer">
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-medium text-foreground truncate">{m.title}</p>
+                            <p className="text-[10px] text-muted-foreground mt-0.5 capitalize">{m.source}{m.isBR ? " · 🇧🇷" : ""}</p>
+                          </div>
+                          {m.prob != null && (
+                            <div className="text-center shrink-0">
+                              <p className="text-sm font-mono font-bold text-foreground">{m.prob}%</p>
+                              <p className="text-[9px] text-muted-foreground">mercado</p>
+                            </div>
+                          )}
+                          <ExternalLink className="w-3.5 h-3.5 text-muted-foreground/50 shrink-0" aria-hidden="true" />
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              </AnimatedSection>
+            )}
 
             {/* Stats rápidos */}
             <AnimatedSection>
