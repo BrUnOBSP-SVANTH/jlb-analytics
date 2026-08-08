@@ -87,6 +87,7 @@ export default function Previsao() {
   const [phase, setPhase] = useState<string | null>(null);
   const [hotMarkets, setHotMarkets] = useState<HotMarket[]>([]);
   const [predictedQuery, setPredictedQuery] = useState("");
+  const [hotTab, setHotTab] = useState<"br" | "world">("br");
 
   useEffect(() => {
     awardPoints("level_visited", "Acessou a Previsão Guiada por IA", "level_visited_previsao");
@@ -98,6 +99,7 @@ export default function Previsao() {
   const hotMundo  = useMemo(() => hotMarkets.filter((m) => !m.isBR).slice(0, 6), [hotMarkets]);
   const hotBrasil = useMemo(() => hotMarkets.filter((m) => m.isBR).slice(0, 4), [hotMarkets]);
   const related   = useMemo(() => relatedMarkets(predictedQuery, hotMarkets, 3), [predictedQuery, hotMarkets]);
+  const activeHot = hotTab === "br" ? hotBrasil : hotMundo;
 
   // Contador de tempo decorrido — esta é a previsão mais profunda do site (~40-70s),
   // então comunicar progresso é essencial para a espera não parecer travada.
@@ -262,45 +264,6 @@ export default function Previsao() {
         <AnimatedSection>
           <div className="glass-card rounded-2xl p-6 space-y-6">
 
-            {/* Em alta agora — sugestões vindas dos mercados AO VIVO (nunca ficam velhas) */}
-            {(hotBrasil.length > 0 || hotMundo.length > 0) && (
-              <div className="rounded-xl border border-primary/15 bg-primary/[0.03] p-4">
-                <div className="flex items-center gap-2 mb-2 flex-wrap">
-                  <Flame className="w-4 h-4 text-warning" aria-hidden="true" />
-                  <p className="text-xs font-semibold text-foreground">Em alta agora</p>
-                  <span className="text-[10px] text-muted-foreground">clique para prever · vem dos mercados ao vivo</span>
-                </div>
-                {hotBrasil.length > 0 && (
-                  <div className="mb-2">
-                    <p className="text-[10px] text-muted-foreground/70 mb-1">🇧🇷 Brasil</p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {hotBrasil.map((m) => (
-                        <button key={m.id} type="button"
-                          onClick={() => { setQuestion(m.title); track("previsao_hot_pick", { source: m.source, br: true }); }}
-                          className="text-[11px] px-2.5 py-1 rounded-lg bg-secondary/40 text-muted-foreground hover:text-foreground hover:bg-secondary/70 border border-border/20 transition-colors text-left">
-                          {m.title.length > 54 ? m.title.slice(0, 52) + "…" : m.title}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                {hotMundo.length > 0 && (
-                  <div>
-                    <p className="text-[10px] text-muted-foreground/70 mb-1">🌎 Mundo</p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {hotMundo.map((m) => (
-                        <button key={m.id} type="button"
-                          onClick={() => { setQuestion(m.title); track("previsao_hot_pick", { source: m.source, br: false }); }}
-                          className="text-[11px] px-2.5 py-1 rounded-lg bg-secondary/40 text-muted-foreground hover:text-foreground hover:bg-secondary/70 border border-border/20 transition-colors text-left">
-                          {m.title.length > 54 ? m.title.slice(0, 52) + "…" : m.title}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-
             {/* Domínio */}
             <div>
               <p className="text-xs text-muted-foreground uppercase tracking-wider mb-3 font-medium">
@@ -325,17 +288,43 @@ export default function Previsao() {
               <p className="text-[11px] text-muted-foreground mt-2 mb-2">
                 Exemplos em <strong>{selectedDomain.label}</strong>: {selectedDomain.examples}
               </p>
-              <div className="flex flex-wrap gap-1.5">
-                {selectedDomain.questions.map((q) => (
-                  <button
-                    key={q}
-                    type="button"
-                    onClick={() => setQuestion(q)}
-                    className="text-[11px] px-2.5 py-1 rounded-lg bg-secondary/40 text-muted-foreground hover:text-foreground hover:bg-secondary/70 border border-border/20 transition-colors text-left"
-                  >
-                    {q.length > 60 ? q.slice(0, 58) + "…" : q}
-                  </button>
-                ))}
+
+              {/* Em alta agora — uma faixa: toggle 🇧🇷/🌎 + rolagem horizontal, chips com a % do mercado.
+                  Vem dos mercados ao vivo (nunca fica velho); offline, cai nos exemplos do domínio. */}
+              <div>
+                <div className="flex items-center justify-between gap-2 mb-1.5 flex-wrap">
+                  <div className="flex items-center gap-1.5">
+                    <Flame className="w-3.5 h-3.5 text-warning" aria-hidden="true" />
+                    <p className="text-[11px] font-semibold text-foreground uppercase tracking-wider">Em alta agora</p>
+                  </div>
+                  {hotMarkets.length > 0 && (
+                    <div className="flex rounded-lg border border-border/30 overflow-hidden text-[10px] font-medium shrink-0">
+                      <button type="button" onClick={() => setHotTab("br")} className={`px-2.5 py-1 transition-colors ${hotTab === "br" ? "bg-primary/15 text-primary" : "text-muted-foreground hover:text-foreground"}`}>🇧🇷 Brasil</button>
+                      <button type="button" onClick={() => setHotTab("world")} className={`px-2.5 py-1 transition-colors ${hotTab === "world" ? "bg-primary/15 text-primary" : "text-muted-foreground hover:text-foreground"}`}>🌎 Mundo</button>
+                    </div>
+                  )}
+                </div>
+                <div className="flex gap-1.5 overflow-x-auto scrollbar-none pb-1">
+                  {hotMarkets.length === 0 ? (
+                    selectedDomain.questions.map((q) => (
+                      <button key={q} type="button" onClick={() => setQuestion(q)}
+                        className="shrink-0 max-w-[260px] truncate text-[11px] px-3 py-1.5 rounded-full bg-secondary/40 border border-border/25 text-muted-foreground hover:text-foreground hover:border-primary/40 transition-colors">
+                        {q}
+                      </button>
+                    ))
+                  ) : activeHot.length > 0 ? (
+                    activeHot.map((m) => (
+                      <button key={m.id} type="button"
+                        onClick={() => { setQuestion(m.title); track("previsao_hot_pick", { source: m.source, br: hotTab === "br" }); }}
+                        className="group shrink-0 max-w-[240px] flex items-center gap-2 pl-3 pr-2.5 py-1.5 rounded-full bg-secondary/40 border border-border/25 hover:border-primary/40 hover:bg-secondary/60 transition-colors">
+                        <span className="text-[11px] text-muted-foreground group-hover:text-foreground truncate">{m.title}</span>
+                        {m.prob != null && <span className="text-[10px] font-mono font-bold text-foreground/70 shrink-0">{m.prob}%</span>}
+                      </button>
+                    ))
+                  ) : (
+                    <p className="text-[11px] text-muted-foreground/60 py-1.5">Nenhum mercado nesta faixa agora — toque em {hotTab === "br" ? "🌎 Mundo" : "🇧🇷 Brasil"}.</p>
+                  )}
+                </div>
               </div>
 
               {/* Atalho Klement — só em Esportes */}
