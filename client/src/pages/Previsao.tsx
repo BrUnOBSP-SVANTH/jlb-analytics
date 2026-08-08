@@ -97,8 +97,8 @@ export default function Previsao() {
   // Mercados ao vivo alimentam as sugestões "em alta" (entrada) e os relacionados (saída).
   useEffect(() => { void fetchHotMarkets().then(setHotMarkets).catch(() => {}); }, []);
 
-  const hotMundo  = useMemo(() => hotMarkets.filter((m) => !m.isBR).slice(0, 6), [hotMarkets]);
-  const hotBrasil = useMemo(() => hotMarkets.filter((m) => m.isBR).slice(0, 4), [hotMarkets]);
+  const hotMundo  = useMemo(() => hotMarkets.filter((m) => !m.isBR).slice(0, 14), [hotMarkets]);
+  const hotBrasil = useMemo(() => hotMarkets.filter((m) => m.isBR).slice(0, 8), [hotMarkets]);
   const related   = useMemo(() => relatedMarkets(predictedQuery, hotMarkets, 3), [predictedQuery, hotMarkets]);
   const activeHot = hotTab === "br" ? hotBrasil : hotMundo;
 

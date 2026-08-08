@@ -13,7 +13,7 @@ export interface HotMarket {
   title: string;
   prob: number | null; // 0-100 quando disponível
   volume: number;
-  source: "polymarket" | "kalshi";
+  source: "polymarket" | "kalshi" | "manifold";
   isBR: boolean;
 }
 
@@ -23,6 +23,8 @@ const BR_TERMS = [
   "petrobras", "petr4", "ibovespa", "copom", "pix", "brasileir", "flamengo",
   "corinthians", "palmeiras", "são paulo", "sao paulo", "cvm", "congresso",
   "stf", "datafolha", "eleic", "eleiç", "dólar", "dolar", "vale3", "itub",
+  "neymar", "vini jr", "copa do mundo", "libertadores", "senado", "supremo",
+  "haddad", "tarcisio", "tarcísio", "nubank", "itaú", "itau", "câmbio", "cambio",
 ];
 
 function isBRtext(t: string): boolean {
@@ -47,9 +49,35 @@ function polyProb(m: PolyBet): number | null {
   return null;
 }
 
-/** Busca os mercados ao vivo, normaliza e ordena por volume (proxy de "em alta"). */
+interface ManifoldRaw { id: string; question?: string; probability?: number; volume?: number }
+
+/** Manifold (play-money, MUITA variedade) — só p/ os CHIPS de sugestão, não p/ os
+ *  relacionados/âncora, que linkam ao /apostas e não têm detalhe de Manifold. */
+async function fetchManifoldHot(): Promise<HotMarket[]> {
+  try {
+    const r = await fetch("/api/manifold/markets?limit=60");
+    if (!r.ok) return [];
+    const j = (await r.json()) as { markets?: ManifoldRaw[] };
+    return (j.markets ?? []).map((m) => ({
+      id: `manifold-${m.id}`,
+      title: m.question ?? "",
+      prob: null, // play-money: não exibimos a prob como se fosse sinal de mercado real
+      volume: num(m.volume),
+      source: "manifold" as const,
+      isBR: isBRtext(m.question ?? ""),
+    }));
+  } catch {
+    return [];
+  }
+}
+
+/** Busca os mercados ao vivo de 3 fontes e intercala real-money com Manifold (2:1)
+ *  p/ MAIS variedade de opções "em alta". Dedup por título. */
 export async function fetchHotMarkets(): Promise<HotMarket[]> {
-  const { polymarket, kalshi } = await getAllMarkets<PolyBet, KalshiMarket>();
+  const [{ polymarket, kalshi }, manifold] = await Promise.all([
+    getAllMarkets<PolyBet, KalshiMarket>(),
+    fetchManifoldHot(),
+  ]);
 
   const poly: HotMarket[] = polymarket
     .filter((m) => m.active && !m.closed)
@@ -69,16 +97,28 @@ export async function fetchHotMarkets(): Promise<HotMarket[]> {
     isBR: isBRtext(m.title ?? ""),
   }));
 
-  // Dedup por título (eventos do Polymarket repetem) e ordena por volume.
+  // Real-money (Poly + Kalshi) por volume; Manifold já vem por relevância da API.
+  const realMoney = [...poly, ...kal].sort((a, b) => b.volume - a.volume);
+
+  // Intercala 2 real-money : 1 Manifold — garante variedade sem afogar em play-money
+  // (o volume do Manifold é em outra escala e afundaria num sort por volume).
+  const combined: HotMarket[] = [];
+  let ri = 0;
+  let mi = 0;
+  while (ri < realMoney.length || mi < manifold.length) {
+    if (realMoney[ri]) combined.push(realMoney[ri++]);
+    if (realMoney[ri]) combined.push(realMoney[ri++]);
+    if (manifold[mi]) combined.push(manifold[mi++]);
+  }
+
+  // Dedup por título (eventos repetem entre/dentro das fontes).
   const seen = new Set<string>();
-  return [...poly, ...kal]
-    .filter((m) => {
-      const k = m.title.toLowerCase().slice(0, 50);
-      if (m.title.length <= 8 || seen.has(k)) return false;
-      seen.add(k);
-      return true;
-    })
-    .sort((a, b) => b.volume - a.volume);
+  return combined.filter((m) => {
+    const k = m.title.toLowerCase().slice(0, 50);
+    if (m.title.length <= 8 || seen.has(k)) return false;
+    seen.add(k);
+    return true;
+  });
 }
 
 // ── Match de mercados relacionados ao que o usuário pesquisou ──
@@ -101,6 +141,7 @@ export function relatedMarkets(query: string, markets: HotMarket[], n = 3): HotM
   const q = tokens(query);
   if (q.size === 0) return [];
   return markets
+    .filter((m) => m.source !== "manifold") // relacionados/âncora linkam pro /apostas — sem Manifold (play-money, sem detalhe)
     .map((m) => {
       const t = tokens(m.title);
       let score = 0;
