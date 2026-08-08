@@ -4,7 +4,7 @@
  */
 import { useState, useEffect } from "react";
 import AnimatedSection from "@/components/AnimatedSection";
-import { BarChart2, CheckCircle } from "lucide-react";
+import { BarChart2, CheckCircle, Scale } from "lucide-react";
 import { SF_STEPS } from "@/components/previsao/ResultCards";
 
 export function SuperforecasterGuide() {
@@ -73,6 +73,10 @@ interface TrackRecordData {
   beatMarketPct: number | null;
   avgAbsEdge: number | null;
   skillVsMarket: number | null;
+  hitRate: number | null;          // taxa de acerto direcional da IA (migration 018)
+  marketHitRate: number | null;    // idem para o mercado (baseline)
+  directionalCount: number;
+  settledCount: number;            // quantas resolvidas pelo resultado oficial
 }
 
 export function AiTrackRecord() {
@@ -117,14 +121,37 @@ export function AiTrackRecord() {
   }
 
   const beatMarket = data.skillVsMarket !== null && data.skillVsMarket > 0;
+  const hitBeatsMarket = data.hitRate !== null && data.marketHitRate !== null && data.hitRate >= data.marketHitRate;
   return (
     <AnimatedSection>
       <div className="glass-card rounded-xl p-5 border border-positive/20 bg-positive/3">
-        <div className="flex items-center gap-2 mb-3">
+        <div className="flex items-center gap-2 mb-4">
           <CheckCircle className="w-4 h-4 text-positive" />
           <p className="text-sm font-semibold text-foreground">Track Record verificado da nossa IA</p>
-          <span className="ml-auto text-[10px] text-muted-foreground/60">{data.resolvedCount} previsões resolvidas</span>
+          <span className="ml-auto text-[10px] text-muted-foreground/60">
+            {data.resolvedCount} resolvidas{data.settledCount > 0 ? ` · ${data.settledCount} pelo resultado oficial` : ""}
+          </span>
         </div>
+
+        {/* Destaque: taxa de acerto do site vs. mercado (o número intuitivo) */}
+        {data.hitRate !== null && (
+          <div className="flex items-end gap-5 mb-4 pb-4 border-b border-border/15">
+            <div className="shrink-0">
+              <p className="numeric-hero text-5xl text-positive leading-none">{data.hitRate}%</p>
+              <p className="text-[10px] text-muted-foreground mt-1.5">taxa de acerto<br />da nossa IA</p>
+            </div>
+            <p className="flex-1 text-xs text-muted-foreground leading-relaxed">
+              Em {data.directionalCount} previsões com lado definido, a IA acertou a direção
+              (SIM/NÃO) <span className="text-foreground font-semibold">{data.hitRate}%</span> das vezes.
+              {data.marketHitRate !== null && (
+                <> O mercado, no mesmo conjunto, acertou <span className="text-foreground font-semibold">{data.marketHitRate}%</span>
+                {" — "}{hitBeatsMarket ? "empatamos ou superamos o consenso." : "ainda atrás do consenso, e mostramos isso mesmo assim."}</>
+              )}
+            </p>
+          </div>
+        )}
+
+        {/* Calibração fina (rigor: Brier Score) */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <div className="text-center">
             <p className="text-2xl font-mono font-bold text-gold">{data.aiBrier?.toFixed(3)}</p>
@@ -146,10 +173,72 @@ export function AiTrackRecord() {
           </div>
         </div>
         <p className="text-[10px] text-muted-foreground/60 mt-3 text-center">
-          {beatMarket
-            ? `A IA da JLB está mais calibrada que o mercado (Brier menor = melhor) em previsões já resolvidas.`
-            : `Comparação honesta: Brier menor = mais calibrado. Atualizado conforme mercados resolvem.`}
+          Taxa de acerto = direção certa (SIM/NÃO). Brier = calibração fina (menor = melhor).
+          Tudo comparado ao resultado real da plataforma quando o mercado resolve — sem cherry-picking.
         </p>
+      </div>
+    </AnimatedSection>
+  );
+}
+
+// ── Comparador: nossa previsão × mercado × resultado real ──────────────────────
+// A tela que o usuário pediu: cada previsão da IA confrontada, caso a caso, com o
+// que a plataforma liquidou de verdade. Badge "oficial" vs "inferido" deixa claro
+// de onde veio o resultado — transparência total.
+
+interface ResolvedItem {
+  marketId: string; source: string; title: string; category: string | null;
+  aiProb: number; marketProb: number; outcome: boolean;
+  aiHit: boolean; marketHit: boolean; official: boolean; resolvedAt: string | null;
+}
+
+export function ResultComparator({ limit = 8 }: { limit?: number }) {
+  const [items, setItems] = useState<ResolvedItem[] | null>(null);
+
+  useEffect(() => {
+    fetch(`/api/ai/resolved?limit=${limit}`)
+      .then((r) => r.ok ? r.json() as Promise<{ available: boolean; items: ResolvedItem[] }> : null)
+      .then((d) => { if (d?.available) setItems(d.items); })
+      .catch(() => {});
+  }, [limit]);
+
+  if (!items || items.length === 0) return null;
+
+  const hits = items.filter((i) => i.aiHit).length;
+
+  return (
+    <AnimatedSection>
+      <div className="panel p-5">
+        <div className="flex items-center gap-2 mb-1">
+          <Scale className="w-4 h-4 text-neon-blue shrink-0" />
+          <p className="text-sm font-semibold text-foreground">Comparador: o que dissemos × o que aconteceu</p>
+          <span className="ml-auto text-[10px] text-muted-foreground/60">{hits}/{items.length} acertos recentes</span>
+        </div>
+        <p className="text-[11px] text-muted-foreground mb-4">
+          Cada previsão da IA confrontada com o resultado que a plataforma liquidou de verdade.
+        </p>
+        <div className="space-y-2">
+          {items.map((it) => (
+            <div key={`${it.source}-${it.marketId}`} className="flex items-center gap-3 p-3 rounded-lg border border-border/15 bg-secondary/10">
+              <span className={`shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${it.aiHit ? "bg-positive/15 text-positive" : "bg-negative/15 text-negative"}`}>
+                {it.aiHit ? "✓" : "✗"}
+              </span>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs text-foreground truncate">{it.title}</p>
+                <div className="flex flex-wrap items-center gap-x-2.5 gap-y-0.5 mt-1 text-[10px] text-muted-foreground">
+                  <span>IA: <span className="text-foreground font-semibold">{it.aiProb}%</span> SIM</span>
+                  <span className="text-muted-foreground/40">·</span>
+                  <span>Mercado: {it.marketProb}%</span>
+                  <span className="text-muted-foreground/40">·</span>
+                  <span>Real: <span className={it.outcome ? "text-positive font-semibold" : "text-negative font-semibold"}>{it.outcome ? "SIM" : "NÃO"}</span></span>
+                </div>
+              </div>
+              <span className={`shrink-0 text-[8px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded-full border ${it.official ? "border-positive/25 bg-positive/10 text-positive/90" : "border-border/25 bg-secondary/20 text-muted-foreground/70"}`}>
+                {it.official ? "oficial" : "inferido"}
+              </span>
+            </div>
+          ))}
+        </div>
       </div>
     </AnimatedSection>
   );

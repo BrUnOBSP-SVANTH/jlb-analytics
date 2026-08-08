@@ -35,7 +35,7 @@ import {
   ModelCard, SuperforecasterCard,
   PredictionTimeline, PlainLanguageCard,
 } from "@/components/previsao/ResultCards";
-import { SuperforecasterGuide, AiTrackRecord } from "@/components/previsao/GuideAndTrackRecord";
+import { SuperforecasterGuide, AiTrackRecord, ResultComparator } from "@/components/previsao/GuideAndTrackRecord";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -264,6 +264,9 @@ export default function Previsao() {
 
         {/* ── Track record verificado da IA ── */}
         <AiTrackRecord />
+
+        {/* ── Comparador: nossa previsão × mercado × resultado real ── */}
+        <ResultComparator />
 
         {/* ── Guia Superforecaster ── */}
         <SuperforecasterGuide />

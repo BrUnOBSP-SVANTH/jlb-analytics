@@ -286,6 +286,11 @@ router.get("/track-record", async (_req, res) => {
     const rows = await r.json() as Array<Record<string, number | null>>;
     const t = rows[0] ?? {};
     const resolvedCount = Number(t.resolved_count ?? 0);
+    // Taxa de acerto DIRECIONAL (colunas da migration 018; ausentes antes dela → 0 → null).
+    const directionalCount = Number(t.directional_count ?? 0);
+    const hitCount = Number(t.hit_count ?? 0);
+    const marketDirectionalCount = Number(t.market_directional_count ?? 0);
+    const marketHitCount = Number(t.market_hit_count ?? 0);
     const result = {
       available: true,
       resolvedCount,
@@ -297,11 +302,57 @@ router.get("/track-record", async (_req, res) => {
       avgAbsEdge: t.avg_abs_edge !== null ? Number(t.avg_abs_edge) : null,
       skillVsMarket: (t.ai_brier !== null && t.market_brier !== null && Number(t.market_brier) > 0)
         ? Number((1 - Number(t.ai_brier) / Number(t.market_brier)).toFixed(3)) : null,
+      // "Taxa de acerto do nosso site": acertos direcionais / previsões com lado.
+      hitRate: directionalCount > 0 ? Math.round((hitCount / directionalCount) * 100) : null,
+      marketHitRate: marketDirectionalCount > 0 ? Math.round((marketHitCount / marketDirectionalCount) * 100) : null,
+      directionalCount,
+      settledCount: Number(t.settled_count ?? 0),
     };
     setCache("ai-track-record", result, 600);
     res.json(result);
   } catch {
     res.json({ available: false });
+  }
+});
+
+// ── Comparador: previsões já resolvidas (nossa previsão × mercado × resultado real) ──
+// Alimenta a tela onde o usuário confere, caso a caso, o que a IA disse contra o
+// que a plataforma liquidou de verdade. `official` distingue settlement real de
+// inferência por preço — transparência total, sem cherry-picking.
+router.get("/resolved", async (req, res) => {
+  if (!SUPABASE_URL || !SUPABASE_KEY) return res.json({ available: false, items: [] });
+  const limit = Math.min(Math.max(parseInt(String(req.query.limit ?? "12"), 10) || 12, 1), 50);
+  const cacheKey = `ai-resolved-${limit}`;
+  const cached = getCache<object>(cacheKey);
+  if (cached) return res.json({ ...cached, cached: true });
+  try {
+    const r = await fetch(
+      `${SUPABASE_URL}/rest/v1/ai_forecasts?resolved=eq.true&select=market_id,source,title,category,ai_fair_value,market_prob,outcome,resolution_source,resolved_at&order=resolved_at.desc&limit=${limit}`,
+      { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }, signal: AbortSignal.timeout(8_000) },
+    );
+    if (!r.ok) return res.json({ available: false, items: [] });
+    const rows = await r.json() as Array<{
+      market_id: string; source: string; title: string; category: string | null;
+      ai_fair_value: number | string; market_prob: number | string;
+      outcome: boolean; resolution_source: string | null; resolved_at: string | null;
+    }>;
+    const items = rows.map((row) => {
+      const aiProb = Math.round(Number(row.ai_fair_value));
+      const marketProb = Math.round(Number(row.market_prob));
+      const outcome = row.outcome === true;
+      return {
+        marketId: row.market_id, source: row.source, title: row.title, category: row.category,
+        aiProb, marketProb, outcome,
+        aiHit: aiProb !== 50 && (aiProb > 50) === outcome,      // a IA acertou o lado?
+        marketHit: marketProb !== 50 && (marketProb > 50) === outcome,
+        official: row.resolution_source === "settled",
+        resolvedAt: row.resolved_at,
+      };
+    });
+    setCache(cacheKey, { available: true, items }, 600);
+    res.json({ available: true, items });
+  } catch {
+    res.json({ available: false, items: [] });
   }
 });
 

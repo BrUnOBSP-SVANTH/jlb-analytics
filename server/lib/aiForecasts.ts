@@ -9,6 +9,7 @@ import { clampFairValue } from "./ai/guardrails.ts";
 import { extractJson } from "./extractJson.ts";
 import { getCache, setCache } from "./cache.ts";
 import { fetchCerebroContext } from "./cerebro.ts";
+import { fetchRealOutcome, stripPrefix } from "./resolveOutcomes.ts";
 import { log } from "./log.ts";
 
 // ── Auto-calibração: o viés medido nas resolvidas volta para o prompt ────────
@@ -120,50 +121,88 @@ export async function getSnapshotExtremes(): Promise<Map<string, boolean>> {
   } catch { return map; }
 }
 
-/** Resolve previsões da IA contra mercados que atingiram preço extremo (≥97 / ≤3). */
-export async function scoreAiForecasts(): Promise<{ scored: number }> {
-  if (!SUPABASE_URL || !SUPABASE_KEY) return { scored: 0 };
+/**
+ * Resolve previsões da IA pelo RESULTADO OFICIAL da plataforma (settlement).
+ * Prioridade de fontes, da mais confiável para a menos:
+ *   1. Settlement real (Kalshi `result` / Polymarket UMA) via fetchRealOutcome —
+ *      a verdade que paga as posições. Registrado como resolution_source='settled'.
+ *   2. Fallback SÓ quando a plataforma ainda não liquidou: preço extremo (≥97/≤3)
+ *      ao vivo ou no histórico de snapshots → 'inferred' (transparente na UI).
+ * A checagem oficial é limitada por execução (rate limit das APIs públicas); o
+ * cron de 6h avança a fila do mais antigo (mais provável já resolvido) ao recente.
+ */
+const MAX_SETTLE_CHECKS = 40;  // chamadas externas de settlement por execução
+
+export async function scoreAiForecasts(): Promise<{ scored: number; settled: number }> {
+  if (!SUPABASE_URL || !SUPABASE_KEY) return { scored: 0, settled: 0 };
   try {
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/ai_forecasts?resolved=eq.false&select=id,market_id,source&limit=500`, {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/ai_forecasts?resolved=eq.false&select=id,market_id,source&order=created_at.asc&limit=500`, {
       headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` },
       signal: AbortSignal.timeout(8_000),
     });
-    if (!res.ok) return { scored: 0 };
+    if (!res.ok) return { scored: 0, settled: 0 };
     const pending = await res.json() as Array<{ id: string; market_id: string; source: string }>;
-    if (pending.length === 0) return { scored: 0 };
+    if (pending.length === 0) return { scored: 0, settled: 0 };
 
-    // Fonte 1: preço atual (mercados ainda ativos no cache do servidor)
-    const priceMap = getLiveMarketPrices();
-    // Fonte 2: histórico de snapshots (captura mercados que já fecharam em extremo)
-    const extremeMap = await getSnapshotExtremes();
-    if (priceMap.size === 0 && extremeMap.size === 0) return { scored: 0 };
+    // Fontes de FALLBACK — só entram quando a plataforma ainda não liquidou.
+    const priceMap = getLiveMarketPrices();          // preço ao vivo (cache do servidor)
+    const extremeMap = await getSnapshotExtremes();  // extremos no histórico de snapshots
 
-    let scored = 0;
+    const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+    let scored = 0, settled = 0, settleChecks = 0;
+
     for (const f of pending) {
       let outcome: boolean | null = null;
-      // Fonte 1: preço ao vivo (chave com prefixo poly-/kalshi-)
-      const live = priceMap.get(f.market_id);
-      if (live !== undefined) {
-        if (live >= 97) outcome = true;
-        else if (live <= 3) outcome = false;
+      let resolutionSource: "settled" | "inferred" | null = null;
+
+      // Fonte 1 (autoritativa): resultado OFICIAL da plataforma, com orçamento por execução.
+      if (settleChecks < MAX_SETTLE_CHECKS && (f.source === "polymarket" || f.source === "kalshi")) {
+        settleChecks++;
+        const real = await fetchRealOutcome(f.source, f.market_id);
+        if (real) { outcome = real.outcome; resolutionSource = "settled"; }
+        await sleep(150);  // throttle gentil com as APIs públicas
       }
-      // Fonte 2: histórico (chave `${source}:${rawId}` sem prefixo)
+
+      // Fonte 2 (fallback): preço extremo ao vivo.
       if (outcome === null) {
-        const rawId = f.market_id.replace(/^(poly-|kalshi-|manifold-)/, "");
-        const hist = extremeMap.get(`${f.source}:${rawId}`);
-        if (hist !== undefined) outcome = hist;
+        const live = priceMap.get(f.market_id);
+        if (live !== undefined) {
+          if (live >= 97) { outcome = true; resolutionSource = "inferred"; }
+          else if (live <= 3) { outcome = false; resolutionSource = "inferred"; }
+        }
+      }
+      // Fonte 3 (fallback): extremo no histórico de snapshots (chave sem prefixo).
+      if (outcome === null) {
+        const hist = extremeMap.get(`${f.source}:${stripPrefix(f.market_id)}`);
+        if (hist !== undefined) { outcome = hist; resolutionSource = "inferred"; }
       }
       if (outcome === null) continue;
-      await fetch(`${SUPABASE_URL}/rest/v1/ai_forecasts?id=eq.${f.id}`, {
-        method: "PATCH",
-        headers: supaWriteHeaders(),
-        body: JSON.stringify({ resolved: true, outcome, resolved_at: new Date().toISOString() }),
-        signal: AbortSignal.timeout(6_000),
-      }).catch(() => {});
+
+      await patchResolution(f.id, outcome, resolutionSource!);
       scored++;
+      if (resolutionSource === "settled") settled++;
     }
-    return { scored };
-  } catch { return { scored: 0 }; }
+    return { scored, settled };
+  } catch { return { scored: 0, settled: 0 }; }
+}
+
+/**
+ * Marca uma previsão como resolvida. Grava `resolution_source` quando a coluna
+ * existe (migration 018); antes dela, o PostgREST responde 400/PGRST204 e
+ * refazemos o PATCH sem o campo — funciona antes e depois da migration, sem env
+ * flag (mesmo auto-heal do `model` em logAiForecast).
+ */
+async function patchResolution(id: string, outcome: boolean, resolutionSource: string): Promise<void> {
+  const patch = (body: Record<string, unknown>) =>
+    fetch(`${SUPABASE_URL}/rest/v1/ai_forecasts?id=eq.${id}`, {
+      method: "PATCH", headers: supaWriteHeaders(),
+      body: JSON.stringify(body), signal: AbortSignal.timeout(6_000),
+    });
+  const base = { resolved: true, outcome, resolved_at: new Date().toISOString() };
+  try {
+    const res = await patch({ ...base, resolution_source: resolutionSource });
+    if (res.status === 400 && /PGRST204|resolution_source/i.test(await res.text())) await patch(base);
+  } catch { /* fire-and-forget */ }
 }
 
 // ── Seed de previsões da IA ───────────────────────────────────────────────────
