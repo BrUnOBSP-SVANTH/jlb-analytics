@@ -15,6 +15,7 @@ import { lazy, Suspense, useLayoutEffect } from "react";
 import { usePWA } from "./hooks/usePWA";
 import OnboardingTour from "./components/OnboardingTour";
 import ChatWidget from "./components/chat/ChatWidget";
+import ProgressSync from "./components/ProgressSync";
 
 const Login         = lazy(() => import("./pages/Login"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
@@ -136,6 +137,7 @@ function App() {
           <TooltipProvider>
             <Toaster />
             <ScrollToTop />
+            <ProgressSync />
             <Router />
             <PWAInstallBanner />
             <OnboardingTour />

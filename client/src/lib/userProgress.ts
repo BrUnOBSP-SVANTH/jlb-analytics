@@ -85,6 +85,12 @@ function persist(p: UserProgress): void {
   try { localStorage.setItem(KEY, JSON.stringify(p)); } catch { /* quota exceeded — ignore */ }
 }
 
+/** Sobrescreve o progresso local. Usado pela camada de sync (progressSync) ao
+ *  mesclar o estado da nuvem com o local. */
+export function saveProgress(p: UserProgress): void {
+  persist(p);
+}
+
 // ── Core ──────────────────────────────────────────────────────────────────────
 
 function todayKey(): string {

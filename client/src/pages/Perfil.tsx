@@ -15,6 +15,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { loadProgress, UNLOCK_THRESHOLDS, type ActivityType } from "@/lib/userProgress";
 import { loadPredictions, meanBrierScore, skillScore } from "@/lib/predictions";
 import { pullFromSupabase } from "@/lib/predictionsSync";
+import { pullProgress } from "@/lib/progressSync";
 import {
   LogIn, Star, Trophy, Target, CheckCircle, X as XIcon,
   Zap, Calculator, Brain, BarChart2, TrendingUp, ArrowRight,
@@ -120,6 +121,9 @@ export default function Perfil() {
     if (!userId) return;
     void pullFromSupabase(userId).then((ok) => {
       if (ok) { setPredictions(loadPredictions()); setProgress(loadProgress()); }
+    });
+    void pullProgress(userId).then((ok) => {
+      if (ok) setProgress(loadProgress());
     });
   }, [userId]);
 

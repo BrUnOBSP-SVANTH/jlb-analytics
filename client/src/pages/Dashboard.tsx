@@ -20,7 +20,8 @@ import {
   detectResolutions,
   type StoredPrediction, type ResolutionSuggestion,
 } from "@/lib/predictions";
-import { awardPoints } from "@/lib/userProgress";
+import { awardPoints, loadProgress } from "@/lib/userProgress";
+import { pullProgress } from "@/lib/progressSync";
 import { pullFromSupabase, pushToSupabase, syncOne, deleteOne } from "@/lib/predictionsSync";
 import ContaTabs from "@/components/ContaTabs";
 import SignupNudge from "@/components/SignupNudge";
@@ -468,19 +469,22 @@ export default function Dashboard() {
   useSEO("Meu Dashboard", "Suas previsões, calibração vs. mercado, Brier Score e evolução como forecaster.");
   const { user, loading: authLoading } = useAuth();
 
+  // Pontos sincronizados: pull no mount + reage a ganhos e ao sync cross-device.
+  const [userPoints, setUserPoints] = useState(() => loadProgress().totalPoints);
+  useEffect(() => {
+    if (!user) return;
+    const refresh = () => setUserPoints(loadProgress().totalPoints);
+    void pullProgress(user.id).then((ok) => { if (ok) refresh(); });
+    window.addEventListener("jlb:points", refresh);
+    return () => window.removeEventListener("jlb:points", refresh);
+  }, [user]);
+
   if (authLoading) return <DashboardSkeleton />;
   if (!user) return <GuestView />;
 
   const preds = loadPredictions();
   const ss = skillScore(preds);
   const bs = meanBrierScore(preds);
-
-  // Points from userProgress
-  let userPoints = 0;
-  try {
-    const raw = localStorage.getItem("jlb_progress_v1");
-    if (raw) userPoints = (JSON.parse(raw) as { totalPoints?: number }).totalPoints ?? 0;
-  } catch { /* ignore */ }
 
   return (
     <div>
