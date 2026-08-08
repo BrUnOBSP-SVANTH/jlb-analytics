@@ -195,7 +195,7 @@ async function startServer() {
   app.use("/api/kalshi",      kalshiRouter);
   app.use("/api/reddit",      redditRouter);
   app.use("/api",             newsRouter);       // /api/translate, /api/news, /api/articles
-  app.use("/api/ai",          aiRouter);         // /api/ai/chat, analyze, model-predict, reddit-context, daily-briefing, fair-value
+  app.use("/api/ai",          aiRouter);         // /api/ai/chat, analyze, model-predict, reddit-context, daily-briefing
   app.use("/api/stripe",      stripeRouter);
   app.use("/api",             levelsRouter);     // /api/level1–5/* — TypeScript nativo (dev e prod)
   app.use("/api",             analyticsRouter);  // /api/track — telemetria first-party

@@ -16,7 +16,6 @@ import { runChat, chatGuards, type ChatRequest } from "../lib/ai/chat.ts";
 import { runMarketAnalysis, ANALYZE_CACHE_KEY, type AnalyzeParams } from "../lib/ai/marketAnalysis.ts";
 import { runModelPredict, PREDICT_CACHE_KEY, type PredictParams } from "../lib/ai/modelPredict.ts";
 import { dailyBriefingHandler } from "../lib/ai/briefing.ts";
-import { fairValueHandler } from "../lib/ai/fairValue.ts";
 import { portfolioHandler } from "../lib/ai/portfolio.ts";
 import { crossrefHandler } from "../lib/ai/crossref.ts";
 
@@ -480,17 +479,6 @@ JSON exato:
 // ── Daily Briefing ────────────────────────────────────────────────────────────
 
 router.get("/daily-briefing", dailyBriefingHandler);
-
-// ── Fair Value ────────────────────────────────────────────────────────────────
-// Calcula um fair value independente para um mercado preditivo com base em:
-//   - Base rate histórica da categoria
-//   - Dados macro BCB (Selic, IPCA)
-//   - Momentum de prob (variação recente)
-//   - Claude Haiku para análise qualitativa
-// Retorna: fairValue, confidence, edge vs mercado, reasoning detalhado.
-
-
-router.post("/fair-value", aiCreditsMiddleware, fairValueHandler);
 
 // ── Portfolio Analysis ────────────────────────────────────────────────────────
 

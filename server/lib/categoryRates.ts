@@ -1,5 +1,5 @@
 // Base rates históricas por categoria — âncora do protocolo Superforecaster.
-// Usado pela análise de mercado, model-predict, fair-value e seed de previsões.
+// Usado pela análise de mercado, model-predict e seed de previsões.
 export const CATEGORY_BASE_RATES: Record<string, { baseRate: number; volatility: string; note: string }> = {
   politics:   { baseRate: 50,  volatility: "alta",   note: "Eventos políticos têm alta incerteza — base rate neutro 50%" },
   sports:     { baseRate: 50,  volatility: "média",  note: "Resultados esportivos são próximos de 50% sem info adicional" },
