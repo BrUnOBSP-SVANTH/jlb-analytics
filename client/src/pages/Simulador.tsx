@@ -418,7 +418,7 @@ function CalibracaoSimulator() {
   const bsClass = (() => {
     if (finalBS < 0.10) return { label: "Muito bom", color: "text-positive" };
     if (finalBS < 0.15) return { label: "Bom", color: "text-primary" };
-    if (finalBS < 0.20) return { label: "Mediano", color: "text-yellow-500" };
+    if (finalBS < 0.20) return { label: "Mediano", color: "text-warning" };
     if (finalBS < 0.25) return { label: "Fraco", color: "text-orange-500" };
     return { label: "Pior que aleatório", color: "text-negative" };
   })();

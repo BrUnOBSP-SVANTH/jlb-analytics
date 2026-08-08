@@ -31,9 +31,9 @@ function ExplanationBox({ text }: { text: string }) {
 
 function WarnBox({ text }: { text: string }) {
   return (
-    <div className="mt-2 flex items-start gap-2 p-3 rounded-lg bg-yellow-500/5 border border-yellow-500/30">
-      <AlertCircle className="w-4 h-4 text-yellow-500 shrink-0 mt-0.5" />
-      <p className="text-xs text-yellow-600 dark:text-yellow-400 leading-relaxed">{text}</p>
+    <div className="mt-2 flex items-start gap-2 p-3 rounded-lg bg-warning/5 border border-warning/30">
+      <AlertCircle className="w-4 h-4 text-warning shrink-0 mt-0.5" />
+      <p className="text-xs text-warning leading-relaxed">{text}</p>
     </div>
   );
 }
@@ -180,7 +180,7 @@ function GarchCalculator() {
   return (
     <div className="glass-card rounded-xl p-6 space-y-4">
       <div className="flex items-center gap-2">
-        <Zap className="w-4 h-4 text-yellow-500" />
+        <Zap className="w-4 h-4 text-warning" />
         <h3 className="font-semibold text-sm text-foreground">GARCH — Volatilidade</h3>
       </div>
       <WarnBox text="GARCH prevê TAMANHO da variação, não direção. Não use para timing de entrada ou saída. Use para dimensionar risco." />

@@ -81,7 +81,7 @@ function ProspectCalculator() {
               </div>
             </div>
           </div>
-          <div className="p-3 rounded-lg border border-yellow-500/30 bg-yellow-500/5">
+          <div className="p-3 rounded-lg border border-warning/30 bg-warning/5">
             <p className="text-xs text-muted-foreground"><strong className="text-foreground">Diagnóstico: </strong>{data.bias_diagnosis}</p>
           </div>
           <ExplanationBox text={data.explanation} />
@@ -133,23 +133,23 @@ function BrierCalculator() {
           <div className="grid grid-cols-2 gap-4 text-center">
             <div className="p-3 rounded-lg bg-secondary/30">
               <div className="text-xs text-muted-foreground">Brier Score</div>
-              <div className={`text-xl font-bold ${data.brier_score < 0.2 ? "text-positive" : data.brier_score < 0.3 ? "text-yellow-500" : "text-negative"}`}>
+              <div className={`text-xl font-bold ${data.brier_score < 0.2 ? "text-positive" : data.brier_score < 0.3 ? "text-warning" : "text-negative"}`}>
                 {data.brier_score.toFixed(4)}
               </div>
               <div className="text-xs text-muted-foreground">(0 = perfeito, 1 = péssimo)</div>
             </div>
             <div className="p-3 rounded-lg bg-secondary/30">
               <div className="text-xs text-muted-foreground">Skill Score</div>
-              <div className={`text-xl font-bold ${data.skill_score > 0.15 ? "text-positive" : data.skill_score > 0 ? "text-yellow-500" : "text-negative"}`}>
+              <div className={`text-xl font-bold ${data.skill_score > 0.15 ? "text-positive" : data.skill_score > 0 ? "text-warning" : "text-negative"}`}>
                 {data.skill_score >= 0 ? "+" : ""}{data.skill_score.toFixed(4)}
               </div>
               <div className="text-xs text-muted-foreground">{data.skill_score > 0 ? "melhor que baseline" : "pior que chutar 50%"}</div>
             </div>
           </div>
           {!data.stable && (
-            <div className="flex items-start gap-2 p-2 rounded bg-yellow-500/10 border border-yellow-500/30">
-              <AlertCircle className="w-3 h-3 text-yellow-500 shrink-0 mt-0.5" />
-              <p className="text-xs text-yellow-600 dark:text-yellow-400">n={data.n} — resultado instável (mínimo recomendado: 30)</p>
+            <div className="flex items-start gap-2 p-2 rounded bg-warning/10 border border-warning/30">
+              <AlertCircle className="w-3 h-3 text-warning shrink-0 mt-0.5" />
+              <p className="text-xs text-warning">n={data.n} — resultado instável (mínimo recomendado: 30)</p>
             </div>
           )}
           <ExplanationBox text={data.explanation} />
@@ -165,7 +165,7 @@ function GamblerCalculator() {
   const [seqText, setSeqText] = useState("1, 1, 1, 1, 1, 0, 1, 1, 0, 1, 1, 1, 0, 0, 1");
   const { data, loading, error, run } = useModelCall<GamblerResult>("/api/level4/gambler");
 
-  const riskColor = { baixo: "text-positive", moderado: "text-yellow-500", alto: "text-negative" };
+  const riskColor = { baixo: "text-positive", moderado: "text-warning", alto: "text-negative" };
 
   return (
     <div className="glass-card rounded-xl p-6 space-y-4">
@@ -217,7 +217,7 @@ function MaturityCalculator() {
   const [lar, setLar] = useState("2.5");
   const { data, loading, error, run } = useModelCall<MaturityResult>("/api/level4/maturity");
 
-  const stageColors = ["text-negative", "text-negative", "text-yellow-500", "text-primary", "text-positive"];
+  const stageColors = ["text-negative", "text-negative", "text-warning", "text-primary", "text-positive"];
 
   return (
     <div className="glass-card rounded-xl p-6 space-y-4 lg:col-span-2">

@@ -44,7 +44,7 @@ function ZScoreCalculator() {
   const { data, loading, error, run } = useModelCall<ZResult>("/api/level2/zscore");
 
   const zColor = data
-    ? Math.abs(data.z) > 3 ? "text-negative" : Math.abs(data.z) > 2 ? "text-yellow-500" : "text-positive"
+    ? Math.abs(data.z) > 3 ? "text-negative" : Math.abs(data.z) > 2 ? "text-warning" : "text-positive"
     : "text-foreground";
 
   return (
@@ -89,7 +89,7 @@ function ZScoreCalculator() {
             <span className="text-foreground font-medium">{(data.p_two_tail * 100).toFixed(2)}%</span>
           </div>
           {/* Escala visual */}
-          <div className="relative h-2 rounded-full bg-gradient-to-r from-positive via-yellow-500 to-negative overflow-hidden">
+          <div className="relative h-2 rounded-full bg-gradient-to-r from-positive via-warning to-negative overflow-hidden">
             <div
               className="absolute top-0 w-2 h-2 rounded-full bg-white border-2 border-foreground"
               style={{ left: `${Math.min(100, Math.max(0, (Math.abs(data.z) / 4) * 100))}%`, transform: "translateX(-50%)" }}
@@ -208,7 +208,7 @@ function CorrelationCalculator() {
 
   const rColor = data
     ? Math.abs(data.r) >= 0.7 ? (data.r > 0 ? "text-positive" : "text-negative")
-    : Math.abs(data.r) >= 0.4 ? "text-yellow-500" : "text-muted-foreground"
+    : Math.abs(data.r) >= 0.4 ? "text-warning" : "text-muted-foreground"
     : "text-foreground";
 
   return (
@@ -218,7 +218,7 @@ function CorrelationCalculator() {
         <h3 className="font-semibold text-foreground text-sm">Correlação de Pearson — r ∈ [-1, 1]</h3>
       </div>
 
-      <div className="p-3 rounded-lg border border-yellow-500/30 bg-yellow-500/5">
+      <div className="p-3 rounded-lg border border-warning/30 bg-warning/5">
         <p className="text-xs text-muted-foreground">
           <strong className="text-foreground">Aviso crítico:</strong> correlação mede associação LINEAR.
           Séries temporais não-estacionárias produzem correlações espúrias altíssimas sem nenhuma relação causal real

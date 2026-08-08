@@ -84,7 +84,7 @@ function GuestView() {
         <div className="blur-[3px] pointer-events-none select-none opacity-50 space-y-4" aria-hidden="true">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {[
-              { label: "Brier Score",   value: "0.143", sub: "abaixo da média",   color: "text-yellow-500" },
+              { label: "Brier Score",   value: "0.143", sub: "abaixo da média",   color: "text-warning" },
               { label: "Skill Score",   value: "+0.21", sub: "melhor que ref.",    color: "text-positive" },
               { label: "Resolvidas",    value: "27",    sub: "de 34 registradas",  color: "text-foreground" },
               { label: "Edge médio",    value: "+4.2pp", sub: "vs. mercado",       color: "text-positive" },
@@ -370,7 +370,7 @@ function PredictionTracker({ userId }: { userId?: string }) {
             <div className="text-center p-2 rounded-lg bg-secondary/30">
               <p className="text-[10px] text-muted-foreground">Brier</p>
               <p className={`font-mono text-sm font-bold ${
-                bs === null ? "text-muted-foreground" : bs < 0.1 ? "text-positive" : bs < 0.25 ? "text-yellow-500" : "text-negative"
+                bs === null ? "text-muted-foreground" : bs < 0.1 ? "text-positive" : bs < 0.25 ? "text-warning" : "text-negative"
               }`}>
                 {bs === null ? "—" : fmt(bs, 3)}
               </p>
@@ -378,7 +378,7 @@ function PredictionTracker({ userId }: { userId?: string }) {
             <div className="text-center p-2 rounded-lg bg-secondary/30">
               <p className="text-[10px] text-muted-foreground">Skill</p>
               <p className={`font-mono text-sm font-bold ${
-                ss === null ? "text-muted-foreground" : ss > 0.2 ? "text-positive" : ss > 0 ? "text-yellow-500" : "text-negative"
+                ss === null ? "text-muted-foreground" : ss > 0.2 ? "text-positive" : ss > 0 ? "text-warning" : "text-negative"
               }`}>
                 {ss === null ? "—" : (ss >= 0 ? "+" : "") + fmt(ss, 2)}
               </p>
@@ -518,7 +518,7 @@ export default function Dashboard() {
             <p className="text-xs text-muted-foreground">Brier Score</p>
           </div>
           <p className={`text-2xl font-bold font-mono ${
-            bs === null ? "text-muted-foreground" : bs < 0.1 ? "text-positive" : bs < 0.25 ? "text-yellow-500" : "text-negative"
+            bs === null ? "text-muted-foreground" : bs < 0.1 ? "text-positive" : bs < 0.25 ? "text-warning" : "text-negative"
           }`}>
             {bs === null ? "—" : bs.toFixed(3)}
           </p>
@@ -535,7 +535,7 @@ export default function Dashboard() {
             <p className="text-xs text-muted-foreground">Skill Score</p>
           </div>
           <p className={`text-2xl font-bold font-mono ${
-            ss === null ? "text-muted-foreground" : ss > 0.2 ? "text-positive" : ss > 0 ? "text-yellow-500" : "text-negative"
+            ss === null ? "text-muted-foreground" : ss > 0.2 ? "text-positive" : ss > 0 ? "text-warning" : "text-negative"
           }`}>
             {ss === null ? "—" : (ss >= 0 ? "+" : "") + ss.toFixed(2)}
           </p>

@@ -48,7 +48,7 @@ function isPredictionExpiringSoon(p: StoredPrediction): boolean {
 
 function probColor(prob: number): string {
   if (prob >= 70) return "text-positive";
-  if (prob >= 40) return "text-yellow-500";
+  if (prob >= 40) return "text-warning";
   return "text-negative";
 }
 
@@ -168,7 +168,7 @@ function HighlightCard({ m }: { m: MarketHighlight }) {
         <>
           <div className="w-full h-1 bg-secondary/40 rounded-full overflow-hidden">
             <div
-              className={`h-full rounded-full transition-all ${m.prob! >= 70 ? "bg-positive" : m.prob! >= 40 ? "bg-yellow-500" : "bg-negative"}`}
+              className={`h-full rounded-full transition-all ${m.prob! >= 70 ? "bg-positive" : m.prob! >= 40 ? "bg-warning" : "bg-negative"}`}
               style={{ width: `${m.prob}%` }}
             />
           </div>
@@ -188,9 +188,9 @@ function ExpiringPredictions({ preds }: { preds: StoredPrediction[] }) {
   return (
     <div className="glass-card rounded-xl p-6 space-y-4">
       <h3 className="font-semibold text-foreground flex items-center gap-2">
-        <Clock className="w-4 h-4 text-yellow-500" />
+        <Clock className="w-4 h-4 text-warning" />
         Previsões Aguardando Resolução
-        <span className="ml-auto px-2 py-0.5 rounded-full bg-yellow-500/10 text-yellow-500 text-xs font-medium">{expiring.length}</span>
+        <span className="ml-auto px-2 py-0.5 rounded-full bg-warning/10 text-warning text-xs font-medium">{expiring.length}</span>
       </h3>
       <p className="text-xs text-muted-foreground">
         Estas previsões foram feitas há mais de 20 dias. Verifique se já podem ser resolvidas.
@@ -199,8 +199,8 @@ function ExpiringPredictions({ preds }: { preds: StoredPrediction[] }) {
         {expiring.slice(0, 5).map((p) => {
           const age = Math.floor((Date.now() - new Date(p.savedAt).getTime()) / (24 * 60 * 60 * 1000));
           return (
-            <div key={p.id} className="flex items-start gap-3 p-3 rounded-lg border border-yellow-500/20 bg-yellow-500/5">
-              <Target className="w-4 h-4 text-yellow-500 shrink-0 mt-0.5" />
+            <div key={p.id} className="flex items-start gap-3 p-3 rounded-lg border border-warning/20 bg-warning/5">
+              <Target className="w-4 h-4 text-warning shrink-0 mt-0.5" />
               <div className="flex-1 min-w-0">
                 <p className="text-xs font-medium text-foreground line-clamp-2">{p.question}</p>
                 <div className="flex items-center gap-3 mt-1">
@@ -363,9 +363,9 @@ export default function Briefing() {
 
             {/* Risk Alert */}
             {briefing.riskAlert && (
-              <div className="flex items-start gap-2 p-3 rounded-lg bg-yellow-500/5 border border-yellow-500/20">
-                <AlertTriangle className="w-3.5 h-3.5 text-yellow-500 shrink-0 mt-0.5" />
-                <p className="text-xs text-yellow-500">{briefing.riskAlert}</p>
+              <div className="flex items-start gap-2 p-3 rounded-lg bg-warning/5 border border-warning/20">
+                <AlertTriangle className="w-3.5 h-3.5 text-warning shrink-0 mt-0.5" />
+                <p className="text-xs text-warning">{briefing.riskAlert}</p>
               </div>
             )}
           </div>

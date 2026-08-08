@@ -507,8 +507,8 @@ export default function Apostas() {
 
         {error && !loading && (
           <AnimatedSection>
-            <div className="mb-5 p-3 rounded-xl border border-yellow-500/20 bg-yellow-500/8 flex gap-3">
-              <AlertCircle className="w-4 h-4 text-yellow-500 mt-0.5 shrink-0" aria-hidden="true" />
+            <div className="mb-5 p-3 rounded-xl border border-warning/20 bg-warning/8 flex gap-3">
+              <AlertCircle className="w-4 h-4 text-warning mt-0.5 shrink-0" aria-hidden="true" />
               <p className="text-sm text-muted-foreground">{error}</p>
             </div>
           </AnimatedSection>

@@ -162,7 +162,7 @@ export function BehavioralMetrics({ userLevel }: { userLevel: number }) {
           {brierSkill === null ? (
             <p className="text-xl font-bold font-mono mt-0.5 text-muted-foreground">—</p>
           ) : (
-            <p className={`text-xl font-bold font-mono mt-0.5 ${brierSkill > 0.15 ? "text-positive" : brierSkill > 0 ? "text-yellow-500" : "text-negative"}`}>
+            <p className={`text-xl font-bold font-mono mt-0.5 ${brierSkill > 0.15 ? "text-positive" : brierSkill > 0 ? "text-warning" : "text-negative"}`}>
               {brierSkill >= 0 ? "+" : ""}{brierSkill.toFixed(3)}
             </p>
           )}
@@ -175,7 +175,7 @@ export function BehavioralMetrics({ userLevel }: { userLevel: number }) {
           {overconfidence === null ? (
             <p className="text-xl font-bold font-mono mt-0.5 text-muted-foreground">—</p>
           ) : (
-            <p className={`text-xl font-bold font-mono mt-0.5 ${Math.abs(overconfidence) < 0.05 ? "text-positive" : Math.abs(overconfidence) < 0.15 ? "text-yellow-500" : "text-negative"}`}>
+            <p className={`text-xl font-bold font-mono mt-0.5 ${Math.abs(overconfidence) < 0.05 ? "text-positive" : Math.abs(overconfidence) < 0.15 ? "text-warning" : "text-negative"}`}>
               {overconfidence >= 0 ? "+" : ""}{(overconfidence * 100).toFixed(1)}%
             </p>
           )}
@@ -194,8 +194,8 @@ export function BehavioralMetrics({ userLevel }: { userLevel: number }) {
           <p className="text-xs text-muted-foreground">mín. 30 para estabilidade</p>
         </div>
       </div>
-      <div className="flex items-start gap-2 p-3 rounded-lg bg-yellow-500/5 border border-yellow-500/20">
-        <AlertCircle className="w-3.5 h-3.5 text-yellow-500 shrink-0 mt-0.5" />
+      <div className="flex items-start gap-2 p-3 rounded-lg bg-warning/5 border border-warning/20">
+        <AlertCircle className="w-3.5 h-3.5 text-warning shrink-0 mt-0.5" />
         <p className="text-xs text-muted-foreground">
           Métricas calculadas a partir das suas previsões reais registradas.
           Mínimo de 20 previsões resolvidas para resultados estatisticamente estáveis.

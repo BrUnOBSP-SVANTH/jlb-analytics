@@ -161,7 +161,7 @@ function UserMenu() {
   const creditLimit = credits?.limit ?? 30;
   const isPremium = credits?.plan === "premium";
   const creditPct = isPremium ? 100 : Math.min(100, (creditUsed / creditLimit) * 100);
-  const creditColor = creditPct >= 90 ? "bg-negative" : creditPct >= 70 ? "bg-yellow-400" : "bg-positive";
+  const creditColor = creditPct >= 90 ? "bg-negative" : creditPct >= 70 ? "bg-warning" : "bg-positive";
 
   return (
     <div className="flex items-center gap-1.5">

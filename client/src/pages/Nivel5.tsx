@@ -45,7 +45,7 @@ function DivergenceCalculator() {
 
   const tierColors: Record<string, string> = {
     negligible: "text-muted-foreground",
-    moderate: "text-yellow-500",
+    moderate: "text-warning",
     strong: "text-primary",
     extreme_low: "text-negative",
     extreme: "text-negative",
@@ -150,7 +150,7 @@ function DivergenceCalculator() {
 
           {data.action_note && (
             <div className="flex items-start gap-2 p-3 rounded-lg bg-secondary/30 border border-border/30">
-              <AlertTriangle className="w-4 h-4 text-yellow-500 shrink-0 mt-0.5" />
+              <AlertTriangle className="w-4 h-4 text-warning shrink-0 mt-0.5" />
               <p className="text-xs text-muted-foreground">{data.action_note}</p>
             </div>
           )}
@@ -229,8 +229,8 @@ function EnsembleCalculator() {
           </div>
 
           {data.warning && (
-            <div className="p-3 rounded-lg bg-yellow-500/5 border border-yellow-500/30">
-              <p className="text-xs text-yellow-600 dark:text-yellow-400">{data.warning}</p>
+            <div className="p-3 rounded-lg bg-warning/5 border border-warning/30">
+              <p className="text-xs text-warning">{data.warning}</p>
             </div>
           )}
 

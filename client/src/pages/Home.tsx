@@ -82,8 +82,8 @@ function MarketCardSkeleton() {
 
 function LiveMarketCard({ market }: { market: LiveMarket }) {
   const pct = Math.round(market.yesProb * 100);
-  const probColor = pct >= 70 ? "text-positive" : pct >= 40 ? "text-yellow-500" : "text-negative";
-  const barColor = pct >= 70 ? "bg-positive" : pct >= 40 ? "bg-yellow-500" : "bg-negative";
+  const probColor = pct >= 70 ? "text-positive" : pct >= 40 ? "text-warning" : "text-negative";
+  const barColor = pct >= 70 ? "bg-positive" : pct >= 40 ? "bg-warning" : "bg-negative";
 
   const inner = (
     <div className="w-[200px] h-full p-4 rounded-xl border border-border/30 bg-secondary/10 group-hover:border-primary/40 transition-colors space-y-2">
@@ -589,7 +589,7 @@ export default function Home() {
             ))}
           </div>
           <div className="mt-8 p-5 rounded-xl border border-border/20 bg-secondary/5 flex items-start gap-3">
-            <AlertTriangle className="w-4 h-4 text-yellow-500 shrink-0 mt-0.5" aria-hidden="true" />
+            <AlertTriangle className="w-4 h-4 text-warning shrink-0 mt-0.5" aria-hidden="true" />
             <p className="text-xs text-muted-foreground leading-relaxed">
               A JLB Analytics <strong className="text-foreground">não recomenda posições, apostas ou investimentos</strong>.
               Somos uma plataforma de educação quantitativa — o objetivo é que você faça os cálculos certos antes de qualquer decisão.

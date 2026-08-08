@@ -29,7 +29,7 @@ interface LeaderEntry {
 
 function RankBadge({ rank }: { rank: number }) {
   if (rank === 1) return <Trophy className="w-5 h-5 text-gold" />;
-  if (rank === 2) return <Medal className="w-5 h-5 text-slate-300" />;
+  if (rank === 2) return <Medal className="w-5 h-5 text-foreground/70" />;
   if (rank === 3) return <Medal className="w-5 h-5 text-amber-600" />;
   return (
     <span className="w-5 h-5 flex items-center justify-center text-xs font-mono font-bold text-muted-foreground">
@@ -40,7 +40,7 @@ function RankBadge({ rank }: { rank: number }) {
 
 function ScoreBadge({ bs }: { bs: number | null }) {
   if (bs === null) return <span className="text-xs text-muted-foreground/50">—</span>;
-  const color = bs < 0.10 ? "text-positive" : bs < 0.15 ? "text-yellow-400" : bs < 0.20 ? "text-gold" : "text-muted-foreground";
+  const color = bs < 0.10 ? "text-positive" : bs < 0.15 ? "text-warning" : bs < 0.20 ? "text-gold" : "text-muted-foreground";
   const label = bs < 0.10 ? "Elite" : bs < 0.15 ? "Calibrado" : bs < 0.20 ? "Intermediário" : "Iniciante";
   return (
     <div className="text-right">
@@ -52,7 +52,7 @@ function ScoreBadge({ bs }: { bs: number | null }) {
 
 function SkillBar({ ss }: { ss: number }) {
   const pct = Math.max(0, Math.min(100, ((ss + 1) / 2) * 100));
-  const color = ss > 0.25 ? "bg-positive" : ss > 0 ? "bg-yellow-400" : "bg-muted-foreground/30";
+  const color = ss > 0.25 ? "bg-positive" : ss > 0 ? "bg-warning" : "bg-muted-foreground/30";
   return (
     <div className="flex items-center gap-2">
       <div className="w-16 h-1.5 bg-secondary/40 rounded-full overflow-hidden">
