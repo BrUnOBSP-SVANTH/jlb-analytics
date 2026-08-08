@@ -20,7 +20,7 @@ const OFFERINGS = [
   { icon: Calculator,    title: "Calculadoras EV, Kelly, Brier", desc: "Ferramentas interativas para Valor Esperado, Overround, Brier Score e Kelly — os fundamentos que 99% dos apostadores nunca calcularam." },
   { icon: Activity,      title: "Simuladores Monte Carlo",      desc: "Lei dos Grandes Números, Kelly Criterion e calibração interativa. Simulações de até 1.000 apostas com visualização em tempo real." },
   { icon: Brain,         title: "IA Adaptativa por Domínio",    desc: "Previsão Guiada detecta o nível do usuário (leigo / intermediário / avançado) e aplica o modelo econométrico correto para cada pergunta." },
-  { icon: GitMerge,      title: "Cerebro — Base Proprietária",  desc: "3.700+ artigos coletados via RSS, 63 sínteses por IA. Motor de contexto que alimenta todas as análises — atualizado a cada 2 horas." },
+  { icon: GitMerge,      title: "Cerebro — Base Proprietária",  desc: "Base de conhecimento curada: coleta notícias por RSS e gera sínteses por IA — o motor de contexto que alimenta todas as análises. (Contagem real na seção de métricas.)" },
 ];
 
 const PRINCIPLES = [
@@ -44,9 +44,9 @@ const MARKET_FACTS = [
 ];
 
 const ROADMAP = [
-  { phase: "MVP — concluído",      status: "done",    items: ["Apostas ao vivo (Polymarket + Kalshi)", "IA adaptativa por domínio e nível", "5 níveis educacionais com calculadoras", "Cerebro com 3.700+ artigos", "Dashboard de calibração pessoal"] },
-  { phase: "Q3 2026 — em andamento", status: "active",  items: ["Integração Stripe (plano premium)", "Sync de previsões em nuvem (Supabase)", "Mobile app (PWA avançado)"] },
-  { phase: "Q4 2026 — planejado",  status: "planned", items: ["Comunidade de forecasters", "Rankings de calibração públicos", "API para desenvolvedores", "Integração B3 Mercados Preditivos"] },
+  { phase: "MVP — concluído",      status: "done",    items: ["Apostas ao vivo (Polymarket + Kalshi)", "IA adaptativa por domínio e nível", "5 níveis educacionais com calculadoras", "Cerebro (base curada por RSS + IA)", "Dashboard de calibração pessoal", "Sync de previsões em nuvem (Supabase)", "Rankings de calibração públicos", "Comunidade de forecasters (duelos)"] },
+  { phase: "Q3 2026 — em andamento", status: "active",  items: ["Integração Stripe (plano premium)", "Mobile app (PWA avançado)"] },
+  { phase: "Q4 2026 — planejado",  status: "planned", items: ["API para desenvolvedores", "Integração B3 Mercados Preditivos"] },
 ];
 
 export default function Sobre() {
