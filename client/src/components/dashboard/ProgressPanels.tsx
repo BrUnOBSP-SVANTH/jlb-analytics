@@ -14,8 +14,8 @@ import { loadPredictions, meanBrierScore } from "@/lib/predictions";
 const LEVELS = [
   { n: 1, title: "Fundamentos",        href: "/nivel/1", icon: GraduationCap, color: "text-positive",   requires: 0   },
   { n: 2, title: "Leitura de Dados",   href: "/nivel/2", icon: BarChart3,     color: "text-primary",    requires: 0   },
-  { n: 3, title: "Modelos Básicos",    href: "/nivel/3", icon: TrendingUp,    color: "text-yellow-500", requires: 0   },
-  { n: 4, title: "Vieses e Psicologia", href: "/nivel/4", icon: Brain,        color: "text-purple-400", requires: 50  },
+  { n: 3, title: "Modelos Básicos",    href: "/nivel/3", icon: TrendingUp,    color: "text-level3", requires: 0   },
+  { n: 4, title: "Vieses e Psicologia", href: "/nivel/4", icon: Brain,        color: "text-level4", requires: 50  },
   { n: 5, title: "Análise Integrada",  href: "/nivel/5", icon: GitMerge,      color: "text-neon-blue",  requires: 100 },
 ];
 

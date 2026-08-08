@@ -124,8 +124,8 @@ function LiveMarketCard({ market }: { market: LiveMarket }) {
 const LEVELS = [
   { n: 1, title: "Fundamentos",       href: "/nivel/1", icon: GraduationCap, color: "text-positive",   border: "border-positive/20",    bg: "bg-positive/5",    badge: "Grátis" },
   { n: 2, title: "Leitura de Dados",  href: "/nivel/2", icon: BarChart3,     color: "text-primary",    border: "border-primary/20",     bg: "bg-primary/5",     badge: "Grátis" },
-  { n: 3, title: "Modelos Básicos",   href: "/nivel/3", icon: TrendingUp,    color: "text-yellow-500", border: "border-yellow-500/20",  bg: "bg-yellow-500/5",  badge: "Grátis" },
-  { n: 4, title: "Vieses",            href: "/nivel/4", icon: Brain,         color: "text-purple-400", border: "border-purple-400/20",  bg: "bg-purple-400/5",  badge: "50 pts" },
+  { n: 3, title: "Modelos Básicos",   href: "/nivel/3", icon: TrendingUp,    color: "text-level3", border: "border-level3/20",  bg: "bg-level3/5",  badge: "Grátis" },
+  { n: 4, title: "Vieses",            href: "/nivel/4", icon: Brain,         color: "text-level4", border: "border-level4/20",  bg: "bg-level4/5",  badge: "50 pts" },
   { n: 5, title: "Integrado",         href: "/nivel/5", icon: GitMerge,      color: "text-neon-blue",  border: "border-neon-blue/20",   bg: "bg-neon-blue/5",   badge: "100 pts" },
 ];
 
