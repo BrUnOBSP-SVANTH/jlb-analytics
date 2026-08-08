@@ -8,6 +8,7 @@ import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
 } from "recharts";
 import AnimatedSection from "@/components/AnimatedSection";
+import { CHART_COLORS } from "@/lib/data";
 import {
   Trophy, Brain, RefreshCw, ChevronDown, ChevronUp,
   ExternalLink, Info, TrendingUp, Thermometer, ArrowLeft,
@@ -473,12 +474,12 @@ export default function KlementSection({ onClose }: { onClose: () => void }) {
                   margin={{ top: 4, right: 60, left: 120, bottom: 4 }}
                 >
                   <XAxis type="number" domain={[0, "dataMax"]} tickFormatter={v => `${v}%`}
-                    tick={{ fontSize: 10, fill: "#888" }} axisLine={false} tickLine={false} />
+                    tick={{ fontSize: 10, fill: CHART_COLORS.muted }} axisLine={false} tickLine={false} />
                   <YAxis
                     type="category" dataKey="id" width={115}
                     tick={({ y, payload }: { y: number; payload: { value: string } }) => {
                       const t = teamById(payload.value);
-                      return <text x={0} y={y} dy={4} fontSize={12} fill="#ccc">{t.flag} {t.name}</text>;
+                      return <text x={0} y={y} dy={4} fontSize={12} fill={CHART_COLORS.muted}>{t.flag} {t.name}</text>;
                     }}
                     axisLine={false} tickLine={false}
                   />

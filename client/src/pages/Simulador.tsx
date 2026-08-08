@@ -200,7 +200,7 @@ function EVSimulator() {
                     tickFormatter={formatAxisBRL} />
                   <Tooltip contentStyle={CHART_TOOLTIP_STYLE} formatter={(v: number, name: string) => [`R$ ${v.toFixed(0)}`, name]} />
                   <Legend />
-                  <ReferenceLine y={0} stroke="#666" strokeDasharray="3 3" />
+                  <ReferenceLine y={0} stroke={CHART_COLORS.muted} strokeDasharray="3 3" />
                   <Line type="monotone" dataKey="EV_esperado" name="EV esperado" stroke={CHART_COLORS.secondary} strokeWidth={2} dot={false} strokeDasharray="5 3" />
                   <Line type="monotone" dataKey="PnL" name="P&L real" stroke={CHART_COLORS.primary} strokeWidth={2} dot={false} />
                 </LineChart>
@@ -342,7 +342,7 @@ function KellySimulator() {
                   <Legend />
                   <Area type="monotone" dataKey="Kelly" stroke={CHART_COLORS.primary} strokeWidth={2} fill="url(#kg1)" dot={false} />
                   <Area type="monotone" dataKey="½ Kelly" stroke={CHART_COLORS.tertiary} strokeWidth={2} fill="url(#kg2)" dot={false} />
-                  <Line type="monotone" dataKey="Overbet" stroke="#ef4444" strokeWidth={1.5} dot={false} strokeDasharray="4 2" />
+                  <Line type="monotone" dataKey="Overbet" stroke={CHART_COLORS.negative} strokeWidth={1.5} dot={false} strokeDasharray="4 2" />
                 </AreaChart>
               </ResponsiveContainer>
               <p className="text-xs text-muted-foreground mt-3 text-center">
@@ -491,7 +491,7 @@ function CalibracaoSimulator() {
                   <YAxis axisLine={false} tickLine={false} tick={{ ...CHART_TICK_STYLE, fontSize: 11 }} domain={[0, 0.35]} />
                   <Tooltip contentStyle={CHART_TOOLTIP_STYLE} formatter={(v: number, name: string) => [v.toFixed(4), name]} />
                   <Legend />
-                  <ReferenceLine y={0.25} stroke="#888" strokeDasharray="3 3" label={{ value: "BS=0.25 (aleatório)", position: "right", style: { fontSize: 9, fill: "#888" } }} />
+                  <ReferenceLine y={0.25} stroke={CHART_COLORS.muted} strokeDasharray="3 3" label={{ value: "BS=0.25 (aleatório)", position: "right", style: { fontSize: 9, fill: CHART_COLORS.muted } }} />
                   <Line type="monotone" dataKey="BS_acumulado" stroke={CHART_COLORS.primary} strokeWidth={2} dot={false} name="Brier Score" />
                 </LineChart>
               </ResponsiveContainer>
@@ -509,7 +509,7 @@ function CalibracaoSimulator() {
                   <Legend />
                   <ReferenceLine
                     segment={[{ x: "0–10%", y: 5 }, { x: "90–100%", y: 95 }]}
-                    stroke="#555"
+                    stroke={CHART_COLORS.muted}
                     strokeDasharray="4 2"
                   />
                   <Line type="monotone" dataKey="previsto" stroke={CHART_COLORS.secondary} strokeWidth={2} dot name="Previsto" />

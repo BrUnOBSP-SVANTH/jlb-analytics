@@ -9,6 +9,7 @@ export const CHART_COLORS = {
   secondary: "oklch(0.62 0.2 250)",
   tertiary: "oklch(0.72 0.19 155)",
   quaternary: "oklch(0.72 0.18 240)",
+  negative: "oklch(0.65 0.2 25)",
   muted: "oklch(0.6 0.02 260)",
   tooltipBg: "oklch(0.18 0.015 260)",
   tooltipBorder: "oklch(0.25 0.015 260)",
