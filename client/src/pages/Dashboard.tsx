@@ -24,6 +24,7 @@ import { awardPoints, loadProgress } from "@/lib/userProgress";
 import { pullProgress } from "@/lib/progressSync";
 import { pullFromSupabase, pushToSupabase, syncOne, deleteOne } from "@/lib/predictionsSync";
 import ContaTabs from "@/components/ContaTabs";
+import PageHeader from "@/components/PageHeader";
 import SignupNudge from "@/components/SignupNudge";
 import WatchlistSection from "@/components/dashboard/WatchlistSection";
 import { useSEO } from "@/hooks/useSEO";
@@ -489,24 +490,12 @@ export default function Dashboard() {
   return (
     <div>
     <ContaTabs />
+    <PageHeader
+      badge={`${userPoints} pts`}
+      title="Dashboard"
+      subtitle="Suas previsões, calibração vs. mercado e evolução como forecaster."
+    />
     <div className="max-w-5xl mx-auto px-4 py-8 space-y-8">
-      {/* Header */}
-      <div className="flex items-start justify-between gap-4 flex-wrap">
-        <div>
-          <div className="flex items-center gap-3 mb-1">
-            <h1 className="text-2xl font-bold font-display text-foreground">Dashboard</h1>
-            <span className="px-2 py-0.5 rounded-full text-xs font-medium border bg-gold/10 text-gold border-gold/30">
-              {userPoints} pts
-            </span>
-          </div>
-          <p className="text-sm text-muted-foreground">{user.email}</p>
-        </div>
-        {preds.length > 0 && (
-          <div className="text-right">
-            <p className="text-xs text-muted-foreground">{preds.length} {preds.length > 1 ? "previsões registradas" : "previsão registrada"}</p>
-          </div>
-        )}
-      </div>
 
       {/* Portfolio stat cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">

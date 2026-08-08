@@ -6,7 +6,7 @@
 import { useState, useEffect } from "react";
 import { Link } from "wouter";
 import {
-  Newspaper, RefreshCw, TrendingUp, AlertTriangle,
+  RefreshCw, TrendingUp, AlertTriangle,
   ArrowRight, Target, Clock, Loader2, Zap, BarChart2,
   Eye, Trophy, CheckCircle, BookmarkPlus,
 } from "lucide-react";
@@ -14,6 +14,7 @@ import { loadPredictions, addPrediction, type StoredPrediction } from "@/lib/pre
 import { awardPoints } from "@/lib/userProgress";
 import { track } from "@/lib/analytics";
 import AnaliseTabs from "@/components/AnaliseTabs";
+import PageHeader from "@/components/PageHeader";
 import { useSEO } from "@/hooks/useSEO";
 
 // ─── Types ─────────────────────────────────────────────────────────────────
@@ -272,26 +273,13 @@ export default function Briefing() {
   return (
     <div>
     <AnaliseTabs />
+    <PageHeader
+      badge={briefing?.topTheme ?? "IA + Macro"}
+      title="Briefing Diário"
+      subtitle={`Análise gerada por IA com dados de mercados preditivos e macro${generatedDate ? ` · ${generatedDate}` : ""}`}
+    />
     <div className="max-w-4xl mx-auto px-4 py-8 space-y-8">
-      {/* Header */}
-      <div className="flex items-start justify-between gap-4 flex-wrap">
-        <div>
-          <div className="flex items-center gap-3 mb-1">
-            <h1 className="text-2xl font-bold font-display text-foreground">Briefing Diário</h1>
-            {briefing?.topTheme && (
-              <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-neon-blue/10 text-neon-blue border border-neon-blue/20">
-                {briefing.topTheme}
-              </span>
-            )}
-          </div>
-          <p className="text-sm text-muted-foreground flex items-center gap-2">
-            <Newspaper className="w-3.5 h-3.5" />
-            Análise gerada por IA com dados de mercados preditivos e macro
-            {generatedDate && (
-              <span className="text-[11px] text-muted-foreground/60">· {generatedDate}</span>
-            )}
-          </p>
-        </div>
+      <div className="flex justify-end">
         <button
           onClick={() => void fetchBriefing(true)}
           disabled={loading}

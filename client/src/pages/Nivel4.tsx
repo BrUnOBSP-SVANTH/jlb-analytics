@@ -12,6 +12,7 @@ import { useModelCall } from "@/hooks/useModels";
 import { awardPoints } from "@/lib/userProgress";
 import { useSEO } from "@/hooks/useSEO";
 import LevelNav from "@/components/LevelNav";
+import PageHeader from "@/components/PageHeader";
 
 interface ProspectResult { ev_objective: number; subjective_value: number; gap: number; loss_aversion_lambda: number; signal: string; bias_diagnosis: string; explanation: string; }
 interface BrierResult { brier_score: number; skill_score: number; resolution: number; reliability: number; n: number; stable: boolean; signal: string; explanation: string; calibration_by_decile?: { confidence_range: string; avg_confidence: number; actual_accuracy: number; n: number; calibration_error: number }[]; }
@@ -308,18 +309,13 @@ export default function Nivel4() {
   }, []);
 
   return (
+    <div>
+      <PageHeader
+        badge="Nível 4 · Avançado"
+        title="Vieses e Psicologia"
+        subtitle="Dados corretos com decisões erradas produzem perdas. Este nível te ensina a identificar os padrões de comportamento que destroem retorno — mesmo quando você tem as informações certas."
+      />
     <div className="max-w-4xl mx-auto px-4 py-8 space-y-8">
-      <div>
-        <div className="flex items-center gap-2 mb-2">
-          <span className="px-2.5 py-0.5 rounded-full bg-primary/10 text-primary text-xs font-semibold">Nível 4</span>
-          <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary text-xs font-medium">Avançado</span>
-        </div>
-        <h1 className="text-2xl font-bold text-foreground">Vieses e Psicologia</h1>
-        <p className="text-muted-foreground mt-1 text-sm max-w-2xl">
-          Dados corretos com decisões erradas produzem perdas. Este nível te ensina a identificar
-          os padrões de comportamento que destroem retorno — mesmo quando você tem as informações certas.
-        </p>
-      </div>
       <div className="grid gap-6 lg:grid-cols-2">
         <ProspectCalculator />
         <BrierCalculator />
@@ -328,6 +324,7 @@ export default function Nivel4() {
       </div>
 
       <LevelNav current={4} />
+    </div>
     </div>
   );
 }

@@ -12,6 +12,7 @@ import { useModelCall } from "@/hooks/useModels";
 import { awardPoints } from "@/lib/userProgress";
 import { useSEO } from "@/hooks/useSEO";
 import LevelNav from "@/components/LevelNav";
+import PageHeader from "@/components/PageHeader";
 
 interface TaylorResult { selic_observed: number; taylor_implied: number; divergence_pp: number; signal: string; explanation: string; }
 interface PoissonResult { p_home_win: number; p_draw: number; p_away_win: number; lambda_home: number; lambda_away: number; top_scores: { score: string; probability: number }[]; explanation: string; }
@@ -327,17 +328,13 @@ export default function Nivel3() {
   }, []);
 
   return (
+    <div>
+      <PageHeader
+        badge="Nível 3"
+        title="Modelos Básicos"
+        subtitle="Os modelos que o sistema usa por baixo dos panos — agora acessíveis para você calcular, questionar e entender o que cada variável significa."
+      />
     <div className="max-w-4xl mx-auto px-4 py-8 space-y-8">
-      <div>
-        <div className="flex items-center gap-2 mb-2">
-          <span className="px-2.5 py-0.5 rounded-full bg-primary/10 text-primary text-xs font-semibold">Nível 3</span>
-        </div>
-        <h1 className="text-2xl font-bold text-foreground">Modelos Básicos</h1>
-        <p className="text-muted-foreground mt-1 text-sm max-w-2xl">
-          Os modelos que o sistema usa por baixo dos panos — agora acessíveis para você calcular,
-          questionar e entender o que cada variável significa.
-        </p>
-      </div>
       <div className="grid gap-6 lg:grid-cols-2">
         <TaylorCalculator />
         <PoissonCalculator />
@@ -347,6 +344,7 @@ export default function Nivel3() {
       </div>
 
       <LevelNav current={3} />
+    </div>
     </div>
   );
 }

@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { isLevelUnlocked } from "@/lib/userProgress";
 import { useSEO } from "@/hooks/useSEO";
+import PageHeader from "@/components/PageHeader";
 
 const LEVELS = [
   {
@@ -106,20 +107,13 @@ export default function Educacao() {
   useSEO("Trilha Completa de Educação", "Cinco níveis progressivos: Valor Esperado, leitura de dados, modelos quantitativos, vieses cognitivos e análise integrada de mercados preditivos.");
 
   return (
+    <div>
+      <PageHeader
+        badge="Guia de aprendizado"
+        title="Do Fundamento à Análise Integrada"
+        subtitle="Cada nível constrói sobre o anterior. Você não precisa de matemática avançada para começar — precisa de disposição para questionar o que acreditava saber sobre probabilidade."
+      />
     <div className="max-w-4xl mx-auto px-4 py-8 space-y-16">
-
-      {/* Header */}
-      <div className="text-center">
-        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-xs text-primary font-medium mb-4">
-          <BookOpen className="w-3.5 h-3.5" />
-          Guia de aprendizado
-        </div>
-        <h1 className="text-3xl font-bold text-foreground mb-4">Do Fundamento à Análise Integrada</h1>
-        <p className="text-muted-foreground max-w-2xl mx-auto text-sm leading-relaxed">
-          Cada nível constrói sobre o anterior. Você não precisa de matemática avançada para começar —
-          precisa de disposição para questionar o que acreditava saber sobre probabilidade.
-        </p>
-      </div>
 
       {/* Mapa de progressão */}
       <section>
@@ -262,6 +256,7 @@ export default function Educacao() {
           </span>
         </Link>
       </section>
+    </div>
     </div>
   );
 }

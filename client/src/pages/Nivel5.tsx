@@ -12,6 +12,7 @@ import { useModelCall } from "@/hooks/useModels";
 import { awardPoints } from "@/lib/userProgress";
 import { useSEO } from "@/hooks/useSEO";
 import LevelNav from "@/components/LevelNav";
+import PageHeader from "@/components/PageHeader";
 
 interface DivergenceResult {
   divergence_pct: number; signal: string; label: string;
@@ -272,18 +273,13 @@ export default function Nivel5() {
   }, []);
 
   return (
+    <div>
+      <PageHeader
+        badge="Nível 5 · Avançado"
+        title="Análise Integrada"
+        subtitle="O sistema nunca diz o que fazer. Mostra onde os modelos divergem do mercado, por que divergem, e o que essa divergência significa — para que você decida com informação real."
+      />
     <div className="max-w-5xl mx-auto px-4 py-8 space-y-8">
-      <div>
-        <div className="flex items-center gap-2 mb-2">
-          <span className="px-2.5 py-0.5 rounded-full bg-primary/10 text-primary text-xs font-semibold">Nível 5</span>
-          <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary text-xs font-medium">Avançado</span>
-        </div>
-        <h1 className="text-2xl font-bold text-foreground">Análise Integrada</h1>
-        <p className="text-muted-foreground mt-1 text-sm max-w-2xl">
-          O sistema nunca diz o que fazer. Mostra onde os modelos divergem do mercado,
-          por que divergem, e o que essa divergência significa — para que você decida com informação real.
-        </p>
-      </div>
 
       {/* Aviso pedagógico principal */}
       <div className="p-4 rounded-xl border border-primary/30 bg-primary/5">
@@ -306,6 +302,7 @@ export default function Nivel5() {
       </div>
 
       <LevelNav current={5} />
+    </div>
     </div>
   );
 }

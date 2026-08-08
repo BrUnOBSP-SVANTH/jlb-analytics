@@ -13,6 +13,7 @@ import { useModelCall } from "@/hooks/useModels";
 import { awardPoints } from "@/lib/userProgress";
 import { useSEO } from "@/hooks/useSEO";
 import LevelNav from "@/components/LevelNav";
+import PageHeader from "@/components/PageHeader";
 
 interface ZResult { z: number; p_two_tail: number; signal: string; explanation: string; }
 interface CIResult { lower: number; upper: number; margin: number; se: number; dist_used: string; level_pct: number; signal: string; explanation: string; }
@@ -277,18 +278,13 @@ export default function Nivel2() {
   }, []);
 
   return (
+    <div>
+      <PageHeader
+        badge="Nível 2 · Grátis"
+        title="Leitura de Dados"
+        subtitle="Dados sem contexto estatístico são ruído com aparência de sinal. Este nível te ensina a ler o que os números realmente dizem — e o que não dizem."
+      />
     <div className="max-w-4xl mx-auto px-4 py-8 space-y-8">
-      <div>
-        <div className="flex items-center gap-2 mb-2">
-          <span className="px-2.5 py-0.5 rounded-full bg-primary/10 text-primary text-xs font-semibold">Nível 2</span>
-          <span className="text-xs text-muted-foreground">Grátis</span>
-        </div>
-        <h1 className="text-2xl font-bold text-foreground">Leitura de Dados</h1>
-        <p className="text-muted-foreground mt-1 text-sm max-w-2xl">
-          Dados sem contexto estatístico são ruído com aparência de sinal.
-          Este nível te ensina a ler o que os números realmente dizem — e o que não dizem.
-        </p>
-      </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
         <ZScoreCalculator />
@@ -297,6 +293,7 @@ export default function Nivel2() {
       </div>
 
       <LevelNav current={2} />
+    </div>
     </div>
   );
 }

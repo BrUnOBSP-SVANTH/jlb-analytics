@@ -13,6 +13,7 @@ import { useModelCall } from "@/hooks/useModels";
 import { awardPoints } from "@/lib/userProgress";
 import { useSEO } from "@/hooks/useSEO";
 import LevelNav from "@/components/LevelNav";
+import PageHeader from "@/components/PageHeader";
 
 // ─── Tipos de resposta da API ─────────────────────────────────────────────────
 interface EVResult {
@@ -330,19 +331,13 @@ export default function Nivel1() {
   }, []);
 
   return (
+    <div>
+      <PageHeader
+        badge="Nível 1 · Grátis"
+        title="Fundamentos"
+        subtitle="A maioria das pessoas perde dinheiro em mercados preditivos não por falta de intuição, mas por nunca ter calculado o Valor Esperado da sua posição. Este nível corrige isso."
+      />
     <div className="max-w-4xl mx-auto px-4 py-8 space-y-8">
-      {/* Header */}
-      <div>
-        <div className="flex items-center gap-2 mb-2">
-          <span className="px-2.5 py-0.5 rounded-full bg-primary/10 text-primary text-xs font-semibold">Nível 1</span>
-          <span className="text-xs text-muted-foreground">Grátis</span>
-        </div>
-        <h1 className="text-2xl font-bold text-foreground">Fundamentos</h1>
-        <p className="text-muted-foreground mt-1 text-sm max-w-2xl">
-          A maioria das pessoas perde dinheiro em mercados preditivos não por falta de intuição,
-          mas por nunca ter calculado o Valor Esperado da sua posição. Este nível corrige isso.
-        </p>
-      </div>
 
       {/* Alerta pedagógico */}
       <div className="flex items-start gap-3 p-4 rounded-xl border border-warning/30 bg-warning/5">
@@ -374,6 +369,7 @@ export default function Nivel1() {
       </div>
 
       <LevelNav current={1} />
+    </div>
     </div>
   );
 }
