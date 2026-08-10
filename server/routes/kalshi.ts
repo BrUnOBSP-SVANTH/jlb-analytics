@@ -27,10 +27,11 @@ router.get("/markets", async (req, res) => {
           ticker: m.ticker,
           eventTicker: ev.event_ticker,
           seriesTicker,
-          // URL canônica computada no servidor (fonte única). Formato atual da Kalshi:
-          // /markets/{series}/{event}. ⚠️ Não pôde ser verificado por HTTP (kalshi.com
-          // bloqueia requisições automatizadas com 429) — confirmar com uso real.
-          externalUrl: `https://kalshi.com/markets/${seriesTicker}/${ev.event_ticker}`,
+          // URL canônica: /markets/{série}/{evento} em MINÚSCULAS. Verificado no navegador
+          // (kalshi.com bloqueia meu servidor com 429): a Kalshi aceita/redireciona esse
+          // formato de 2 partes — o slug do meio (= título da série) é opcional. Maiúsculo
+          // dava 404 (a causa dos "mercados falsos" da Kalshi).
+          externalUrl: `https://kalshi.com/markets/${seriesTicker.toLowerCase()}/${ev.event_ticker.toLowerCase()}`,
           title: m.title ?? ev.title ?? m.ticker,
           yesProb: Math.max(0.1, Math.min(99.9, yesProb)),
           prevYesProb: m.previous_price_dollars

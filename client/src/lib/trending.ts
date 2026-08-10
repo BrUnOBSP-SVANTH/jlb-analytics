@@ -356,7 +356,7 @@ export function buildKalshiItem(m: KalshiMarket): TrendingItem | null {
     yesProb: yesDecimal,
     prevYesProb: prevDecimal,
     parsedOutcomes: m.outcomes,
-    externalUrl: m.externalUrl ?? `https://kalshi.com/markets/${m.seriesTicker}/${m.eventTicker}`,
+    externalUrl: m.externalUrl ?? `https://kalshi.com/markets/${m.seriesTicker.toLowerCase()}/${m.eventTicker.toLowerCase()}`,
     whyTrending: whyTrendingMarket({ volume: m.volume, volume24h: m.volume24h, liquidity: m.liquidity, yesProb: yesDecimal, prevYesProb: prevDecimal, source: "kalshi" }),
     bestBetNote: bestBetNoteMarket(yesDecimal, m.volume, "kalshi"),
     sentiment: analyzeSentiment(m.title),

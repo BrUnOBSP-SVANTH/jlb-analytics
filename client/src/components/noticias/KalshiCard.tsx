@@ -158,7 +158,7 @@ export function KalshiCard({ market }: { market: KalshiMarket }) {
           )}
         </div>
         <a
-          href={`https://kalshi.com/markets/${market.seriesTicker}/${market.eventTicker}`}
+          href={`https://kalshi.com/markets/${market.seriesTicker.toLowerCase()}/${market.eventTicker.toLowerCase()}`}
           target="_blank"
           rel="noopener noreferrer"
           className="p-1 text-muted-foreground/40 hover:text-gold transition-colors"

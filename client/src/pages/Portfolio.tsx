@@ -132,7 +132,7 @@ function AddPositionModal({
             const url = m.externalUrl ? String(m.externalUrl)
               : source === "polymarket"
                 ? (m.eventSlug ? `https://polymarket.com/pt/event/${m.eventSlug}` : "https://polymarket.com/pt")
-                : `https://kalshi.com/markets/${seriesTicker}/${eventTicker}`;
+                : `https://kalshi.com/markets/${seriesTicker.toLowerCase()}/${eventTicker.toLowerCase()}`;
             return { id, title, yesProb: prob, externalUrl: url, source };
           })
           .filter((o) => o.title.length > 3);
