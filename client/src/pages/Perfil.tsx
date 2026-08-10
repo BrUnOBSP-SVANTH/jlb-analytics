@@ -356,10 +356,18 @@ export default function Perfil() {
                         <div className="flex flex-wrap gap-3 mt-1.5 text-[10px] text-muted-foreground">
                           <span>Mercado: {pred.marketProb}%</span>
                           <span>Você: {pred.userProb}%</span>
+                          {pred.resolved && pred.outcome !== null && (
+                            <span>Real: <span className={pred.outcome ? "text-positive font-semibold" : "text-negative font-semibold"}>{pred.outcome ? "SIM" : "NÃO"}</span></span>
+                          )}
                           {pred.brierScore !== null && (
                             <span>Brier: {pred.brierScore.toFixed(3)}</span>
                           )}
                           <span>{fmtDate(pred.savedAt)}</span>
+                          {pred.resolved && pred.resolutionSource && (
+                            <span className={pred.resolutionSource === "settled" ? "text-positive/70" : "text-muted-foreground/50"}>
+                              {pred.resolutionSource === "settled" ? "✓ oficial" : pred.resolutionSource === "inferred" ? "~ preço" : "✎ manual"}
+                            </span>
+                          )}
                         </div>
                       </div>
                     </div>

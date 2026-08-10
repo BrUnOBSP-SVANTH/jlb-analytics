@@ -26,7 +26,10 @@ comment on column public.predictions.resolution_source is
 -- ─── View: track record da IA (agora com taxa de acerto direcional) ──────────
 -- Colunas existentes preservadas na mesma ordem (CREATE OR REPLACE exige isso);
 -- as novas são anexadas ao final e lidas de forma defensiva pelo endpoint.
-CREATE OR REPLACE VIEW public.ai_track_record AS
+-- WITH (security_invoker = true): CREATE OR REPLACE zera as reloptions da view,
+-- então RE-declaramos aqui o security_invoker que a migration 009 configurou —
+-- sem isto, a view voltaria a SECURITY DEFINER e re-dispararia o lint 0010.
+CREATE OR REPLACE VIEW public.ai_track_record WITH (security_invoker = true) AS
 SELECT
   COUNT(*) FILTER (WHERE resolved)                           AS resolved_count,
   COUNT(*)                                                   AS total_count,

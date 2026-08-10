@@ -2,7 +2,7 @@
  * Dashboard — JLB Analytics
  * Métricas comportamentais + Prediction Tracker com calibração real.
  */
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link } from "wouter";
 import { useAuth } from "@/contexts/AuthContext";
 import {
@@ -18,7 +18,7 @@ import {
   meanBrierScore, skillScore,
   saveCalibrationSnapshot, loadCalibrationHistory,
   detectResolutions,
-  type StoredPrediction, type ResolutionSuggestion,
+  type StoredPrediction, type ResolutionSuggestion, type ResolutionSource,
 } from "@/lib/predictions";
 import { awardPoints, loadProgress } from "@/lib/userProgress";
 import { pullProgress } from "@/lib/progressSync";
@@ -143,10 +143,16 @@ function PredictionTracker({ userId }: { userId?: string }) {
   const [filter, setFilter] = useState<PredFilter>("all");
   const [resolutions, setResolutions] = useState<ResolutionSuggestion[]>([]);
   const [dismissedRes, setDismissedRes] = useState<Set<string>>(new Set());
+  // Só auto-resolvemos DEPOIS que o pull do mount terminou — senão uma foto stale
+  // do Supabase pode reverter (e re-pontuar) um settlement recém-aplicado.
+  const [hydrated, setHydrated] = useState(false);
+  // Ids já pontuados nesta sessão — awardPoints roda no máximo 1× por previsão,
+  // mesmo que o efeito reentre (belt-and-suspenders sobre o merge monotônico).
+  const awardedThisSession = useRef<Set<string>>(new Set());
 
   // Pull from Supabase on mount (when logged in), then push local-only entries
   useEffect(() => {
-    if (!userId) return;
+    if (!userId) { setHydrated(true); return; } // sem login: localStorage já é a verdade
     setSyncing(true);
     pullFromSupabase(userId).then(async (ok) => {
       if (ok) {
@@ -156,19 +162,38 @@ function PredictionTracker({ userId }: { userId?: string }) {
         await pushToSupabase(userId);
       }
       setSyncing(false);
+      setHydrated(true); // libera a auto-resolução mesmo se o pull falhou
     });
   }, [userId]);
 
-  // Auto-resolution detection: cruza previsões pendentes com mercados ao vivo
+  // Auto-resolução: resultado OFICIAL da plataforma aplica sozinho (é fato, não
+  // há o que confirmar); inferência por preço vira sugestão para o usuário confirmar.
   useEffect(() => {
+    if (!hydrated) return; // espera o pull do mount para não correr com uma foto stale
     const pendingReal = preds.filter((p) => !p.resolved);
     if (pendingReal.length === 0) { setResolutions([]); return; }
     let cancelled = false;
     void detectResolutions(pendingReal).then((sugg) => {
-      if (!cancelled) setResolutions(sugg);
+      if (cancelled) return;
+      const settled = sugg.filter((s) => s.resolutionSource === "settled");
+      const inferred = sugg.filter((s) => s.resolutionSource === "inferred");
+      if (settled.length > 0) {
+        settled.forEach((s) => {
+          const r = resolvePrediction(s.prediction.id, s.suggestedOutcome, "settled");
+          if (!r) return;
+          if (userId) void syncOne(r, userId);
+          if (!awardedThisSession.current.has(r.id)) {   // pontua uma única vez
+            awardedThisSession.current.add(r.id);
+            awardPoints("prediction_resolved", `Previsão resolvida: ${r.question.slice(0, 50)}`);
+          }
+        });
+        saveCalibrationSnapshot();
+        reload(); // reroda o efeito; os oficiais já saem como resolvidos
+      }
+      setResolutions(inferred);
     });
     return () => { cancelled = true; };
-  }, [preds]);
+  }, [preds, userId, hydrated]);
 
   function reload() { setPreds(loadPredictions()); }
 
@@ -196,8 +221,8 @@ function PredictionTracker({ userId }: { userId?: string }) {
     URL.revokeObjectURL(url);
   }
 
-  function handleResolve(id: string, outcome: boolean) {
-    const resolved = resolvePrediction(id, outcome);
+  function handleResolve(id: string, outcome: boolean, source: ResolutionSource = "manual") {
+    const resolved = resolvePrediction(id, outcome, source);
     if (resolved) {
       awardPoints("prediction_resolved", `Previsão resolvida: ${resolved.question.slice(0, 50)}`);
       saveCalibrationSnapshot(); // persist daily snapshot for trend chart
@@ -306,7 +331,7 @@ function PredictionTracker({ userId }: { userId?: string }) {
               <p className="text-sm font-semibold text-foreground">
                 {active.length === 1 ? "1 previsão pronta para resolver" : `${active.length} previsões prontas para resolver`}
               </p>
-              <span className="ml-auto text-[10px] text-muted-foreground/60">detectado nos mercados ao vivo</span>
+              <span className="ml-auto text-[10px] text-muted-foreground/60">inferido do preço ao vivo · confirme</span>
             </div>
             <div className="space-y-2">
               {active.slice(0, 4).map((r) => (
@@ -323,7 +348,7 @@ function PredictionTracker({ userId }: { userId?: string }) {
                   </div>
                   <div className="flex items-center gap-1.5 shrink-0">
                     <button
-                      onClick={() => { handleResolve(r.prediction.id, r.suggestedOutcome); setDismissedRes((s) => new Set(s).add(r.prediction.id)); }}
+                      onClick={() => { handleResolve(r.prediction.id, r.suggestedOutcome, "inferred"); setDismissedRes((s) => new Set(s).add(r.prediction.id)); }}
                       className="px-2.5 py-1 rounded-lg bg-neon-blue/15 border border-neon-blue/30 text-[11px] font-semibold text-neon-blue hover:bg-neon-blue/25 transition-colors"
                     >
                       Resolver {r.suggestedOutcome ? "SIM" : "NÃO"}

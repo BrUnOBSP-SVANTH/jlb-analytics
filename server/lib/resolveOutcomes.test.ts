@@ -30,8 +30,14 @@ describe("derivePolymarketOutcome — settlement via UMA + preços liquidados", 
   it("resolvido com No a 1.00 → false", () => {
     expect(derivePolymarketOutcome(true, "resolved", NO, '["0","1"]')).toBe(false);
   });
-  it("closed=true sozinho já basta para resolver", () => {
+  it("closed sem UMA final, mas preços liquidados EXATOS (1/0) → resolve", () => {
+    // Após a resolução final o Gamma zera os preços em 1/0 mesmo que o campo UMA venha vazio.
     expect(derivePolymarketOutcome(true, undefined, YES, '["1","0"]')).toBe(true);
+  });
+  it("closed com UMA em DISPUTA e preço fracionário extremo (0.995) → null (não é oficial)", () => {
+    // O bug: 'closed' sozinho não garante liquidação; disputa pode inverter o desfecho.
+    expect(derivePolymarketOutcome(true, "disputed", YES, '["0.995","0.005"]')).toBeNull();
+    expect(derivePolymarketOutcome(true, "proposed", YES, '["0.98","0.02"]')).toBeNull();
   });
   it("mercado ABERTO nunca resolve, mesmo com preço alto", () => {
     expect(derivePolymarketOutcome(false, undefined, YES, '["0.96","0.04"]')).toBeNull();

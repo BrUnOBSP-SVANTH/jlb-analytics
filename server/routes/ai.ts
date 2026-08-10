@@ -325,26 +325,33 @@ router.get("/resolved", async (req, res) => {
   const cacheKey = `ai-resolved-${limit}`;
   const cached = getCache<object>(cacheKey);
   if (cached) return res.json({ ...cached, cached: true });
+  const BASE = "market_id,source,title,category,ai_fair_value,market_prob,outcome,resolved_at";
+  const fetchRows = (withSource: boolean) => fetch(
+    `${SUPABASE_URL}/rest/v1/ai_forecasts?resolved=eq.true&select=${withSource ? `${BASE},resolution_source` : BASE}&order=resolved_at.desc&limit=${limit}`,
+    { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }, signal: AbortSignal.timeout(8_000) },
+  );
   try {
-    const r = await fetch(
-      `${SUPABASE_URL}/rest/v1/ai_forecasts?resolved=eq.true&select=market_id,source,title,category,ai_fair_value,market_prob,outcome,resolution_source,resolved_at&order=resolved_at.desc&limit=${limit}`,
-      { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }, signal: AbortSignal.timeout(8_000) },
-    );
+    // Auto-heal: antes da migration 018 a coluna resolution_source não existe e o
+    // PostgREST responde 400 — refazemos o select sem ela (procedência = 'inferido').
+    let r = await fetchRows(true);
+    if (!r.ok) r = await fetchRows(false);
     if (!r.ok) return res.json({ available: false, items: [] });
     const rows = await r.json() as Array<{
       market_id: string; source: string; title: string; category: string | null;
       ai_fair_value: number | string; market_prob: number | string;
-      outcome: boolean; resolution_source: string | null; resolved_at: string | null;
+      outcome: boolean; resolution_source?: string | null; resolved_at: string | null;
     }>;
     const items = rows.map((row) => {
       const aiProb = Math.round(Number(row.ai_fair_value));
       const marketProb = Math.round(Number(row.market_prob));
       const outcome = row.outcome === true;
+      const aiSided = aiProb !== 50;         // previu um lado (SIM/NÃO)? 50 = sem opinião
+      const marketSided = marketProb !== 50;
       return {
         marketId: row.market_id, source: row.source, title: row.title, category: row.category,
-        aiProb, marketProb, outcome,
-        aiHit: aiProb !== 50 && (aiProb > 50) === outcome,      // a IA acertou o lado?
-        marketHit: marketProb !== 50 && (marketProb > 50) === outcome,
+        aiProb, marketProb, outcome, aiSided, marketSided,
+        aiHit: aiSided && (aiProb > 50) === outcome,      // a IA acertou o lado?
+        marketHit: marketSided && (marketProb > 50) === outcome,
         official: row.resolution_source === "settled",
         resolvedAt: row.resolved_at,
       };

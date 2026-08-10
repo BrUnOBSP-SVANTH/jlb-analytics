@@ -189,6 +189,7 @@ export function AiTrackRecord() {
 interface ResolvedItem {
   marketId: string; source: string; title: string; category: string | null;
   aiProb: number; marketProb: number; outcome: boolean;
+  aiSided: boolean; marketSided: boolean;  // false = previu ~50% (sem lado definido)
   aiHit: boolean; marketHit: boolean; official: boolean; resolvedAt: string | null;
 }
 
@@ -204,7 +205,10 @@ export function ResultComparator({ limit = 8 }: { limit?: number }) {
 
   if (!items || items.length === 0) return null;
 
-  const hits = items.filter((i) => i.aiHit).length;
+  // Só conta como acerto/erro as previsões com LADO definido (≠ 50%); as "sem
+  // lado" ficam fora do denominador, alinhado à taxa direcional da view.
+  const sided = items.filter((i) => i.aiSided);
+  const hits = sided.filter((i) => i.aiHit).length;
 
   return (
     <AnimatedSection>
@@ -212,16 +216,23 @@ export function ResultComparator({ limit = 8 }: { limit?: number }) {
         <div className="flex items-center gap-2 mb-1">
           <Scale className="w-4 h-4 text-neon-blue shrink-0" />
           <p className="text-sm font-semibold text-foreground">Comparador: o que dissemos × o que aconteceu</p>
-          <span className="ml-auto text-[10px] text-muted-foreground/60">{hits}/{items.length} acertos recentes</span>
+          <span className="ml-auto text-[10px] text-muted-foreground/60">{hits}/{sided.length} acertos recentes</span>
         </div>
         <p className="text-[11px] text-muted-foreground mb-4">
           Cada previsão da IA confrontada com o resultado que a plataforma liquidou de verdade.
         </p>
         <div className="space-y-2">
-          {items.map((it) => (
+          {items.map((it) => {
+            // Sem lado (≈50%) = a IA não opinou → marcador neutro, nunca "erro".
+            const badge = !it.aiSided
+              ? { cls: "bg-secondary/40 text-muted-foreground", mark: "–" }
+              : it.aiHit
+                ? { cls: "bg-positive/15 text-positive", mark: "✓" }
+                : { cls: "bg-negative/15 text-negative", mark: "✗" };
+            return (
             <div key={`${it.source}-${it.marketId}`} className="flex items-center gap-3 p-3 rounded-lg border border-border/15 bg-secondary/10">
-              <span className={`shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${it.aiHit ? "bg-positive/15 text-positive" : "bg-negative/15 text-negative"}`}>
-                {it.aiHit ? "✓" : "✗"}
+              <span className={`shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${badge.cls}`}>
+                {badge.mark}
               </span>
               <div className="flex-1 min-w-0">
                 <p className="text-xs text-foreground truncate">{it.title}</p>
@@ -237,7 +248,8 @@ export function ResultComparator({ limit = 8 }: { limit?: number }) {
                 {it.official ? "oficial" : "inferido"}
               </span>
             </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </AnimatedSection>

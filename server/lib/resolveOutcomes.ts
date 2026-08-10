@@ -40,12 +40,22 @@ export function derivePolymarketOutcome(
   outcomes: string | undefined,
   outcomePrices: string | undefined,
 ): boolean | null {
-  const resolved = closed === true || umaResolutionStatus === "resolved";
-  if (!resolved) return null;
-  const labels = safeJson<string[]>(outcomes) ?? [];
   const prices = (safeJson<string[]>(outcomePrices) ?? []).map((p) => parseFloat(p));
+  // Autoridade da liquidação: SÓ confiamos na resolução final da UMA. Um mercado
+  // apenas 'closed' (negociação encerrada) pode estar com a UMA ainda proposed/
+  // disputed — e uma disputa PODE inverter o desfecho. Aceitamos 'closed' sem UMA
+  // apenas quando os preços já liquidaram EXATAMENTE (vencedor ~1, resto ~0), o
+  // que só ocorre APÓS a resolução final; durante a disputa o preço é o último
+  // trade fracionário (ex.: 0.995), então este atalho não dispara antes da hora.
+  const umaResolved = umaResolutionStatus === "resolved";
+  const pricesSettled = prices.length >= 2
+    && prices.some((p) => p >= 0.9999)
+    && prices.every((p) => p >= 0.9999 || p <= 0.0001);
+  if (!umaResolved && !(closed === true && pricesSettled)) return null;
+
+  const labels = safeJson<string[]>(outcomes) ?? [];
   const win = prices.findIndex((p) => p >= 0.99);   // vencedor liquida em ~1.00
-  if (win < 0) return null;                         // fechado mas sem preço liquidado ainda
+  if (win < 0) return null;                         // resolvido mas sem preço liquidado ainda
   const label = labels[win];
   if (label === "Yes") return true;
   if (label === "No") return false;

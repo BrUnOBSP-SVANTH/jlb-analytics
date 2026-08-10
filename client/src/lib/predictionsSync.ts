@@ -13,9 +13,9 @@
  */
 
 import { supabase } from "./supabase";
-import { loadPredictions, savePredictions, type StoredPrediction } from "./predictions";
+import { loadPredictions, savePredictions, type StoredPrediction, type ResolutionSource } from "./predictions";
 
-// ── DB row type (matches 003_predictions.sql) ─────────────────────────────
+// ── DB row type (matches 003_predictions.sql + 018_resolution_source.sql) ──
 
 interface DbPrediction {
   id: string;
@@ -28,9 +28,23 @@ interface DbPrediction {
   resolved: boolean;
   outcome: boolean | null;
   resolution_price: number | null;
-  brier_score: number | string | null;  // generated column
+  resolution_source: string | null;      // migration 018 (auto-heal se ausente)
+  brier_score: number | string | null;   // generated column
   created_at: string;
   resolved_at: string | null;
+}
+
+/**
+ * Upsert com auto-heal: se a coluna resolution_source ainda não existe (migration
+ * 018 não aplicada), o PostgREST devolve erro de schema cache — reenviamos SEM o
+ * campo. Assim o sync inteiro nunca quebra por causa da coluna nova.
+ */
+async function upsertRows(rows: Array<Record<string, unknown>>): Promise<void> {
+  const { error } = await supabase.from("predictions").upsert(rows, { onConflict: "id" });
+  if (error && /resolution_source|PGRST204|schema cache/i.test(error.message ?? "")) {
+    const stripped = rows.map(({ resolution_source, ...rest }) => { void resolution_source; return rest; });
+    await supabase.from("predictions").upsert(stripped, { onConflict: "id" });
+  }
 }
 
 // ── Converters ────────────────────────────────────────────────────────────
@@ -47,6 +61,7 @@ function toDbRow(p: StoredPrediction, userId: string): Omit<DbPrediction, "brier
     resolved: p.resolved,
     outcome: p.outcome,
     resolution_price: p.outcome !== null ? (p.outcome ? 100 : 0) : null,
+    resolution_source: p.resolutionSource ?? null,
     created_at: p.savedAt,
     resolved_at: p.resolved ? (p.savedAt) : null,
   };
@@ -66,6 +81,7 @@ function fromDbRow(row: DbPrediction): StoredPrediction {
     resolved: row.resolved,
     outcome: row.outcome,
     brierScore: isNaN(bs as number) ? null : bs,
+    resolutionSource: (row.resolution_source as ResolutionSource | null) ?? undefined,
   };
 }
 
@@ -89,12 +105,27 @@ export async function pullFromSupabase(userId: string): Promise<boolean> {
 
     const remote = (data as DbPrediction[]).map(fromDbRow);
     const local = loadPredictions();
+    const localById = new Map(local.map((p) => [p.id, p]));
 
-    // Merge: remote wins by id, local-only entries appended
+    // Merge por id: remoto vence, EXCETO onde isso reverteria fatos locais.
+    // A resolução é monotônica — uma foto remota 'pendente' nunca deve apagar
+    // uma previsão já resolvida localmente (corrida com o settlement oficial); e a
+    // procedência local ('settled'/'manual') é preservada quando o remoto vier sem
+    // ela (janela em que o auto-heal gravou sem resolution_source, pré-migration 018).
+    const reconciled = remote.map((r) => {
+      const l = localById.get(r.id);
+      if (!l) return r;
+      if (l.resolved && !r.resolved) return l;                       // não reverter resolução local
+      if (r.resolved && !r.resolutionSource && l.resolutionSource) { // preservar procedência local
+        return { ...r, resolutionSource: l.resolutionSource };
+      }
+      return r;
+    });
+
     const remoteIds = new Set(remote.map((p) => p.id));
     const localOnly = local.filter((p) => !remoteIds.has(p.id));
 
-    const merged = [...remote, ...localOnly].sort(
+    const merged = [...reconciled, ...localOnly].sort(
       (a, b) => new Date(b.savedAt).getTime() - new Date(a.savedAt).getTime()
     );
 
@@ -113,7 +144,7 @@ export async function pushToSupabase(userId: string): Promise<void> {
     const preds = loadPredictions();
     if (preds.length === 0) return;
     const rows = preds.map((p) => toDbRow(p, userId));
-    await supabase.from("predictions").upsert(rows, { onConflict: "id" });
+    await upsertRows(rows);
   } catch {
     // silent — local state unchanged
   }
@@ -124,7 +155,7 @@ export async function pushToSupabase(userId: string): Promise<void> {
 /** Upsert a single prediction (call after addPrediction / resolvePrediction). */
 export async function syncOne(pred: StoredPrediction, userId: string): Promise<void> {
   try {
-    await supabase.from("predictions").upsert(toDbRow(pred, userId), { onConflict: "id" });
+    await upsertRows([toDbRow(pred, userId)]);
   } catch { /* silent */ }
 }
 

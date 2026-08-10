@@ -6,6 +6,8 @@
 
 import { getAllMarkets } from "./marketsCache";
 
+export type ResolutionSource = "settled" | "inferred" | "manual";
+
 export interface StoredPrediction {
   id: string;
   marketId: string;
@@ -16,6 +18,9 @@ export interface StoredPrediction {
   resolved: boolean;
   outcome: boolean | null;   // true = YES resolved, false = NO resolved
   brierScore: number | null; // (outcome01 - userProb/100)^2, null until resolved
+  // Procedência da resolução: settled = resultado OFICIAL da plataforma;
+  // inferred = inferido de preço extremo; manual = o usuário marcou na mão.
+  resolutionSource?: ResolutionSource;
 }
 
 export interface CalibrationBucket {
@@ -61,7 +66,11 @@ export function addPrediction(
   return p;
 }
 
-export function resolvePrediction(id: string, outcome: boolean): StoredPrediction | null {
+export function resolvePrediction(
+  id: string,
+  outcome: boolean,
+  source: ResolutionSource = "manual",
+): StoredPrediction | null {
   const list = loadPredictions();
   const idx = list.findIndex((p) => p.id === id);
   if (idx === -1) return null;
@@ -73,6 +82,7 @@ export function resolvePrediction(id: string, outcome: boolean): StoredPredictio
     resolved: true,
     outcome,
     brierScore: Math.pow(outcome01 - prob01, 2),
+    resolutionSource: source,
   };
   save(list);
   return list[idx];
@@ -89,22 +99,57 @@ export function deletePrediction(id: string): void {
 
 export interface ResolutionSuggestion {
   prediction: StoredPrediction;
-  suggestedOutcome: boolean;   // true = SIM, false = NÃO
-  currentProb: number;          // prob atual do mercado (0-100)
-  confidence: "alta" | "media"; // alta = ≥97/≤3, media = ≥90/≤10
+  suggestedOutcome: boolean;    // true = SIM, false = NÃO
+  currentProb: number;           // prob atual do mercado (0-100)
+  confidence: "alta" | "media";  // alta = oficial ou ≥97/≤3, media = ≥90/≤10
+  resolutionSource: "settled" | "inferred"; // settled = resultado OFICIAL, inferred = preço
 }
 
-interface LiveMarketLite { id: string; yesProb: number }
-
-/** Busca o estado atual dos mercados e detecta previsões prontas para resolver. */
+/**
+ * Detecta previsões prontas para resolver, priorizando o RESULTADO OFICIAL da
+ * plataforma sobre a inferência por preço:
+ *   1. POST /api/settlements → resultado liquidado de verdade (settled). Pega até
+ *      mercados que já FECHARAM (saíram da lista ao vivo) — o caso que a heurística
+ *      antiga perdia. Estes o Dashboard aplica sozinho: é fato, não há o que confirmar.
+ *   2. Fallback só para os sem resultado oficial: preço extremo ao vivo (inferred),
+ *      apresentado como sugestão para o usuário confirmar.
+ */
 export async function detectResolutions(pending: StoredPrediction[]): Promise<ResolutionSuggestion[]> {
   const realMarketPreds = pending.filter(
     (p) => p.marketId.startsWith("poly-") || p.marketId.startsWith("kalshi-")
   );
   if (realMarketPreds.length === 0) return [];
 
-  const priceMap = new Map<string, number>(); // marketId → yesProb (0-100)
+  const suggestions: ResolutionSuggestion[] = [];
+  const settledIds = new Set<string>();
 
+  // ── 1) Resultado OFICIAL em lote (autoritativo) ────────────────────────────
+  try {
+    const res = await fetch("/api/settlements", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ids: realMarketPreds.map((p) => p.marketId) }),
+    });
+    if (res.ok) {
+      const { settlements } = await res.json() as { settlements: Record<string, boolean> };
+      for (const pred of realMarketPreds) {
+        const outcome = settlements[pred.marketId];
+        if (outcome !== undefined) {
+          suggestions.push({
+            prediction: pred, suggestedOutcome: outcome,
+            currentProb: outcome ? 100 : 0, confidence: "alta", resolutionSource: "settled",
+          });
+          settledIds.add(pred.marketId);
+        }
+      }
+    }
+  } catch { /* segue para o fallback heurístico */ }
+
+  // ── 2) Fallback: preço extremo ao vivo, só para os sem resultado oficial ────
+  const stillPending = realMarketPreds.filter((p) => !settledIds.has(p.marketId));
+  if (stillPending.length === 0) return suggestions;
+
+  const priceMap = new Map<string, number>(); // marketId → yesProb (0-100)
   try {
     const { polymarket, kalshi } = await getAllMarkets<
       { id: string; outcomePrices?: string; yesProb?: number },
@@ -123,16 +168,15 @@ export async function detectResolutions(pending: StoredPrediction[]): Promise<Re
     for (const m of kalshi) {
       priceMap.set(`kalshi-${m.ticker}`, m.yesProb > 1 ? m.yesProb : m.yesProb * 100);
     }
-  } catch { return []; }
+  } catch { return suggestions; }
 
-  const suggestions: ResolutionSuggestion[] = [];
-  for (const pred of realMarketPreds) {
+  for (const pred of stillPending) {
     const currentProb = priceMap.get(pred.marketId);
     if (currentProb === undefined) continue; // mercado não está mais ativo — não dá pra inferir
     if (currentProb >= 90) {
-      suggestions.push({ prediction: pred, suggestedOutcome: true, currentProb, confidence: currentProb >= 97 ? "alta" : "media" });
+      suggestions.push({ prediction: pred, suggestedOutcome: true, currentProb, confidence: currentProb >= 97 ? "alta" : "media", resolutionSource: "inferred" });
     } else if (currentProb <= 10) {
-      suggestions.push({ prediction: pred, suggestedOutcome: false, currentProb, confidence: currentProb <= 3 ? "alta" : "media" });
+      suggestions.push({ prediction: pred, suggestedOutcome: false, currentProb, confidence: currentProb <= 3 ? "alta" : "media", resolutionSource: "inferred" });
     }
   }
   return suggestions;
