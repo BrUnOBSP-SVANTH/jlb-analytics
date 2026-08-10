@@ -125,12 +125,14 @@ function AddPositionModal({
               : Number(m.yesProb);
             const title = String(m.question ?? m.title ?? "");
             const id = String(source === "polymarket" ? m.id : m.ticker);
-            const slug = String(source === "polymarket" ? (m.eventSlug ?? m.slug ?? id) : "");
             const eventTicker = String(source === "kalshi" ? m.eventTicker ?? "" : "");
             const seriesTicker = String(source === "kalshi" ? m.seriesTicker ?? "" : "");
-            const url = source === "polymarket"
-              ? `https://polymarket.com/event/${slug}`
-              : `https://kalshi.com/markets/${seriesTicker}/${eventTicker}`;
+            // Prefere a URL canônica do servidor; senão, Poly SÓ com eventSlug (nunca
+            // market.slug/id → 404); Kalshi {series}/{event}. Sem eventSlug → home.
+            const url = m.externalUrl ? String(m.externalUrl)
+              : source === "polymarket"
+                ? (m.eventSlug ? `https://polymarket.com/event/${m.eventSlug}` : "https://polymarket.com")
+                : `https://kalshi.com/markets/${seriesTicker}/${eventTicker}`;
             return { id, title, yesProb: prob, externalUrl: url, source };
           })
           .filter((o) => o.title.length > 3);

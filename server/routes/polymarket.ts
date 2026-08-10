@@ -171,7 +171,16 @@ router.get("/markets", async (req, res) => {
         };
       })
       .sort((a, b) => b._score - a._score)
-      .map(({ _vol24h, _endMs, _score, ...rest }) => rest);
+      .map(({ _vol24h, _endMs, _score, ...rest }) => ({
+        ...rest,
+        // URL canônica computada AQUI, onde temos ev.slug. No Polymarket só existe
+        // /event/{eventSlug} — market.slug e id numérico dão 404 (o "mercado falso"
+        // que o usuário via ao clicar). Verificado ao vivo: só o eventSlug retorna 200.
+        externalUrl: rest.eventSlug ? `https://polymarket.com/event/${rest.eventSlug}` : undefined,
+      }))
+      // Corretor de mercados falsos: sem eventSlug não há página válida no Polymarket —
+      // não expomos um mercado cujo link levaria a "página não encontrada".
+      .filter((m) => !!m.externalUrl);
 
     return sorted;
     });

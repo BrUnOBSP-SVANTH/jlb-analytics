@@ -42,6 +42,7 @@ export interface PolyBet {
   outcomePrices?: string;
   outcomes?: string;
   clobTokenIds?: string;
+  externalUrl?: string; // URL canônica computada no servidor (fonte da verdade)
 }
 
 export interface ManifoldMarket {
@@ -70,6 +71,7 @@ export interface KalshiMarket {
   liquidity?: number;
   closeTime?: string;
   category?: string;
+  externalUrl?: string; // URL canônica computada no servidor (fonte da verdade)
   outcomes?: { label: string; prob: number }[];
 }
 
@@ -301,7 +303,9 @@ export function buildPolyItem(bet: PolyBet): TrendingItem | null {
   const vol24h = bet.volume24h !== undefined ? toNum(bet.volume24h) : undefined;
   const liq = bet.liquidity !== undefined ? toNum(bet.liquidity) : undefined;
   const weekChg = bet.weekPriceChange !== undefined ? toNum(bet.weekPriceChange) : undefined;
-  const slug = bet.eventSlug ?? bet.slug ?? bet.id;
+  // Link canônico: prefere o do servidor; senão SÓ /event/{eventSlug} (market.slug e
+  // id numérico dão 404 no Polymarket — era a origem dos "mercados falsos").
+  const externalUrl = bet.externalUrl ?? (bet.eventSlug ? `https://polymarket.com/event/${bet.eventSlug}` : "");
 
   const badge: DynamicBadge | undefined =
     isClosingSoon(bet.closeTime ?? bet.endDate) ? "encerrando" :
@@ -322,7 +326,7 @@ export function buildPolyItem(bet: PolyBet): TrendingItem | null {
     yesProb, prevYesProb: bet.prevYesProb,
     parsedOutcomes,
     clobTokenIds: bet.clobTokenIds,
-    externalUrl: `https://polymarket.com/event/${slug}`,
+    externalUrl,
     whyTrending: whyTrendingMarket({ volume: vol, volume24h: vol24h, liquidity: liq, yesProb, prevYesProb: bet.prevYesProb, weekPriceChange: weekChg, source: "polymarket" }),
     bestBetNote: bestBetNoteMarket(yesProb, vol, "polymarket"),
     sentiment: analyzeSentiment(displayTitle),
@@ -352,7 +356,7 @@ export function buildKalshiItem(m: KalshiMarket): TrendingItem | null {
     yesProb: yesDecimal,
     prevYesProb: prevDecimal,
     parsedOutcomes: m.outcomes,
-    externalUrl: `https://kalshi.com/markets/${m.seriesTicker}/${m.eventTicker}`,
+    externalUrl: m.externalUrl ?? `https://kalshi.com/markets/${m.seriesTicker}/${m.eventTicker}`,
     whyTrending: whyTrendingMarket({ volume: m.volume, volume24h: m.volume24h, liquidity: m.liquidity, yesProb: yesDecimal, prevYesProb: prevDecimal, source: "kalshi" }),
     bestBetNote: bestBetNoteMarket(yesDecimal, m.volume, "kalshi"),
     sentiment: analyzeSentiment(m.title),

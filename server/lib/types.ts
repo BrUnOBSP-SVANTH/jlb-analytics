@@ -41,6 +41,7 @@ export interface PolyMarket {
   featured?: boolean; category?: string;
   closed?: boolean; active?: boolean;
   endDate?: string; outcomePrices?: string; outcomes?: string; clobTokenIds?: string;
+  externalUrl?: string; // URL canônica /event/{eventSlug} computada no servidor
 }
 
 // ── Kalshi ────────────────────────────────────────────────────────────────────
@@ -63,6 +64,7 @@ export interface KalshiMarket {
   yesProb: number; prevYesProb?: number;
   volume: number; volume24h?: number; openInterest?: number; liquidity?: number;
   closeTime?: string; category?: string; status?: string;
+  externalUrl?: string; // URL canônica /markets/{series}/{event} computada no servidor
   outcomes?: { label: string; prob: number }[]; // multi-resultado agrupado (mutually_exclusive)
 }
 

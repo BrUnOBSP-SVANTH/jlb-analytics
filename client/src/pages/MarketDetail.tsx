@@ -78,6 +78,7 @@ export default function MarketDetail() {
             ticker: string; title: string; yesProb: number;
             volume?: number; volume24h?: number; openInterest?: number;
             closeTime?: string; category?: string; status?: string;
+            seriesTicker?: string; eventTicker?: string; externalUrl?: string;
             outcomes?: { label: string; prob: number }[];
           }>("kalshi");
           const found = data.find((m) => m.ticker === rawId || m.ticker.includes(rawId));
@@ -91,7 +92,7 @@ export default function MarketDetail() {
               volume: found.volume,
               volume24h: found.volume24h,
               liquidity: found.openInterest,
-              externalUrl: `https://kalshi.com/markets/${found.ticker}`,
+              externalUrl: found.externalUrl ?? "https://kalshi.com",
               source: "kalshi",
               category: found.category,
               status: found.status,
@@ -106,14 +107,15 @@ export default function MarketDetail() {
               setMarket({
                 id: fb.ticker, title: fb.title, yesProb: fb.yesProb / 100,
                 volume: fb.volume, volume24h: fb.volume24h, liquidity: fb.openInterest,
-                externalUrl: `https://kalshi.com/markets/${fb.ticker}`, source: "kalshi",
+                externalUrl: "https://kalshi.com", source: "kalshi",
                 category: fb.category, status: fb.status, resolvedOutcome: fb.resolvedOutcome,
               });
             }
           }
         } else {
           const data = await getMarkets<{
-            id: string; question: string; eventTitle?: string; slug?: string; yesProb?: number;
+            id: string; question: string; eventTitle?: string; slug?: string; eventSlug?: string;
+            externalUrl?: string; yesProb?: number;
             volume?: number | string; liquidity?: number | string;
             volume24h?: number | string; weekPriceChange?: number | string;
             outcomePrices?: string; outcomes?: string; category?: string; clobTokenIds?: string; endDate?: string;
@@ -152,7 +154,7 @@ export default function MarketDetail() {
               volume24h: found.volume24h !== undefined ? Number(found.volume24h) : undefined,
               liquidity: found.liquidity !== undefined ? Number(found.liquidity) : undefined,
               weekPriceChange: found.weekPriceChange !== undefined ? Number(found.weekPriceChange) : undefined,
-              externalUrl: `https://polymarket.com/event/${found.slug ?? found.id}`,
+              externalUrl: found.externalUrl ?? (found.eventSlug ? `https://polymarket.com/event/${found.eventSlug}` : "https://polymarket.com"),
               source: "polymarket",
               category: found.category,
               endDate: found.endDate,
@@ -170,7 +172,7 @@ export default function MarketDetail() {
                 id: fb.id, title: fb.question ?? "Mercado", yesProb: yp,
                 volume: fb.volume, volume24h: fb.volume24h, liquidity: fb.liquidity,
                 weekPriceChange: fb.weekPriceChange,
-                externalUrl: `https://polymarket.com/event/${fb.id}`, source: "polymarket",
+                externalUrl: "https://polymarket.com", source: "polymarket",
                 category: fb.category, endDate: fb.endDate, closed: fb.closed, active: fb.active,
                 resolvedOutcome: fb.resolvedOutcome,
               });

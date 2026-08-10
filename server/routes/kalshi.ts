@@ -22,10 +22,15 @@ router.get("/markets", async (req, res) => {
         const last = parseFloat(m.last_price_dollars ?? "0") * 100;
         const rawProb = bid > 0 && ask > 0 ? (bid + ask) / 2 : last || 50;
         const yesProb = parseFloat(rawProb.toFixed(1));
+        const seriesTicker = ev.series_ticker ?? ev.event_ticker;
         return {
           ticker: m.ticker,
           eventTicker: ev.event_ticker,
-          seriesTicker: ev.series_ticker ?? ev.event_ticker,
+          seriesTicker,
+          // URL canônica computada no servidor (fonte única). Formato atual da Kalshi:
+          // /markets/{series}/{event}. ⚠️ Não pôde ser verificado por HTTP (kalshi.com
+          // bloqueia requisições automatizadas com 429) — confirmar com uso real.
+          externalUrl: `https://kalshi.com/markets/${seriesTicker}/${ev.event_ticker}`,
           title: m.title ?? ev.title ?? m.ticker,
           yesProb: Math.max(0.1, Math.min(99.9, yesProb)),
           prevYesProb: m.previous_price_dollars

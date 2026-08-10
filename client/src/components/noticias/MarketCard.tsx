@@ -212,7 +212,7 @@ export function MarketCard({ market, savedIds, onSaved, highlight = false }: Mar
             </button>
           )}
           <a
-            href={`https://polymarket.com/event/${market.eventSlug ?? market.slug}`}
+            href={market.eventSlug ? `https://polymarket.com/event/${market.eventSlug}` : "https://polymarket.com"}
             target="_blank"
             rel="noopener noreferrer"
             className="p-1 text-muted-foreground/40 hover:text-gold transition-colors"
