@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { derivePolymarketOutcome, deriveKalshiOutcome, stripPrefix } from "./resolveOutcomes.ts";
+import { derivePolymarketOutcome, deriveKalshiOutcome, stripPrefix, chunk } from "./resolveOutcomes.ts";
 
 // Caminho de CREDIBILIDADE: a regra que decide se a previsão acertou vem daqui.
 // Um erro aqui envenena a "taxa de acerto do site" — por isso testamos a fundo.
@@ -45,11 +45,30 @@ describe("derivePolymarketOutcome — settlement via UMA + preços liquidados", 
   it("fechado mas SEM preço liquidado (nenhum lado ≥0.99) → null", () => {
     expect(derivePolymarketOutcome(true, "resolved", YES, '["0.7","0.3"]')).toBeNull();
   });
-  it("multi-resultado (rótulos fora de Yes/No) não vira desfecho binário", () => {
-    expect(derivePolymarketOutcome(true, "resolved", '["Trump","Biden","Other"]', '["1","0","0"]')).toBeNull();
+  it("label-agnostic: Over/Under e nomes de time resolvem pelo preço do índice 0", () => {
+    // A correção de completude: o desfecho é P(índice 0), não o rótulo "Yes"/"No".
+    expect(derivePolymarketOutcome(true, "resolved", '["Over","Under"]', '["1","0"]')).toBe(true);
+    expect(derivePolymarketOutcome(true, "resolved", '["Over","Under"]', '["0","1"]')).toBe(false);
+    expect(derivePolymarketOutcome(true, "resolved", '["Invicta","Evo Novo"]', '["1","0"]')).toBe(true);
   });
-  it("JSON inválido nos preços não lança nem chuta → null", () => {
+  it("nenhum lado liquidado a 1/0 (ex.: multi-way ainda aberto) → null", () => {
+    expect(derivePolymarketOutcome(true, "resolved", '["A","B","C"]', '["0.5","0.3","0.2"]')).toBeNull();
+  });
+  it("JSON inválido / menos de 2 preços não lança nem chuta → null", () => {
     expect(derivePolymarketOutcome(true, "resolved", YES, "not-json")).toBeNull();
+    expect(derivePolymarketOutcome(true, "resolved", YES, '["1"]')).toBeNull();
+  });
+});
+
+describe("chunk — fatia a lista de ids para os lotes de settlement", () => {
+  it("divide em pedaços do tamanho pedido, com resto no fim", () => {
+    expect(chunk([1, 2, 3, 4, 5], 2)).toEqual([[1, 2], [3, 4], [5]]);
+  });
+  it("array vazio → nenhum lote", () => {
+    expect(chunk([], 10)).toEqual([]);
+  });
+  it("tamanho >= comprimento → um único lote", () => {
+    expect(chunk([1, 2], 10)).toEqual([[1, 2]]);
   });
 });
 

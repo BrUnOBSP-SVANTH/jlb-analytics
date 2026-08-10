@@ -9,7 +9,7 @@ import { clampFairValue } from "./ai/guardrails.ts";
 import { extractJson } from "./extractJson.ts";
 import { getCache, setCache } from "./cache.ts";
 import { fetchCerebroContext } from "./cerebro.ts";
-import { fetchRealOutcome, stripPrefix } from "./resolveOutcomes.ts";
+import { fetchRealOutcomesBatch, stripPrefix, chunk } from "./resolveOutcomes.ts";
 import { log } from "./log.ts";
 
 // ── Auto-calibração: o viés medido nas resolvidas volta para o prompt ────────
@@ -124,15 +124,13 @@ export async function getSnapshotExtremes(): Promise<Map<string, boolean>> {
 /**
  * Resolve previsões da IA pelo RESULTADO OFICIAL da plataforma (settlement).
  * Prioridade de fontes, da mais confiável para a menos:
- *   1. Settlement real (Kalshi `result` / Polymarket UMA) via fetchRealOutcome —
- *      a verdade que paga as posições. Registrado como resolution_source='settled'.
+ *   1. Settlement real EM LOTE (Kalshi `result` / Polymarket UMA) via
+ *      fetchRealOutcomesBatch — a verdade que paga as posições. Poucas chamadas
+ *      resolvem TODOS os pendentes por execução, sem throttle nem teto de 40.
+ *      Registrado como resolution_source='settled'.
  *   2. Fallback SÓ quando a plataforma ainda não liquidou: preço extremo (≥97/≤3)
  *      ao vivo ou no histórico de snapshots → 'inferred' (transparente na UI).
- * A checagem oficial é limitada por execução (rate limit das APIs públicas); o
- * cron de 6h avança a fila do mais antigo (mais provável já resolvido) ao recente.
  */
-const MAX_SETTLE_CHECKS = 40;  // chamadas externas de settlement por execução
-
 export async function scoreAiForecasts(): Promise<{ scored: number; settled: number }> {
   if (!SUPABASE_URL || !SUPABASE_KEY) return { scored: 0, settled: 0 };
   try {
@@ -144,43 +142,40 @@ export async function scoreAiForecasts(): Promise<{ scored: number; settled: num
     const pending = await res.json() as Array<{ id: string; market_id: string; source: string }>;
     if (pending.length === 0) return { scored: 0, settled: 0 };
 
+    // Fonte 1 (autoritativa): resultado OFICIAL em lote — resolve TODOS os pendentes.
+    const realIds = pending
+      .filter((f) => f.source === "polymarket" || f.source === "kalshi")
+      .map((f) => f.market_id);
+    const { outcomes: settledMap, unavailable } = await fetchRealOutcomesBatch(realIds);
+
     // Fontes de FALLBACK — só entram quando a plataforma ainda não liquidou.
     const priceMap = getLiveMarketPrices();          // preço ao vivo (cache do servidor)
     const extremeMap = await getSnapshotExtremes();  // extremos no histórico de snapshots
 
-    const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
-    let scored = 0, settled = 0, settleChecks = 0;
-
+    const jobs: Array<{ id: string; outcome: boolean; source: "settled" | "inferred" }> = [];
     for (const f of pending) {
-      let outcome: boolean | null = null;
-      let resolutionSource: "settled" | "inferred" | null = null;
+      const real = settledMap.get(f.market_id);
+      if (real !== undefined) { jobs.push({ id: f.id, outcome: real, source: "settled" }); continue; }
+      // Não conseguimos CONSULTAR o settlement (chunk falhou) → deixa pendente para a
+      // próxima rodada, em vez de gravar um 'inferred' permanente e possivelmente errado.
+      if (unavailable.has(f.market_id)) continue;
+      // Fallback: preço extremo ao vivo.
+      const live = priceMap.get(f.market_id);
+      if (live !== undefined && live >= 97) { jobs.push({ id: f.id, outcome: true, source: "inferred" }); continue; }
+      if (live !== undefined && live <= 3) { jobs.push({ id: f.id, outcome: false, source: "inferred" }); continue; }
+      // Fallback: extremo no histórico de snapshots (chave sem prefixo).
+      const hist = extremeMap.get(`${f.source}:${stripPrefix(f.market_id)}`);
+      if (hist !== undefined) jobs.push({ id: f.id, outcome: hist, source: "inferred" });
+    }
 
-      // Fonte 1 (autoritativa): resultado OFICIAL da plataforma, com orçamento por execução.
-      if (settleChecks < MAX_SETTLE_CHECKS && (f.source === "polymarket" || f.source === "kalshi")) {
-        settleChecks++;
-        const real = await fetchRealOutcome(f.source, f.market_id);
-        if (real) { outcome = real.outcome; resolutionSource = "settled"; }
-        await sleep(150);  // throttle gentil com as APIs públicas
-      }
-
-      // Fonte 2 (fallback): preço extremo ao vivo.
-      if (outcome === null) {
-        const live = priceMap.get(f.market_id);
-        if (live !== undefined) {
-          if (live >= 97) { outcome = true; resolutionSource = "inferred"; }
-          else if (live <= 3) { outcome = false; resolutionSource = "inferred"; }
-        }
-      }
-      // Fonte 3 (fallback): extremo no histórico de snapshots (chave sem prefixo).
-      if (outcome === null) {
-        const hist = extremeMap.get(`${f.source}:${stripPrefix(f.market_id)}`);
-        if (hist !== undefined) { outcome = hist; resolutionSource = "inferred"; }
-      }
-      if (outcome === null) continue;
-
-      await patchResolution(f.id, outcome, resolutionSource!);
-      scored++;
-      if (resolutionSource === "settled") settled++;
+    // Persiste com concorrência limitada (PATCHes ao nosso próprio Supabase).
+    let scored = 0, settled = 0;
+    for (const group of chunk(jobs, 12)) {
+      await Promise.all(group.map(async (j) => {
+        await patchResolution(j.id, j.outcome, j.source);
+        scored++;
+        if (j.source === "settled") settled++;
+      }));
     }
     return { scored, settled };
   } catch { return { scored: 0, settled: 0 }; }
