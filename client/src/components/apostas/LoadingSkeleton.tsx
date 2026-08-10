@@ -3,7 +3,7 @@
  */
 export function LoadingSkeleton() {
   return (
-    <div className="glass-card rounded-xl p-5 space-y-4 animate-pulse">
+    <div className="glass-card rounded-xl p-5 space-y-4 animate-pulse h-full flex flex-col">
       {/* Title row + prob pill */}
       <div className="flex items-start gap-3">
         <div className="w-2 h-2 rounded-full bg-secondary/50 mt-1.5 shrink-0" />
@@ -34,7 +34,7 @@ export function LoadingSkeleton() {
         <div className="h-3 bg-secondary/15 rounded w-10/12" />
       </div>
       {/* Footer */}
-      <div className="flex justify-between items-center pt-1">
+      <div className="flex justify-between items-center pt-1 mt-auto">
         <div className="h-3 bg-secondary/25 rounded w-32" />
         <div className="h-5 bg-secondary/20 rounded w-16" />
       </div>

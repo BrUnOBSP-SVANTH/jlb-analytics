@@ -102,8 +102,8 @@ function TrendingCardBase({ item, onCompare, inCompare }: {
   }
 
   return (
-    <AnimatedSection>
-      <div className="glass-card card-lift rounded-xl p-5">
+    <AnimatedSection className="h-full flex flex-col">
+      <div className="glass-card card-lift rounded-xl p-5 flex-1 flex flex-col">
         {/* ── Cabeçalho: pergunta + probabilidade protagonista ── */}
         <div className="flex items-start justify-between gap-3 mb-2.5">
           <div className="flex items-start gap-2 min-w-0 flex-1">
@@ -210,10 +210,12 @@ function TrendingCardBase({ item, onCompare, inCompare }: {
           <Flame className="w-3 h-3 text-primary/50 inline mr-1 align-[-2px]" />{item.whyTrending}
         </p>
 
-        {/* ── Analisar ──
-            Mercados (Polymarket/Kalshi) abrem a TELA DEDICADA de detalhe
-            (/apostas/:id) — mais espaço, análise completa, histórico e consenso.
-            Reddit/Manifold não têm página própria: mantêm a análise inline. */}
+        {/* ── Ações (Analisar + rodapé) ──
+            mt-auto ancora este bloco na BASE do card: com o card em flex-col + h-full,
+            todos os cards da linha ficam simétricos (mesma altura, ação alinhada embaixo,
+            independente de título/badges/prob variarem). Mercados abrem a tela dedicada;
+            Reddit/Manifold mantêm a análise inline. */}
+        <div className="mt-auto">
         {isMarket ? (
           <Link href={`/apostas/${item.id}`}>
             <span className="w-full flex items-center justify-center gap-1.5 py-2 rounded-lg border border-border/30 bg-secondary/20 text-xs font-medium text-foreground/80 hover:text-foreground hover:border-primary/40 hover:bg-secondary/30 transition-colors cursor-pointer">
@@ -298,6 +300,7 @@ function TrendingCardBase({ item, onCompare, inCompare }: {
               }
             </button>
           </div>
+        </div>
         </div>
       </div>
     </AnimatedSection>
