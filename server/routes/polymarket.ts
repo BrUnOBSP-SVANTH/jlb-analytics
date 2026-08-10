@@ -176,7 +176,7 @@ router.get("/markets", async (req, res) => {
         // URL canônica computada AQUI, onde temos ev.slug. No Polymarket só existe
         // /event/{eventSlug} — market.slug e id numérico dão 404 (o "mercado falso"
         // que o usuário via ao clicar). Verificado ao vivo: só o eventSlug retorna 200.
-        externalUrl: rest.eventSlug ? `https://polymarket.com/event/${rest.eventSlug}` : undefined,
+        externalUrl: rest.eventSlug ? `https://polymarket.com/pt/event/${rest.eventSlug}` : undefined,
       }))
       // Corretor de mercados falsos: sem eventSlug não há página válida no Polymarket —
       // não expomos um mercado cujo link levaria a "página não encontrada".

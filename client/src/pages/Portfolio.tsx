@@ -131,7 +131,7 @@ function AddPositionModal({
             // market.slug/id → 404); Kalshi {series}/{event}. Sem eventSlug → home.
             const url = m.externalUrl ? String(m.externalUrl)
               : source === "polymarket"
-                ? (m.eventSlug ? `https://polymarket.com/event/${m.eventSlug}` : "https://polymarket.com")
+                ? (m.eventSlug ? `https://polymarket.com/pt/event/${m.eventSlug}` : "https://polymarket.com/pt")
                 : `https://kalshi.com/markets/${seriesTicker}/${eventTicker}`;
             return { id, title, yesProb: prob, externalUrl: url, source };
           })

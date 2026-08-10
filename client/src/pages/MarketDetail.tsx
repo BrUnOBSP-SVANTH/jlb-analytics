@@ -154,7 +154,7 @@ export default function MarketDetail() {
               volume24h: found.volume24h !== undefined ? Number(found.volume24h) : undefined,
               liquidity: found.liquidity !== undefined ? Number(found.liquidity) : undefined,
               weekPriceChange: found.weekPriceChange !== undefined ? Number(found.weekPriceChange) : undefined,
-              externalUrl: found.externalUrl ?? (found.eventSlug ? `https://polymarket.com/event/${found.eventSlug}` : "https://polymarket.com"),
+              externalUrl: found.externalUrl ?? (found.eventSlug ? `https://polymarket.com/pt/event/${found.eventSlug}` : "https://polymarket.com/pt"),
               source: "polymarket",
               category: found.category,
               endDate: found.endDate,
@@ -172,7 +172,7 @@ export default function MarketDetail() {
                 id: fb.id, title: fb.question ?? "Mercado", yesProb: yp,
                 volume: fb.volume, volume24h: fb.volume24h, liquidity: fb.liquidity,
                 weekPriceChange: fb.weekPriceChange,
-                externalUrl: "https://polymarket.com", source: "polymarket",
+                externalUrl: "https://polymarket.com/pt", source: "polymarket",
                 category: fb.category, endDate: fb.endDate, closed: fb.closed, active: fb.active,
                 resolvedOutcome: fb.resolvedOutcome,
               });

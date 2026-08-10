@@ -311,7 +311,7 @@ export default function Noticias() {
             </div>
             <p className="text-xs text-muted-foreground text-center mt-6">
               Dados:{" "}
-              <a href="https://polymarket.com" target="_blank" rel="noopener noreferrer" className="text-gold underline underline-offset-2 decoration-gold/40 hover:decoration-gold">Polymarket</a>
+              <a href="https://polymarket.com/pt" target="_blank" rel="noopener noreferrer" className="text-gold underline underline-offset-2 decoration-gold/40 hover:decoration-gold">Polymarket</a>
               {" "}via Gamma API · Probabilidades implícitas do mercado de previsão.
             </p>
           </AnimatedSection>

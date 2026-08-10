@@ -305,7 +305,7 @@ export function buildPolyItem(bet: PolyBet): TrendingItem | null {
   const weekChg = bet.weekPriceChange !== undefined ? toNum(bet.weekPriceChange) : undefined;
   // Link canônico: prefere o do servidor; senão SÓ /event/{eventSlug} (market.slug e
   // id numérico dão 404 no Polymarket — era a origem dos "mercados falsos").
-  const externalUrl = bet.externalUrl ?? (bet.eventSlug ? `https://polymarket.com/event/${bet.eventSlug}` : "");
+  const externalUrl = bet.externalUrl ?? (bet.eventSlug ? `https://polymarket.com/pt/event/${bet.eventSlug}` : "");
 
   const badge: DynamicBadge | undefined =
     isClosingSoon(bet.closeTime ?? bet.endDate) ? "encerrando" :
