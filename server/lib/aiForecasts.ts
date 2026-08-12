@@ -212,27 +212,43 @@ export async function seedAiForecasts(maxMarkets = 18): Promise<{ started: boole
   if (seedRunning) return { started: false, reason: "já em execução" };
 
   const GENERIC = /\b(Team|Person|Candidate|Player|Country|Party)\s+[A-Z]{1,3}\b/;
-  const poly = getCache<Array<{ id: string; question: string; outcomePrices?: string; category?: string; volume?: number }>>("polymarket:markets:active") ?? [];
-  const kalshi = getCache<Array<{ ticker: string; title: string; yesProb: number; category?: string; volume?: number }>>("kalshi:markets") ?? [];
+  const poly = getCache<Array<{ id: string; question: string; outcomePrices?: string; category?: string; volume?: number; endDate?: string }>>("polymarket:markets:active") ?? [];
+  const kalshi = getCache<Array<{ ticker: string; title: string; yesProb: number; category?: string; volume?: number; closeTime?: string }>>("kalshi:markets") ?? [];
 
-  type Target = { marketId: string; source: string; title: string; category: string; marketProb: number; volume: number };
+  type Target = { marketId: string; source: string; title: string; category: string; marketProb: number; volume: number; closeMs: number };
   const targets: Target[] = [];
+
+  const now = Date.now();
+  const parseClose = (d?: string): number => { if (!d) return Infinity; const t = new Date(d).getTime(); return isNaN(t) ? Infinity : t; };
 
   for (const m of poly) {
     if (!m.question || GENERIC.test(m.question)) continue;
     let prob = 50;
     try { const p = parseFloat((JSON.parse(m.outcomePrices ?? "[]") as string[])[0]); if (!isNaN(p)) prob = Math.round(p * 100); } catch { /* skip */ }
-    targets.push({ marketId: `poly-${m.id}`, source: "polymarket", title: m.question, category: m.category ?? "other", marketProb: prob, volume: m.volume ?? 0 });
+    targets.push({ marketId: `poly-${m.id}`, source: "polymarket", title: m.question, category: m.category ?? "other", marketProb: prob, volume: m.volume ?? 0, closeMs: parseClose(m.endDate) });
   }
   for (const m of kalshi) {
     if (!m.title) continue;
-    targets.push({ marketId: `kalshi-${m.ticker}`, source: "kalshi", title: m.title, category: m.category ?? "other", marketProb: Math.round(m.yesProb > 1 ? m.yesProb : m.yesProb * 100), volume: m.volume ?? 0 });
+    targets.push({ marketId: `kalshi-${m.ticker}`, source: "kalshi", title: m.title, category: m.category ?? "other", marketProb: Math.round(m.yesProb > 1 ? m.yesProb : m.yesProb * 100), volume: m.volume ?? 0, closeMs: parseClose(m.closeTime) });
   }
 
-  // Prioriza mercados com mais volume e que não estão em preço extremo (já resolvidos)
+  // Prioriza mercados que RESOLVEM CEDO. Antes ordenava só por volume — e os de maior
+  // volume são perpétuos ("Elon a Marte 2099", "próximo Papa", eleição 2028) que NUNCA
+  // liquidam, então o track record não ganhava resultados oficiais. Agora: tier de
+  // urgência primeiro (quanto antes fecha = mais retorno), volume como desempate.
+  const DAY = 86_400_000;
+  const tier = (closeMs: number): number => {
+    const days = (closeMs - now) / DAY;
+    if (!isFinite(days)) return 1;            // sem data conhecida → baixa prioridade
+    if (days > 365) return 1;                 // perpétuo (2028, "Marte 2099") → nunca dá retorno útil
+    if (days >= -60 && days <= 60) return 5;  // JANELA de resolução (fecha/fechou há pouco) → melhor retorno
+    if (days > 60 && days <= 180) return 4;   // resolve nos próximos ~6 meses
+    if (days < -60) return 3;                 // atrasado (pode estar resolvendo, ou travado)
+    return 2;                                 // 180–365 dias
+  };
   const queue = targets
     .filter((t) => t.marketProb > 4 && t.marketProb < 96)
-    .sort((a, b) => b.volume - a.volume)
+    .sort((a, b) => { const d = tier(b.closeMs) - tier(a.closeMs); return d !== 0 ? d : (b.volume - a.volume); })
     .slice(0, maxMarkets);
 
   if (queue.length === 0) return { started: false, reason: "sem mercados no cache (aguarde o primeiro fetch)" };
