@@ -295,15 +295,34 @@ async function checkSupabase(env) {
     }
   } catch { /* silencioso */ }
 
-  // Track record da IA
+  // ── Comparador de resultados / track record da IA (MONITOR) ──
+  // O sinal-chave: `settled_count` = resoluções pelo RESULTADO OFICIAL da plataforma.
+  // É a prova de que o site acumula retorno real sobre os resultados (não chute de
+  // preço). Enquanto for 0, o comparador roda mas ainda não colheu nada oficial.
   try {
     const r = await fetch(`${url}/rest/v1/ai_track_record?select=*`, { headers: h });
     if (r.ok) {
       const [t] = await r.json();
-      if (t && t.resolved_count > 0) {
-        const skill = t.market_brier ? (1 - t.ai_brier / t.market_brier) : null;
-        line("✅", `Track record IA: ${paint(t.resolved_count + " resolvidas", c.green)}`, `Brier IA ${t.ai_brier} vs mercado ${t.market_brier}`);
-        if (skill !== null) add("info", "IA", `Skill vs mercado: ${(skill * 100).toFixed(0)}%`);
+      const resolved = Number(t?.resolved_count ?? 0);
+      if (t && resolved > 0) {
+        const dir = Number(t.directional_count ?? 0), hit = Number(t.hit_count ?? 0);
+        const mdir = Number(t.market_directional_count ?? 0), mhit = Number(t.market_hit_count ?? 0);
+        const settled = Number(t.settled_count ?? 0);
+        const hitRate = dir > 0 ? Math.round((hit / dir) * 100) : null;
+        const mHitRate = mdir > 0 ? Math.round((mhit / mdir) * 100) : null;
+        const skill = Number(t.market_brier) ? (1 - Number(t.ai_brier) / Number(t.market_brier)) : null;
+        line("✅", `Track record IA: ${paint(resolved + " resolvidas", c.green)} de ${t.total_count ?? "?"} registradas`,
+          hitRate !== null ? `acerto ${hitRate}%${mHitRate !== null ? ` vs mercado ${mHitRate}%` : ""}` : "");
+        line("ℹ️", `Brier IA ${paint(String(t.ai_brier), c.cyan)} vs mercado ${t.market_brier}` +
+          (skill !== null ? paint(`  · skill ${skill >= 0 ? "+" : ""}${(skill * 100).toFixed(0)}% vs mercado`, skill > 0 ? c.green : c.gray) : ""));
+        // Resoluções pelo resultado OFICIAL — o que estamos monitorando.
+        if (settled > 0) {
+          line("✅", `${paint(settled + " pelo resultado OFICIAL", c.green)} da plataforma`, `${resolved - settled} por preço/inferência`);
+          add("info", "IA", `Comparador: ${settled} resolução(ões) OFICIAL(is) · acerto ${hitRate ?? "?"}%`);
+        } else {
+          line("⚠️", paint("0 pelo resultado OFICIAL ainda (settled=0)", c.yellow), "aguardando mercados da janela de resolução liquidarem — seed priorizado em 2026-08-12");
+          add("warn", "IA", "Comparador sem resolução OFICIAL ainda (settled_count=0) — reveja em alguns dias se os mercados da janela começaram a liquidar");
+        }
       } else {
         line("ℹ️", paint(`Track record IA em construção (${t?.total_count ?? 0} análises registradas, 0 resolvidas)`, c.dim));
         add("info", "IA", "Track record vazio — rode análises para popular");
