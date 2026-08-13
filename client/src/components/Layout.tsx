@@ -11,7 +11,7 @@ import {
   LineChart, GitCompare, Sun, Moon,
   LogIn, LogOut, User, GraduationCap, Newspaper, Star, Brain,
   Zap, BookOpen, ChevronRight, Flame,
-  Bell, BellRing, Sigma, Map, Search,
+  Bell, BellRing, Sigma, Map, Search, ShieldCheck,
 } from "lucide-react";
 import CommandPalette from "./CommandPalette";
 import { toast } from "sonner";
@@ -64,6 +64,7 @@ const NAV_GROUPS: NavGroup[] = [
     children: [
       { label: "Previsão Guiada", href: "/previsao", icon: Brain, desc: "IA detecta seu nível e escolhe o modelo certo — todos os domínios", badge: "IA" },
       { label: "Briefing IA",     href: "/briefing", icon: Zap,   desc: "Análise matinal com dados ao vivo de mercado", badge: "IA" },
+      { label: "Track Record",    href: "/track-record", icon: ShieldCheck, desc: "Prova auditável: a precisão da IA vs. o mercado no resultado real", badge: "PROVA" },
     ],
   },
   {

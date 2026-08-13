@@ -281,6 +281,14 @@ export default function Home() {
                 </span>
               </Link>
             </div>
+            {/* Prova de valor: link de confiança para o track record verificado */}
+            <Link href="/track-record" onClick={() => track("cta_click", { id: "home_hero_trackrecord" })}>
+              <span className="inline-flex items-center gap-1.5 mt-4 text-xs text-muted-foreground hover:text-positive transition-colors cursor-pointer">
+                <CheckCircle className="w-3.5 h-3.5 text-positive/70" aria-hidden="true" />
+                Veja nosso <span className="text-foreground/80 underline underline-offset-2 decoration-positive/30">track record verificado</span> — IA vs. mercado, sem cherry-picking
+                <ArrowRight className="w-3 h-3" aria-hidden="true" />
+              </span>
+            </Link>
           </div>
 
           {/* Stat strip — macro ao vivo + plataforma */}
