@@ -131,15 +131,19 @@ router.post("/webhook", raw({ type: "application/json" }), async (req, res) => {
     return res.status(400).json({ error: "Invalid payload" });
   }
 
-  // Verifica assinatura quando STRIPE_WEBHOOK_SECRET está configurado
-  if (webhookSecret) {
-    const signature = req.headers["stripe-signature"];
-    if (!signature) return res.status(400).json({ error: "Missing stripe-signature header" });
-    const valid = verifyStripeSignature(req.body as Buffer, String(signature), webhookSecret);
-    if (!valid) {
-      log.warn("[Stripe] Assinatura inválida — webhook rejeitado");
-      return res.status(400).json({ error: "Invalid signature" });
-    }
+  // FAIL-CLOSED: sem o segredo configurado, NÃO processa. Antes, sem o segredo o
+  // bloco era pulado e qualquer POST anônimo concederia premium a um user_id
+  // arbitrário (metadata.user_id). Melhor recusar do que conceder sem verificar.
+  if (!webhookSecret) {
+    log.error("[Stripe] STRIPE_WEBHOOK_SECRET ausente — webhook recusado (fail-closed)");
+    return res.status(503).json({ error: "webhook_not_configured" });
+  }
+  const signature = req.headers["stripe-signature"];
+  if (!signature) return res.status(400).json({ error: "Missing stripe-signature header" });
+  const valid = verifyStripeSignature(req.body as Buffer, String(signature), webhookSecret);
+  if (!valid) {
+    log.warn("[Stripe] Assinatura inválida — webhook rejeitado");
+    return res.status(400).json({ error: "Invalid signature" });
   }
 
   const userId = event.data.object.metadata?.user_id;

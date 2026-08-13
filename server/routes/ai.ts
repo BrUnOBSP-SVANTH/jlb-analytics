@@ -1,6 +1,6 @@
-import { Router } from "express";
+import { Router, type Request, type Response, type NextFunction } from "express";
 import { getCache, setCache, isRateLimited } from "../lib/cache.ts";
-import { aiCreditsMiddleware, verifyUserId } from "../middleware/aiCredits.ts";
+import { aiCreditsMiddleware, verifyUserId, isStaleMonth } from "../middleware/aiCredits.ts";
 import { extractJson } from "../lib/extractJson.ts";
 import { callClaude, anthropicBreakerState } from "../lib/anthropic.ts";
 import { aiMetricsSnapshot } from "../lib/ai/metrics.ts";
@@ -24,6 +24,17 @@ export { sendWeeklyDigests };
 
 const router = Router();
 
+// Rate-limit por IP para os endpoints de IA que chamam a Anthropic. O gate de
+// crédito (aiCreditsMiddleware) só limita usuário LOGADO — anônimo passa direto;
+// sem isto, um anônimo queima tokens reais sem teto. Fecha esse buraco de custo.
+const ipLimit = (name: string, max: number, windowMs: number) =>
+  (req: Request, res: Response, next: NextFunction) => {
+    if (isRateLimited(`${name}:${req.ip ?? "?"}`, max, windowMs)) {
+      return res.status(429).json({ error: "rate_limited", message: "Muitas requisições. Aguarde um momento." });
+    }
+    next();
+  };
+
 // ── Credits status (read-only) ────────────────────────────────────────────────
 
 router.get("/credits", async (req, res) => {
@@ -45,17 +56,21 @@ router.get("/credits", async (req, res) => {
     const userId = await verifyUserId(authHeader);
     if (!userId) return res.json({ used: 0, limit: FREE_LIMIT, plan: "free" });
 
-    const r = await fetch(`${SUPABASE_URL}/rest/v1/ai_credits?user_id=eq.${userId}&select=plan,used_this_month`, {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/ai_credits?user_id=eq.${userId}&select=plan,used_this_month,month_reset`, {
       headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` },
     });
     if (!r.ok) return res.json({ used: 0, limit: FREE_LIMIT, plan: "free" });
 
-    const rows = await r.json() as Array<{ plan: string; used_this_month: number }>;
+    const rows = await r.json() as Array<{ plan: string; used_this_month: number; month_reset: string }>;
     if (rows.length === 0) return res.json({ used: 0, limit: FREE_LIMIT, plan: "free" });
 
     const row = rows[0];
+    // Mês vencido = cota zerada (mesma invariante do enforcement). O reset no banco
+    // é lazy (trigger no incremento), então sem isto o display mostraria o uso do
+    // mês passado logo após a virada do mês.
+    const used = isStaleMonth(row.month_reset) ? 0 : row.used_this_month;
     return res.json({
-      used: row.used_this_month,
+      used,
       limit: row.plan === "premium" ? null : FREE_LIMIT,
       plan: row.plan,
     });
@@ -99,7 +114,7 @@ router.post("/embed-cerebro", async (req, res) => {
 
 // ── Explain My Edge ──────────────────────────────────────────────────────────
 
-router.post("/explain-edge", aiCreditsMiddleware, async (req, res) => {
+router.post("/explain-edge", ipLimit("explain-edge", 10, 60_000), aiCreditsMiddleware, async (req, res) => {
   if (!process.env.ANTHROPIC_API_KEY) return res.status(503).json({ error: "ANTHROPIC_API_KEY não configurada." });
 
   interface ExplainEdgeReq { title: string; marketProb: number; userProb: number; source?: string }
@@ -146,7 +161,7 @@ JSON exato, sem markdown:
 // Duas rotas sobre o MESMO núcleo (runChat): POST /chat (JSON, retrocompat) e
 // POST /chat/stream (SSE — o widget vê o texto nascendo, TTFT percebido ~1s).
 
-router.post("/chat", aiCreditsMiddleware, async (req, res) => {
+router.post("/chat", ipLimit("chat", 12, 60_000), aiCreditsMiddleware, async (req, res) => {
   if (!chatGuards(req, res)) return;
   try {
     const reply = await runChat(req.body as ChatRequest);
@@ -157,7 +172,7 @@ router.post("/chat", aiCreditsMiddleware, async (req, res) => {
   }
 });
 
-router.post("/chat/stream", aiCreditsMiddleware, async (req, res) => {
+router.post("/chat/stream", ipLimit("chat", 12, 60_000), aiCreditsMiddleware, async (req, res) => {
   if (!chatGuards(req, res)) return;
   res.writeHead(200, {
     "Content-Type": "text/event-stream",
@@ -536,16 +551,16 @@ JSON exato:
 
 // ── Daily Briefing ────────────────────────────────────────────────────────────
 
-router.get("/daily-briefing", dailyBriefingHandler);
+router.get("/daily-briefing", ipLimit("briefing", 20, 60_000), dailyBriefingHandler);
 
 // ── Portfolio Analysis ────────────────────────────────────────────────────────
 
-router.post("/portfolio-analysis", portfolioHandler);
+router.post("/portfolio-analysis", ipLimit("portfolio", 6, 60_000), portfolioHandler);
 
 // ── Article Cross-Reference ───────────────────────────────────────────────────
 // Dado um artigo de notícias, busca os mercados preditivos relacionados e faz
 // uma avaliação honesta da probabilidade real, podendo discordar do preço do mercado.
 
-router.post("/article-crossref", crossrefHandler);
+router.post("/article-crossref", ipLimit("crossref", 10, 60_000), crossrefHandler);
 
 export default router;
