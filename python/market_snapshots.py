@@ -114,13 +114,19 @@ async def fetch_kalshi(client: httpx.AsyncClient, limit: int) -> list[dict]:
     rows: list[dict] = []
     for ev in data.get("events") or []:
         for m in ev.get("markets") or []:
-            yes_price_raw = m.get("yes_price") or m.get("yes_bid")
+            # A API da Kalshi (events?with_nested_markets) devolve preços em DÓLARES
+            # (0-1): yes_bid_dollars / yes_ask_dollars / last_price_dollars. NÃO existe
+            # "yes_price"/"yes_bid" — por isso o yes_prob (e o volume) vinham NULL nos
+            # snapshots, quebrando a mini-tendência da Kalshi. Mesma lógica da rota TS
+            # (routes/kalshi.ts): meio do book; sem book, o último preço.
+            bid = to_float(m.get("yes_bid_dollars"))
+            ask = to_float(m.get("yes_ask_dollars"))
+            last = to_float(m.get("last_price_dollars"))
             yes_prob: Optional[float] = None
-            if yes_price_raw is not None:
-                try:
-                    yes_prob = round(float(str(yes_price_raw)) * 100, 2)
-                except Exception:
-                    pass
+            if bid is not None and ask is not None and bid > 0 and ask > 0:
+                yes_prob = round((bid + ask) / 2 * 100, 2)
+            elif last is not None and last > 0:
+                yes_prob = round(last * 100, 2)
 
             rows.append(
                 {
@@ -129,9 +135,9 @@ async def fetch_kalshi(client: httpx.AsyncClient, limit: int) -> list[dict]:
                     "title": (m.get("title") or ev.get("title") or "")[:500],
                     "category": ev.get("category"),
                     "yes_prob": yes_prob,
-                    "volume": to_float(m.get("volume")),
-                    "volume_24h": to_float(m.get("volume_24h")),
-                    "liquidity": None,
+                    "volume": to_float(m.get("volume_fp")),
+                    "volume_24h": to_float(m.get("volume_24h_fp")),
+                    "liquidity": to_float(m.get("liquidity_dollars")),
                     "status": "open",
                     "outcome": None,
                 }
@@ -177,8 +183,10 @@ async def upsert_rows(client: httpx.AsyncClient, rows: list[dict], dry_run: bool
         print(f"  [dry-run] {len(rows)} rows — não inseridas")
         return len(rows)
 
-    url = f"{SUPABASE_URL}/rest/v1/market_snapshots"
-    # upsert with daily uniqueness key
+    # on_conflict TEM que citar o índice único diário (market_id, source, snap_date),
+    # senão o PostgREST resolve o conflito pela PK (id) e uma 2ª gravação no mesmo dia
+    # falha com unique_violation em vez de MERGEAR — igual à rota TS (snapshots.ts).
+    url = f"{SUPABASE_URL}/rest/v1/market_snapshots?on_conflict=market_id,source,snap_date"
     headers = {**supabase_headers(), "Prefer": "resolution=merge-duplicates,return=minimal"}
 
     # Batch em chunks de 200

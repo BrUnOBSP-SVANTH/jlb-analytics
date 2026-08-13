@@ -26,11 +26,14 @@ export function ProbSparkline({ tokenIds, marketId, source }: {
           .then(data => {
             if (cancelled || !data?.rows) return;
             const snappedPts = data.rows
-              .map((r: { yes_prob: number; snapped_at: string }) => ({
+              .map((r: { yes_prob: number | null; snapped_at: string }) => ({
                 t: Math.floor(new Date(r.snapped_at).getTime() / 1000),
-                p: r.yes_prob,
+                // Snapshots guardam yes_prob em 0-100; o CLOB do Polymarket vem 0-1.
+                // Normaliza para 0-1 aqui, senão o deltaPp (× 100) infla 100× a variação
+                // (ex.: +5pp virava "+500pp"). Nulo → descartado no filtro.
+                p: r.yes_prob == null ? NaN : r.yes_prob / 100,
               }))
-              .filter((h: { t: number; p: number }) => !isNaN(h.t));
+              .filter((h: { t: number; p: number }) => !isNaN(h.t) && !isNaN(h.p));
             if (snappedPts.length >= 4) setPts(snappedPts);
           })
           .catch(() => {});
