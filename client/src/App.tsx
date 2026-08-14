@@ -16,6 +16,7 @@ import { usePWA } from "./hooks/usePWA";
 import OnboardingTour from "./components/OnboardingTour";
 import ChatWidget from "./components/chat/ChatWidget";
 import ProgressSync from "./components/ProgressSync";
+import UpgradeModal from "./components/UpgradeModal";
 
 const Login         = lazy(() => import("./pages/Login"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
@@ -144,6 +145,7 @@ function App() {
             <PWAInstallBanner />
             <OnboardingTour />
             <ChatWidget />
+            <UpgradeModal />
           </TooltipProvider>
         </AuthProvider>
       </ThemeProvider>

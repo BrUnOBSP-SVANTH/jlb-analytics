@@ -9,6 +9,7 @@ import { Explain } from "@/components/marketDetail/Explain";
 import { addPrediction } from "@/lib/predictions";
 import { awardPoints } from "@/lib/userProgress";
 import { track } from "@/lib/analytics";
+import { maybeUpgrade } from "@/lib/upgrade";
 
 // ── EdgeCalculator (inline) ────────────────────────────────────────────────────
 
@@ -51,7 +52,10 @@ export function EdgeCalculator({ marketProb, marketId, question }: { marketProb:
         body: JSON.stringify({ title: question, marketProb, userProb: yourProb }),
         signal: AbortSignal.timeout(20_000),
       });
-      if (res.status === 429) throw new Error("RATE_LIMIT");
+      if (res.status === 429) {
+        if (await maybeUpgrade(res)) return;
+        throw new Error("RATE_LIMIT");
+      }
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       setExplain(await res.json() as ExplainResult);
     } catch (e) {

@@ -16,6 +16,7 @@ import { MODEL_COUNT } from "@/lib/brand";
 import AnaliseTabs from "@/components/AnaliseTabs";
 import KlementSection from "@/components/KlementSection";
 import { supabase } from "@/lib/supabase";
+import { maybeUpgrade } from "@/lib/upgrade";
 import {
   Brain, Zap, Clock, BarChart2, AlertCircle,
   ChevronDown, ChevronUp, BookOpen, Target,
@@ -190,6 +191,7 @@ export default function Previsao() {
           }),
         });
         if (!res.ok || !res.body) {
+          if (await maybeUpgrade(res)) return;   // cota mensal esgotada → paywall, não erro
           const err = await res.json().catch(() => ({})) as { message?: string };
           throw new Error(err.message ?? `HTTP ${res.status}`);
         }

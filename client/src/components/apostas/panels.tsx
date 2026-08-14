@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { type TrendingItem, formatVolume, formatOdds } from "@/lib/trending";
 import { awardPoints } from "@/lib/userProgress";
+import { maybeUpgrade } from "@/lib/upgrade";
 import { VolumeTrend } from "@/components/apostas/cards";
 
 function calcEV(yourProb: number, marketProb: number): number {
@@ -297,7 +298,10 @@ export function NewsAnalysisPanel({ item }: { item: TrendingItem }) {
             comments: item.comments ?? 0,
           }),
         });
-        if (res.status === 429) throw new Error("RATE_LIMIT");
+        if (res.status === 429) {
+          if (await maybeUpgrade(res)) return;
+          throw new Error("RATE_LIMIT");
+        }
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         data = await res.json() as RedditContextResult;
       } else {
@@ -307,7 +311,10 @@ export function NewsAnalysisPanel({ item }: { item: TrendingItem }) {
           body: JSON.stringify({ title: item.title, yesProb: item.yesProb ?? 0.5, source: item.source }),
           signal: AbortSignal.timeout(50_000),
         });
-        if (res.status === 429) throw new Error("RATE_LIMIT");
+        if (res.status === 429) {
+          if (await maybeUpgrade(res)) return;
+          throw new Error("RATE_LIMIT");
+        }
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         data = await res.json() as MarketAnalysisResult;
       }
