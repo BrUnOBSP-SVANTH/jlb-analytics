@@ -665,6 +665,8 @@ function Footer() {
             <Link href="/privacidade"><span className="text-muted-foreground hover:text-foreground transition-colors">Política de Privacidade</span></Link>
             <span className="text-border/40">·</span>
             <Link href="/sobre"><span className="text-muted-foreground hover:text-foreground transition-colors">Sobre</span></Link>
+            <span className="text-border/40">·</span>
+            <Link href="/imprensa"><span className="text-muted-foreground hover:text-foreground transition-colors">Imprensa</span></Link>
           </div>
           <p className="text-xs text-muted-foreground/70 text-center">
             &copy; {new Date().getFullYear()} JLB Analytics. Todos os direitos reservados.

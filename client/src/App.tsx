@@ -35,6 +35,7 @@ const Perfil        = lazy(() => import("./pages/Perfil"));
 const Sobre         = lazy(() => import("./pages/Sobre"));
 const Previsao      = lazy(() => import("./pages/Previsao"));
 const TrackRecord   = lazy(() => import("./pages/TrackRecord"));
+const Imprensa      = lazy(() => import("./pages/Imprensa"));
 const Briefing      = lazy(() => import("./pages/Briefing"));
 const Portfolio     = lazy(() => import("./pages/Portfolio"));
 const MarketDetail  = lazy(() => import("./pages/MarketDetail"));
@@ -108,6 +109,7 @@ function Router() {
               <Route path="/duelos"       component={Duelos} />
               <Route path="/previsao"     component={Previsao} />
               <Route path="/track-record" component={TrackRecord} />
+              <Route path="/imprensa"     component={Imprensa} />
               <Route path="/briefing"     component={Briefing} />
               <Route path="/portfolio"    component={Portfolio} />
               <Route path="/sobre"        component={Sobre} />
