@@ -65,7 +65,7 @@
     "helmet": "^8.2.0",
     "input-otp": "^1.4.2",
     "lucide-react": "^0.453.0",
-    "nanoid": "^5.1.5",
+    "nanoid": "^5.1.16",
     "react": "^19.2.1",
     "react-day-picker": "^9.11.1",
     "react-dom": "^19.2.1",
@@ -119,7 +119,8 @@
   "packageManager": "pnpm@10.4.1+sha512.c753b6c3ad7afa13af388fa6d808035a008e30ea9993f58c6663e2bc5ff21679aa834db094987129aa4d488b86df57f7b634981b2f827cdcacc698cc0cfb88af",
   "pnpm": {
     "overrides": {
-      "tailwindcss>nanoid": "3.3.7"
+      "tailwindcss>nanoid": "3.3.7",
+      "body-parser": ">=1.20.6"
     }
   }
 }
