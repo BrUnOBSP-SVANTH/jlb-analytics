@@ -7,6 +7,7 @@ import { Link } from "wouter";
 import {
   GraduationCap, BarChart3, TrendingUp, Brain, GitMerge,
   ArrowRight, Lock, CheckCircle, BookOpen, Star,
+  Scale, TrendingDown, Target,
 } from "lucide-react";
 import { isLevelUnlocked } from "@/lib/userProgress";
 import { useSEO } from "@/hooks/useSEO";
@@ -114,6 +115,80 @@ export default function Educacao() {
         subtitle="Cada nível constrói sobre o anterior. Você não precisa de matemática avançada para começar — precisa de disposição para questionar o que acreditava saber sobre probabilidade."
       />
     <div className="max-w-4xl mx-auto px-4 py-8 space-y-16">
+
+      {/* Porta de entrada: Aposta ≠ Investimento — o enquadramento que separa
+          achismo de método. É a primeira ideia que todo visitante precisa virar,
+          e o funil que liga a educação à prova (track record) e às ferramentas. */}
+      <section>
+        <div className="glass-card rounded-2xl border border-border/60 overflow-hidden">
+          <div className="p-6 sm:p-8 bg-gradient-to-br from-primary/5 to-transparent">
+            <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-primary mb-3">
+              <Scale className="w-3.5 h-3.5" /> Comece por aqui
+            </span>
+            <h2 className="text-2xl sm:text-3xl font-bold text-foreground text-balance mb-3">
+              Aposta <span className="text-negative">≠</span> Investimento
+            </h2>
+            <p className="text-sm text-muted-foreground max-w-2xl leading-relaxed">
+              Apostar no achismo é imposto sobre a esperança: a casa embute a margem dela em cada odd, e a emoção faz o resto.
+              Investir é o oposto — você só entra quando a <strong className="text-foreground">probabilidade real</strong> está do seu lado,
+              com <strong className="text-foreground">valor esperado positivo</strong> e disciplina. Este site inteiro existe para te levar de um lado ao outro.
+            </p>
+          </div>
+
+          <div className="grid sm:grid-cols-2 gap-px bg-border/40">
+            <div className="p-5 sm:p-6 bg-background/40">
+              <div className="flex items-center gap-2 mb-3">
+                <TrendingDown className="w-4 h-4 text-negative" />
+                <h3 className="font-semibold text-foreground text-sm">Apostar no achismo</h3>
+              </div>
+              <ul className="space-y-2 text-xs text-muted-foreground">
+                {[
+                  "A casa embute a margem (overround) — você já começa perdendo",
+                  "Decisão movida por emoção, torcida e o resultado mais recente",
+                  "EV negativo: matematicamente perdedor no longo prazo",
+                  "Sem registro e sem prova — impossível saber se você acerta",
+                ].map((x) => (
+                  <li key={x} className="flex items-start gap-2"><span className="text-negative mt-0.5 shrink-0">✗</span>{x}</li>
+                ))}
+              </ul>
+            </div>
+            <div className="p-5 sm:p-6 bg-background/40">
+              <div className="flex items-center gap-2 mb-3">
+                <Target className="w-4 h-4 text-positive" />
+                <h3 className="font-semibold text-foreground text-sm">Decidir com método</h3>
+              </div>
+              <ul className="space-y-2 text-xs text-muted-foreground">
+                {[
+                  "Você calcula a probabilidade e a margem implícita de cada odd",
+                  "Só age quando há divergência real entre o modelo e o mercado",
+                  "EV positivo e Kelly: o tamanho da posição vem da vantagem",
+                  "Track record auditável — a gente PROVA o histórico de acertos",
+                ].map((x) => (
+                  <li key={x} className="flex items-start gap-2"><CheckCircle className="w-3.5 h-3.5 text-positive shrink-0 mt-0.5" />{x}</li>
+                ))}
+              </ul>
+            </div>
+          </div>
+
+          <div className="p-5 sm:p-6 flex flex-wrap gap-3 border-t border-border/40">
+            <Link href="/nivel/1">
+              <span className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:opacity-90 transition-opacity cursor-pointer">
+                Começar pelo Valor Esperado <ArrowRight className="w-3.5 h-3.5" />
+              </span>
+            </Link>
+            <Link href="/track-record">
+              <span className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg border border-gold/40 text-gold text-sm font-semibold hover:bg-gold/5 transition-colors cursor-pointer">
+                <Star className="w-3.5 h-3.5" /> Ver a prova (track record)
+              </span>
+            </Link>
+            <Link href="/calculadoras">
+              <span className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg border border-border text-foreground text-sm font-medium hover:bg-muted/50 transition-colors cursor-pointer">
+                Calcular meu edge
+              </span>
+            </Link>
+          </div>
+        </div>
+      </section>
 
       {/* Mapa de progressão */}
       <section>
