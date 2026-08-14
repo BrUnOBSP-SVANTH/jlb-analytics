@@ -10,6 +10,7 @@ import { extractJson } from "./extractJson.ts";
 import { getCache, setCache } from "./cache.ts";
 import { fetchCerebroContext } from "./cerebro.ts";
 import { fetchRealOutcomesBatch, stripPrefix, chunk } from "./resolveOutcomes.ts";
+import { fetchWithRetry } from "./fetcher.ts";
 import { log } from "./log.ts";
 
 // ── Auto-calibração: o viés medido nas resolvidas volta para o prompt ────────
@@ -206,6 +207,39 @@ async function patchResolution(id: string, outcome: boolean, resolutionSource: s
 
 let seedRunning = false;
 
+/**
+ * Mercados Kalshi que fecham em POUCOS DIAS (via max_close_ts). Liquidam rápido e
+ * enchem o track record — a "prova vendável" — em dias, não meses. Filtra binários
+ * limpos (pula agregados multi-desfecho, que quebrariam a resolução por índice 0).
+ */
+async function fetchShortDatedKalshiTargets(daysAhead = 14, limit = 40): Promise<Array<{ ticker: string; title: string; prob: number; volume: number; closeMs: number }>> {
+  try {
+    const maxTs = Math.floor(Date.now() / 1000) + daysAhead * 86_400;
+    const data = await fetchWithRetry<{ markets?: Array<{ ticker?: string; title?: string; yes_sub_title?: string; yes_bid_dollars?: string; yes_ask_dollars?: string; last_price_dollars?: string; close_time?: string; volume_fp?: string }> }>(
+      `https://api.elections.kalshi.com/trade-api/v2/markets?status=open&max_close_ts=${maxTs}&limit=${limit}`,
+      { Accept: "application/json" },
+    );
+    const out: Array<{ ticker: string; title: string; prob: number; volume: number; closeMs: number }> = [];
+    const perSeries: Record<string, number> = {};   // diversidade: no máx N por série
+    const PER_SERIES_CAP = 4;
+    for (const m of data?.markets ?? []) {
+      if (!m.ticker || /MULTIGAME|CROSSCATEGORY|MULTI/i.test(m.ticker)) continue; // pula agregados negRisk
+      const title = (m.title ?? m.yes_sub_title ?? "").trim();
+      if (!title || /,\s*(yes|no)\s/i.test(title)) continue;                       // título "yes X, yes Y" = lista/agregado
+      const series = m.ticker.split("-")[0];
+      if ((perSeries[series] ?? 0) >= PER_SERIES_CAP) continue;                    // evita 90 matchups de golfe monopolizando
+      out.push({
+        ticker: m.ticker, title: title.slice(0, 300),
+        prob: (() => { const bid = parseFloat(m.yes_bid_dollars ?? "0"), ask = parseFloat(m.yes_ask_dollars ?? "0"), last = parseFloat(m.last_price_dollars ?? "0"); return bid > 0 && ask > 0 ? Math.round((bid + ask) / 2 * 100) : last > 0 ? Math.round(last * 100) : 50; })(),
+        volume: Math.round(parseFloat(m.volume_fp ?? "0")),
+        closeMs: m.close_time ? new Date(m.close_time).getTime() : Infinity,
+      });
+      perSeries[series] = (perSeries[series] ?? 0) + 1;
+    }
+    return out;
+  } catch { return []; }
+}
+
 export async function seedAiForecasts(maxMarkets = 18): Promise<{ started: boolean; reason?: string }> {
   if (!SUPABASE_URL || !SUPABASE_KEY) return { started: false, reason: "supabase ausente" };
   if (!process.env.ANTHROPIC_API_KEY) return { started: false, reason: "anthropic ausente" };
@@ -230,6 +264,16 @@ export async function seedAiForecasts(maxMarkets = 18): Promise<{ started: boole
   for (const m of kalshi) {
     if (!m.title) continue;
     targets.push({ marketId: `kalshi-${m.ticker}`, source: "kalshi", title: m.title, category: m.category ?? "other", marketProb: Math.round(m.yesProb > 1 ? m.yesProb : m.yesProb * 100), volume: m.volume ?? 0, closeMs: parseClose(m.closeTime) });
+  }
+
+  // Fonte EXTRA: mercados de data CURTA (fecham em dias) — o cache é dominado por
+  // perpétuos, então buscamos direto os que liquidam já, pra encher a prova rápido.
+  const seen = new Set(targets.map((t) => t.marketId));
+  for (const s of await fetchShortDatedKalshiTargets(21, 200)) {
+    const id = `kalshi-${s.ticker}`;
+    if (seen.has(id)) continue;
+    seen.add(id);
+    targets.push({ marketId: id, source: "kalshi", title: s.title, category: "other", marketProb: s.prob, volume: s.volume, closeMs: s.closeMs });
   }
 
   // Prioriza mercados que RESOLVEM CEDO. Antes ordenava só por volume — e os de maior
