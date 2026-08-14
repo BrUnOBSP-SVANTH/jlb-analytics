@@ -12,6 +12,7 @@ import PageHeader from "@/components/PageHeader";
 import AnimatedSection from "@/components/AnimatedSection";
 import { useSEO } from "@/hooks/useSEO";
 import { AiTrackRecord, ResultComparator } from "@/components/previsao/GuideAndTrackRecord";
+import { ShareCard } from "@/components/previsao/ShareCard";
 import {
   ShieldCheck, ClipboardList, Scale, Layers, ArrowRight, Sparkles, BookOpen,
 } from "lucide-react";
@@ -77,6 +78,9 @@ export default function TrackRecord() {
 
         {/* ── Comparador caso a caso ── */}
         <ResultComparator limit={12} />
+
+        {/* ── Card compartilhável (prova → aquisição) ── */}
+        <ShareCard />
 
         {/* ── Como medimos (transparência do método) ── */}
         <AnimatedSection>
