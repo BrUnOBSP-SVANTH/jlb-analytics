@@ -331,6 +331,58 @@ async function checkSupabase(env) {
   } catch { /* skip */ }
 }
 
+// ── 8b. Segurança (self-monitoring, grátis) ──────────────────────────────────
+// O que mata segurança é REGRESSÃO: um CVE novo, uma tabela nova sem RLS, ou um
+// segredo commitado por engano. Este bloco pega os três sozinho a cada `pnpm doctor`.
+function checkSecurity() {
+  section("Segurança");
+
+  // 1) Segredos no bundle do cliente (JWT service-role / chave secreta Stripe)
+  const distDir = join(ROOT, "dist", "public");
+  if (existsSync(distDir)) {
+    const secretRe = /eyJhbG[A-Za-z0-9_-]{20}|sk_(live|test)_[A-Za-z0-9]{10}/;
+    const leaks = walk(distDir, [".js", ".html", ".css"]).filter((f) => secretRe.test(read(f)));
+    if (leaks.length > 0) { line("🔴", paint(`SEGREDO no bundle do cliente (${leaks.length} arquivo)`, c.red), "JWT service-role / chave Stripe exposta"); add("crit", "Segurança", `Segredo vazado no bundle: ${leaks.map(rel).join(", ")}`); }
+    else line("✅", "Nenhum segredo (JWT service-role / Stripe) no bundle do cliente");
+  } else {
+    line("ℹ️", paint("dist/public ausente — rode `pnpm build` para checar o bundle", c.dim));
+  }
+
+  // 2) CVEs de dependência (pnpm audit)
+  if (QUICK) {
+    line("⏭️", paint("pnpm audit pulado (--quick)", c.dim));
+  } else {
+    try {
+      execSync("pnpm audit --prod", { cwd: ROOT, stdio: "pipe", timeout: 90000 });
+      line("✅", "Dependências sem vulnerabilidades conhecidas (pnpm audit)");
+    } catch (e) {
+      const out = (e.stdout?.toString() ?? "") + (e.stderr?.toString() ?? "");
+      const crit = countMatches(out, /^\s*│?\s*critical/gim);
+      const high = countMatches(out, /^\s*│?\s*high/gim);
+      const bad = crit + high;
+      line(bad > 0 ? "🔴" : "⚠️", paint(`Vulnerabilidades em dependências: ${crit} crítica(s) · ${high} alta(s)`, bad > 0 ? c.red : c.yellow), "rode `pnpm audit` para detalhes/fix");
+      add(bad > 0 ? "crit" : "warn", "Segurança", `Deps vulneráveis (${crit} crítica, ${high} alta) — pnpm audit`);
+    }
+  }
+
+  // 3) Cobertura de RLS: TODA tabela criada precisa ativar Row Level Security
+  const migDir = join(ROOT, "supabase", "migrations");
+  if (existsSync(migDir)) {
+    const sql = walk(migDir, [".sql"]).map(read).join("\n");
+    const created = new Set([...sql.matchAll(/create table\s+(?:if not exists\s+)?(?:public\.)?([a-z_]+)/gi)].map((m) => m[1].toLowerCase()));
+    const rls = new Set([...sql.matchAll(/alter table\s+(?:public\.)?([a-z_]+)\s+enable row level security/gi)].map((m) => m[1].toLowerCase()));
+    const missing = [...created].filter((t) => !rls.has(t));
+    if (missing.length > 0) { line("🔴", paint(`Tabela(s) SEM RLS: ${missing.join(", ")}`, c.red), "chave anônima é pública → dados expostos"); add("crit", "Segurança", `Tabela sem RLS: ${missing.join(", ")} — ENABLE ROW LEVEL SECURITY`); }
+    else line("✅", `RLS ativo em todas as ${created.size} tabelas`);
+  }
+
+  // 4) Headers de segurança (helmet) presentes
+  const idx = read(join(SERVER, "index.ts"));
+  /helmet\(/.test(idx)
+    ? line("✅", "helmet ativo (CSP · HSTS · X-Frame-Options · nosniff)")
+    : (line("⚠️", paint("helmet NÃO encontrado no server/index.ts", c.yellow)), add("warn", "Segurança", "helmet ausente — headers de segurança HTTP"));
+}
+
 // ── 9. Inventário ─────────────────────────────────────────────────────────────
 function checkInventory() {
   section("Inventário");
@@ -387,6 +439,7 @@ function report() {
   try { env = checkEnv(); } catch (e) { add("warn", "Doctor", "checkEnv falhou: " + e.message); }
   try { await checkAnthropic(env); } catch (e) { add("warn", "Doctor", "checkAnthropic falhou: " + e.message); }
   try { await checkSupabase(env); } catch (e) { add("warn", "Doctor", "checkSupabase falhou: " + e.message); }
+  try { checkSecurity(); } catch (e) { add("warn", "Doctor", "checkSecurity falhou: " + e.message); }
   try { checkInventory(); } catch (e) { add("warn", "Doctor", "checkInventory falhou: " + e.message); }
   const code = report();
   process.exit(code);
