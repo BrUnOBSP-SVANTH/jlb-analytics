@@ -1,0 +1,3 @@
+#!/usr/bin/env sh
+# Hook versionado (core.hooksPath=.githooks, via `prepare`). Barra segredo/.env.
+node scripts/precommit-security.mjs || exit 1

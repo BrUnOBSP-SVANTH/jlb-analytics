@@ -12,6 +12,7 @@
     "preview": "vite preview --host",
     "check": "tsc --noEmit",
     "doctor": "node scripts/jlb-doctor.mjs",
+    "prepare": "git config core.hooksPath .githooks || true",
     "icons": "node scripts/generate-icons.mjs",
     "prerender": "node scripts/prerender.mjs",
     "doctor:quick": "node scripts/jlb-doctor.mjs --quick",
