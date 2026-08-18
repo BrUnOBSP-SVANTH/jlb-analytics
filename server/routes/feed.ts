@@ -17,8 +17,8 @@ const SUPABASE_URL = process.env.SUPABASE_URL ?? process.env.VITE_SUPABASE_URL ?
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY ?? process.env.VITE_SUPABASE_ANON_KEY ?? "";
 const PORT = process.env.PORT ?? "3001";
 
-interface PolyMarket { id: string; question: string; outcomePrices?: string; category?: string; volume?: number; externalUrl?: string }
-interface KalshiMarket { ticker: string; title: string; yesProb: number; category?: string; volume?: number; externalUrl?: string }
+export interface PolyMarket { id: string; question: string; outcomePrices?: string; category?: string; volume?: number; externalUrl?: string }
+export interface KalshiMarket { ticker: string; title: string; yesProb: number; category?: string; volume?: number; externalUrl?: string }
 
 export interface FeedItem {
   source: "polymarket" | "kalshi";
@@ -73,10 +73,47 @@ async function movements(source: string, ids: string[]): Promise<Map<string, num
   }
 }
 
-function readOf(prob: number, delta: number | null): string {
+export function readOf(prob: number, delta: number | null): string {
   const base = `O mercado precifica ${Math.round(prob)}% de chance.`;
   if (delta == null || Math.abs(delta) < 0.5) return `${base} Estável na última semana.`;
   return `${base} ${delta > 0 ? "Subiu" : "Caiu"} ${Math.abs(delta).toFixed(1)} pts em 7 dias.`;
+}
+
+/**
+ * Monta o feed a partir dos mercados já buscados + os mapas de movimento. Puro
+ * (sem I/O) de propósito, para ser testável: filtra externalUrl e quase-resolvidos
+ * (≤3% / ≥97%, sem gancho editorial), calcula prob/leitura, ordena os maiores
+ * movimentos primeiro (volume como desempate) e corta em `limit`.
+ */
+export function assembleFeed(
+  polyMs: PolyMarket[],
+  kalshiMs: KalshiMarket[],
+  polyMov: Map<string, number>,
+  kalshiMov: Map<string, number>,
+  limit: number,
+): FeedItem[] {
+  const items: FeedItem[] = [];
+  for (const m of polyMs) {
+    if (!m.externalUrl) continue;
+    let prob = 50;
+    try { const p = parseFloat((JSON.parse(m.outcomePrices ?? "[]") as string[])[0]); if (!isNaN(p)) prob = p * 100; } catch { /* mantém 50 */ }
+    if (prob <= 3 || prob >= 97) continue; // já quase resolvido → sem gancho editorial
+    const delta = polyMov.get(m.id) ?? null;
+    items.push({ source: "polymarket", marketId: m.id, question: m.question, prob: Math.round(prob), delta7d: delta, volume: m.volume ?? 0, category: m.category ?? "other", externalUrl: m.externalUrl, read: readOf(prob, delta) });
+  }
+  for (const m of kalshiMs) {
+    if (!m.externalUrl) continue;
+    if (m.yesProb <= 3 || m.yesProb >= 97) continue;
+    const delta = kalshiMov.get(m.ticker) ?? null;
+    items.push({ source: "kalshi", marketId: m.ticker, question: m.title, prob: Math.round(m.yesProb), delta7d: delta, volume: m.volume ?? 0, category: m.category ?? "other", externalUrl: m.externalUrl, read: readOf(m.yesProb, delta) });
+  }
+  // Quem se moveu (mais noticiável) primeiro; volume como desempate.
+  items.sort((a, b) => {
+    const am = a.delta7d == null ? -1 : Math.abs(a.delta7d);
+    const bm = b.delta7d == null ? -1 : Math.abs(b.delta7d);
+    return bm !== am ? bm - am : b.volume - a.volume;
+  });
+  return items.slice(0, limit);
 }
 
 // GET /api/feed/editorial?limit=12
@@ -96,29 +133,10 @@ router.get("/editorial", async (req, res) => {
       movements("kalshi", kalshiMs.map((m) => m.ticker)),
     ]);
 
-    const items: FeedItem[] = [];
-    for (const m of polyMs) {
-      let prob = 50;
-      try { const p = parseFloat((JSON.parse(m.outcomePrices ?? "[]") as string[])[0]); if (!isNaN(p)) prob = p * 100; } catch { /* mantém 50 */ }
-      if (prob <= 3 || prob >= 97) continue; // já quase resolvido → sem gancho editorial
-      const delta = polyMov.get(m.id) ?? null;
-      items.push({ source: "polymarket", marketId: m.id, question: m.question, prob: Math.round(prob), delta7d: delta, volume: m.volume ?? 0, category: m.category ?? "other", externalUrl: m.externalUrl, read: readOf(prob, delta) });
-    }
-    for (const m of kalshiMs) {
-      if (m.yesProb <= 3 || m.yesProb >= 97) continue;
-      const delta = kalshiMov.get(m.ticker) ?? null;
-      items.push({ source: "kalshi", marketId: m.ticker, question: m.title, prob: Math.round(m.yesProb), delta7d: delta, volume: m.volume ?? 0, category: m.category ?? "other", externalUrl: m.externalUrl, read: readOf(m.yesProb, delta) });
-    }
-
-    // Quem se moveu (mais noticiável) primeiro; volume como desempate.
-    items.sort((a, b) => {
-      const am = a.delta7d == null ? -1 : Math.abs(a.delta7d);
-      const bm = b.delta7d == null ? -1 : Math.abs(b.delta7d);
-      return bm !== am ? bm - am : b.volume - a.volume;
-    });
+    const items = assembleFeed(polyMs, kalshiMs, polyMov, kalshiMov, limit);
 
     res.set("Cache-Control", "public, max-age=300");
-    res.json({ items: items.slice(0, limit), generatedAt: new Date().toISOString(), source: "JLB Analytics" });
+    res.json({ items, generatedAt: new Date().toISOString(), source: "JLB Analytics" });
   } catch (err) {
     log.error("[feed/editorial] error:", err);
     res.status(500).json({ error: "Internal error" });
