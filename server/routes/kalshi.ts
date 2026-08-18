@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { swr } from "../lib/cache.ts";
 import { fetchWithRetry } from "../lib/fetcher.ts";
+import { kalshiMarketUrl, kalshiYesProb } from "../lib/marketNormalize.ts";
 import type { KalshiEventsResponse, KalshiMarket, KalshiEvent, KalshiNestedMarket } from "../lib/types.ts";
 import { log } from "../lib/log.ts";
 
@@ -17,23 +18,14 @@ router.get("/markets", async (req, res) => {
 
       // Um mercado aninhado do Kalshi → nosso formato normalizado.
       const toMarket = (m: KalshiNestedMarket, ev: KalshiEvent): KalshiMarket => {
-        const bid = parseFloat(m.yes_bid_dollars ?? "0") * 100;
-        const ask = parseFloat(m.yes_ask_dollars ?? "0") * 100;
-        const last = parseFloat(m.last_price_dollars ?? "0") * 100;
-        const rawProb = bid > 0 && ask > 0 ? (bid + ask) / 2 : last || 50;
-        const yesProb = parseFloat(rawProb.toFixed(1));
         const seriesTicker = ev.series_ticker ?? ev.event_ticker;
         return {
           ticker: m.ticker,
           eventTicker: ev.event_ticker,
           seriesTicker,
-          // URL canônica: /markets/{série}/{evento} em MINÚSCULAS. Verificado no navegador
-          // (kalshi.com bloqueia meu servidor com 429): a Kalshi aceita/redireciona esse
-          // formato de 2 partes — o slug do meio (= título da série) é opcional. Maiúsculo
-          // dava 404 (a causa dos "mercados falsos" da Kalshi).
-          externalUrl: `https://kalshi.com/markets/${seriesTicker.toLowerCase()}/${ev.event_ticker.toLowerCase()}`,
+          externalUrl: kalshiMarketUrl(seriesTicker, ev.event_ticker),
           title: m.title ?? ev.title ?? m.ticker,
-          yesProb: Math.max(0.1, Math.min(99.9, yesProb)),
+          yesProb: kalshiYesProb(m.yes_bid_dollars, m.yes_ask_dollars, m.last_price_dollars),
           prevYesProb: m.previous_price_dollars
             ? parseFloat((parseFloat(m.previous_price_dollars) * 100).toFixed(1))
             : undefined,
@@ -106,10 +98,7 @@ router.get("/market/:ticker", async (req, res) => {
       return data?.market?.ticker ? data.market : null;
     });
     if (!m) return res.status(404).json({ error: "not_found" });
-    const bid = parseFloat(m.yes_bid_dollars ?? "0") * 100;
-    const ask = parseFloat(m.yes_ask_dollars ?? "0") * 100;
-    const last = parseFloat(m.last_price_dollars ?? "0") * 100;
-    const yesProb = Math.max(0.1, Math.min(99.9, parseFloat((bid > 0 && ask > 0 ? (bid + ask) / 2 : last || 50).toFixed(1))));
+    const yesProb = kalshiYesProb(m.yes_bid_dollars, m.yes_ask_dollars, m.last_price_dollars);
     const resolved = !!m.status && m.status !== "active";
     const resolvedOutcome = m.result === "yes" ? "SIM" : m.result === "no" ? "NÃO" : undefined;
     res.json({

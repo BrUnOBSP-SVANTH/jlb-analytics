@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { swr, getCache, setCache } from "../lib/cache.ts";
 import { fetchWithRetry, fetchJSON } from "../lib/fetcher.ts";
+import { parseYesPrice, polyEventUrl } from "../lib/marketNormalize.ts";
 import type { PolyEvent, PolyMarket } from "../lib/types.ts";
 import { log } from "../lib/log.ts";
 
@@ -13,11 +14,6 @@ router.get("/markets", async (req, res) => {
     // SWR: cache fresco na hora; se venceu, devolve o velho e atualiza em bg.
     const markets = await swr<PolyMarket[]>(cacheKey, closed ? 600 : 90, async () => {
     const toNum = (v: unknown) => (v === undefined || v === null) ? undefined : parseFloat(String(v)) || undefined;
-    // Preço do "Yes" de um mercado binário = probabilidade daquele desfecho num evento negRisk.
-    const yesOf = (op?: string): number => {
-      if (!op) return 0;
-      try { return (JSON.parse(op) as string[]).map(parseFloat)[0] ?? 0; } catch { return 0; }
-    };
 
     const eventsUrl = (order: string, limit: number, extra = "") => {
       const base = closed
@@ -111,7 +107,7 @@ router.get("/markets", async (req, res) => {
       const top = nested[0];
       if (ev.negRisk && nested.length > 1) {
         const ranked = nested
-          .map((m) => ({ m, label: m.groupItemTitle ?? m.question ?? "", yes: yesOf(m.outcomePrices) }))
+          .map((m) => ({ m, label: m.groupItemTitle ?? m.question ?? "", yes: parseYesPrice(m.outcomePrices) }))
           .filter((o) => o.label && o.yes > 0.005)
           .sort((a, b) => b.yes - a.yes)
           .slice(0, 12);
@@ -173,10 +169,9 @@ router.get("/markets", async (req, res) => {
       .sort((a, b) => b._score - a._score)
       .map(({ _vol24h, _endMs, _score, ...rest }) => ({
         ...rest,
-        // URL canônica computada AQUI, onde temos ev.slug. No Polymarket só existe
-        // /event/{eventSlug} — market.slug e id numérico dão 404 (o "mercado falso"
-        // que o usuário via ao clicar). Verificado ao vivo: só o eventSlug retorna 200.
-        externalUrl: rest.eventSlug ? `https://polymarket.com/pt/event/${rest.eventSlug}` : undefined,
+        // URL canônica (marketNormalize): só /pt/event/{eventSlug} retorna 200; market.slug
+        // e id numérico dão 404 (o "mercado falso"). Sem eventSlug → descartado abaixo.
+        externalUrl: polyEventUrl(rest.eventSlug),
       }))
       // Corretor de mercados falsos: sem eventSlug não há página válida no Polymarket —
       // não expomos um mercado cujo link levaria a "página não encontrada".
