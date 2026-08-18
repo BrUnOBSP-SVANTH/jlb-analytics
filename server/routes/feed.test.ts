@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { readOf, assembleFeed, type PolyMarket, type KalshiMarket } from "./feed.ts";
+import { readOf, assembleFeed, computeDeltas, type PolyMarket, type KalshiMarket } from "./feed.ts";
 
 // Fábricas de mercado com defaults sãos — cada teste sobrescreve só o que importa.
 const poly = (over: Partial<PolyMarket> = {}): PolyMarket => ({
@@ -23,6 +23,41 @@ describe("readOf — leitura editorial determinística", () => {
   });
   it("delta negativo → 'Caiu' pelo valor absoluto", () => {
     expect(readOf(12, -33)).toBe("O mercado precifica 12% de chance. Caiu 33.0 pts em 7 dias.");
+  });
+});
+
+describe("computeDeltas — movimento (último − primeiro) por mercado", () => {
+  it("calcula Δ = último − primeiro, 1 casa decimal", () => {
+    const d = computeDeltas([
+      { market_id: "a", yes_prob: 40 },
+      { market_id: "a", yes_prob: 55 },
+      { market_id: "a", yes_prob: 56.54 },
+    ]);
+    expect(d.get("a")).toBe(16.5); // 56.54 − 40 = 16.54 → 16.5
+  });
+  it("um único snapshot → Δ 0 (não é 'sem dado')", () => {
+    expect(computeDeltas([{ market_id: "a", yes_prob: 40 }]).get("a")).toBe(0);
+  });
+  it("ignora yes_prob nulo (não zera o 'primeiro')", () => {
+    const d = computeDeltas([
+      { market_id: "a", yes_prob: null },
+      { market_id: "a", yes_prob: 30 },
+      { market_id: "a", yes_prob: 45 },
+    ]);
+    expect(d.get("a")).toBe(15);
+  });
+  it("mercados diferentes são independentes", () => {
+    const d = computeDeltas([
+      { market_id: "a", yes_prob: 10 },
+      { market_id: "b", yes_prob: 80 },
+      { market_id: "a", yes_prob: 25 },
+      { market_id: "b", yes_prob: 60 },
+    ]);
+    expect(d.get("a")).toBe(15);
+    expect(d.get("b")).toBe(-20);
+  });
+  it("sem linhas → mapa vazio", () => {
+    expect(computeDeltas([]).size).toBe(0);
   });
 });
 

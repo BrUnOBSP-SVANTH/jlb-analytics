@@ -41,10 +41,27 @@ async function localJson<T>(path: string): Promise<T | null> {
   }
 }
 
+/**
+ * Δ por market_id a partir das linhas de snapshot ORDENADAS por snapped_at.asc:
+ * (último − primeiro), 1 casa. Puro/testável; linhas com yes_prob nulo são ignoradas
+ * (não zeram o "primeiro"). Uma casa errada aqui vira um "subiu/caiu" falso na notícia.
+ */
+export function computeDeltas(rows: Array<{ market_id: string; yes_prob: number | null }>): Map<string, number> {
+  const firstLast = new Map<string, { first: number; last: number }>();
+  for (const row of rows) {
+    if (row.yes_prob == null) continue;
+    const cur = firstLast.get(row.market_id);
+    if (!cur) firstLast.set(row.market_id, { first: row.yes_prob, last: row.yes_prob });
+    else cur.last = row.yes_prob;
+  }
+  const out = new Map<string, number>();
+  firstLast.forEach((v, id) => out.set(id, Math.round((v.last - v.first) * 10) / 10));
+  return out;
+}
+
 /** Movimento de 7 dias por market_id: primeiro vs. último snapshot na janela. */
 async function movements(source: string, ids: string[]): Promise<Map<string, number>> {
-  const out = new Map<string, number>();
-  if (!SUPABASE_URL || !SUPABASE_KEY || ids.length === 0) return out;
+  if (!SUPABASE_URL || !SUPABASE_KEY || ids.length === 0) return new Map();
   try {
     const since = new Date(Date.now() - 7 * 86_400_000).toISOString();
     const url =
@@ -57,19 +74,11 @@ async function movements(source: string, ids: string[]): Promise<Map<string, num
       headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` },
       signal: AbortSignal.timeout(12_000),
     });
-    if (!r.ok) return out;
+    if (!r.ok) return new Map();
     const rows = (await r.json()) as Array<{ market_id: string; yes_prob: number | null }>;
-    const firstLast = new Map<string, { first: number; last: number }>();
-    for (const row of rows) {
-      if (row.yes_prob == null) continue;
-      const cur = firstLast.get(row.market_id);
-      if (!cur) firstLast.set(row.market_id, { first: row.yes_prob, last: row.yes_prob });
-      else cur.last = row.yes_prob;
-    }
-    firstLast.forEach((v, id) => out.set(id, Math.round((v.last - v.first) * 10) / 10));
-    return out;
+    return computeDeltas(rows);
   } catch {
-    return out;
+    return new Map();
   }
 }
 

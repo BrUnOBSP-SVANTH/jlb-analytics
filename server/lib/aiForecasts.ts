@@ -207,36 +207,67 @@ async function patchResolution(id: string, outcome: boolean, resolutionSource: s
 
 let seedRunning = false;
 
+export interface RawKalshiMarket {
+  ticker?: string; title?: string; yes_sub_title?: string;
+  yes_bid_dollars?: string; yes_ask_dollars?: string; last_price_dollars?: string;
+  close_time?: string; volume_fp?: string;
+}
+export interface ShortDatedTarget { ticker: string; title: string; prob: number; volume: number; closeMs: number }
+
+/**
+ * Normaliza mercados Kalshi de data CURTA em alvos de seed. Puro (sem I/O) de
+ * propósito, para ser testável: pula agregados negRisk (ticker MULTI/CROSSCATEGORY
+ * ou título-lista "yes X, yes Y"), calcula a prob do mid (bid/ask) ou do last, e
+ * capa por série (evita 90 matchups de golfe monopolizarem a diversidade da prova).
+ */
+export function parseShortDatedKalshi(markets: RawKalshiMarket[], perSeriesCap = 4): ShortDatedTarget[] {
+  const out: ShortDatedTarget[] = [];
+  const perSeries: Record<string, number> = {};
+  for (const m of markets) {
+    if (!m.ticker || /MULTIGAME|CROSSCATEGORY|MULTI/i.test(m.ticker)) continue; // pula agregados negRisk
+    const title = (m.title ?? m.yes_sub_title ?? "").trim();
+    if (!title || /,\s*(yes|no)\s/i.test(title)) continue;                       // título "yes X, yes Y" = lista/agregado
+    const series = m.ticker.split("-")[0];
+    if ((perSeries[series] ?? 0) >= perSeriesCap) continue;
+    const bid = parseFloat(m.yes_bid_dollars ?? "0"), ask = parseFloat(m.yes_ask_dollars ?? "0"), last = parseFloat(m.last_price_dollars ?? "0");
+    const prob = bid > 0 && ask > 0 ? Math.round((bid + ask) / 2 * 100) : last > 0 ? Math.round(last * 100) : 50;
+    out.push({
+      ticker: m.ticker, title: title.slice(0, 300), prob,
+      volume: Math.round(parseFloat(m.volume_fp ?? "0")),
+      closeMs: m.close_time ? new Date(m.close_time).getTime() : Infinity,
+    });
+    perSeries[series] = (perSeries[series] ?? 0) + 1;
+  }
+  return out;
+}
+
+/**
+ * Prioridade de um mercado pela PROXIMIDADE de resolução — quanto antes fecha, mais
+ * cedo vira resultado oficial na prova. Perpétuos (>365d) e sem-data caem no fundo;
+ * a janela de ±60d é a melhor. Puro/testável (recebe `now` em vez de ler o relógio).
+ */
+export function tierForClose(closeMs: number, now: number): number {
+  const days = (closeMs - now) / 86_400_000;
+  if (!isFinite(days)) return 1;            // sem data conhecida → baixa prioridade
+  if (days > 365) return 1;                 // perpétuo (2028, "Marte 2099") → nunca dá retorno útil
+  if (days >= -60 && days <= 60) return 5;  // JANELA de resolução (fecha/fechou há pouco) → melhor retorno
+  if (days > 60 && days <= 180) return 4;   // resolve nos próximos ~6 meses
+  if (days < -60) return 3;                 // atrasado (pode estar resolvendo, ou travado)
+  return 2;                                 // 180–365 dias
+}
+
 /**
  * Mercados Kalshi que fecham em POUCOS DIAS (via max_close_ts). Liquidam rápido e
- * enchem o track record — a "prova vendável" — em dias, não meses. Filtra binários
- * limpos (pula agregados multi-desfecho, que quebrariam a resolução por índice 0).
+ * enchem o track record — a "prova vendável" — em dias, não meses.
  */
-async function fetchShortDatedKalshiTargets(daysAhead = 14, limit = 40): Promise<Array<{ ticker: string; title: string; prob: number; volume: number; closeMs: number }>> {
+async function fetchShortDatedKalshiTargets(daysAhead = 14, limit = 40): Promise<ShortDatedTarget[]> {
   try {
     const maxTs = Math.floor(Date.now() / 1000) + daysAhead * 86_400;
-    const data = await fetchWithRetry<{ markets?: Array<{ ticker?: string; title?: string; yes_sub_title?: string; yes_bid_dollars?: string; yes_ask_dollars?: string; last_price_dollars?: string; close_time?: string; volume_fp?: string }> }>(
+    const data = await fetchWithRetry<{ markets?: RawKalshiMarket[] }>(
       `https://api.elections.kalshi.com/trade-api/v2/markets?status=open&max_close_ts=${maxTs}&limit=${limit}`,
       { Accept: "application/json" },
     );
-    const out: Array<{ ticker: string; title: string; prob: number; volume: number; closeMs: number }> = [];
-    const perSeries: Record<string, number> = {};   // diversidade: no máx N por série
-    const PER_SERIES_CAP = 4;
-    for (const m of data?.markets ?? []) {
-      if (!m.ticker || /MULTIGAME|CROSSCATEGORY|MULTI/i.test(m.ticker)) continue; // pula agregados negRisk
-      const title = (m.title ?? m.yes_sub_title ?? "").trim();
-      if (!title || /,\s*(yes|no)\s/i.test(title)) continue;                       // título "yes X, yes Y" = lista/agregado
-      const series = m.ticker.split("-")[0];
-      if ((perSeries[series] ?? 0) >= PER_SERIES_CAP) continue;                    // evita 90 matchups de golfe monopolizando
-      out.push({
-        ticker: m.ticker, title: title.slice(0, 300),
-        prob: (() => { const bid = parseFloat(m.yes_bid_dollars ?? "0"), ask = parseFloat(m.yes_ask_dollars ?? "0"), last = parseFloat(m.last_price_dollars ?? "0"); return bid > 0 && ask > 0 ? Math.round((bid + ask) / 2 * 100) : last > 0 ? Math.round(last * 100) : 50; })(),
-        volume: Math.round(parseFloat(m.volume_fp ?? "0")),
-        closeMs: m.close_time ? new Date(m.close_time).getTime() : Infinity,
-      });
-      perSeries[series] = (perSeries[series] ?? 0) + 1;
-    }
-    return out;
+    return parseShortDatedKalshi(data?.markets ?? []);
   } catch { return []; }
 }
 
@@ -276,23 +307,13 @@ export async function seedAiForecasts(maxMarkets = 18): Promise<{ started: boole
     targets.push({ marketId: id, source: "kalshi", title: s.title, category: "other", marketProb: s.prob, volume: s.volume, closeMs: s.closeMs });
   }
 
-  // Prioriza mercados que RESOLVEM CEDO. Antes ordenava só por volume — e os de maior
-  // volume são perpétuos ("Elon a Marte 2099", "próximo Papa", eleição 2028) que NUNCA
-  // liquidam, então o track record não ganhava resultados oficiais. Agora: tier de
-  // urgência primeiro (quanto antes fecha = mais retorno), volume como desempate.
-  const DAY = 86_400_000;
-  const tier = (closeMs: number): number => {
-    const days = (closeMs - now) / DAY;
-    if (!isFinite(days)) return 1;            // sem data conhecida → baixa prioridade
-    if (days > 365) return 1;                 // perpétuo (2028, "Marte 2099") → nunca dá retorno útil
-    if (days >= -60 && days <= 60) return 5;  // JANELA de resolução (fecha/fechou há pouco) → melhor retorno
-    if (days > 60 && days <= 180) return 4;   // resolve nos próximos ~6 meses
-    if (days < -60) return 3;                 // atrasado (pode estar resolvendo, ou travado)
-    return 2;                                 // 180–365 dias
-  };
+  // Prioriza mercados que RESOLVEM CEDO (tierForClose). Antes ordenava só por volume
+  // — e os de maior volume são perpétuos ("Elon a Marte 2099", "próximo Papa", eleição
+  // 2028) que NUNCA liquidam, então o track record não ganhava resultados oficiais.
+  // Agora: tier de urgência primeiro (quanto antes fecha = mais retorno), volume desempata.
   const queue = targets
     .filter((t) => t.marketProb > 4 && t.marketProb < 96)
-    .sort((a, b) => { const d = tier(b.closeMs) - tier(a.closeMs); return d !== 0 ? d : (b.volume - a.volume); })
+    .sort((a, b) => { const d = tierForClose(b.closeMs, now) - tierForClose(a.closeMs, now); return d !== 0 ? d : (b.volume - a.volume); })
     .slice(0, maxMarkets);
 
   if (queue.length === 0) return { started: false, reason: "sem mercados no cache (aguarde o primeiro fetch)" };
