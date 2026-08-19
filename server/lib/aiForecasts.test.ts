@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parseShortDatedKalshi, tierForClose, type RawKalshiMarket } from "./aiForecasts.ts";
+import { parseShortDatedKalshi, tierForClose, selectOfficialUpgrades, type RawKalshiMarket } from "./aiForecasts.ts";
 
 // ── tierForClose: prioridade pela proximidade de resolução ──────────────────────
 const NOW = 1_700_000_000_000;
@@ -25,6 +25,35 @@ describe("tierForClose — prioriza o que resolve cedo (enche a prova)", () => {
   });
   it("data curta SEMPRE ganha do perpétuo na ordenação (o bug que corrigimos)", () => {
     expect(tierForClose(inDays(5), NOW)).toBeGreaterThan(tierForClose(inDays(400), NOW));
+  });
+});
+
+// ── selectOfficialUpgrades: promoção inferred → settled (porcentagens oficiais) ──
+describe("selectOfficialUpgrades — só promove o que a plataforma liquidou oficialmente", () => {
+  const inferred = [
+    { id: "f1", market_id: "kalshi-A" },
+    { id: "f2", market_id: "poly-B" },
+    { id: "f3", market_id: "kalshi-C" }, // sem resultado oficial ainda
+  ];
+
+  it("promove apenas os que têm resultado oficial no mapa", () => {
+    const settled = new Map<string, boolean>([["kalshi-A", true], ["poly-B", false]]);
+    const jobs = selectOfficialUpgrades(inferred, settled);
+    expect(jobs.map((j) => j.id)).toEqual(["f1", "f2"]); // f3 fica inferido
+  });
+
+  it("carrega o outcome OFICIAL (corrige o palpite de preço divergente)", () => {
+    const settled = new Map<string, boolean>([["poly-B", false]]);
+    expect(selectOfficialUpgrades(inferred, settled)).toEqual([{ id: "f2", outcome: false }]);
+  });
+
+  it("outcome=false é promovido (não é tratado como 'ausente')", () => {
+    const jobs = selectOfficialUpgrades([{ id: "x", market_id: "m" }], new Map([["m", false]]));
+    expect(jobs).toEqual([{ id: "x", outcome: false }]);
+  });
+
+  it("sem nenhum oficial → nada a promover", () => {
+    expect(selectOfficialUpgrades(inferred, new Map())).toEqual([]);
   });
 });
 

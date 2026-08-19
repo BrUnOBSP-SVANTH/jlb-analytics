@@ -123,33 +123,61 @@ export async function getSnapshotExtremes(): Promise<Map<string, boolean>> {
 }
 
 /**
+ * Dentre as previsões resolvidas mas AINDA NÃO oficiais (resolution_source nulo ou
+ * 'inferred'), seleciona as que a plataforma JÁ liquidou oficialmente — para promovê-
+ * las a 'settled' (corrigindo o outcome se o palpite de preço tinha divergido da
+ * verdade). Puro/testável. É o que torna as porcentagens OFICIAIS: um mercado inferido
+ * ou legado nunca fica preso — vira oficial assim que a plataforma liquida.
+ */
+export function selectOfficialUpgrades(
+  candidates: Array<{ id: string; market_id: string }>,
+  settledMap: Map<string, boolean>,
+): Array<{ id: string; outcome: boolean }> {
+  const jobs: Array<{ id: string; outcome: boolean }> = [];
+  for (const f of candidates) {
+    const official = settledMap.get(f.market_id);
+    if (official !== undefined) jobs.push({ id: f.id, outcome: official });
+  }
+  return jobs;
+}
+
+/**
  * Resolve previsões da IA pelo RESULTADO OFICIAL da plataforma (settlement).
  * Prioridade de fontes, da mais confiável para a menos:
  *   1. Settlement real EM LOTE (Kalshi `result` / Polymarket UMA) via
- *      fetchRealOutcomesBatch — a verdade que paga as posições. Poucas chamadas
- *      resolvem TODOS os pendentes por execução, sem throttle nem teto de 40.
- *      Registrado como resolution_source='settled'.
+ *      fetchRealOutcomesBatch — a verdade que paga as posições. Registrado como
+ *      resolution_source='settled'. Aplicado tanto aos PENDENTES quanto para
+ *      RE-VERIFICAR os inferidos (que agora podem ter liquidado oficialmente).
  *   2. Fallback SÓ quando a plataforma ainda não liquidou: preço extremo (≥97/≤3)
  *      ao vivo ou no histórico de snapshots → 'inferred' (transparente na UI).
  */
-export async function scoreAiForecasts(): Promise<{ scored: number; settled: number }> {
-  if (!SUPABASE_URL || !SUPABASE_KEY) return { scored: 0, settled: 0 };
+export async function scoreAiForecasts(): Promise<{ scored: number; settled: number; upgraded: number }> {
+  const EMPTY = { scored: 0, settled: 0, upgraded: 0 };
+  if (!SUPABASE_URL || !SUPABASE_KEY) return EMPTY;
   try {
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/ai_forecasts?resolved=eq.false&select=id,market_id,source&order=created_at.asc&limit=500`, {
-      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` },
-      signal: AbortSignal.timeout(8_000),
-    });
-    if (!res.ok) return { scored: 0, settled: 0 };
-    const pending = await res.json() as Array<{ id: string; market_id: string; source: string }>;
-    if (pending.length === 0) return { scored: 0, settled: 0 };
+    const headers = { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` };
+    const fetchRows = (q: string) =>
+      fetch(`${SUPABASE_URL}/rest/v1/ai_forecasts?${q}`, { headers, signal: AbortSignal.timeout(8_000) })
+        .then((r) => (r.ok ? (r.json() as Promise<Array<{ id: string; market_id: string; source: string }>>) : []));
 
-    // Fonte 1 (autoritativa): resultado OFICIAL em lote — resolve TODOS os pendentes.
-    const realIds = pending
-      .filter((f) => f.source === "polymarket" || f.source === "kalshi")
-      .map((f) => f.market_id);
+    // Pendentes (nunca resolvidos) + já resolvidos mas AINDA NÃO OFICIAIS (source nulo
+    // — legado pré-migration — ou 'inferred') que vamos RE-VERIFICAR contra o settlement
+    // oficial. Conserta o "inferido/legado pra sempre" e é o que oficializa as %.
+    const [pending, unofficial] = await Promise.all([
+      fetchRows("resolved=eq.false&select=id,market_id,source&order=created_at.asc&limit=500"),
+      fetchRows("resolved=eq.true&or=(resolution_source.is.null,resolution_source.eq.inferred)&select=id,market_id,source&order=resolved_at.asc&limit=400"),
+    ]);
+    if (pending.length === 0 && unofficial.length === 0) return EMPTY;
+
+    // Fonte 1 (autoritativa): resultado OFICIAL em lote para PENDENTES e NÃO-OFICIAIS.
+    const realIds = Array.from(new Set(
+      [...pending, ...unofficial]
+        .filter((f) => f.source === "polymarket" || f.source === "kalshi")
+        .map((f) => f.market_id),
+    ));
     const { outcomes: settledMap, unavailable } = await fetchRealOutcomesBatch(realIds);
 
-    // Fontes de FALLBACK — só entram quando a plataforma ainda não liquidou.
+    // Fontes de FALLBACK — só para os PENDENTES, quando a plataforma ainda não liquidou.
     const priceMap = getLiveMarketPrices();          // preço ao vivo (cache do servidor)
     const extremeMap = await getSnapshotExtremes();  // extremos no histórico de snapshots
 
@@ -169,8 +197,11 @@ export async function scoreAiForecasts(): Promise<{ scored: number; settled: num
       if (hist !== undefined) jobs.push({ id: f.id, outcome: hist, source: "inferred" });
     }
 
+    // Promoção não-oficial → 'settled' onde a plataforma agora tem resultado OFICIAL.
+    const upgradeJobs = selectOfficialUpgrades(unofficial, settledMap);
+
     // Persiste com concorrência limitada (PATCHes ao nosso próprio Supabase).
-    let scored = 0, settled = 0;
+    let scored = 0, settled = 0, upgraded = 0;
     for (const group of chunk(jobs, 12)) {
       await Promise.all(group.map(async (j) => {
         await patchResolution(j.id, j.outcome, j.source);
@@ -178,8 +209,14 @@ export async function scoreAiForecasts(): Promise<{ scored: number; settled: num
         if (j.source === "settled") settled++;
       }));
     }
-    return { scored, settled };
-  } catch { return { scored: 0, settled: 0 }; }
+    for (const group of chunk(upgradeJobs, 12)) {
+      await Promise.all(group.map(async (j) => {
+        await patchResolution(j.id, j.outcome, "settled"); // vira OFICIAL (e corrige o outcome)
+        upgraded++;
+      }));
+    }
+    return { scored, settled, upgraded };
+  } catch { return EMPTY; }
 }
 
 /**
