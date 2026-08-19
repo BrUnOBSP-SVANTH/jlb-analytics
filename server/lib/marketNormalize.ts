@@ -33,6 +33,22 @@ export function kalshiMarketUrl(seriesTicker: string, eventTicker: string): stri
   return `https://kalshi.com/markets/${seriesTicker.toLowerCase()}/${eventTicker.toLowerCase()}`;
 }
 
+export interface Outcome<T> { label: string; prob: number; ref: T }
+
+/**
+ * Ordena os desfechos de um evento multi-resultado (negRisk) por PROBABILIDADE,
+ * descartando rótulo vazio e prob desprezível (≤0.5%), e capando em `cap`. O item 0
+ * é o líder — e o chamador DEVE usar `ranked[0].ref` como representante para que id,
+ * clobTokenIds e outcomePrices[0] descrevam o MESMO desfecho. Sem isso, o settlement
+ * (que resolve pelo id) liquida o outcome ERRADO — o bug de track record/apostas.
+ */
+export function rankOutcomes<T>(items: Array<Outcome<T>>, cap = 12): Array<Outcome<T>> {
+  return items
+    .filter((o) => o.label && o.prob > 0.005)
+    .sort((a, b) => b.prob - a.prob)
+    .slice(0, cap);
+}
+
 /**
  * Probabilidade do "Yes" (0.1–99.9) de um mercado Kalshi a partir dos preços em DÓLAR
  * (strings "0"–"1"): mid (bid+ask)/2 quando ambos existem, senão o last, senão 50.

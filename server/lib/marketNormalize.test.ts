@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parseYesPrice, polyEventUrl, kalshiMarketUrl, kalshiYesProb } from "./marketNormalize.ts";
+import { parseYesPrice, polyEventUrl, kalshiMarketUrl, kalshiYesProb, rankOutcomes } from "./marketNormalize.ts";
 
 describe("parseYesPrice — preço do 'Yes' (índice 0) do Polymarket", () => {
   it("extrai o primeiro preço de um outcomePrices válido", () => {
@@ -26,6 +26,39 @@ describe("polyEventUrl — corretor de link do Polymarket", () => {
 describe("kalshiMarketUrl — corretor de link do Kalshi", () => {
   it("monta /markets/{série}/{evento} em MINÚSCULAS (maiúsculo dá 404)", () => {
     expect(kalshiMarketUrl("KXGOVWINOMD", "KXGOVWINOMD-26")).toBe("https://kalshi.com/markets/kxgovwinomd/kxgovwinomd-26");
+  });
+});
+
+describe("rankOutcomes — ranking dos desfechos negRisk (fidelidade do settlement)", () => {
+  const items = [
+    { label: "A", prob: 0.2, ref: "idA" },
+    { label: "B", prob: 0.6, ref: "idB" }, // líder de probabilidade
+    { label: "C", prob: 0.1, ref: "idC" },
+  ];
+
+  it("ordena por probabilidade decrescente", () => {
+    expect(rankOutcomes(items).map((o) => o.label)).toEqual(["B", "A", "C"]);
+  });
+
+  it("INVARIANTE: ranked[0].ref (id) é o mesmo desfecho de ranked[0].prob (outcomePrices[0])", () => {
+    const r = rankOutcomes(items);
+    expect(r[0].ref).toBe("idB");   // id que o settlement vai resolver
+    expect(r[0].prob).toBe(0.6);    // outcomePrices[0] — MESMO desfecho, não o líder de volume
+  });
+
+  it("descarta rótulo vazio e probabilidade desprezível (≤0.5%)", () => {
+    const r = rankOutcomes([
+      { label: "", prob: 0.9, ref: 1 },      // sem rótulo
+      { label: "X", prob: 0.004, ref: 2 },   // ~0 (ruído)
+      { label: "Y", prob: 0.3, ref: 3 },
+    ]);
+    expect(r.map((o) => o.ref)).toEqual([3]);
+  });
+
+  it("respeita o cap (default 12, configurável)", () => {
+    const many = Array.from({ length: 20 }, (_, i) => ({ label: `L${i}`, prob: (i + 1) / 100, ref: i }));
+    expect(rankOutcomes(many)).toHaveLength(12);
+    expect(rankOutcomes(many, 5)).toHaveLength(5);
   });
 });
 

@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { swr, getCache, setCache } from "../lib/cache.ts";
 import { fetchWithRetry, fetchJSON } from "../lib/fetcher.ts";
-import { parseYesPrice, polyEventUrl } from "../lib/marketNormalize.ts";
+import { parseYesPrice, polyEventUrl, rankOutcomes } from "../lib/marketNormalize.ts";
 import type { PolyEvent, PolyMarket } from "../lib/types.ts";
 import { log } from "../lib/log.ts";
 
@@ -106,25 +106,19 @@ router.get("/markets", async (req, res) => {
       if (nested.length === 0) return [];
       const top = nested[0];
       if (ev.negRisk && nested.length > 1) {
-        const ranked = nested
-          .map((m) => ({ m, label: m.groupItemTitle ?? m.question ?? "", yes: parseYesPrice(m.outcomePrices) }))
-          .filter((o) => o.label && o.yes > 0.005)
-          .sort((a, b) => b.yes - a.yes)
-          .slice(0, 12);
+        // rankOutcomes garante a invariante de fidelidade: representante = ranked[0].ref
+        // (líder de PROBABILIDADE), então id/clobTokenIds/outcomePrices[0] descrevem O
+        // MESMO desfecho e o settlement resolve o outcome certo (ver marketNormalize).
+        const ranked = rankOutcomes<(typeof nested)[number]>(nested.map((m) => ({ label: m.groupItemTitle ?? m.question ?? "", prob: parseYesPrice(m.outcomePrices), ref: m })));
         if (ranked.length > 2) {
-          // Representante = líder de PROBABILIDADE (não de volume): assim `id`,
-          // clobTokenIds e outcomePrices[0] descrevem O MESMO desfecho. Sem isso, o
-          // seed/aposta pareava P(líder de prob) com o id do líder de volume, e o
-          // settlement (que resolve pelo id) liquidava o desfecho ERRADO — outcome
-          // falso/invertido no track record e nas apostas.
-          const lead = ranked[0].m;
+          const lead = ranked[0].ref;
           return [{
             ...lead,
             question: ev.title ?? lead.question,
             eventTitle: ev.title,
             volume: toNum(ev.volume) ?? lead.volume,
             outcomes: JSON.stringify(ranked.map((o) => o.label)),
-            outcomePrices: JSON.stringify(ranked.map((o) => o.yes.toFixed(4))),
+            outcomePrices: JSON.stringify(ranked.map((o) => o.prob.toFixed(4))),
           }];
         }
       }
