@@ -319,6 +319,33 @@ async function checkSupabase(env) {
         if (settled > 0) {
           line("✅", `${paint(settled + " pelo resultado OFICIAL", c.green)} da plataforma`, `${resolved - settled} por preço/inferência`);
           add("info", "IA", `Comparador: ${settled} resolução(ões) OFICIAL(is) · acerto ${hitRate ?? "?"}%`);
+          // Diversidade da prova: N oficiais só valem como prova se forem de TEMAS
+          // VARIADOS. O "6× Strait of Hormuz" enviesou o histórico — 9 resoluções que
+          // eram ~3 eventos. Alerta quando um tema domina (repetição, não amostra).
+          try {
+            const sr = await fetch(`${url}/rest/v1/ai_forecasts?resolution_source=eq.settled&select=title&limit=500`, { headers: h });
+            if (sr.ok) {
+              const rows = await sr.json();
+              const STOP = new Set(["will","the","by","in","of","to","a","an","be","next","what","who","when","how","is","are","on","for","and","or","during","before","after","end","at","x","vs","de","da","do","que"]);
+              const sig = (title) => ((title || "").toLowerCase().replace(/[^a-z0-9\s]/g, " ")
+                .split(/\s+/).filter((w) => w.length > 1 && !STOP.has(w) && !/^\d+$/.test(w))
+                .slice(0, 3).join(" ")) || "(sem tema)";
+              const themes = {};
+              for (const row of rows) { const k = sig(row.title); themes[k] = (themes[k] || 0) + 1; }
+              const entries = Object.entries(themes).sort((a, b) => b[1] - a[1]);
+              const distinct = entries.length;
+              const topShare = rows.length ? entries[0][1] / rows.length : 0;
+              if (rows.length >= 6 && (topShare >= 0.4 || distinct <= 3)) {
+                line("⚠️", paint(`Prova CONCENTRADA: ${distinct} tema(s), maior = ${Math.round(topShare * 100)}%`, c.yellow),
+                  `"${entries[0][0]}" ×${entries[0][1]} — precisa de variedade temática, não repetição`);
+                add("warn", "IA", `Track record oficial concentrado (${distinct} temas, top ${Math.round(topShare * 100)}%) — diversifique antes de tratar como prova vendável`);
+              } else if (rows.length >= 6) {
+                line("✅", paint(`Prova diversa: ${distinct} temas distintos`, c.green), `maior tema ${Math.round(topShare * 100)}%`);
+              } else {
+                line("ℹ️", paint(`Prova oficial ainda pequena (${rows.length}) — diversidade a medir com mais volume`, c.dim));
+              }
+            }
+          } catch { /* skip */ }
         } else {
           line("⚠️", paint("0 pelo resultado OFICIAL ainda (settled=0)", c.yellow), "aguardando mercados da janela de resolução liquidarem — seed priorizado em 2026-08-12");
           add("warn", "IA", "Comparador sem resolução OFICIAL ainda (settled_count=0) — reveja em alguns dias se os mercados da janela começaram a liquidar");
