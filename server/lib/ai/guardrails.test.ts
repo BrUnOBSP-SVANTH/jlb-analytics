@@ -45,13 +45,26 @@ describe("clampFairValue — maxDev configurável (crossref usa ±20)", () => {
 });
 
 describe("clampFairValue — casos de borda", () => {
-  it("mercado extremo baixo mantém o piso", () => {
-    expect(clampFairValue(50, 3)).toBe(18); // market+15 = 18
+  it("mercado extremo baixo aperta a banda (não deixa quadruplicar as chances)", () => {
+    expect(clampFairValue(50, 3)).toBe(8);  // folga=3 → dev=5 → market+5 (antes ia a 18)
     expect(clampFairValue(1, 3)).toBe(5);   // piso
   });
-  it("mercado extremo alto mantém o teto", () => {
-    expect(clampFairValue(50, 97)).toBe(82); // market-15 = 82
+  it("mercado extremo alto aperta a banda", () => {
+    expect(clampFairValue(50, 97)).toBe(92); // folga=3 → dev=5 → market-5 (antes ia a 82)
     expect(clampFairValue(99, 97)).toBe(95); // teto
+  });
+});
+
+describe("clampFairValue — banda encolhe na cauda, cheia no meio", () => {
+  it("na cauda baixa, o desvio permitido = folga até a borda (mín 5pp)", () => {
+    expect(clampFairValue(68, 5)).toBe(10);  // folga=5 → dev=5 → max 10 (o buraco '68% vs 5%')
+    expect(clampFairValue(42, 6)).toBe(12);  // folga=6 → dev=6 → max 12
+    expect(clampFairValue(80, 10)).toBe(20); // folga=10 → dev=10 → max 20
+  });
+  it("no meio (15–85%) a banda segue cheia de ±15pp", () => {
+    expect(clampFairValue(90, 45)).toBe(60); // dev=15 (inalterado)
+    expect(clampFairValue(70, 15)).toBe(30); // folga=15 → dev=15 → max 30
+    expect(clampFairValue(5, 85)).toBe(70);  // folga=15 → dev=15 → min 70
   });
 });
 

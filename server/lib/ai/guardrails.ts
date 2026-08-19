@@ -10,17 +10,23 @@
 
 /**
  * Limita a estimativa da IA a ±maxDev pontos percentuais do preço de mercado e à
- * faixa [min, max]. Reproduz exatamente a composição antes inline:
- *   max(min, min(max, max(market - maxDev, min(market + maxDev, raw))))
+ * faixa [min, max] — APERTANDO a banda na cauda (perto de 0/100).
+ *
+ * Por quê: em pontos percentuais brutos a cauda engana. Mover 5%→20% é QUADRUPLICAR
+ * as chances, enquanto 45%→60% é modesto. Foi exatamente na cauda que a IA errou
+ * feio no histórico (disse 42–68% onde o mercado dizia 5–7%, e o mercado acertou).
+ * Então o desvio permitido encolhe com a "folga até a borda" (mín. 5pp), sem mexer
+ * no meio: mercados entre 15% e 85% continuam com a banda cheia de ±maxDev.
  *
  * @param raw    estimativa bruta da IA (0-100)
  * @param market probabilidade do mercado (0-100)
- * @param maxDev desvio máximo permitido vs. mercado, em pp (padrão 15)
+ * @param maxDev desvio máximo permitido vs. mercado, em pp (padrão 15; teto da banda)
  * @param min    piso da faixa (padrão 5)
  * @param max    teto da faixa (padrão 95)
  */
 export function clampFairValue(raw: number, market: number, maxDev = 15, min = 5, max = 95): number {
-  return Math.max(min, Math.min(max, Math.max(market - maxDev, Math.min(market + maxDev, raw))));
+  const dev = Math.min(maxDev, Math.max(5, Math.min(market, 100 - market)));
+  return Math.max(min, Math.min(max, Math.max(market - dev, Math.min(market + dev, raw))));
 }
 
 /**
