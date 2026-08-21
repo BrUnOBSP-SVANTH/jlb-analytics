@@ -238,6 +238,25 @@ async function patchResolution(id: string, outcome: boolean, resolutionSource: s
   } catch { /* fire-and-forget */ }
 }
 
+/**
+ * market_ids já previstos nos últimos N dias — para o seed NÃO re-semear o mesmo
+ * mercado dia após dia. Repetição correlacionada (o Hormuz 6× em 6 dias) polui a
+ * prova: 1 mercado real virava 6 "acertos/erros" no track record.
+ */
+async function getRecentlyForecastMarketIds(days: number): Promise<Set<string>> {
+  const set = new Set<string>();
+  if (!SUPABASE_URL || !SUPABASE_KEY) return set;
+  try {
+    const since = new Date(Date.now() - days * 86_400_000).toISOString().slice(0, 10);
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/ai_forecasts?forecast_date=gte.${since}&select=market_id`, {
+      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` },
+      signal: AbortSignal.timeout(8_000),
+    });
+    if (r.ok) for (const row of (await r.json()) as Array<{ market_id: string }>) set.add(row.market_id);
+  } catch { /* sem dedup se falhar — não bloqueia o seed */ }
+  return set;
+}
+
 // ── Seed de previsões da IA ───────────────────────────────────────────────────
 // Roda a IA nos top mercados e popula ai_forecasts — ativa Consenso, Divergências
 // e Track Record. Background + throttled para não estourar rate limit nem timeout.
@@ -349,12 +368,18 @@ export async function seedAiForecasts(maxMarkets = 18): Promise<{ started: boole
     targets.push({ marketId: id, source: "kalshi", title: s.title, category: "other", marketProb: s.prob, volume: s.volume, closeMs: s.closeMs });
   }
 
+  // DIVERSIDADE: não re-semear o MESMO mercado dia após dia — era o gargalo que fazia
+  // 1 mercado (Hormuz) virar 6 previsões correlacionadas na prova. Exclui os já
+  // previstos nos últimos 14 dias; se sobrar pouco (cache raso), não trava e usa tudo.
+  const recent = await getRecentlyForecastMarketIds(14);
+  const pool = targets.filter((t) => t.marketProb > 4 && t.marketProb < 96);
+  const fresh = pool.filter((t) => !recent.has(t.marketId));
+
   // Prioriza mercados que RESOLVEM CEDO (tierForClose). Antes ordenava só por volume
   // — e os de maior volume são perpétuos ("Elon a Marte 2099", "próximo Papa", eleição
   // 2028) que NUNCA liquidam, então o track record não ganhava resultados oficiais.
   // Agora: tier de urgência primeiro (quanto antes fecha = mais retorno), volume desempata.
-  const queue = targets
-    .filter((t) => t.marketProb > 4 && t.marketProb < 96)
+  const queue = (fresh.length >= Math.min(6, maxMarkets) ? fresh : pool)
     .sort((a, b) => { const d = tierForClose(b.closeMs, now) - tierForClose(a.closeMs, now); return d !== 0 ? d : (b.volume - a.volume); })
     .slice(0, maxMarkets);
 
