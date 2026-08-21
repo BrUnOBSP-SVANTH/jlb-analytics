@@ -12,6 +12,7 @@ import PageHeader from "@/components/PageHeader";
 import AnimatedSection from "@/components/AnimatedSection";
 import { useSEO } from "@/hooks/useSEO";
 import { AiTrackRecord, ResultComparator } from "@/components/previsao/GuideAndTrackRecord";
+import { AccuracyAnalysis } from "@/components/previsao/AccuracyAnalysis";
 import { ShareCard } from "@/components/previsao/ShareCard";
 import {
   ShieldCheck, ClipboardList, Scale, Layers, ArrowRight, Sparkles, BookOpen,
@@ -75,6 +76,9 @@ export default function TrackRecord() {
 
         {/* ── Números verificados (card já provado) ── */}
         <AiTrackRecord />
+
+        {/* ── Ferramenta de análise: onde a IA tem edge, por tema (métricas honestas) ── */}
+        <AccuracyAnalysis />
 
         {/* ── Comparador caso a caso ── */}
         <ResultComparator limit={12} />
