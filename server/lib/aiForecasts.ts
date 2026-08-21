@@ -301,6 +301,49 @@ export function parseShortDatedKalshi(markets: RawKalshiMarket[], perSeriesCap =
   return out;
 }
 
+export interface RawPolyEvent {
+  title?: string; category?: string; endDate?: string;
+  tags?: Array<{ label?: string }>;
+  markets?: Array<{ id?: string; question?: string; groupItemTitle?: string; outcomePrices?: string; volume?: string | number; closed?: boolean; active?: boolean; endDate?: string }>;
+}
+export interface ShortDatedPolyTarget { id: string; title: string; prob: number; volume: number; closeMs: number }
+
+const GENERIC_PLACEHOLDER = /\b(Team|Person|Candidate|Player|Country|Party)\s+[A-Z]{1,3}\b/;
+
+/**
+ * Normaliza EVENTOS de data curta do Polymarket em alvos de seed — DIVERSOS por
+ * categoria (cap) e com preço REAL. De cada evento pega o mercado binário de MAIOR
+ * volume com preço legível (id e preço do MESMO mercado → settlement resolve certo),
+ * pula placeholders genéricos, sem-preço (nada de padrão-50) e quase-resolvidos.
+ * Puro/testável. É a fonte que faltava pra prova encher com temas variados (o
+ * Polymarket curto traz esports/cripto/NFL/economia, não só golfe como o Kalshi).
+ */
+export function parseShortDatedPolymarket(events: RawPolyEvent[], perCatCap = 6): ShortDatedPolyTarget[] {
+  const out: ShortDatedPolyTarget[] = [];
+  const perCat: Record<string, number> = {};
+  for (const ev of events) {
+    // Categoria vem NULA no evento; o Polymarket a expõe em tags[0].label (esports,
+    // crypto, nfl…) — sem isso, tudo cairia em "other" e o cap mataria a diversidade.
+    const cat = (ev.category ?? ev.tags?.[0]?.label ?? "other").toLowerCase();
+    if ((perCat[cat] ?? 0) >= perCatCap) continue;
+    let best: ShortDatedPolyTarget | null = null;
+    for (const m of ev.markets ?? []) {
+      if (!m.id || m.active === false || m.closed === true) continue;
+      const title = (m.groupItemTitle ? `${ev.title ?? ""}: ${m.groupItemTitle}` : (m.question ?? ev.title ?? "")).trim();
+      if (!title || GENERIC_PLACEHOLDER.test(title)) continue;
+      let prob = NaN;
+      try { const p = parseFloat((JSON.parse(m.outcomePrices ?? "[]") as string[])[0]); if (!isNaN(p)) prob = Math.round(p * 100); } catch { /* sem preço */ }
+      if (isNaN(prob) || prob <= 4 || prob >= 96) continue; // preço real e não quase-resolvido
+      const vol = Math.round(Number(m.volume ?? 0));
+      if (!best || vol > best.volume) {
+        best = { id: m.id, title: title.slice(0, 300), prob, volume: vol, closeMs: m.endDate ? new Date(m.endDate).getTime() : (ev.endDate ? new Date(ev.endDate).getTime() : Infinity) };
+      }
+    }
+    if (best) { out.push(best); perCat[cat] = (perCat[cat] ?? 0) + 1; }
+  }
+  return out;
+}
+
 /**
  * Prioridade de um mercado pela PROXIMIDADE de resolução — quanto antes fecha, mais
  * cedo vira resultado oficial na prova. Perpétuos (>365d) e sem-data caem no fundo;
@@ -328,6 +371,22 @@ async function fetchShortDatedKalshiTargets(daysAhead = 14, limit = 40): Promise
       { Accept: "application/json" },
     );
     return parseShortDatedKalshi(data?.markets ?? []);
+  } catch { return []; }
+}
+
+/**
+ * Eventos Polymarket que fecham em POUCOS DIAS (via end_date_min/max no gamma).
+ * A fonte que faltava pra DIVERSIDADE da prova — esports/cripto/NFL/economia que
+ * liquidam em dias por UMA, não só golfe/Trump como o Kalshi curto.
+ */
+async function fetchShortDatedPolymarketTargets(daysAhead = 21, limit = 100): Promise<ShortDatedPolyTarget[]> {
+  try {
+    const now = Date.now();
+    const url = `https://gamma-api.polymarket.com/events?active=true&closed=false` +
+      `&end_date_min=${new Date(now).toISOString()}&end_date_max=${new Date(now + daysAhead * 86_400_000).toISOString()}` +
+      `&limit=${limit}&order=volume&ascending=false&with_nested_markets=true`;
+    const events = await fetchWithRetry<RawPolyEvent[]>(url);
+    return parseShortDatedPolymarket(events ?? []);
   } catch { return []; }
 }
 
@@ -361,11 +420,21 @@ export async function seedAiForecasts(maxMarkets = 18): Promise<{ started: boole
   // Fonte EXTRA: mercados de data CURTA (fecham em dias) — o cache é dominado por
   // perpétuos, então buscamos direto os que liquidam já, pra encher a prova rápido.
   const seen = new Set(targets.map((t) => t.marketId));
-  for (const s of await fetchShortDatedKalshiTargets(21, 200)) {
+  const [shortKalshi, shortPoly] = await Promise.all([
+    fetchShortDatedKalshiTargets(21, 200),
+    fetchShortDatedPolymarketTargets(21, 100),   // fonte DIVERSA (esports/cripto/NFL/economia)
+  ]);
+  for (const s of shortKalshi) {
     const id = `kalshi-${s.ticker}`;
     if (seen.has(id)) continue;
     seen.add(id);
     targets.push({ marketId: id, source: "kalshi", title: s.title, category: "other", marketProb: s.prob, volume: s.volume, closeMs: s.closeMs });
+  }
+  for (const s of shortPoly) {
+    const id = `poly-${s.id}`;
+    if (seen.has(id)) continue;
+    seen.add(id);
+    targets.push({ marketId: id, source: "polymarket", title: s.title, category: "other", marketProb: s.prob, volume: s.volume, closeMs: s.closeMs });
   }
 
   // DIVERSIDADE: não re-semear o MESMO mercado dia após dia — era o gargalo que fazia

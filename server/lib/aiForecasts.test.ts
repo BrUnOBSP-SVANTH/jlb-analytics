@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parseShortDatedKalshi, tierForClose, selectOfficialUpgrades, type RawKalshiMarket } from "./aiForecasts.ts";
+import { parseShortDatedKalshi, parseShortDatedPolymarket, tierForClose, selectOfficialUpgrades, type RawKalshiMarket, type RawPolyEvent } from "./aiForecasts.ts";
 
 // ── tierForClose: prioridade pela proximidade de resolução ──────────────────────
 const NOW = 1_700_000_000_000;
@@ -109,5 +109,55 @@ describe("parseShortDatedKalshi — extração de dados fiel", () => {
   });
   it("trunca título gigante em 300 chars", () => {
     expect(parseShortDatedKalshi([mkt({ title: "x".repeat(400) })])[0].title).toHaveLength(300);
+  });
+});
+
+// ── parseShortDatedPolymarket: fonte DIVERSA de data curta (esports/cripto/NFL…) ──
+const pev = (over: Partial<RawPolyEvent> = {}): RawPolyEvent => ({
+  title: "Bitcoin em agosto?", category: "Crypto",
+  markets: [{ id: "m1", question: "BTC > 100k?", outcomePrices: JSON.stringify(["0.55", "0.45"]), volume: 1000, endDate: "2026-08-31T00:00:00Z" }],
+  ...over,
+});
+
+describe("parseShortDatedPolymarket — diversidade de data curta", () => {
+  it("normaliza o binário do evento (prob do índice 0, id, volume)", () => {
+    const [t] = parseShortDatedPolymarket([pev()]);
+    expect(t.id).toBe("m1");
+    expect(t.prob).toBe(55);
+    expect(t.volume).toBe(1000);
+  });
+
+  it("de vários mercados do evento, pega o de MAIOR volume", () => {
+    const ev = pev({ markets: [
+      { id: "a", question: "A?", outcomePrices: JSON.stringify(["0.30"]), volume: 100 },
+      { id: "b", question: "B?", outcomePrices: JSON.stringify(["0.60"]), volume: 900 },
+    ] });
+    expect(parseShortDatedPolymarket([ev])[0].id).toBe("b");
+  });
+
+  it("usa groupItemTitle no rótulo (evento multi-desfecho)", () => {
+    const ev = pev({ title: "Onde joga Tyreek Hill?", markets: [{ id: "x", groupItemTitle: "Dolphins", outcomePrices: JSON.stringify(["0.40"]), volume: 50 }] });
+    expect(parseShortDatedPolymarket([ev])[0].title).toBe("Onde joga Tyreek Hill?: Dolphins");
+  });
+
+  it("pula sem preço (nada de padrão-50), placeholder genérico, quase-resolvido e fechado", () => {
+    expect(parseShortDatedPolymarket([pev({ markets: [{ id: "np", question: "Q?", outcomePrices: "", volume: 100 }] })])).toHaveLength(0);
+    expect(parseShortDatedPolymarket([pev({ markets: [{ id: "g", question: "Will Team AM win?", outcomePrices: JSON.stringify(["0.5"]), volume: 100 }] })])).toHaveLength(0);
+    expect(parseShortDatedPolymarket([pev({ markets: [{ id: "hi", question: "Q?", outcomePrices: JSON.stringify(["0.98"]), volume: 100 }] })])).toHaveLength(0);
+    expect(parseShortDatedPolymarket([pev({ markets: [{ id: "c", question: "Q?", outcomePrices: JSON.stringify(["0.5"]), volume: 100, closed: true }] })])).toHaveLength(0);
+  });
+
+  it("capa por categoria (default 6); categorias diferentes não competem", () => {
+    const crypto = Array.from({ length: 8 }, (_, i) => pev({ category: "Crypto", markets: [{ id: `c${i}`, question: `Q${i}`, outcomePrices: JSON.stringify(["0.5"]), volume: 100 }] }));
+    expect(parseShortDatedPolymarket(crypto)).toHaveLength(6);
+    const mixed = [pev({ category: "Crypto" }), pev({ category: "Sports", markets: [{ id: "s", question: "S?", outcomePrices: JSON.stringify(["0.5"]), volume: 1 }] })];
+    expect(parseShortDatedPolymarket(mixed)).toHaveLength(2);
+  });
+
+  it("deriva a categoria de tags quando o evento não tem category (senão tudo vira 'other')", () => {
+    // 8 eventos sem category, mas tags distintas → NÃO devem competir pelo mesmo cap
+    const evs = ["Esports", "Crypto", "NFL", "Finance", "AI", "Iran", "NBA", "Weather"].map((lab, i) =>
+      pev({ category: undefined, tags: [{ label: lab }], markets: [{ id: `t${i}`, question: `Q${i}`, outcomePrices: JSON.stringify(["0.5"]), volume: 100 }] }));
+    expect(parseShortDatedPolymarket(evs)).toHaveLength(8); // 8 categorias distintas, nenhuma capada
   });
 });
