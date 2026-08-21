@@ -75,9 +75,11 @@ describe("parseShortDatedKalshi — extração de dados fiel", () => {
   it("prob = mid (bid+ask)/2 quando ambos existem", () => {
     expect(parseShortDatedKalshi([mkt({ yes_bid_dollars: "0.30", yes_ask_dollars: "0.50" })])[0].prob).toBe(40);
   });
-  it("cai para o last quando falta bid/ask; 50 quando não há preço", () => {
+  it("cai para o last quando falta bid/ask", () => {
     expect(parseShortDatedKalshi([mkt({ yes_bid_dollars: "0", yes_ask_dollars: "0", last_price_dollars: "0.72" })])[0].prob).toBe(72);
-    expect(parseShortDatedKalshi([mkt({ yes_bid_dollars: "0", yes_ask_dollars: "0", last_price_dollars: "0" })])[0].prob).toBe(50);
+  });
+  it("SEM preço real (nem mid nem last) → PULA (não vira o padrão-50 que polui a prova)", () => {
+    expect(parseShortDatedKalshi([mkt({ yes_bid_dollars: "0", yes_ask_dollars: "0", last_price_dollars: "0" })])).toHaveLength(0);
   });
 
   it("pula agregados negRisk pelo ticker (MULTIGAME / CROSSCATEGORY)", () => {

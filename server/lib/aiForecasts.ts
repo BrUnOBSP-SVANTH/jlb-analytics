@@ -267,7 +267,11 @@ export function parseShortDatedKalshi(markets: RawKalshiMarket[], perSeriesCap =
     const series = m.ticker.split("-")[0];
     if ((perSeries[series] ?? 0) >= perSeriesCap) continue;
     const bid = parseFloat(m.yes_bid_dollars ?? "0"), ask = parseFloat(m.yes_ask_dollars ?? "0"), last = parseFloat(m.last_price_dollars ?? "0");
-    const prob = bid > 0 && ask > 0 ? Math.round((bid + ask) / 2 * 100) : last > 0 ? Math.round(last * 100) : 50;
+    // Sem preço REAL (nem mid nem last) → NÃO semeia. Antes caía num padrão-50 que
+    // poluía a prova (30% dos resolvidos ficavam com "market_prob=50" falso, virando
+    // falsos "mercados voláteis" no backtest). Sem preço, não há âncora — pula.
+    if (!(bid > 0 && ask > 0) && !(last > 0)) continue;
+    const prob = bid > 0 && ask > 0 ? Math.round((bid + ask) / 2 * 100) : Math.round(last * 100);
     out.push({
       ticker: m.ticker, title: title.slice(0, 300), prob,
       volume: Math.round(parseFloat(m.volume_fp ?? "0")),
@@ -325,8 +329,9 @@ export async function seedAiForecasts(maxMarkets = 18): Promise<{ started: boole
 
   for (const m of poly) {
     if (!m.question || GENERIC.test(m.question)) continue;
-    let prob = 50;
-    try { const p = parseFloat((JSON.parse(m.outcomePrices ?? "[]") as string[])[0]); if (!isNaN(p)) prob = Math.round(p * 100); } catch { /* skip */ }
+    let prob = NaN;
+    try { const p = parseFloat((JSON.parse(m.outcomePrices ?? "[]") as string[])[0]); if (!isNaN(p)) prob = Math.round(p * 100); } catch { /* sem preço */ }
+    if (isNaN(prob)) continue; // sem preço REAL → não semeia (o padrão-50 poluía a prova)
     targets.push({ marketId: `poly-${m.id}`, source: "polymarket", title: m.question, category: m.category ?? "other", marketProb: prob, volume: m.volume ?? 0, closeMs: parseClose(m.endDate) });
   }
   for (const m of kalshi) {
