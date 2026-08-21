@@ -353,7 +353,8 @@ export function tierForClose(closeMs: number, now: number): number {
   const days = (closeMs - now) / 86_400_000;
   if (!isFinite(days)) return 1;            // sem data conhecida → baixa prioridade
   if (days > 365) return 1;                 // perpétuo (2028, "Marte 2099") → nunca dá retorno útil
-  if (days >= -60 && days <= 60) return 5;  // JANELA de resolução (fecha/fechou há pouco) → melhor retorno
+  if (days >= 0 && days <= 7) return 6;     // liquida em ATÉ 7 DIAS → prova enche em DIAS, não semanas
+  if (days >= -60 && days <= 60) return 5;  // JANELA de resolução (fecha/fechou há pouco) → ótimo retorno
   if (days > 60 && days <= 180) return 4;   // resolve nos próximos ~6 meses
   if (days < -60) return 3;                 // atrasado (pode estar resolvendo, ou travado)
   return 2;                                 // 180–365 dias
@@ -390,7 +391,7 @@ async function fetchShortDatedPolymarketTargets(daysAhead = 21, limit = 100): Pr
   } catch { return []; }
 }
 
-export async function seedAiForecasts(maxMarkets = 18): Promise<{ started: boolean; reason?: string }> {
+export async function seedAiForecasts(maxMarkets = 30): Promise<{ started: boolean; reason?: string }> {
   if (!SUPABASE_URL || !SUPABASE_KEY) return { started: false, reason: "supabase ausente" };
   if (!process.env.ANTHROPIC_API_KEY) return { started: false, reason: "anthropic ausente" };
   if (seedRunning) return { started: false, reason: "já em execução" };

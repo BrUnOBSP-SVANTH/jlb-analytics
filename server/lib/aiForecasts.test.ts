@@ -6,7 +6,13 @@ const NOW = 1_700_000_000_000;
 const inDays = (n: number) => NOW + n * 86_400_000;
 
 describe("tierForClose — prioriza o que resolve cedo (enche a prova)", () => {
-  it("janela de resolução (±60d) é a melhor (5), inclusive fechados há pouco", () => {
+  it("liquida em ATÉ 7 dias → prioridade MÁXIMA (6), acima da janela ampla", () => {
+    expect(tierForClose(inDays(3), NOW)).toBe(6);
+    expect(tierForClose(inDays(7), NOW)).toBe(6);   // borda inclusiva
+    expect(tierForClose(inDays(8), NOW)).toBe(5);   // 8 dias já cai pra 5
+    expect(tierForClose(inDays(2), NOW)).toBeGreaterThan(tierForClose(inDays(30), NOW)); // urgente > janela ampla
+  });
+  it("janela de resolução (±60d) é a melhor depois da urgente (5), inclusive fechados há pouco", () => {
     expect(tierForClose(inDays(10), NOW)).toBe(5);
     expect(tierForClose(inDays(-10), NOW)).toBe(5); // fechou há pouco → deve estar resolvendo
     expect(tierForClose(inDays(60), NOW)).toBe(5);  // borda inclusiva
