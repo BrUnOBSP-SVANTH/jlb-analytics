@@ -306,7 +306,7 @@ export interface RawPolyEvent {
   tags?: Array<{ label?: string }>;
   markets?: Array<{ id?: string; question?: string; groupItemTitle?: string; outcomePrices?: string; volume?: string | number; closed?: boolean; active?: boolean; endDate?: string }>;
 }
-export interface ShortDatedPolyTarget { id: string; title: string; prob: number; volume: number; closeMs: number }
+export interface ShortDatedPolyTarget { id: string; title: string; prob: number; volume: number; closeMs: number; category: string }
 
 const GENERIC_PLACEHOLDER = /\b(Team|Person|Candidate|Player|Country|Party)\s+[A-Z]{1,3}\b/;
 
@@ -336,7 +336,7 @@ export function parseShortDatedPolymarket(events: RawPolyEvent[], perCatCap = 6)
       if (isNaN(prob) || prob <= 4 || prob >= 96) continue; // preço real e não quase-resolvido
       const vol = Math.round(Number(m.volume ?? 0));
       if (!best || vol > best.volume) {
-        best = { id: m.id, title: title.slice(0, 300), prob, volume: vol, closeMs: m.endDate ? new Date(m.endDate).getTime() : (ev.endDate ? new Date(ev.endDate).getTime() : Infinity) };
+        best = { id: m.id, title: title.slice(0, 300), prob, volume: vol, category: cat, closeMs: m.endDate ? new Date(m.endDate).getTime() : (ev.endDate ? new Date(ev.endDate).getTime() : Infinity) };
       }
     }
     if (best) { out.push(best); perCat[cat] = (perCat[cat] ?? 0) + 1; }
@@ -435,7 +435,7 @@ export async function seedAiForecasts(maxMarkets = 30): Promise<{ started: boole
     const id = `poly-${s.id}`;
     if (seen.has(id)) continue;
     seen.add(id);
-    targets.push({ marketId: id, source: "polymarket", title: s.title, category: "other", marketProb: s.prob, volume: s.volume, closeMs: s.closeMs });
+    targets.push({ marketId: id, source: "polymarket", title: s.title, category: s.category, marketProb: s.prob, volume: s.volume, closeMs: s.closeMs });
   }
 
   // DIVERSIDADE: não re-semear o MESMO mercado dia após dia — era o gargalo que fazia

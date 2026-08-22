@@ -126,11 +126,17 @@ const pev = (over: Partial<RawPolyEvent> = {}): RawPolyEvent => ({
 });
 
 describe("parseShortDatedPolymarket — diversidade de data curta", () => {
-  it("normaliza o binário do evento (prob do índice 0, id, volume)", () => {
+  it("normaliza o binário do evento (prob do índice 0, id, volume, categoria)", () => {
     const [t] = parseShortDatedPolymarket([pev()]);
     expect(t.id).toBe("m1");
     expect(t.prob).toBe(55);
     expect(t.volume).toBe(1000);
+    expect(t.category).toBe("crypto"); // devolve a categoria (não perde pra "other")
+  });
+
+  it("devolve a categoria derivada de tags (pro painel 'por tema' funcionar)", () => {
+    const ev = pev({ category: undefined, tags: [{ label: "Esports" }] });
+    expect(parseShortDatedPolymarket([ev])[0].category).toBe("esports");
   });
 
   it("de vários mercados do evento, pega o de MAIOR volume", () => {
