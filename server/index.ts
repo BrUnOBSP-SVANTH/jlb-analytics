@@ -39,7 +39,7 @@ import settlementsRouter from "./routes/settlements.ts";
 import feedRouter from "./routes/feed.ts";
 import engineRouter from "./routes/engine.ts";
 import { sendAlertPushes, pushEnabled, vapidPublicKey } from "./lib/push.ts";
-import { recordSecurityEvent } from "./lib/security.ts";
+import { recordSecurityEvent, isBanned } from "./lib/security.ts";
 import { log } from "./lib/log.ts";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -108,6 +108,17 @@ async function startServer() {
   // Atrás de proxy/CDN em produção — sem isso req.ip vira o IP do proxy e
   // todo o rate limiting por IP colapsa num balde só.
   app.set("trust proxy", 1);
+
+  // ── Auto-ban (RESPOSTA) — gate mais externo ────────────────────────────────
+  // IP que a detecção bloqueou (abuso claro) é rejeitado AQUI, antes de qualquer
+  // processamento — resposta automática a força-bruta/scraping/DoS, sem intervenção.
+  app.use((req, res, next) => {
+    if (isBanned(req.ip)) {
+      res.setHeader("Retry-After", "900");
+      return res.status(429).json({ error: "temporarily_blocked", message: "Acesso temporariamente bloqueado por atividade suspeita." });
+    }
+    next();
+  });
 
   // ── Security headers ───────────────────────────────────────────────────────
   // Sem inline scripts (tema é /theme-init.js) e fontes self-hosted, a CSP

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { pruneEvents, breakdown, recordSecurityEvent, securitySummary, type StampedEvent } from "./security.ts";
+import { pruneEvents, breakdown, recordSecurityEvent, securitySummary, isBanned, type StampedEvent } from "./security.ts";
 
 describe("pruneEvents — janela deslizante", () => {
   it("descarta eventos fora da janela de 10min", () => {
@@ -33,5 +33,23 @@ describe("recordSecurityEvent + securitySummary — detecção de abuso", () => 
     expect(s).toBeDefined();
     expect(s!.count).toBeGreaterThanOrEqual(20);
     expect(s!.types.auth_fail).toBeGreaterThanOrEqual(20);
+  });
+});
+
+describe("auto-ban (resposta) — bloqueio automático", () => {
+  it("IP desconhecido não está bloqueado", () => {
+    expect(isBanned("8.8.8.8")).toBe(false);
+  });
+  it("cruzar o limiar de ban (40 eventos) BLOQUEIA o IP", () => {
+    const ip = "198.51.100.5";
+    for (let i = 0; i < 45; i++) recordSecurityEvent("rate_limit", ip);
+    expect(isBanned(ip)).toBe(true);
+    expect(securitySummary().bannedIps).toBeGreaterThanOrEqual(1);
+  });
+  it("o bloqueio AUTO-EXPIRA após a janela (15min)", () => {
+    const ip = "198.51.100.6";
+    for (let i = 0; i < 45; i++) recordSecurityEvent("auth_fail", ip);
+    expect(isBanned(ip)).toBe(true);
+    expect(isBanned(ip, Date.now() + 20 * 60_000)).toBe(false); // 20min depois → liberado
   });
 });

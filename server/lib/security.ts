@@ -12,8 +12,20 @@ export type SecEventType = "rate_limit" | "auth_fail" | "cors_block" | "payload_
 export interface StampedEvent { t: number; type: SecEventType }
 
 const WINDOW_MS = 10 * 60_000;   // janela de observação: 10 min
-const ALERT_THRESHOLD = 20;      // eventos suspeitos na janela → alerta de possível ataque
+const ALERT_THRESHOLD = 20;      // eventos suspeitos na janela → alerta (visibilidade)
+const BAN_THRESHOLD = 40;        // abuso claro → BLOQUEIO automático (resposta)
+const BAN_MS = 15 * 60_000;      // duração do bloqueio: 15 min (auto-expira)
 const records = new Map<string, { events: StampedEvent[]; alerted: boolean }>();
+const banned = new Map<string, number>();   // ip → timestamp de expiração do bloqueio
+
+/** Um IP está bloqueado agora? Auto-expira (remove entradas vencidas). */
+export function isBanned(ip: string | undefined, now = Date.now()): boolean {
+  const key = ip || "unknown";
+  const until = banned.get(key);
+  if (until === undefined) return false;
+  if (until <= now) { banned.delete(key); return false; }
+  return true;
+}
 
 /** Descarta eventos fora da janela. Puro. */
 export function pruneEvents(events: StampedEvent[], now: number, windowMs = WINDOW_MS): StampedEvent[] {
@@ -39,24 +51,32 @@ export function recordSecurityEvent(type: SecEventType, ip: string | undefined):
     rec.alerted = true;              // alerta UMA vez por surto (não spamma o log)
     log.error(`[security] atividade suspeita de ${key}: ${rec.events.length} eventos/10min ${JSON.stringify(breakdown(rec.events))}`);
   }
+  // RESPOSTA: abuso claro → bloqueio temporário automático (uma vez por surto).
+  if (rec.events.length >= BAN_THRESHOLD && !isBanned(key, now)) {
+    banned.set(key, now + BAN_MS);
+    log.error(`[security] IP ${key} BLOQUEADO por ${BAN_MS / 60_000}min — ${rec.events.length} eventos/10min ${JSON.stringify(breakdown(rec.events))}`);
+  }
   records.set(key, rec);
 }
 
-/** Resumo para monitoramento: IPs com atividade suspeita na janela atual. */
-export function securitySummary(now = Date.now()): { trackedIps: number; suspicious: Array<{ ip: string; count: number; types: Record<string, number> }> } {
+/** Resumo para monitoramento: IPs suspeitos e bloqueados na janela atual. */
+export function securitySummary(now = Date.now()): { trackedIps: number; bannedIps: number; suspicious: Array<{ ip: string; count: number; types: Record<string, number> }> } {
   const suspicious: Array<{ ip: string; count: number; types: Record<string, number> }> = [];
   records.forEach((rec, ip) => {
     const ev = pruneEvents(rec.events, now);
     if (ev.length >= ALERT_THRESHOLD) suspicious.push({ ip, count: ev.length, types: breakdown(ev) });
   });
-  return { trackedIps: records.size, suspicious: suspicious.sort((a, b) => b.count - a.count) };
+  let bannedIps = 0;
+  banned.forEach((until) => { if (until > now) bannedIps++; });
+  return { trackedIps: records.size, bannedIps, suspicious: suspicious.sort((a, b) => b.count - a.count) };
 }
 
-// Limpeza periódica pra não vazar memória (IPs sem eventos recentes saem do mapa).
+// Limpeza periódica pra não vazar memória (eventos/bans vencidos saem dos mapas).
 setInterval(() => {
   const now = Date.now();
   records.forEach((rec, ip) => {
     rec.events = pruneEvents(rec.events, now);
     if (rec.events.length === 0) records.delete(ip);
   });
+  banned.forEach((until, ip) => { if (until <= now) banned.delete(ip); });
 }, 5 * 60_000).unref();
