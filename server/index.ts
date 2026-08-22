@@ -37,6 +37,7 @@ import analyticsRouter from "./routes/analytics.ts";
 import pushRouter from "./routes/push.ts";
 import settlementsRouter from "./routes/settlements.ts";
 import feedRouter from "./routes/feed.ts";
+import engineRouter from "./routes/engine.ts";
 import { sendAlertPushes, pushEnabled, vapidPublicKey } from "./lib/push.ts";
 import { log } from "./lib/log.ts";
 
@@ -207,6 +208,7 @@ async function startServer() {
   app.use("/api/duels",       duelsRouter);      // Duelos de Previsão Fase 1 (pontos) — DUELOS.md
   app.use("/api/settlements", settlementsRouter); // resolução oficial em lote das apostas do usuário
   app.use("/api/feed",        feedRouter);        // feed editorial de probabilidades (ativo B2B mídia)
+  app.use("/api/engine",      engineRouter);      // motor de previsão como serviço (B2B, chave de parceiro)
 
   // ── Health check ───────────────────────────────────────────────────────────
   app.get("/api/health", (_req, res) => {
