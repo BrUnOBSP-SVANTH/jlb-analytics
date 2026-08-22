@@ -408,6 +408,12 @@ function checkSecurity() {
   /helmet\(/.test(idx)
     ? line("✅", "helmet ativo (CSP · HSTS · X-Frame-Options · nosniff)")
     : (line("⚠️", paint("helmet NÃO encontrado no server/index.ts", c.yellow)), add("warn", "Segurança", "helmet ausente — headers de segurança HTTP"));
+
+  // 5) Hardening de runtime: rate-limit global + limite de body + Permissions-Policy
+  const rl = /RL_MAX/.test(idx), body = /limit:\s*["']\d+kb/.test(idx), pp = /Permissions-Policy/.test(idx);
+  (rl && body && pp)
+    ? line("✅", "Runtime hardening: rate-limit global por IP · body ≤100kb · Permissions-Policy")
+    : (line("⚠️", paint(`Hardening de runtime incompleto (rate-limit:${rl?"ok":"FALTA"} body:${body?"ok":"FALTA"} perm-policy:${pp?"ok":"FALTA"})`, c.yellow)), add("warn", "Segurança", "Runtime hardening incompleto no server/index.ts"));
 }
 
 // ── 9. Inventário ─────────────────────────────────────────────────────────────
