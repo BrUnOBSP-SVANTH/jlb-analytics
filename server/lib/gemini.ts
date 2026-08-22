@@ -12,7 +12,11 @@ const GEMINI_KEY = () => process.env.GEMINI_API_KEY ?? "";
 // ⚠️ Usar SEMPRE o alias "-latest": IDs fixos são descontinuados para chaves
 // novas (gemini-2.5-flash já responde 404 "no longer available to new users",
 // verificado 2026-07-21). O alias acompanha o Flash atual sozinho.
-const GEMINI_MODEL = () => process.env.GEMINI_MODEL ?? "gemini-flash-latest";
+// ⚠️ Padrão = "flash-LITE": o Flash cheio (gemini-flash-latest → 3.7-flash) tem cota
+// DIÁRIA free minúscula e vive estourada (429 RESOURCE_EXHAUSTED — verificado
+// 2026-08-22, seed rendeu 0/30). O lite tem cota própria bem maior e é mais rápido —
+// para o fallback (fair value + confiança) a qualidade basta. Override via GEMINI_MODEL.
+const GEMINI_MODEL = () => process.env.GEMINI_MODEL ?? "gemini-flash-lite-latest";
 
 export function geminiEnabled(): boolean {
   return GEMINI_KEY().length > 0;
