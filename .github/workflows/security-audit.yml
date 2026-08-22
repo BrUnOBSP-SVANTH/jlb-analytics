@@ -1,0 +1,30 @@
+name: Security Audit
+
+# Scan de CVE AGENDADO. O ci.yml já audita em cada push/PR (pega CVE introduzido por
+# mudança de dependência). Este cobre o outro caso: um CVE RECÉM-DIVULGADO numa dep
+# que já estava lá — sem depender de alguém dar push. Falha (e notifica o dono do
+# repo por e-mail/Actions) se houver vuln high/critical em dependência de PRODUÇÃO.
+on:
+  schedule:
+    - cron: "0 6 * * 1"    # toda segunda-feira, 06:00 UTC
+  workflow_dispatch: {}     # permite disparar manualmente pela aba Actions
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # A versão do pnpm vem do campo packageManager do package.json
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Instalar dependências
+        run: pnpm install --frozen-lockfile
+
+      - name: Auditoria de dependências (produção — high/critical falham)
+        run: pnpm audit --prod --audit-level high
