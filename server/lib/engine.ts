@@ -7,6 +7,7 @@
  * As partes de decisão são puras/testáveis (prompt, modelagem, validação, auth);
  * só forecastMarket faz I/O (chama o modelo).
  */
+import { timingSafeEqual } from "node:crypto";
 import { callClaude } from "./anthropic.ts";
 import { extractJson } from "./extractJson.ts";
 import { clampFairValue } from "./ai/guardrails.ts";
@@ -64,9 +65,18 @@ export function shapeForecast(rawFairValue: unknown, rawConfidence: unknown, raw
 export function parseKeys(env: string | undefined): string[] {
   return (env ?? "").split(",").map((s) => s.trim()).filter(Boolean);
 }
-/** Valida a chave apresentada. Sem chaves configuradas → tudo negado (fail-closed). */
+/**
+ * Valida a chave apresentada. Sem chaves configuradas → tudo negado (fail-closed).
+ * Comparação em TEMPO CONSTANTE (timingSafeEqual) — evita timing attack no auth do
+ * endpoint externo; defesa-em-profundidade (as chaves já são segredos longos).
+ */
 export function isValidPartnerKey(key: string | undefined, keys: string[]): boolean {
-  return !!key && key.length >= 8 && keys.includes(key);
+  if (!key || key.length < 8) return false;
+  const kb = Buffer.from(key);
+  return keys.some((valid) => {
+    const vb = Buffer.from(valid);
+    return vb.length === kb.length && timingSafeEqual(vb, kb);
+  });
 }
 
 /** Valida/normaliza o corpo da requisição. Puro/testável. */
