@@ -146,6 +146,15 @@ async function startServer() {
     crossOriginEmbedderPolicy: false,
   }));
 
+  // Permissions-Policy: nega recursos de browser que o site NÃO usa (câmera, mic,
+  // geolocalização, USB, sensores) — reduz o estrago de um XSS hipotético e some
+  // com o browser sniffing esses acessos. helmet não seta este header por padrão.
+  app.use((_req, res, next) => {
+    res.setHeader("Permissions-Policy",
+      "camera=(), microphone=(), geolocation=(), usb=(), magnetometer=(), gyroscope=(), accelerometer=(), payment=(self)");
+    next();
+  });
+
   // ── Compressão ─────────────────────────────────────────────────────────────
   // Gzip para JSON grande (mercados) e estáticos. SSE NUNCA pode ser
   // comprimido — o buffer do gzip segura os eventos e o streaming congela.
@@ -189,7 +198,36 @@ async function startServer() {
   // Stripe webhook needs raw body for HMAC signature verification — skip json() for that path.
   app.use((req, res, next) => {
     if (req.path === "/api/stripe/webhook") return next();
-    express.json()(req, res, next);
+    // Limite explícito de payload — corta DoS por corpo gigante (nenhuma API legítima
+    // manda >100kb de JSON; o maior é o contexto do motor, ~4kb).
+    express.json({ limit: "100kb" })(req, res, next);
+  });
+
+  // ── Rate limit GLOBAL por IP (anti-abuso/DoS/scraping) ─────────────────────
+  // Defesa em profundidade: os endpoints de IA já têm limites finos; este é o teto
+  // grosso que protege TODOS os /api (inclusive os públicos: feed, mercados, notícias)
+  // de um cliente abusivo. 300/min por IP é folgado pra uso real (SPA dispara dezenas
+  // no load) e barra scraper/DoS. Em memória (por processo) + limpeza periódica.
+  const RL_WINDOW = 60_000, RL_MAX = 300;
+  const rlHits = new Map<string, number[]>();
+  setInterval(() => {
+    const now = Date.now();
+    rlHits.forEach((arr, ip) => {
+      const keep = arr.filter((t) => now - t < RL_WINDOW);
+      if (keep.length) rlHits.set(ip, keep); else rlHits.delete(ip);
+    });
+  }, 5 * 60_000).unref();
+  app.use("/api", (req, res, next) => {
+    const ip = req.ip ?? "unknown";
+    const now = Date.now();
+    const arr = (rlHits.get(ip) ?? []).filter((t) => now - t < RL_WINDOW);
+    if (arr.length >= RL_MAX) {
+      res.setHeader("Retry-After", "60");
+      return res.status(429).json({ error: "rate_limited", message: "Muitas requisições. Aguarde um instante." });
+    }
+    arr.push(now);
+    rlHits.set(ip, arr);
+    next();
   });
 
   // ── Routes ─────────────────────────────────────────────────────────────────
