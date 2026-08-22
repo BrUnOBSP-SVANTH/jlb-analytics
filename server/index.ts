@@ -39,6 +39,7 @@ import settlementsRouter from "./routes/settlements.ts";
 import feedRouter from "./routes/feed.ts";
 import engineRouter from "./routes/engine.ts";
 import { sendAlertPushes, pushEnabled, vapidPublicKey } from "./lib/push.ts";
+import { recordSecurityEvent } from "./lib/security.ts";
 import { log } from "./lib/log.ts";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -186,6 +187,7 @@ async function startServer() {
       origin: (origin, callback) => {
         const self = `${req.protocol}://${req.headers.host ?? ""}`;
         if (!origin || origin === self || allowedOrigins.includes(origin)) return callback(null, true);
+        recordSecurityEvent("cors_block", req.ip);
         callback(new Error(`CORS: origin ${origin} not allowed`));
       },
       credentials: true,
@@ -199,8 +201,15 @@ async function startServer() {
   app.use((req, res, next) => {
     if (req.path === "/api/stripe/webhook") return next();
     // Limite explícito de payload — corta DoS por corpo gigante (nenhuma API legítima
-    // manda >100kb de JSON; o maior é o contexto do motor, ~4kb).
-    express.json({ limit: "100kb" })(req, res, next);
+    // manda >100kb de JSON; o maior é o contexto do motor, ~4kb). Body gigante é sinal
+    // de sonda/ataque → registra pra detecção.
+    express.json({ limit: "100kb" })(req, res, (err?: unknown) => {
+      if (err) {
+        recordSecurityEvent("payload_too_large", req.ip);
+        return res.status(413).json({ error: "payload_too_large", message: "Corpo da requisição excede o limite." });
+      }
+      next();
+    });
   });
 
   // ── Rate limit GLOBAL por IP (anti-abuso/DoS/scraping) ─────────────────────
@@ -222,6 +231,7 @@ async function startServer() {
     const now = Date.now();
     const arr = (rlHits.get(ip) ?? []).filter((t) => now - t < RL_WINDOW);
     if (arr.length >= RL_MAX) {
+      recordSecurityEvent("rate_limit", ip);
       res.setHeader("Retry-After", "60");
       return res.status(429).json({ error: "rate_limited", message: "Muitas requisições. Aguarde um instante." });
     }
@@ -317,6 +327,15 @@ async function startServer() {
       expired: entries.filter((e) => e.expired).length,
       entries: entries.sort((a, b) => b.expiresIn - a.expiresIn),
     });
+  });
+
+  // ── security.txt (divulgação responsável — RFC 9116) ───────────────────────
+  // Dá a pesquisadores um canal pra REPORTAR falhas em vez de vazar/vender/explorar.
+  // Sinal de maturidade e defesa via colaboração (muitos white-hats checam isto 1º).
+  app.get("/.well-known/security.txt", (_req, res) => {
+    const contact = process.env.SECURITY_CONTACT || (APP_URL ? `${APP_URL}/sobre` : "https://jlb.analytics/sobre");
+    const expires = new Date(Date.now() + 365 * 86_400_000).toISOString();
+    res.type("text/plain").send(`Contact: ${contact}\nExpires: ${expires}\nPreferred-Languages: pt, en\n`);
   });
 
   // ── Static files + SPA fallback ────────────────────────────────────────────

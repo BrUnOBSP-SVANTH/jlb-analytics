@@ -5,6 +5,7 @@
  */
 import { Router } from "express";
 import { log } from "../lib/log.ts";
+import { recordSecurityEvent } from "../lib/security.ts";
 import {
   forecastMarket, validateEngineInput, parseKeys, isValidPartnerKey,
   ENGINE_METHODOLOGY, ENGINE_DISCLAIMER,
@@ -33,6 +34,7 @@ function extractKey(req: { headers: Record<string, unknown> }): string {
 router.post("/forecast", async (req, res) => {
   const key = extractKey(req);
   if (!isValidPartnerKey(key, parseKeys(process.env.ENGINE_API_KEYS))) {
+    recordSecurityEvent("auth_fail", req.ip); // força-bruta de chave → detecção
     return res.status(401).json({ error: "invalid_api_key", message: "Forneça uma chave de parceiro válida em X-API-Key." });
   }
   if (limited(key)) {
