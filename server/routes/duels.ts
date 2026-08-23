@@ -28,6 +28,12 @@ interface DuelRow {
 
 const headers = () => ({ apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` });
 
+// Ids de duelo são UUID (gerados pelo Postgres). Validar ANTES de interpolar na query
+// PostgREST fecha a injeção via req.params.id — & = ( ) . não passam por um UUID. Como
+// a tabela duels não tem RLS (acesso só por estas rotas), este guard é a defesa real.
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const badId = (id: string): boolean => !UUID_RE.test(id);
+
 // Oponente-IA: uuid sentinela (não colide com auth.users). As previsões da IA
 // vêm do track record público (ai_forecasts) — já estavam "seladas" lá.
 const IA_OPPONENT_ID = "00000000-0000-0000-0000-000000000000";
@@ -263,6 +269,7 @@ router.post("/:id/join", async (req, res) => {
   const userId = await verifyUserId(String(req.headers.authorization ?? ""));
   if (!userId) return res.status(401).json({ error: "auth_required" });
   const id = String(req.params.id);
+  if (badId(id)) return res.status(400).json({ error: "invalid_id" });
   const { preds, displayName } = req.body as { preds?: DuelPred[]; displayName?: string };
 
   try {
@@ -301,8 +308,10 @@ router.post("/:id/cancel", async (req, res) => {
   if (!ready(res)) return;
   const userId = await verifyUserId(String(req.headers.authorization ?? ""));
   if (!userId) return res.status(401).json({ error: "auth_required" });
+  const id = String(req.params.id);
+  if (badId(id)) return res.status(400).json({ error: "invalid_id" });
   try {
-    const r = await fetch(`${SUPABASE_URL}/rest/v1/duels?id=eq.${String(req.params.id)}&status=eq.open&creator_id=eq.${userId}`, {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/duels?id=eq.${id}&status=eq.open&creator_id=eq.${userId}`, {
       method: "PATCH",
       headers: { ...supaWriteHeaders(), Prefer: "return=representation" },
       body: JSON.stringify({ status: "cancelled" }),
@@ -413,6 +422,7 @@ router.post("/:id/resolve", async (req, res) => {
   const userId = await verifyUserId(String(req.headers.authorization ?? ""));
   if (!userId) return res.status(401).json({ error: "auth_required" });
   const id = String(req.params.id);
+  if (badId(id)) return res.status(400).json({ error: "invalid_id" });
 
   try {
     const r0 = await fetch(`${SUPABASE_URL}/rest/v1/duels?id=eq.${id}&select=*`, { headers: headers(), signal: AbortSignal.timeout(8_000) });
