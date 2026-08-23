@@ -168,7 +168,7 @@ const SOCIAL_PROOF = [
 const ONBOARDING_KEY = "jlb_onboarding_v1";
 
 export default function Home() {
-  useSEO("Preveja melhor, aposte com lógica", "Plataforma de educação quantitativa para mercados preditivos. Polymarket e Kalshi ao vivo, IA com método Superforecaster, calibração e modelos econométricos.");
+  useSEO("Preveja melhor, decida com método", "Educação quantitativa para mercados preditivos: aprenda a pensar em probabilidades e meça sua própria calibração. Polymarket e Kalshi ao vivo, método Superforecaster, e um histórico auditável — inclusive quando erramos.");
   const [markets, setMarkets] = useState<LiveMarket[]>([]);
   const [marketsLoading, setMarketsLoading] = useState(true);
   const [showBanner, setShowBanner] = useState(() => {
@@ -262,13 +262,11 @@ export default function Home() {
             </div>
             <h1 className="text-4xl md:text-6xl font-display font-bold text-foreground leading-tight mb-5">
               Preveja melhor.{" "}
-              <span className="text-primary">Aposte com lógica.</span>
-              <br className="hidden sm:block" />
-              {" "}Ganhe mais.
+              <span className="text-primary">Decida com método.</span>
             </h1>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-8 leading-relaxed">
-              Veja ao vivo o que o mundo está apostando no Polymarket e Kalshi.
-              Aprenda a calcular suas chances reais antes de colocar dinheiro — sem chute, sem achismo.
+              Veja ao vivo o que o mundo está prevendo no Polymarket e Kalshi, e aprenda a calcular as chances reais —
+              sem chute, sem achismo. E a gente mostra o histórico <strong className="text-foreground/80">completo</strong>, inclusive quando erra.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
               <Link href="/apostas" onClick={() => track("cta_click", { id: "home_hero_mercados" })}>
@@ -483,7 +481,7 @@ export default function Home() {
           <div className="text-center mb-12">
             <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-3">Como funciona</h2>
             <p className="text-muted-foreground text-sm max-w-lg mx-auto">
-              Três passos simples para apostar com mais inteligência — mesmo sem experiência prévia.
+              Três passos simples para prever com método — mesmo sem experiência prévia.
             </p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
