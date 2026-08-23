@@ -7,6 +7,7 @@ import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import { getMarkets, getAllMarkets } from "@/lib/marketsCache";
 import { useSEO } from "@/hooks/useSEO";
+import CalibrationTest from "@/components/CalibrationTest";
 import { MODEL_COUNT } from "@/lib/brand";
 import { track } from "@/lib/analytics";
 import { Link } from "wouter";
@@ -325,6 +326,11 @@ export default function Home() {
             <span><strong className="text-foreground">Grátis</strong> para começar</span>
           </div>
         </div>
+      </section>
+
+      {/* ── Teste de calibração — o "primeiro valor em 30s", sem login ── */}
+      <section className="py-12 px-4 border-y border-border/20 bg-secondary/5" aria-label="Teste de calibração">
+        <CalibrationTest />
       </section>
 
       {/* ── Onboarding Banner ── */}
