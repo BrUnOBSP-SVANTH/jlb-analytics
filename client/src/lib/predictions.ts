@@ -202,6 +202,43 @@ export function skillScore(preds: StoredPrediction[]): number | null {
   return 1 - bs / 0.25;
 }
 
+/** Brier médio do MERCADO nas MESMAS previsões — baseline pra "você bate o mercado?". */
+export function meanMarketBrier(preds: StoredPrediction[]): number | null {
+  const resolved = preds.filter((p) => p.resolved && p.outcome !== null);
+  if (resolved.length === 0) return null;
+  const sum = resolved.reduce((acc, p) => acc + Math.pow((p.outcome ? 1 : 0) - p.marketProb / 100, 2), 0);
+  return sum / resolved.length;
+}
+
+export interface ConfidenceCalibration {
+  n: number;
+  avgConfidence: number;  // 0-100: quão CERTO o usuário se diz (do lado que escolheu)
+  accuracy: number;       // 0-100: quão frequentemente ele acertou esse lado
+  gap: number;            // avgConfidence - accuracy (>0 = superconfiante; <0 = cauteloso)
+  verdict: "superconfiante" | "calibrado" | "cauteloso";
+}
+
+/**
+ * Diagnóstico de EXCESSO DE CONFIANÇA (o viés nº1 que destrói retorno). Puro/testável.
+ * Compara o quanto a pessoa DIZ ter certeza (max(p, 100-p) do lado escolhido) com o
+ * quanto ela realmente ACERTA. Gap positivo = superconfiante. Previsões em 50 (sem
+ * lado) ficam de fora. É a lição "aposta ≠ investimento" feita com o dado da pessoa.
+ */
+export function confidenceCalibration(preds: StoredPrediction[]): ConfidenceCalibration | null {
+  const sided = preds.filter((p) => p.resolved && p.outcome !== null && p.userProb !== 50);
+  if (sided.length === 0) return null;
+  let confSum = 0, correct = 0;
+  for (const p of sided) {
+    confSum += Math.max(p.userProb, 100 - p.userProb);
+    if ((p.userProb > 50) === (p.outcome === true)) correct++;
+  }
+  const avgConfidence = Math.round(confSum / sided.length);
+  const accuracy = Math.round((correct / sided.length) * 100);
+  const gap = avgConfidence - accuracy;
+  const verdict = gap > 10 ? "superconfiante" : gap < -10 ? "cauteloso" : "calibrado";
+  return { n: sided.length, avgConfidence, accuracy, gap, verdict };
+}
+
 /**
  * Build calibration buckets in steps of 10 (0-10, 10-20, ..., 90-100).
  * Only uses resolved predictions.

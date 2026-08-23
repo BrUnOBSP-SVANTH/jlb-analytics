@@ -11,6 +11,7 @@ import {
   BookmarkCheck, BarChart2, Download, Filter, Bell,
 } from "lucide-react";
 import { CalibrationChart, CalibrationTrend } from "@/components/dashboard/CalibrationCharts";
+import { IntuitionDiagnosis } from "@/components/dashboard/IntuitionDiagnosis";
 import { LevelMap, BehavioralMetrics, QuickActions } from "@/components/dashboard/ProgressPanels";
 import { PredictionRow, UserVsMarket } from "@/components/dashboard/PredictionLog";
 import {
@@ -410,6 +411,9 @@ function PredictionTracker({ userId }: { userId?: string }) {
               </p>
             </div>
           </div>
+
+          {/* Diagnóstico da intuição (você vs mercado + excesso de confiança) */}
+          <IntuitionDiagnosis preds={preds} />
 
           {/* Calibration chart */}
           {resolved.length >= 3 && (

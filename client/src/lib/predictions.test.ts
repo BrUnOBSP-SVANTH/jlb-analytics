@@ -3,7 +3,7 @@
  * Lógica que sustenta Dashboard, Leaderboard e track record.
  */
 import { describe, it, expect } from "vitest";
-import { meanBrierScore, skillScore, calibrationBuckets, analyzeSentiment, edge, kellyFraction, type StoredPrediction } from "./predictions";
+import { meanBrierScore, skillScore, calibrationBuckets, analyzeSentiment, edge, kellyFraction, meanMarketBrier, confidenceCalibration, type StoredPrediction } from "./predictions";
 
 function pred(p: Partial<StoredPrediction>): StoredPrediction {
   return {
@@ -40,6 +40,48 @@ describe("meanBrierScore", () => {
       pred({ resolved: false, brierScore: null }),
     ];
     expect(meanBrierScore(preds)).toBeCloseTo(0.2, 5);
+  });
+});
+
+describe("meanMarketBrier — baseline do mercado (você bate o mercado?)", () => {
+  it("null sem resolvidas", () => { expect(meanMarketBrier([])).toBeNull(); });
+  it("usa marketProb, não userProb", () => {
+    // mercado 80%, deu SIM → (1 - 0.8)^2 = 0.04
+    expect(meanMarketBrier([pred({ resolved: true, outcome: true, marketProb: 80, userProb: 10 })])).toBeCloseTo(0.04, 5);
+  });
+});
+
+describe("confidenceCalibration — diagnóstico de excesso de confiança", () => {
+  it("null sem previsão com lado (userProb=50) ou sem dados", () => {
+    expect(confidenceCalibration([])).toBeNull();
+    expect(confidenceCalibration([pred({ resolved: true, outcome: true, userProb: 50 })])).toBeNull();
+  });
+  it("detecta SUPERCONFIANÇA: muita certeza, pouco acerto", () => {
+    const preds = [
+      pred({ resolved: true, outcome: false, userProb: 90 }),
+      pred({ resolved: true, outcome: false, userProb: 90 }),
+      pred({ resolved: true, outcome: false, userProb: 90 }),
+      pred({ resolved: true, outcome: true, userProb: 90 }),
+    ];
+    const cc = confidenceCalibration(preds)!;
+    expect(cc.avgConfidence).toBe(90);
+    expect(cc.accuracy).toBe(25);   // 1 de 4
+    expect(cc.gap).toBe(65);
+    expect(cc.verdict).toBe("superconfiante");
+  });
+  it("detecta BEM CALIBRADO: certeza ≈ acerto", () => {
+    const preds = Array.from({ length: 10 }, (_, i) => pred({ resolved: true, outcome: i < 7, userProb: 70 }));
+    const cc = confidenceCalibration(preds)!;
+    expect(cc.avgConfidence).toBe(70);
+    expect(cc.accuracy).toBe(70);
+    expect(cc.verdict).toBe("calibrado");
+  });
+  it("conta a confiança do LADO escolhido (userProb<50 = lado NÃO)", () => {
+    // 20% → 80% de certeza no NÃO; deu NÃO → acertou
+    const cc = confidenceCalibration([pred({ resolved: true, outcome: false, userProb: 20 })])!;
+    expect(cc.avgConfidence).toBe(80);
+    expect(cc.accuracy).toBe(100);
+    expect(cc.verdict).toBe("cauteloso"); // gap -20
   });
 });
 
