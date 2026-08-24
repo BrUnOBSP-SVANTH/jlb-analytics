@@ -361,6 +361,20 @@ export function tierForClose(closeMs: number, now: number): number {
 }
 
 /**
+ * Peso de EDGE por categoria — ONDE a IA historicamente BATE o mercado. Dos dados
+ * reais (2026-08): esportes/e-sports/tênis são mercados EFICIENTES (apostadores
+ * profissionais precificam bem) → a IA tem edge ~0 e só arrasta a taxa de acerto pra
+ * baixo; já eventos de RACIOCÍNIO/notícia (política, economia) é onde o LLM vence
+ * (Politics deu 7/7). O seed prioriza onde a gente GANHA, não onde só empata/perde.
+ */
+export function categoryEdgeWeight(category: string): number {
+  const c = (category ?? "").toLowerCase();
+  if (/sport|tennis|golf|nfl|nba|mlb|nhl|soccer|footbal|basket|baseball|hockey|ufc|racing|cricket|pga|atp|wta/.test(c)) return 1; // eficiente → sem edge
+  if (/politic|econ|elect|policy|govern|finance|business|trump|inflation/.test(c)) return 3;                                        // raciocínio/notícia → edge
+  return 2;                                                                                                                          // neutro (cripto, cultura, ciência…)
+}
+
+/**
  * Mercados Kalshi que fecham em POUCOS DIAS (via max_close_ts). Liquidam rápido e
  * enchem o track record — a "prova vendável" — em dias, não meses.
  */
@@ -450,7 +464,14 @@ export async function seedAiForecasts(maxMarkets = 30): Promise<{ started: boole
   // 2028) que NUNCA liquidam, então o track record não ganhava resultados oficiais.
   // Agora: tier de urgência primeiro (quanto antes fecha = mais retorno), volume desempata.
   const queue = (fresh.length >= Math.min(6, maxMarkets) ? fresh : pool)
-    .sort((a, b) => { const d = tierForClose(b.closeMs, now) - tierForClose(a.closeMs, now); return d !== 0 ? d : (b.volume - a.volume); })
+    .sort((a, b) => {
+      // 1º: categoria onde a IA TEM edge (política/economia) antes de esporte eficiente.
+      const w = categoryEdgeWeight(b.category) - categoryEdgeWeight(a.category);
+      if (w !== 0) return w;
+      // 2º: resolve cedo (enche a prova rápido). 3º: volume.
+      const d = tierForClose(b.closeMs, now) - tierForClose(a.closeMs, now);
+      return d !== 0 ? d : (b.volume - a.volume);
+    })
     .slice(0, maxMarkets);
 
   if (queue.length === 0) return { started: false, reason: "sem mercados no cache (aguarde o primeiro fetch)" };

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parseShortDatedKalshi, parseShortDatedPolymarket, tierForClose, selectOfficialUpgrades, type RawKalshiMarket, type RawPolyEvent } from "./aiForecasts.ts";
+import { parseShortDatedKalshi, parseShortDatedPolymarket, tierForClose, categoryEdgeWeight, selectOfficialUpgrades, type RawKalshiMarket, type RawPolyEvent } from "./aiForecasts.ts";
 
 // ── tierForClose: prioridade pela proximidade de resolução ──────────────────────
 const NOW = 1_700_000_000_000;
@@ -31,6 +31,26 @@ describe("tierForClose — prioriza o que resolve cedo (enche a prova)", () => {
   });
   it("data curta SEMPRE ganha do perpétuo na ordenação (o bug que corrigimos)", () => {
     expect(tierForClose(inDays(5), NOW)).toBeGreaterThan(tierForClose(inDays(400), NOW));
+  });
+});
+
+describe("categoryEdgeWeight — prioriza onde a IA bate o mercado", () => {
+  it("mercados EFICIENTES (esporte/e-sports/tênis) = 1 (sem edge)", () => {
+    expect(categoryEdgeWeight("Esports")).toBe(1);
+    expect(categoryEdgeWeight("Sports")).toBe(1);
+    expect(categoryEdgeWeight("Tennis")).toBe(1);
+    expect(categoryEdgeWeight("NFL")).toBe(1);
+  });
+  it("RACIOCÍNIO/notícia (política/economia) = 3 (tem edge)", () => {
+    expect(categoryEdgeWeight("Politics")).toBe(3);
+    expect(categoryEdgeWeight("Economy")).toBe(3);
+    expect(categoryEdgeWeight("Finance")).toBe(3);
+  });
+  it("neutro (cripto/cultura/outros) = 2", () => {
+    expect(categoryEdgeWeight("Crypto")).toBe(2);
+    expect(categoryEdgeWeight("Culture")).toBe(2);
+    expect(categoryEdgeWeight("other")).toBe(2);
+    expect(categoryEdgeWeight("")).toBe(2);
   });
 });
 
