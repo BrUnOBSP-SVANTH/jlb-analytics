@@ -61,9 +61,9 @@ function SimIntro({ icon: Icon, tagline, description, insight }: {
 }
 
 // ─── Controles reutilizáveis: slider rotulado + botão de sortear ──────────
-function Slider({ id, label, value, min, max, step, onChange, format }: {
+function Slider({ id, label, value, min, max, step, onChange, format, hint }: {
   id: string; label: string; value: number; min: number; max: number; step: number;
-  onChange: (v: number) => void; format?: (v: number) => string;
+  onChange: (v: number) => void; format?: (v: number) => string; hint?: string;
 }) {
   return (
     <div>
@@ -76,6 +76,22 @@ function Slider({ id, label, value, min, max, step, onChange, format }: {
         onChange={(e) => onChange(Number(e.target.value))}
         className="w-full mt-2 accent-primary cursor-pointer"
       />
+      {hint && <p className="text-[11px] text-muted-foreground/80 mt-1 leading-snug">{hint}</p>}
+    </div>
+  );
+}
+
+/** Número de resultado em DESTAQUE — o herói da simulação (grande, com explicação). */
+function ResultStat({ label, value, tone = "neutral", hint, big }: {
+  label: string; value: string; tone?: "positive" | "negative" | "gold" | "blue" | "neutral"; hint?: string; big?: boolean;
+}) {
+  const color = tone === "positive" ? "text-positive" : tone === "negative" ? "text-negative"
+    : tone === "gold" ? "text-gold" : tone === "blue" ? "text-neon-blue" : "text-foreground";
+  return (
+    <div className="glass-card rounded-xl p-4">
+      <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">{label}</p>
+      <p className={`${big ? "text-4xl" : "text-2xl"} font-mono font-bold tabular-nums leading-none ${color}`}>{value}</p>
+      {hint && <p className="text-[11px] text-muted-foreground mt-1.5 leading-snug">{hint}</p>}
     </div>
   );
 }
@@ -110,7 +126,7 @@ function EVSimulator() {
   const [stake, setStake] = useState(100);
   const [seed, setSeed] = useState(42);
 
-  const { chartData, finalPnL, evTheory, winRate } = useMemo(() => {
+  const { chartData, finalPnL, winRate } = useMemo(() => {
     const rand = makePRNG(seed);
     const p = prob / 100;
     const b = odd - 1; // lucro líquido por unidade apostada em caso de ganho
@@ -152,48 +168,32 @@ function EVSimulator() {
               Parâmetros
             </h3>
 
-            <Slider id="ev-prob" label="Sua chance real de ganhar" value={prob} min={1} max={99} step={0.5} onChange={setProb} format={(v) => `${v}%`} />
-            <Slider id="ev-odd" label="Odd decimal oferecida" value={odd} min={1.1} max={5} step={0.05} onChange={setOdd} format={(v) => v.toFixed(2)} />
+            <Slider id="ev-prob" label="Sua chance real de ganhar" value={prob} min={1} max={99} step={0.5} onChange={setProb} format={(v) => `${v}%`}
+              hint="A chance que VOCÊ acredita ser a real — não a que a casa oferece." />
+            <Slider id="ev-odd" label="Odd decimal oferecida" value={odd} min={1.1} max={5} step={0.05} onChange={setOdd} format={(v) => v.toFixed(2)}
+              hint={`Quanto a casa paga: odd 2.0 dobra a aposta. Ela embute ${(100 / odd).toFixed(0)}% de chance.`} />
             <div>
               <label className={labelClass} htmlFor="ev-stake">Stake por aposta (R$)</label>
               <input id="ev-stake" type="number" min={1} step={10} value={stake}
                 onChange={(e) => setStake(sanitizePositiveNumber(Number(e.target.value), 1))}
                 className={inputClass} />
+              <p className="text-[11px] text-muted-foreground/80 mt-1 leading-snug">Quanto você aposta em cada rodada.</p>
             </div>
-            <Slider id="ev-nbets" label="Número de apostas" value={nBets} min={50} max={1000} step={50} onChange={setNBets} />
+            <Slider id="ev-nbets" label="Número de apostas" value={nBets} min={50} max={1000} step={50} onChange={setNBets}
+              hint="Quantas vezes você repete a mesma aposta. Quanto mais, mais a sorte some." />
             <Reroll onClick={() => setSeed(rollSeed())} />
-
-            <div className={`p-3 rounded-lg border ${isPositive ? "bg-positive/10 border-positive/20" : "bg-negative/10 border-negative/20"}`}>
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">EV por aposta</p>
-              <p className={`text-lg font-mono font-bold ${isPositive ? "text-positive" : "text-negative"}`}>
-                {isPositive ? "+" : ""}R$ {evPerBet.toFixed(2)}
-              </p>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                Prob. implícita da odd: {(100 / odd).toFixed(1)}%
-              </p>
-            </div>
           </div>
 
           <div className="lg:col-span-3 space-y-4">
-            <div className="grid grid-cols-3 gap-3">
-              <div className="glass-card rounded-xl p-4">
-                <p className="text-xs text-muted-foreground">P&L realizado</p>
-                <p className={`text-xl font-mono font-bold mt-1 ${finalPnL >= 0 ? "text-positive" : "text-negative"}`}>
-                  {finalPnL >= 0 ? "+" : ""}R$ {finalPnL.toFixed(0)}
-                </p>
-              </div>
-              <div className="glass-card rounded-xl p-4">
-                <p className="text-xs text-muted-foreground">EV teórico</p>
-                <p className={`text-xl font-mono font-bold mt-1 ${evTheory >= 0 ? "text-gold" : "text-negative"}`}>
-                  {evTheory >= 0 ? "+" : ""}R$ {evTheory.toFixed(0)}
-                </p>
-              </div>
-              <div className="glass-card rounded-xl p-4">
-                <p className="text-xs text-muted-foreground">Win rate</p>
-                <p className="text-xl font-mono font-bold text-neon-blue mt-1">
-                  {(winRate * 100).toFixed(1)}%
-                  <span className="text-xs text-muted-foreground ml-1">/ {prob}%</span>
-                </p>
+            {/* Resultado em DESTAQUE — o herói da simulação */}
+            <div className={`rounded-xl p-4 border ${isPositive ? "border-positive/30 bg-positive/[0.04]" : "border-negative/30 bg-negative/[0.04]"}`}>
+              <p className={`text-sm font-bold mb-3 ${isPositive ? "text-positive" : "text-negative"}`}>
+                {isPositive ? "✓ Aposta de valor — o EV está a seu favor" : "✗ Cilada — o EV está contra você"}
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <ResultStat big label="EV por aposta" value={`${isPositive ? "+" : ""}R$ ${evPerBet.toFixed(2)}`} tone={isPositive ? "positive" : "negative"} hint="quanto você ganha (ou perde) EM MÉDIA por aposta, no longo prazo" />
+                <ResultStat label={`P&L após ${nBets}`} value={`${finalPnL >= 0 ? "+" : ""}R$ ${finalPnL.toFixed(0)}`} tone={finalPnL >= 0 ? "positive" : "negative"} hint="o que deu NESTA amostra (toque 🎲 pra outra)" />
+                <ResultStat label="Você ganhou" value={`${(winRate * 100).toFixed(0)}%`} tone="blue" hint={`das ${nBets} apostas — você previu ${prob}%`} />
               </div>
             </div>
 
@@ -276,6 +276,7 @@ function KellySimulator() {
   const p = prob / 100;
   const kelly = Math.max(0, (b * p - (1 - p)) / b);
   const halfKelly = kelly / 2;
+  const last = chartData[chartData.length - 1];
 
   return (
     <div className="space-y-6">
@@ -287,9 +288,12 @@ function KellySimulator() {
               Parâmetros
             </h3>
 
-            <Slider id="k-prob" label="Sua chance real de ganhar" value={prob} min={1} max={99} step={0.5} onChange={setProb} format={(v) => `${v}%`} />
-            <Slider id="k-odd" label="Odd decimal" value={odd} min={1.1} max={5} step={0.05} onChange={setOdd} format={(v) => v.toFixed(2)} />
-            <Slider id="k-nbets" label="Número de apostas" value={nBets} min={50} max={500} step={25} onChange={setNBets} />
+            <Slider id="k-prob" label="Sua chance real de ganhar" value={prob} min={1} max={99} step={0.5} onChange={setProb} format={(v) => `${v}%`}
+              hint="Sua estimativa honesta de acertar." />
+            <Slider id="k-odd" label="Odd decimal" value={odd} min={1.1} max={5} step={0.05} onChange={setOdd} format={(v) => v.toFixed(2)}
+              hint="O retorno pago. Junto com a chance, define o tamanho ideal da aposta." />
+            <Slider id="k-nbets" label="Número de apostas" value={nBets} min={50} max={500} step={25} onChange={setNBets}
+              hint="Quantas apostas na sequência." />
             <Reroll onClick={() => setSeed(rollSeed())} />
 
             <div className="p-3 rounded-lg bg-obsidian/50 border border-border/20 space-y-2">
@@ -307,6 +311,21 @@ function KellySimulator() {
           </div>
 
           <div className="lg:col-span-3 space-y-4">
+            {/* Recomendação + banca final em DESTAQUE */}
+            <div className="rounded-xl p-4 border border-neon-blue/25 bg-neon-blue/[0.04]">
+              <p className="text-sm font-bold text-neon-blue mb-3">
+                {kelly > 0
+                  ? `A matemática diz: aposte ${(halfKelly * 100).toFixed(1)}% do bankroll por vez (½ Kelly — o equilíbrio seguro).`
+                  : "Sem vantagem aqui (Kelly = 0) — a matemática manda NÃO apostar."}
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <ResultStat big label="½ Kelly (seguro)" value={`R$ ${last["½ Kelly"].toFixed(0)}`} tone="positive" hint="banca final apostando com disciplina" />
+                <ResultStat label="Kelly completo" value={`R$ ${last.Kelly.toFixed(0)}`} tone="gold" hint="ótimo na teoria, porém mais volátil" />
+                <ResultStat label="Overbet (2× Kelly)" value={`R$ ${last.Overbet.toFixed(0)}`} tone="negative" hint="apostou demais → tende à ruína" />
+              </div>
+              <p className="text-[11px] text-muted-foreground/70 mt-2">Todas começaram em R$ 1.000 · toque 🎲 pra outra sequência.</p>
+            </div>
+
             <div className="glass-card rounded-xl p-5">
               <h4 className="text-sm font-display font-semibold text-foreground mb-3">
                 Bankroll ao longo do tempo — Kelly vs. ½ Kelly vs. Overbet
@@ -421,32 +440,26 @@ function CalibracaoSimulator() {
               Parâmetros
             </h3>
 
-            <Slider id="cal-npreds" label="Número de previsões" value={nPreds} min={20} max={500} step={20} onChange={setNPreds} />
+            <Slider id="cal-npreds" label="Número de previsões" value={nPreds} min={20} max={500} step={20} onChange={setNPreds}
+              hint="Quantas previsões o forecaster faz. Mais previsões = nota mais confiável." />
             <Slider
               id="cal-bias" label="Viés do forecaster" value={bias} min={-30} max={30} step={5} onChange={setBias}
               format={(v) => (v > 0 ? `+${v}% superconfiante` : v < 0 ? `${v}% cauteloso` : "0% calibrado")}
+              hint="Arraste para simular alguém superconfiante (+) ou cauteloso demais (−) e veja a nota piorar."
             />
             <Reroll onClick={() => setSeed(rollSeed())} />
-
-            <div className="p-3 rounded-lg bg-obsidian/50 border border-border/20 space-y-2">
-              <div className="flex justify-between text-xs">
-                <span className="text-muted-foreground">Brier Score final</span>
-                <span className={`font-mono font-bold ${bsClass.color}`}>{finalBS.toFixed(4)}</span>
-              </div>
-              <div className="flex justify-between text-xs">
-                <span className="text-muted-foreground">Skill Score</span>
-                <span className={`font-mono font-bold ${finalSS > 0 ? "text-positive" : "text-negative"}`}>
-                  {(finalSS * 100).toFixed(1)}%
-                </span>
-              </div>
-              <div className="flex justify-between text-xs">
-                <span className="text-muted-foreground">Classificação</span>
-                <span className={`font-medium ${bsClass.color}`}>{bsClass.label}</span>
-              </div>
-            </div>
           </div>
 
           <div className="lg:col-span-3 space-y-4">
+            {/* Nota do forecaster em DESTAQUE */}
+            <div className={`rounded-xl p-4 border ${finalBS < 0.15 ? "border-positive/30 bg-positive/[0.04]" : finalBS < 0.25 ? "border-gold/30 bg-gold/[0.04]" : "border-negative/30 bg-negative/[0.04]"}`}>
+              <p className={`text-sm font-bold mb-3 ${bsClass.color}`}>Nota do forecaster: {bsClass.label}</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <ResultStat big label="Brier Score" value={finalBS.toFixed(3)} tone={finalBS < 0.15 ? "positive" : finalBS < 0.25 ? "gold" : "negative"} hint="erro médio da calibração — MENOR é melhor (0 = perfeito, 0,25 = igual a chutar)" />
+                <ResultStat label="Skill Score" value={`${(finalSS * 100).toFixed(0)}%`} tone={finalSS > 0 ? "positive" : "negative"} hint="o quanto você é melhor que chutar 50%. Acima de 0 já é habilidade real" />
+              </div>
+            </div>
+
             <div className="glass-card rounded-xl p-5">
               <h4 className="text-sm font-display font-semibold text-foreground mb-3">
                 Brier Score acumulado (convergência com mais previsões)
