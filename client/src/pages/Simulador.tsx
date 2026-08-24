@@ -26,7 +26,7 @@ import {
   AreaChart,
   Area,
 } from "recharts";
-import { TrendingUp, Activity, Target, type LucideIcon } from "lucide-react";
+import { TrendingUp, Activity, Target, Dice5, type LucideIcon } from "lucide-react";
 import LaboratorioTabs from "@/components/LaboratorioTabs";
 import { useSEO } from "@/hooks/useSEO";
 
@@ -59,6 +59,38 @@ function SimIntro({ icon: Icon, tagline, description, insight }: {
     </AnimatedSection>
   );
 }
+
+// ─── Controles reutilizáveis: slider rotulado + botão de sortear ──────────
+function Slider({ id, label, value, min, max, step, onChange, format }: {
+  id: string; label: string; value: number; min: number; max: number; step: number;
+  onChange: (v: number) => void; format?: (v: number) => string;
+}) {
+  return (
+    <div>
+      <div className="flex items-baseline justify-between gap-2">
+        <label className={labelClass} htmlFor={id}>{label}</label>
+        <span className="text-sm font-mono font-bold text-foreground tabular-nums">{format ? format(value) : value}</span>
+      </div>
+      <input
+        id={id} type="range" min={min} max={max} step={step} value={value}
+        onChange={(e) => onChange(Number(e.target.value))}
+        className="w-full mt-2 accent-primary cursor-pointer"
+      />
+    </div>
+  );
+}
+
+function Reroll({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      type="button" onClick={onClick}
+      className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg border border-primary/30 bg-primary/5 text-sm font-medium text-primary hover:bg-primary/10 active:scale-[0.99] transition-all"
+    >
+      <Dice5 className="w-4 h-4" aria-hidden="true" /> Sortear nova amostra
+    </button>
+  );
+}
+const rollSeed = () => Math.floor(Math.random() * 100000) + 1;
 
 // ─── Seeded PRNG (LCG) — determinístico para o mesmo seed ─────────────────
 function makePRNG(seed: number) {
@@ -120,40 +152,16 @@ function EVSimulator() {
               Parâmetros
             </h3>
 
-            <div>
-              <label className={labelClass} htmlFor="ev-prob">Probabilidade real de ganho (%)</label>
-              <input id="ev-prob" type="number" min={1} max={99} step={0.5} value={prob}
-                onChange={(e) => setProb(Math.min(99, Math.max(1, parseFloat(e.target.value) || 1)))}
-                className={inputClass} />
-            </div>
-            <div>
-              <label className={labelClass} htmlFor="ev-odd">Odd decimal oferecida</label>
-              <input id="ev-odd" type="number" min={1.01} step={0.01} value={odd}
-                onChange={(e) => setOdd(Math.max(1.01, parseFloat(e.target.value) || 1.01))}
-                className={inputClass} />
-            </div>
+            <Slider id="ev-prob" label="Sua chance real de ganhar" value={prob} min={1} max={99} step={0.5} onChange={setProb} format={(v) => `${v}%`} />
+            <Slider id="ev-odd" label="Odd decimal oferecida" value={odd} min={1.1} max={5} step={0.05} onChange={setOdd} format={(v) => v.toFixed(2)} />
             <div>
               <label className={labelClass} htmlFor="ev-stake">Stake por aposta (R$)</label>
               <input id="ev-stake" type="number" min={1} step={10} value={stake}
                 onChange={(e) => setStake(sanitizePositiveNumber(Number(e.target.value), 1))}
                 className={inputClass} />
             </div>
-            <div>
-              <label className={labelClass} htmlFor="ev-nbets">Número de apostas: {nBets}</label>
-              <input id="ev-nbets" type="range" min={50} max={1000} step={50} value={nBets}
-                onChange={(e) => setNBets(Number(e.target.value))}
-                className="w-full mt-1.5 accent-primary" />
-              <div className="flex justify-between text-[10px] text-muted-foreground mt-1">
-                <span>50</span><span>1000</span>
-              </div>
-            </div>
-            <div>
-              <label className={labelClass} htmlFor="ev-seed">Semente aleatória</label>
-              <input id="ev-seed" type="number" min={1} step={1} value={seed}
-                onChange={(e) => setSeed(Math.max(1, parseInt(e.target.value) || 1))}
-                className={inputClass} />
-              <p className="text-[10px] text-muted-foreground mt-1">Mude para ver diferentes trajetórias</p>
-            </div>
+            <Slider id="ev-nbets" label="Número de apostas" value={nBets} min={50} max={1000} step={50} onChange={setNBets} />
+            <Reroll onClick={() => setSeed(rollSeed())} />
 
             <div className={`p-3 rounded-lg border ${isPositive ? "bg-positive/10 border-positive/20" : "bg-negative/10 border-negative/20"}`}>
               <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">EV por aposta</p>
@@ -279,30 +287,10 @@ function KellySimulator() {
               Parâmetros
             </h3>
 
-            <div>
-              <label className={labelClass} htmlFor="k-prob">Probabilidade real de ganho (%)</label>
-              <input id="k-prob" type="number" min={1} max={99} step={0.5} value={prob}
-                onChange={(e) => setProb(Math.min(99, Math.max(1, parseFloat(e.target.value) || 1)))}
-                className={inputClass} />
-            </div>
-            <div>
-              <label className={labelClass} htmlFor="k-odd">Odd decimal</label>
-              <input id="k-odd" type="number" min={1.01} step={0.01} value={odd}
-                onChange={(e) => setOdd(Math.max(1.01, parseFloat(e.target.value) || 1.01))}
-                className={inputClass} />
-            </div>
-            <div>
-              <label className={labelClass} htmlFor="k-nbets">Apostas: {nBets}</label>
-              <input id="k-nbets" type="range" min={50} max={500} step={25} value={nBets}
-                onChange={(e) => setNBets(Number(e.target.value))}
-                className="w-full mt-1.5 accent-primary" />
-            </div>
-            <div>
-              <label className={labelClass} htmlFor="k-seed">Semente</label>
-              <input id="k-seed" type="number" min={1} value={seed}
-                onChange={(e) => setSeed(Math.max(1, parseInt(e.target.value) || 1))}
-                className={inputClass} />
-            </div>
+            <Slider id="k-prob" label="Sua chance real de ganhar" value={prob} min={1} max={99} step={0.5} onChange={setProb} format={(v) => `${v}%`} />
+            <Slider id="k-odd" label="Odd decimal" value={odd} min={1.1} max={5} step={0.05} onChange={setOdd} format={(v) => v.toFixed(2)} />
+            <Slider id="k-nbets" label="Número de apostas" value={nBets} min={50} max={500} step={25} onChange={setNBets} />
+            <Reroll onClick={() => setSeed(rollSeed())} />
 
             <div className="p-3 rounded-lg bg-obsidian/50 border border-border/20 space-y-2">
               {[
@@ -433,34 +421,12 @@ function CalibracaoSimulator() {
               Parâmetros
             </h3>
 
-            <div>
-              <label className={labelClass} htmlFor="cal-npreds">Número de previsões: {nPreds}</label>
-              <input id="cal-npreds" type="range" min={20} max={500} step={20} value={nPreds}
-                onChange={(e) => setNPreds(Number(e.target.value))}
-                className="w-full mt-1.5 accent-primary" />
-              <div className="flex justify-between text-[10px] text-muted-foreground mt-1">
-                <span>20</span><span>500</span>
-              </div>
-            </div>
-
-            <div>
-              <label className={labelClass} htmlFor="cal-bias">
-                Viés do forecaster: {bias > 0 ? `+${bias}% (overconfidence)` : bias < 0 ? `${bias}% (underconfidence)` : "0% (calibrado)"}
-              </label>
-              <input id="cal-bias" type="range" min={-30} max={30} step={5} value={bias}
-                onChange={(e) => setBias(Number(e.target.value))}
-                className="w-full mt-1.5 accent-primary" />
-              <div className="flex justify-between text-[10px] text-muted-foreground mt-1">
-                <span>−30% (under)</span><span>+30% (over)</span>
-              </div>
-            </div>
-
-            <div>
-              <label className={labelClass} htmlFor="cal-seed">Semente</label>
-              <input id="cal-seed" type="number" min={1} value={seed}
-                onChange={(e) => setSeed(Math.max(1, parseInt(e.target.value) || 1))}
-                className={inputClass} />
-            </div>
+            <Slider id="cal-npreds" label="Número de previsões" value={nPreds} min={20} max={500} step={20} onChange={setNPreds} />
+            <Slider
+              id="cal-bias" label="Viés do forecaster" value={bias} min={-30} max={30} step={5} onChange={setBias}
+              format={(v) => (v > 0 ? `+${v}% superconfiante` : v < 0 ? `${v}% cauteloso` : "0% calibrado")}
+            />
+            <Reroll onClick={() => setSeed(rollSeed())} />
 
             <div className="p-3 rounded-lg bg-obsidian/50 border border-border/20 space-y-2">
               <div className="flex justify-between text-xs">
