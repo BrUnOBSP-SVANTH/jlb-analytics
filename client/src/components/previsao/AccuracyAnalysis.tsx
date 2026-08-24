@@ -9,7 +9,7 @@
  */
 import { useState, useEffect } from "react";
 import AnimatedSection from "@/components/AnimatedSection";
-import { TrendingUp, TrendingDown, Minus, Info, BarChart3 } from "lucide-react";
+import { TrendingUp, TrendingDown, Minus, Info, BarChart3, Check, Target } from "lucide-react";
 
 interface ResolvedItem {
   marketId: string; source: string; title: string; category: string | null;
@@ -52,10 +52,14 @@ export function AccuracyAnalysis() {
   if (dedup.length === 0) return null;
 
   let edgeHits = 0, edgeN = 0, aiB = 0, mB = 0;
+  let dirHits = 0, dirN = 0, mktDirHits = 0, mktDirN = 0; // "acerto de direção" (vs 50)
   const byCat = new Map<string, { n: number; official: number; edgeHits: number; edgeN: number; aiB: number; mB: number }>();
   for (const it of pool) {
     const a = brier(it.aiProb, it.outcome), m = brier(it.marketProb, it.outcome);
     aiB += a; mB += m;
+    // Direção (vs 50): previu o lado certo (SIM se >50, NÃO se <50)?
+    if (it.aiProb !== 50) { dirN++; if ((it.aiProb > 50) === it.outcome) dirHits++; }
+    if (it.marketProb !== 50) { mktDirN++; if ((it.marketProb > 50) === it.outcome) mktDirHits++; }
     const diverged = it.aiProb !== it.marketProb;
     const won = (it.aiProb > it.marketProb) === it.outcome;
     if (diverged) { edgeN++; if (won) edgeHits++; }
@@ -67,6 +71,8 @@ export function AccuracyAnalysis() {
   }
   const officialCount = pool.filter((it) => it.official).length;
   const edgeRate = edgeN ? Math.round((edgeHits / edgeN) * 100) : null;
+  const dirRate = dirN ? Math.round((dirHits / dirN) * 100) : null;
+  const mktDirRate = mktDirN ? Math.round((mktDirHits / mktDirN) * 100) : null;
   const skill = N > 0 && mB > 0 ? 1 - (aiB / N) / (mB / N) : null; // >0 = IA melhor que o mercado
   const small = N < 20;
   const cats = Array.from(byCat.entries()).sort((a, b) => b[1].n - a[1].n);
@@ -105,23 +111,44 @@ export function AccuracyAnalysis() {
           </div>
         )}
 
-        {/* Stat tiles honestos */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <div className="rounded-xl border border-border/20 bg-secondary/10 p-4">
-            <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Mercados</p>
-            <p className="text-2xl font-bold text-foreground tabular-nums">{N}</p>
-            <p className="text-[10px] text-muted-foreground">{officialCount} oficial · {N - officialCount} inferido</p>
+        {/* AS DUAS MEDIDAS — explicadas para qualquer pessoa */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {/* Medida 1 — Acertar a direção (nossa força) */}
+          <div className="rounded-xl border border-positive/25 bg-positive/[0.04] p-4">
+            <div className="flex items-center justify-between gap-2 mb-1.5">
+              <p className="text-[11px] uppercase tracking-wide text-positive font-semibold inline-flex items-center gap-1.5">
+                <Check className="w-3.5 h-3.5" /> Acertamos a direção
+              </p>
+              <p className="text-2xl font-bold text-foreground tabular-nums">{dirRate !== null ? `${dirRate}%` : "—"}</p>
+            </div>
+            <p className="text-[11px] text-muted-foreground leading-relaxed">
+              A IA sabe qual lado é o <strong className="text-foreground/80">mais provável</strong> — vai acontecer ou não?
+              Acerta {dirRate ?? "—"}%, {mktDirRate !== null ? `no mesmo nível do mercado (${mktDirRate}%)` : "no nível do mercado"}.
+              <span className="text-foreground/70"> É a parte “fácil”: quase nenhum mercado é 50/50, então saber o lado óbvio já acerta muito.</span>
+            </p>
           </div>
-          <div className="rounded-xl border border-border/20 bg-secondary/10 p-4">
-            <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Acerto vs mercado</p>
-            <p className="text-2xl font-bold text-foreground tabular-nums">{edgeRate !== null ? `${edgeRate}%` : "—"}</p>
-            <p className="text-[10px] text-muted-foreground">divergir do mercado pagou? ({edgeN} casos)</p>
+          {/* Medida 2 — Bater o mercado (o teste difícil, e honesto) */}
+          <div className="rounded-xl border border-gold/30 bg-gold/[0.05] p-4">
+            <div className="flex items-center justify-between gap-2 mb-1.5">
+              <p className="text-[11px] uppercase tracking-wide text-gold font-semibold inline-flex items-center gap-1.5">
+                <Target className="w-3.5 h-3.5" /> Batemos o mercado
+              </p>
+              <p className="text-2xl font-bold text-foreground tabular-nums">{edgeRate !== null ? `${edgeRate}%` : "—"}</p>
+            </div>
+            <p className="text-[11px] text-muted-foreground leading-relaxed">
+              Quando a IA <strong className="text-foreground/80">discorda do preço</strong> e arrisca dizer que o mercado errou, ela acerta? Só {edgeRate ?? "—"}% ({edgeN} casos).
+              <span className="text-foreground/70"> É o teste mais difícil que existe — vencer a sabedoria da multidão. Aqui ainda perdemos, e mostramos mesmo assim.</span>
+            </p>
           </div>
-          <div className="rounded-xl border border-border/20 bg-secondary/10 p-4">
-            <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Skill vs mercado</p>
-            <p className="text-2xl font-bold tabular-nums"><SkillBadge value={skill} /></p>
-            <p className="text-[10px] text-muted-foreground">calibração (Brier) melhor que o mercado?</p>
-          </div>
+        </div>
+
+        {/* Resumo honesto + secundárias */}
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
+          <span><strong className="text-foreground tabular-nums">{N}</strong> mercados ({officialCount} oficial)</span>
+          <span className="text-border/50">·</span>
+          <span className="inline-flex items-center gap-1">Skill (calibração) vs mercado: <SkillBadge value={skill} /></span>
+          <span className="text-border/50">·</span>
+          <span className="italic">acompanhamos o mercado, mas ainda não o superamos — e não escondemos isso.</span>
         </div>
 
         {/* Por tema */}
