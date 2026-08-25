@@ -58,14 +58,28 @@ export function CalcCard({ title, icon: Icon, children }: { title: string; icon:
   );
 }
 
-export function ResultBox({ label, value, color = "text-foreground", sub }: {
-  label: string; value: string; color?: string; sub?: string;
+export function ResultBox({ label, value, color = "text-foreground", sub, big, hint }: {
+  label: string; value: string; color?: string; sub?: string; big?: boolean; hint?: string;
 }) {
   return (
-    <div className="p-4 rounded-lg bg-obsidian/50 border border-border/20">
+    <div className={`rounded-lg border ${big ? "p-5 bg-obsidian/60 border-border/30" : "p-4 bg-obsidian/50 border-border/20"}`}>
       <p className="text-xs text-muted-foreground">{label}</p>
-      <p className={`text-xl font-mono font-bold mt-1 ${color}`}>{value}</p>
+      <p className={`${big ? "text-4xl" : "text-xl"} font-mono font-bold mt-1 leading-none ${color}`}>{value}</p>
+      {hint && <p className="text-[11px] text-muted-foreground mt-2 leading-snug">{hint}</p>}
       {sub && <p className="text-xs text-muted-foreground/60 mt-1">{sub}</p>}
+    </div>
+  );
+}
+
+/** Rótulo + input + explicação curta (hint) em linguagem simples. */
+export function Field({ label, htmlFor, hint, children }: {
+  label: string; htmlFor?: string; hint?: string; children: React.ReactNode;
+}) {
+  return (
+    <div>
+      <label className={labelClass} htmlFor={htmlFor}>{label}</label>
+      {children}
+      {hint && <p className="text-[11px] text-muted-foreground/80 mt-1 leading-snug">{hint}</p>}
     </div>
   );
 }

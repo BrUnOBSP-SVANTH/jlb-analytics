@@ -3,7 +3,7 @@
  */
 import { useState, useMemo } from "react";
 import { Calculator } from "lucide-react";
-import { CalcCard, FormulaBox, ResultBox, InsightBox, inputClass, labelClass } from "@/components/calculadoras/CalcPrimitives";
+import { CalcCard, FormulaBox, ResultBox, InsightBox, Field, inputClass, labelClass } from "@/components/calculadoras/CalcPrimitives";
 
 interface Outcome { prob: number; payout: number }
 
@@ -42,15 +42,15 @@ export function ValorEsperado() {
     <CalcCard title="Calculadora de Valor Esperado" icon={Calculator}>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="space-y-4">
-          <div>
-            <label className={labelClass} htmlFor="ev-stake">Valor da Posição (R$)</label>
+          <Field label="Valor da Posição (R$)" htmlFor="ev-stake" hint="Quanto você vai apostar de verdade.">
             <input id="ev-stake" type="number" min={0} step={10} value={stake}
               onChange={(e) => setStake(Math.max(0, parseFloat(e.target.value) || 0))}
               className={inputClass} />
-          </div>
+          </Field>
 
           <div className="space-y-2">
             <p className={labelClass}>Cenários</p>
+            <p className="text-[11px] text-muted-foreground/80 leading-snug">Probabilidade = a chance REAL que você acredita · Odd = quanto recebe de volta (1.8 = 1,8× a aposta).</p>
             {outcomes.map((o, i) => (
               <div key={i} className="flex gap-2 items-end">
                 <div className="flex-1">
@@ -88,16 +88,21 @@ export function ValorEsperado() {
         </div>
 
         <div className="space-y-4">
-          <ResultBox label="Valor Esperado por posição"
+          <ResultBox big label="Valor Esperado por posição"
             value={`${isPositive ? "+" : ""}R$ ${evReais.toFixed(2)}`}
             color={evColor}
+            hint="Se você fizesse esta aposta muitas vezes, ganharia (ou perderia) isso EM MÉDIA por vez."
             sub={`por R$ ${stake} apostado`} />
-          <ResultBox label="ROI esperado"
-            value={`${isPositive ? "+" : ""}${roi.toFixed(2)}%`}
-            color={evColor} />
-          <ResultBox label="EV por R$ 1,00 apostado"
-            value={`${isPositive ? "+" : ""}R$ ${ev.toFixed(4)}`}
-            color={evColor} />
+          <div className="grid grid-cols-2 gap-3">
+            <ResultBox label="ROI esperado"
+              value={`${isPositive ? "+" : ""}${roi.toFixed(1)}%`}
+              color={evColor}
+              hint="retorno médio sobre o que você aposta" />
+            <ResultBox label="EV por R$ 1"
+              value={`${isPositive ? "+" : ""}R$ ${ev.toFixed(3)}`}
+              color={evColor}
+              hint="pra comparar apostas de tamanhos diferentes" />
+          </div>
 
           <div className={`p-4 rounded-xl border ${isNeutral ? "bg-secondary/20 border-border/30" : isPositive ? "bg-positive/10 border-positive/30" : "bg-negative/10 border-negative/30"}`}>
             <p className={`text-sm font-semibold ${evColor}`}>

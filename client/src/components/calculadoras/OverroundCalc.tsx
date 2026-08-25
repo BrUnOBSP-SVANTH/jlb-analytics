@@ -30,6 +30,7 @@ export function OverroundCalc() {
         <div className="space-y-4">
           <div className="space-y-2">
             <p className={labelClass}>Odds decimais</p>
+            <p className="text-[11px] text-muted-foreground/80 leading-snug">Coloque as odds de todos os lados do mesmo mercado (ex.: 1.90 e 1.90 num mercado de 2 resultados).</p>
             {odds.map((o, i) => (
               <div key={i} className="flex gap-2">
                 <div className="flex-1">
@@ -67,14 +68,14 @@ export function OverroundCalc() {
         </div>
 
         <div className="space-y-4">
-          <ResultBox label="Overround"
-            value={`${overround.toFixed(2)}%`}
+          <ResultBox big label="Overround — o que a casa cobra"
+            value={`${overround.toFixed(1)}%`}
             color={overround > 5 ? "text-negative" : overround > 2 ? "text-warning" : "text-positive"}
-            sub="excesso acima de 100% na soma das probs implícitas" />
+            hint="quanto a casa embutiu nas odds pra lucrar sempre. Quanto MENOR, melhor pra você — Polymarket/Kalshi ~0–3%, casas esportivas 5–10%." />
           <ResultBox label="Margem da casa"
-            value={`${margin.toFixed(2)}%`}
+            value={`${margin.toFixed(1)}%`}
             color={margin > 5 ? "text-negative" : margin > 2 ? "text-warning" : "text-positive"}
-            sub="do volume apostado que é lucro garantido da casa" />
+            hint="a fatia do total apostado que vira lucro garantido da casa" />
 
           <div className={`p-3 rounded-xl border flex items-center gap-2 ${marginLabel.color.includes("positive") ? "bg-positive/10 border-positive/30" : marginLabel.color.includes("neon") ? "bg-neon-blue/10 border-neon-blue/30" : marginLabel.color.includes("yellow") ? "bg-warning/10 border-warning/30" : "bg-negative/10 border-negative/30"}`}>
             <span className={`text-sm font-semibold ${marginLabel.color}`}>{marginLabel.text}</span>

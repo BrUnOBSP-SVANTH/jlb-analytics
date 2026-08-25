@@ -41,6 +41,7 @@ export function BrierScoreCalc() {
     <CalcCard title="Calculadora de Brier Score" icon={Target}>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="space-y-4">
+          <p className="text-[11px] text-muted-foreground/80 leading-snug">Liste suas previsões passadas: a chance (%) que você deu e se o evento aconteceu. O “Erro²” mostra onde você errou mais.</p>
           <div className="space-y-2">
             <div className="grid grid-cols-3 gap-2 text-[10px] text-muted-foreground uppercase tracking-wider px-1">
               <span>Previsão (%)</span>
@@ -74,14 +75,14 @@ export function BrierScoreCalc() {
         </div>
 
         <div className="space-y-4">
-          <ResultBox label="Brier Score"
-            value={brierScore.toFixed(4)}
+          <ResultBox big label="Brier Score — sua nota de calibração"
+            value={brierScore.toFixed(3)}
             color={brierScore < 0.20 ? "text-positive" : brierScore < 0.25 ? "text-warning" : "text-negative"}
-            sub="0 = perfeito · 0.25 = equivale a chutar 50% sempre" />
+            hint="mede se, quando você diz “70%”, acontece mesmo ~70% das vezes. MENOR é melhor: 0 = perfeito, 0,25 = igual a chutar 50%." />
           <ResultBox label="Skill Score"
-            value={`${(skillScore * 100).toFixed(1)}%`}
+            value={`${(skillScore * 100).toFixed(0)}%`}
             color={isSkilled ? "text-positive" : "text-negative"}
-            sub={isSkilled ? "melhor que a referência de 50% constante" : "pior que chutar 50% sempre"} />
+            hint={isSkilled ? "acima de 0% = você é melhor que quem só chuta 50%" : "abaixo de 0% = pior que chutar 50%"} />
 
           <div className={`p-4 rounded-xl border ${isSkilled ? "bg-positive/10 border-positive/30" : "bg-negative/10 border-negative/30"}`}>
             <p className={`text-sm font-semibold ${classification.color}`}>{classification.label}</p>

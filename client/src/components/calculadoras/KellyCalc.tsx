@@ -3,7 +3,7 @@
  */
 import { useState } from "react";
 import { TrendingUp } from "lucide-react";
-import { CalcCard, FormulaBox, ResultBox, InsightBox, inputClass, labelClass } from "@/components/calculadoras/CalcPrimitives";
+import { CalcCard, FormulaBox, ResultBox, InsightBox, Field, inputClass } from "@/components/calculadoras/CalcPrimitives";
 
 export function KellyCalc() {
   const [prob, setProb] = useState(55);
@@ -26,24 +26,21 @@ export function KellyCalc() {
     <CalcCard title="Critério de Kelly" icon={TrendingUp}>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="space-y-4">
-          <div>
-            <label className={labelClass} htmlFor="kelly-prob">Sua estimativa de probabilidade (%)</label>
+          <Field label="Sua estimativa de probabilidade (%)" htmlFor="kelly-prob" hint="A chance REAL que VOCÊ acredita — a sua leitura, não a da casa.">
             <input id="kelly-prob" type="number" min={1} max={99} step={0.5} value={prob}
               onChange={(e) => setProb(Math.min(99, Math.max(1, parseFloat(e.target.value) || 1)))}
               className={inputClass} />
-          </div>
-          <div>
-            <label className={labelClass} htmlFor="kelly-odd">Odd decimal oferecida</label>
+          </Field>
+          <Field label="Odd decimal oferecida" htmlFor="kelly-odd" hint="O retorno pago se ganhar. Odd 2.0 = dobra o valor.">
             <input id="kelly-odd" type="number" min={1.01} step={0.01} value={odd}
               onChange={(e) => setOdd(Math.max(1.01, parseFloat(e.target.value) || 1.01))}
               className={inputClass} />
-          </div>
-          <div>
-            <label className={labelClass} htmlFor="kelly-bankroll">Bankroll total (R$)</label>
+          </Field>
+          <Field label="Bankroll total (R$)" htmlFor="kelly-bankroll" hint="Todo o dinheiro que você separou pra apostar.">
             <input id="kelly-bankroll" type="number" min={0} step={100} value={bankroll}
               onChange={(e) => setBankroll(Math.max(0, parseFloat(e.target.value) || 0))}
               className={inputClass} />
-          </div>
+          </Field>
 
           <FormulaBox formula="f* = (b×p − q) / b" legend="b = odd−1 · p = prob. própria · q = 1−p" />
 
@@ -74,18 +71,20 @@ export function KellyCalc() {
             </div>
           ) : (
             <>
-              <ResultBox label="Kelly completo"
-                value={`${(kelly * 100).toFixed(2)}%`}
-                color="text-gold"
-                sub={`R$ ${kellyStake.toFixed(2)} do bankroll`} />
-              <ResultBox label="½ Kelly (recomendado)"
-                value={`${(halfKelly * 100).toFixed(2)}%`}
+              <ResultBox big label="½ Kelly — quanto apostar"
+                value={`${(halfKelly * 100).toFixed(1)}%`}
                 color="text-positive"
-                sub={`R$ ${halfStake.toFixed(2)} — reduz variância sem sacrificar EV`} />
-              <ResultBox label="¼ Kelly (conservador)"
-                value={`${(quarterKelly * 100).toFixed(2)}%`}
-                color="text-neon-blue"
-                sub={`R$ ${(quarterKelly * bankroll).toFixed(2)} — para estimativas incertas`} />
+                hint={`Aposte esta fração do bankroll — R$ ${halfStake.toFixed(0)}. É o padrão dos profissionais: cresce quase igual ao Kelly cheio, com muito menos risco.`} />
+              <div className="grid grid-cols-2 gap-3">
+                <ResultBox label="Kelly completo"
+                  value={`${(kelly * 100).toFixed(1)}%`}
+                  color="text-gold"
+                  hint={`o máximo matemático (R$ ${kellyStake.toFixed(0)}) — mais volátil`} />
+                <ResultBox label="¼ Kelly (cauteloso)"
+                  value={`${(quarterKelly * 100).toFixed(1)}%`}
+                  color="text-neon-blue"
+                  hint="quando você não tem certeza da sua estimativa" />
+              </div>
             </>
           )}
 
