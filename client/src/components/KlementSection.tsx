@@ -382,7 +382,7 @@ export default function KlementSection({ onClose }: { onClose: () => void }) {
       <div className="flex items-center gap-4 p-4 rounded-xl border border-gold/25 bg-gold/5">
         <Trophy className="w-7 h-7 text-gold shrink-0" />
         <div className="flex-1">
-          <h2 className="text-base font-bold text-foreground">Copa do Mundo 2026 — Modelo Klement</h2>
+          <h2 className="text-base font-bold text-foreground">Copa do Mundo 2026 — Modelo Klement <span className="text-xs font-normal text-negative/80">· retrospectiva</span></h2>
           <p className="text-xs text-muted-foreground mt-0.5">
             Hoffmann, Ging &amp; Ramasamy (2002) + ranking FIFA · 3 de 4 Copas — errou 2026 (Holanda) · Monte Carlo {N_SIMULATIONS.toLocaleString("pt-BR")} iterações
           </p>
@@ -393,8 +393,20 @@ export default function KlementSection({ onClose }: { onClose: () => void }) {
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border/40 text-xs text-muted-foreground hover:text-foreground disabled:opacity-50 transition-colors"
         >
           <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin text-gold" : ""}`} />
-          {loading ? "Simulando…" : "Ressimular"}
+          {loading ? "Simulando…" : "Rodar de novo"}
         </button>
+      </div>
+
+      {/* Retrospectiva — a Copa 2026 já terminou; abaixo é o retrato PRÉ-torneio do modelo */}
+      <div className="flex items-start gap-3 p-4 rounded-xl border border-negative/25 bg-negative/5">
+        <Info className="w-4 h-4 text-negative shrink-0 mt-0.5" />
+        <p className="text-xs text-muted-foreground leading-relaxed">
+          <strong className="text-foreground">Retrospectiva — a Copa de 2026 já terminou.</strong>{" "}
+          Esta seção mostra como o modelo via o torneio <strong className="text-foreground">antes</strong> de ele começar.
+          O palpite publicado do próprio Klement para 2026 foi a <strong className="text-foreground">Holanda</strong>, que foi{" "}
+          <strong className="text-negative">eliminada</strong> — ou seja, o modelo <strong className="text-foreground">errou 2026</strong> (3 de 4 no histórico dele).
+          A simulação abaixo é uma re-implementação educacional nossa e pode divergir dos números exatos do Klement.
+        </p>
       </div>
 
       {/* Stats cards */}
@@ -424,7 +436,7 @@ export default function KlementSection({ onClose }: { onClose: () => void }) {
       <AnimatedSection>
         <div className="space-y-4">
           <div className="flex items-center gap-2 flex-wrap">
-            <h3 className="text-sm font-semibold text-foreground">Probabilidade de Campeão</h3>
+            <h3 className="text-sm font-semibold text-foreground">Probabilidade de Campeão <span className="font-normal text-muted-foreground/60">— pré-Copa 2026</span></h3>
             <span className="text-[10px] text-muted-foreground/60">top 16 exibidos</span>
           </div>
 
@@ -450,7 +462,7 @@ export default function KlementSection({ onClose }: { onClose: () => void }) {
             <div className="flex items-center gap-4 p-4 rounded-xl border border-gold/25 bg-gold/5">
               <Trophy className="w-7 h-7 text-gold shrink-0" />
               <div>
-                <p className="text-xs text-gold/70 uppercase tracking-wide font-semibold">Favorito do modelo</p>
+                <p className="text-xs text-gold/70 uppercase tracking-wide font-semibold">Favorito desta simulação (pré-Copa)</p>
                 <p className="text-xl font-bold text-foreground">{winnerTeam.flag} {winnerTeam.name}</p>
                 <p className="text-sm text-muted-foreground">
                   <span className="font-mono text-gold font-bold">{winner.champProb.toFixed(1)}%</span>

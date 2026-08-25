@@ -356,7 +356,7 @@ export default function Previsao() {
                 >
                   <Trophy className="w-4 h-4 text-gold shrink-0" />
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-gold">Modelo Klement — Copa 2026</p>
+                    <p className="text-sm font-semibold text-gold">Modelo Klement — Copa 2026 <span className="font-normal text-muted-foreground/70">· retrospectiva</span></p>
                     <p className="text-xs text-muted-foreground">3 de 4 Copas — errou 2026 (Holanda) · Monte Carlo 48 seleções · modelo econométrico pré-configurado</p>
                   </div>
                   <span className="text-xs text-gold/60 shrink-0">Simular →</span>
