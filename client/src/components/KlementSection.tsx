@@ -244,7 +244,7 @@ function MethodologyPanel() {
         <Brain className="w-4 h-4 text-gold shrink-0" />
         <div className="flex-1">
           <p className="text-sm font-semibold text-foreground">Metodologia — Modelo Hoffmann-Klement</p>
-          <p className="text-xs text-muted-foreground mt-0.5">Paper acadêmico de 2002 + ranking FIFA · acertou 3 de 3 Copas</p>
+          <p className="text-xs text-muted-foreground mt-0.5">Paper acadêmico de 2002 + ranking FIFA · favorito = campeão em 3 Copas (n=3)</p>
         </div>
         {open ? <ChevronUp className="w-4 h-4 text-gold/60" /> : <ChevronDown className="w-4 h-4 text-gold/60" />}
       </button>
@@ -280,7 +280,7 @@ function MethodologyPanel() {
           </div>
 
           <div>
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Histórico do modelo</p>
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Histórico do modelo <span className="text-muted-foreground/50 normal-case">— n=3, anedótico, não é skill validado</span></p>
             <div className="flex flex-wrap gap-2">
               {[
                 { year: "2014", winner: "🇩🇪 Alemanha" },
@@ -382,7 +382,7 @@ export default function KlementSection({ onClose }: { onClose: () => void }) {
         <div className="flex-1">
           <h2 className="text-base font-bold text-foreground">Copa do Mundo 2026 — Modelo Klement</h2>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Hoffmann, Ging &amp; Ramasamy (2002) + ranking FIFA · 3/3 acertos históricos · Monte Carlo {N_SIMULATIONS.toLocaleString("pt-BR")} iterações
+            Hoffmann, Ging &amp; Ramasamy (2002) + ranking FIFA · favorito = campeão em 3 Copas (n=3, anedótico) · Monte Carlo {N_SIMULATIONS.toLocaleString("pt-BR")} iterações
           </p>
         </div>
         <button
@@ -399,8 +399,8 @@ export default function KlementSection({ onClose }: { onClose: () => void }) {
       <AnimatedSection>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
-            { label: "Acurácia histórica", value: "3/3",  sub: "Copas previstas corretamente",    color: "text-positive" },
-            { label: "Poder explicativo",  value: "55%",  sub: "Variância explicada pelo modelo",  color: "text-gold" },
+            { label: "Alinhamento histórico", value: "3/3", sub: "favorito = campeão em 2014·18·22 (n=3, anedótico)", color: "text-gold" },
+            { label: "Poder explicativo",  value: "~55%", sub: "variância na performance (Hoffmann 2002)",  color: "text-gold" },
             { label: "Iterações MC",       value: `${N_SIMULATIONS / 1000}k`, sub: "Simulações do torneio completo",   color: "text-neon-blue" },
             { label: "Seleções",           value: "48",   sub: "Todas as classificadas para 2026", color: "text-foreground" },
           ].map(s => (
