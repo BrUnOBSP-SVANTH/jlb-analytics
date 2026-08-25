@@ -546,7 +546,13 @@ export default function Previsao() {
             {anchorMarket && anchorMarket.prob != null && (
               <AnimatedSection>
                 <div className="glass-card rounded-xl p-4 border border-gold/20 bg-gold/[0.03]">
-                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-2">Mercado real vs. IA JLB</p>
+                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1.5">Mercado real vs. IA JLB</p>
+                  {/* Tradução pra leigo do que os números significam */}
+                  <p className="text-sm font-semibold text-foreground mb-3 leading-snug">
+                    {Math.abs(result.confidenceMedium - anchorMarket.prob) < 1
+                      ? `A IA concorda com o mercado — ambos veem cerca de ${anchorMarket.prob}% de chance.`
+                      : `A IA vê ${result.confidenceMedium > anchorMarket.prob ? "MAIS" : "MENOS"} chance que o mercado: ${result.confidenceMedium}% contra ${anchorMarket.prob}% (${result.confidenceMedium > anchorMarket.prob ? "+" : ""}${result.confidenceMedium - anchorMarket.prob} pontos de diferença).`}
+                  </p>
                   <div className="flex items-center gap-4 flex-wrap">
                     <Link href={`/apostas/${anchorMarket.id}`}>
                       <div className="text-center cursor-pointer group">
@@ -561,7 +567,7 @@ export default function Previsao() {
                     </div>
                     {Math.abs(result.confidenceMedium - anchorMarket.prob) >= 1 && (
                       <div className={`text-center px-2.5 py-1 rounded-lg ${result.confidenceMedium - anchorMarket.prob > 0 ? "bg-positive/10 text-positive" : "bg-negative/10 text-negative"}`}>
-                        <p className="text-[9px] uppercase opacity-70">Divergência</p>
+                        <p className="text-[9px] uppercase opacity-70">Diferença</p>
                         <p className="text-sm font-mono font-bold">{result.confidenceMedium - anchorMarket.prob > 0 ? "+" : ""}{result.confidenceMedium - anchorMarket.prob}pp</p>
                       </div>
                     )}
@@ -635,7 +641,7 @@ export default function Previsao() {
                   ) : (
                     <p className="text-xl font-bold font-mono text-foreground">{result.confidenceMedium}%</p>
                   )}
-                  <p className="text-[10px] text-muted-foreground mt-0.5">Confiança</p>
+                  <p className="text-[10px] text-muted-foreground mt-0.5">Chance estimada</p>
                 </div>
                 <div className="glass-card rounded-xl p-4 text-center">
                   <BarChart2 className="w-4 h-4 text-neon-blue mx-auto mb-1.5" />
