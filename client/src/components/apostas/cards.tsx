@@ -221,7 +221,7 @@ export function MultiOutcomePills({ outcomes }: { outcomes: { label: string; pro
   const leaderPct = Math.round(leader.prob * 100);
   return (
     <div className="w-full space-y-2">
-      {/* Líder = protagonista: número grande e cor semântica, para TODO card
+      {/* Líder = protagonista: número grande e cor semântica, para qualquer card
           multi-desfecho liderar com uma probabilidade (não só os binários). */}
       <div className="flex items-center gap-3">
         <span className={`font-mono font-bold leading-none tabular-nums shrink-0 ${leaderPct >= 50 ? "text-positive" : "text-primary"}`} style={{ fontSize: "2.25rem" }}>
