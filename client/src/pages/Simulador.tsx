@@ -171,16 +171,16 @@ function EVSimulator() {
             <Slider id="ev-prob" label="Sua chance real de ganhar" value={prob} min={1} max={99} step={0.5} onChange={setProb} format={(v) => `${v}%`}
               hint="A chance que VOCÊ acredita ser a real — não a que a casa oferece." />
             <Slider id="ev-odd" label="Odd decimal oferecida" value={odd} min={1.1} max={5} step={0.05} onChange={setOdd} format={(v) => v.toFixed(2)}
-              hint={`Quanto a casa paga: odd 2.0 dobra a aposta. Ela embute ${(100 / odd).toFixed(0)}% de chance.`} />
+              hint={`Quanto o mercado paga: odd 2.0 dobra a posição. Ela embute ${(100 / odd).toFixed(0)}% de chance.`} />
             <div>
-              <label className={labelClass} htmlFor="ev-stake">Stake por aposta (R$)</label>
+              <label className={labelClass} htmlFor="ev-stake">Valor por posição (R$)</label>
               <input id="ev-stake" type="number" min={1} step={10} value={stake}
                 onChange={(e) => setStake(sanitizePositiveNumber(Number(e.target.value), 1))}
                 className={inputClass} />
-              <p className="text-[11px] text-muted-foreground/80 mt-1 leading-snug">Quanto você aposta em cada rodada.</p>
+              <p className="text-[11px] text-muted-foreground/80 mt-1 leading-snug">Quanto você põe em cada rodada.</p>
             </div>
-            <Slider id="ev-nbets" label="Número de apostas" value={nBets} min={50} max={1000} step={50} onChange={setNBets}
-              hint="Quantas vezes você repete a mesma aposta. Quanto mais, mais a sorte some." />
+            <Slider id="ev-nbets" label="Número de rodadas" value={nBets} min={50} max={1000} step={50} onChange={setNBets}
+              hint="Quantas vezes você repete a mesma posição. Quanto mais, mais a sorte some." />
             <Reroll onClick={() => setSeed(rollSeed())} />
           </div>
 
@@ -188,12 +188,12 @@ function EVSimulator() {
             {/* Resultado em DESTAQUE — o herói da simulação */}
             <div className={`rounded-xl p-4 border ${isPositive ? "border-positive/30 bg-positive/[0.04]" : "border-negative/30 bg-negative/[0.04]"}`}>
               <p className={`text-sm font-bold mb-3 ${isPositive ? "text-positive" : "text-negative"}`}>
-                {isPositive ? "✓ Aposta de valor — o EV está a seu favor" : "✗ Cilada — o EV está contra você"}
+                {isPositive ? "✓ Posição de valor — o EV está a seu favor" : "✗ Cilada — o EV está contra você"}
               </p>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <ResultStat big label="EV por aposta" value={`${isPositive ? "+" : ""}R$ ${evPerBet.toFixed(2)}`} tone={isPositive ? "positive" : "negative"} hint="quanto você ganha (ou perde) EM MÉDIA por aposta, no longo prazo" />
+                <ResultStat big label="EV por posição" value={`${isPositive ? "+" : ""}R$ ${evPerBet.toFixed(2)}`} tone={isPositive ? "positive" : "negative"} hint="quanto você ganha (ou perde) EM MÉDIA por posição, no longo prazo" />
                 <ResultStat label={`P&L após ${nBets}`} value={`${finalPnL >= 0 ? "+" : ""}R$ ${finalPnL.toFixed(0)}`} tone={finalPnL >= 0 ? "positive" : "negative"} hint="o que deu NESTA amostra (toque 🎲 pra outra)" />
-                <ResultStat label="Você ganhou" value={`${(winRate * 100).toFixed(0)}%`} tone="blue" hint={`das ${nBets} apostas — você previu ${prob}%`} />
+                <ResultStat label="Você ganhou" value={`${(winRate * 100).toFixed(0)}%`} tone="blue" hint={`das ${nBets} rodadas — você previu ${prob}%`} />
               </div>
             </div>
 
@@ -203,7 +203,7 @@ function EVSimulator() {
               </h4>
               <ResponsiveContainer width="100%" height={280}>
                 <LineChart data={chartData} margin={{ right: 12, bottom: 4 }}>
-                  <XAxis dataKey="n" axisLine={false} tickLine={false} minTickGap={32} tick={{ ...CHART_TICK_STYLE, fontSize: 11 }} label={{ value: "apostas", position: "insideBottomRight", offset: -4, style: { fontSize: 10, fill: CHART_COLORS.muted } }} />
+                  <XAxis dataKey="n" axisLine={false} tickLine={false} minTickGap={32} tick={{ ...CHART_TICK_STYLE, fontSize: 11 }} label={{ value: "rodadas", position: "insideBottomRight", offset: -4, style: { fontSize: 10, fill: CHART_COLORS.muted } }} />
                   <YAxis axisLine={false} tickLine={false} tick={{ ...CHART_TICK_STYLE, fontSize: 11 }}
                     tickFormatter={formatAxisBRL} />
                   <Tooltip contentStyle={CHART_TOOLTIP_STYLE} formatter={(v: number, name: string) => [`R$ ${v.toFixed(0)}`, name]} />
@@ -291,9 +291,9 @@ function KellySimulator() {
             <Slider id="k-prob" label="Sua chance real de ganhar" value={prob} min={1} max={99} step={0.5} onChange={setProb} format={(v) => `${v}%`}
               hint="Sua estimativa honesta de acertar." />
             <Slider id="k-odd" label="Odd decimal" value={odd} min={1.1} max={5} step={0.05} onChange={setOdd} format={(v) => v.toFixed(2)}
-              hint="O retorno pago. Junto com a chance, define o tamanho ideal da aposta." />
-            <Slider id="k-nbets" label="Número de apostas" value={nBets} min={50} max={500} step={25} onChange={setNBets}
-              hint="Quantas apostas na sequência." />
+              hint="O retorno pago. Junto com a chance, define o tamanho ideal da posição." />
+            <Slider id="k-nbets" label="Número de rodadas" value={nBets} min={50} max={500} step={25} onChange={setNBets}
+              hint="Quantas rodadas na sequência." />
             <Reroll onClick={() => setSeed(rollSeed())} />
 
             <div className="p-3 rounded-lg bg-obsidian/50 border border-border/20 space-y-2">
@@ -316,10 +316,10 @@ function KellySimulator() {
               <p className="text-sm font-bold text-neon-blue mb-3">
                 {kelly > 0
                   ? `A matemática diz: aposte ${(halfKelly * 100).toFixed(1)}% do bankroll por vez (½ Kelly — o equilíbrio seguro).`
-                  : "Sem vantagem aqui (Kelly = 0) — a matemática manda NÃO apostar."}
+                  : "Sem vantagem aqui (Kelly = 0) — a matemática manda NÃO entrar."}
               </p>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <ResultStat big label="½ Kelly (seguro)" value={`R$ ${last["½ Kelly"].toFixed(0)}`} tone="positive" hint="banca final apostando com disciplina" />
+                <ResultStat big label="½ Kelly (seguro)" value={`R$ ${last["½ Kelly"].toFixed(0)}`} tone="positive" hint="banca final operando com disciplina" />
                 <ResultStat label="Kelly completo" value={`R$ ${last.Kelly.toFixed(0)}`} tone="gold" hint="ótimo na teoria, porém mais volátil" />
                 <ResultStat label="Overbet (2× Kelly)" value={`R$ ${last.Overbet.toFixed(0)}`} tone="negative" hint="apostou demais → tende à ruína" />
               </div>
@@ -509,7 +509,7 @@ function CalibracaoSimulator() {
 // ─── Main ──────────────────────────────────────────────────────────────────
 
 export default function Simulador() {
-  useSEO("Simulador de Apostas", "Simule estratégias de longo prazo: bankroll, stake, variância e risco de ruína na prática.");
+  useSEO("Simulador de Mercados", "Simule estratégias de longo prazo: bankroll, tamanho de posição, variância e risco de ruína na prática.");
   const [tab, setTab] = useState<Tab>("ev");
 
   const tabs: { id: Tab; label: string; icon: typeof TrendingUp }[] = [
@@ -553,8 +553,8 @@ export default function Simulador() {
           <>
             <SimIntro
               icon={TrendingUp}
-              tagline="Por que 5 apostas não provam nada — mas 500 provam tudo."
-              description="O EV positivo não garante ganhar toda aposta, garante ganhar no agregado. Este simulador mostra como a trajetória real de P&L converge para o EV teórico com mais apostas — a Lei dos Grandes Números em ação. Você vai ver por que variância de curto prazo engana e por que disciplina no longo prazo é a vantagem real."
+              tagline="Por que 5 rodadas não provam nada — mas 500 provam tudo."
+              description="O EV positivo não garante acertar toda rodada, garante ganhar no agregado. Este simulador mostra como a trajetória real de P&L converge para o EV teórico com mais rodadas — a Lei dos Grandes Números em ação. Você vai ver por que variância de curto prazo engana e por que disciplina no longo prazo é a vantagem real."
               insight="Como identificar se uma sequência de perdas é má sorte ou sinal de EV negativo real."
             />
             <EVSimulator />
@@ -564,8 +564,8 @@ export default function Simulador() {
           <>
             <SimIntro
               icon={Activity}
-              tagline="Veja na prática por que apostar demais destrói o bankroll — mesmo com edge positivo."
-              description="O Critério de Kelly é matematicamente ótimo, mas desviar dele tem consequências assimétricas: apostar menos (½ Kelly) cresce mais devagar porém com muito menos volatilidade. Apostar acima do Kelly (overbet) parece agressivo mas tende à ruína. Este simulador compara as três estratégias na mesma sequência de resultados."
+              tagline="Veja na prática por que arriscar demais destrói o bankroll — mesmo com edge positivo."
+              description="O Critério de Kelly é matematicamente ótimo, mas desviar dele tem consequências assimétricas: arriscar menos (½ Kelly) cresce mais devagar porém com muito menos volatilidade. Arriscar acima do Kelly (overbet) parece agressivo mas tende à ruína. Este simulador compara as três estratégias na mesma sequência de resultados."
               insight="A diferença visual entre crescimento geométrico saudável e a curva em forma de montanha-russa do overbet."
             />
             <KellySimulator />

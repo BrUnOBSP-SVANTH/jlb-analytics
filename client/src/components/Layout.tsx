@@ -42,7 +42,7 @@ const NAV_GROUPS: NavGroup[] = [
     id: "mercados",
     label: "Mercados",
     children: [
-      { label: "Apostas Ao Vivo",      href: "/apostas",  icon: Flame,     desc: "Reddit + Polymarket + Kalshi — sinais em tempo real", badge: "AO VIVO" },
+      { label: "Mercados Ao Vivo",      href: "/apostas",  icon: Flame,     desc: "Reddit + Polymarket + Kalshi — sinais em tempo real", badge: "AO VIVO" },
       { label: "Análise de Mercados",  href: "/noticias", icon: Newspaper, desc: "Polymarket · Kalshi · Artigos · cruzamento IA + notícias" },
     ],
   },
@@ -90,7 +90,7 @@ const NAV_GROUPS: NavGroup[] = [
 // Quick-access strip — apenas destinos de alta frequência (não espelha o mega-menu).
 // As ferramentas (Backtester, Simulador, Calculadoras, Portfólio) ficam no menu Ferramentas.
 const QUICK_LINKS = [
-  { label: "Apostas Ao Vivo", href: "/apostas"    },
+  { label: "Mercados Ao Vivo", href: "/apostas"    },
   { label: "Análise",         href: "/noticias"   },
   { label: "Previsão IA",     href: "/previsao"   },
   { label: "Dashboard",       href: "/dashboard"  },
@@ -625,7 +625,7 @@ function Footer() {
             <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Mercados & Dados</h4>
             <div className="space-y-1.5">
               {[
-                { label: "Apostas Ao Vivo", href: "/apostas"  },
+                { label: "Mercados Ao Vivo", href: "/apostas"  },
                 { label: "Análise de Mercados", href: "/noticias" },
                 { label: "Briefing IA",     href: "/briefing" },
               ].map((l) => (

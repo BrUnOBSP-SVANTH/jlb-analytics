@@ -73,7 +73,7 @@ const PAGE_SIZE = 20;
 
 
 export default function Apostas() {
-  useSEO("Apostas Ao Vivo", "Mercados preditivos em tempo real do Polymarket e Kalshi com probabilidades, volume, divergências da IA e análise contextual.");
+  useSEO("Mercados Ao Vivo", "Mercados preditivos em tempo real do Polymarket e Kalshi com probabilidades, volume, divergências da IA e análise contextual.");
   const [items, setItems]           = useState<TrendingItem[]>([]);
   const [loading, setLoading]       = useState(true);
   const [error, setError]           = useState<string | null>(null);

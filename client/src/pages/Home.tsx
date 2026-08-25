@@ -137,7 +137,7 @@ const HOW_IT_WORKS = [
     bg: "bg-neon-blue/10",
     step: "01",
     title: "Veja o Mercado",
-    desc: "Acompanhe ao vivo as apostas mais movimentadas do mundo no Polymarket e Kalshi — probabilidades atualizadas em tempo real, sem precisar criar conta.",
+    desc: "Acompanhe ao vivo os mercados mais movimentados do mundo no Polymarket e Kalshi — probabilidades atualizadas em tempo real, sem precisar criar conta.",
   },
   {
     icon: Brain,
@@ -145,7 +145,7 @@ const HOW_IT_WORKS = [
     bg: "bg-gold/10",
     step: "02",
     title: "Calcule o Valor",
-    desc: "Ferramentas simples mostram se uma aposta vale a pena antes de você colocar dinheiro. Em segundos você vê se as probabilidades estão a seu favor.",
+    desc: "Ferramentas simples mostram se uma posição vale a pena antes de você entrar. Em segundos você vê se as probabilidades estão a seu favor.",
   },
   {
     icon: CheckCircle,
@@ -589,7 +589,7 @@ export default function Home() {
       <section className="py-12 px-4 border-t border-border/20 bg-secondary/5">
         <div className="max-w-5xl mx-auto">
           <p className="text-center text-xs text-muted-foreground uppercase tracking-wider mb-8">
-            Por que apostar sem cálculo é perder dinheiro — números reais
+            Por que decidir no achismo custa caro — números reais
           </p>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
             {SOCIAL_PROOF.map((stat) => (

@@ -244,7 +244,7 @@ function TrendingCardBase({ item, onCompare, inCompare }: {
                   onClick={() => setExpanded((v) => !v)}
                 >
                   <span className="flex items-center gap-1">
-                    <TrendingUp className="w-3 h-3" />{expanded ? "Ocultar análise de aposta" : "Análise de aposta"}
+                    <TrendingUp className="w-3 h-3" />{expanded ? "Ocultar análise do mercado" : "Análise do mercado"}
                   </span>
                   {expanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
                 </button>

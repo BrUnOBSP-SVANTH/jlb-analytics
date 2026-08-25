@@ -33,7 +33,7 @@ const CALC_LABELS: Partial<Record<CalcTab, string>> = {
 };
 
 export default function Calculadoras() {
-  useSEO("Calculadoras Quantitativas", "Valor Esperado, Critério de Kelly, Overround e Brier Score — calculadoras educacionais com dados reais para apostar com método.");
+  useSEO("Calculadoras Quantitativas", "Valor Esperado, Critério de Kelly, Overround e Brier Score — calculadoras educacionais com dados reais para operar com método.");
   const [tab, setTab] = useState<CalcTab>("guia");
   const awardedTabs = useRef<Set<CalcTab>>(new Set());
 
@@ -57,9 +57,9 @@ export default function Calculadoras() {
   const introMap: Record<Exclude<CalcTab, "guia" | "correlacao">, React.ReactNode> = {
     ev: (
       <ToolIntro icon={Calculator}
-        tagline="Descubra se uma aposta vale a pena matematicamente antes de colocar dinheiro."
-        description="O Valor Esperado (EV) responde: se você fizesse esta aposta mil vezes, lucraria ou perderia? Uma aposta pode ter 70% de chance de ganhar e ainda assim ser um mau negócio — depende da odd. Use no Polymarket comparando a probabilidade do mercado com a sua estimativa."
-        example="Odd 1.8 com 60% de chance real → EV = +8% por aposta. Matematicamente favorável no longo prazo."
+        tagline="Descubra se uma posição vale a pena matematicamente antes de entrar."
+        description="O Valor Esperado (EV) responde: se você tomasse esta posição mil vezes, lucraria ou perderia? Uma posição pode ter 70% de chance de dar certo e ainda assim ser um mau negócio — depende da odd. Use no Polymarket comparando a probabilidade do mercado com a sua estimativa."
+        example="Odd 1.8 com 60% de chance real → EV = +8% por posição. Matematicamente favorável no longo prazo."
         accuracy={{ label: "Precisão", value: "100% (matemático)", color: "text-positive border-positive/30 bg-positive/10" }} />
     ),
     overround: (
@@ -78,8 +78,8 @@ export default function Calculadoras() {
     ),
     kelly: (
       <ToolIntro icon={TrendingUp}
-        tagline="Saiba exatamente quanto apostar para crescer sem risco de ruína."
-        description="Kelly calcula o tamanho ótimo que maximiza o crescimento do bankroll. Apostar acima do Kelly aumenta a chance de ruína exponencialmente. Profissionais usam ½ Kelly para proteger contra erros de estimativa. Combine com EV+ para entrar apenas em posições com vantagem matemática."
+        tagline="Saiba exatamente quanto pôr para crescer sem risco de ruína."
+        description="Kelly calcula o tamanho ótimo que maximiza o crescimento do bankroll. Passar do Kelly aumenta a chance de ruína exponencialmente. Profissionais usam ½ Kelly para proteger contra erros de estimativa. Combine com EV+ para entrar apenas em posições com vantagem matemática."
         example="Edge de +15pp com odd 1.67 (Polymarket a 60%, você estima 75%) → Kelly ≈ 37% → use ½ Kelly ≈ 18%."
         accuracy={{ label: "Prova matemática", value: "Shannon/Kelly 1956", color: "text-gold border-gold/30 bg-gold/10" }} />
     ),

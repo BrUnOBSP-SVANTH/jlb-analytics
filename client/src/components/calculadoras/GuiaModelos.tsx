@@ -29,13 +29,13 @@ const MODELS: ModelGuide[] = [
     id: "ev",
     icon: Calculator,
     name: "Valor Esperado (EV)",
-    tagline: "O motor de toda decisão racional em apostas",
+    tagline: "O motor de toda decisão racional em mercados",
     whenToUse: [
-      "Antes de qualquer aposta — sem EV+ não há razão matemática para entrar",
-      "Para comparar múltiplas apostas e escolher a melhor",
+      "Antes de qualquer posição — sem EV+ não há razão matemática para entrar",
+      "Para comparar múltiplas posições e escolher a melhor",
       "Para calcular retorno esperado de uma estratégia ao longo do tempo",
     ],
-    howItWorks: "EV = Σ (probabilidade × retorno). Se a soma dos resultados esperados for positiva, a aposta tem vantagem matemática. A chave é que sua estimativa de probabilidade precisa ser mais precisa que a do mercado.",
+    howItWorks: "EV = Σ (probabilidade × retorno). Se a soma dos resultados esperados for positiva, a posição tem vantagem matemática. A chave é que sua estimativa de probabilidade precisa ser mais precisa que a do mercado.",
     accuracy: "~100% (matemático)",
     accuracyColor: "text-positive border-positive/30 bg-positive/10",
     limitacao: "O resultado depende 100% da qualidade da sua estimativa de probabilidade. Se você subestima ou superestima, o EV calculado é enganoso.",
@@ -48,7 +48,7 @@ const MODELS: ModelGuide[] = [
       "5. Se EV > 0, considere entrar. Use Kelly para dimensionar.",
     ],
     benchmarks: [
-      ["EV > +5%", "Aposta atraente — procure confirmar com mais dados"],
+      ["EV > +5%", "Posição atraente — procure confirmar com mais dados"],
       ["EV > +10%", "Oportunidade forte — rara em mercados eficientes"],
       ["EV 0–5%", "Marginal — só entre se tiver alta confiança na sua estimativa"],
       ["EV < 0", "Não aposte — você está pagando para perder no longo prazo"],
@@ -60,7 +60,7 @@ const MODELS: ModelGuide[] = [
     name: "Overround / Margem",
     tagline: "Detecta quanto a casa está cobrando de pedágio",
     whenToUse: [
-      "Antes de comparar odds entre casas de apostas",
+      "Antes de comparar odds entre mercados e casas",
       "Para identificar mercados mais justos (menor margem)",
       "Para calcular a odd 'fair' sem a comissão da casa",
     ],
@@ -78,7 +78,7 @@ const MODELS: ModelGuide[] = [
     ],
     benchmarks: [
       ["< 2%", "Mercado preditivo (Polymarket/Kalshi) — quase justo"],
-      ["2–4%", "Exchange de apostas (Betfair) — boa opção"],
+      ["2–4%", "Exchange (Betfair) — boa opção"],
       ["4–6%", "Casa esportiva competitiva — aceitável"],
       ["> 8%", "Loteria ou mercado de alto risco — evitar"],
     ],
@@ -107,7 +107,7 @@ const MODELS: ModelGuide[] = [
     ],
     benchmarks: [
       ["< 0.10", "Forecaster experiente — calibração excelente"],
-      ["0.10–0.15", "Bom — melhor que a maioria dos apostadores"],
+      ["0.10–0.15", "Bom — melhor que a maioria das pessoas"],
       ["0.15–0.20", "Mediano — espaço para melhorar a calibração"],
       ["0.20–0.25", "Fraco — previsões sistematicamente imprecisas"],
       ["> 0.25", "Pior que chutar 50% sempre — revisar metodologia"],
@@ -117,13 +117,13 @@ const MODELS: ModelGuide[] = [
     id: "kelly",
     icon: TrendingUp,
     name: "Critério de Kelly",
-    tagline: "O tamanho certo da aposta para crescer sem risco de ruína",
+    tagline: "O tamanho certo da posição para crescer sem risco de ruína",
     whenToUse: [
-      "Após confirmar que uma aposta tem EV positivo",
+      "Após confirmar que uma posição tem EV positivo",
       "Para gerenciar o bankroll de forma sustentável no longo prazo",
-      "Para comparar o tamanho relativo de diferentes apostas",
+      "Para comparar o tamanho relativo de diferentes posições",
     ],
-    howItWorks: "f* = (b×p − q) / b. Maximiza o crescimento logarítmico do bankroll. Apostar acima do Kelly é matematicamente equivalente a aceitar variância crescente sem recompensa adicional — a chance de ruína aumenta exponencialmente.",
+    howItWorks: "f* = (b×p − q) / b. Maximiza o crescimento logarítmico do bankroll. Passar do Kelly é matematicamente equivalente a aceitar variância crescente sem recompensa adicional — a chance de ruína aumenta exponencialmente.",
     accuracy: "Crescimento ótimo provado matematicamente (Shannon/Kelly, 1956)",
     accuracyColor: "text-gold border-gold/30 bg-gold/10",
     limitacao: "Assume que sua estimativa de p é precisa. Na prática, há incerteza — daí usar ½ Kelly como proteção contra erros de estimativa.",
@@ -242,7 +242,7 @@ export function GuiaModelos() {
                 Cada modelo resolve um problema específico. A sequência correta é:{" "}
                 <strong className="text-foreground">Overround</strong> (qual o custo do mercado?) →{" "}
                 <strong className="text-foreground">EV</strong> (vale a pena entrar?) →{" "}
-                <strong className="text-foreground">Kelly</strong> (quanto apostar?) →{" "}
+                <strong className="text-foreground">Kelly</strong> (quanto pôr?) →{" "}
                 <strong className="text-foreground">Brier Score</strong> (minhas previsões foram boas?).
               </p>
               <p className="text-xs text-gold/80 font-medium mt-2">

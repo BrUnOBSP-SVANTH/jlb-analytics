@@ -36,7 +36,7 @@ export function KellyCalc() {
               onChange={(e) => setOdd(Math.max(1.01, parseFloat(e.target.value) || 1.01))}
               className={inputClass} />
           </Field>
-          <Field label="Bankroll total (R$)" htmlFor="kelly-bankroll" hint="Todo o dinheiro que você separou pra apostar.">
+          <Field label="Bankroll total (R$)" htmlFor="kelly-bankroll" hint="Todo o dinheiro que você separou pra operar.">
             <input id="kelly-bankroll" type="number" min={0} step={100} value={bankroll}
               onChange={(e) => setBankroll(Math.max(0, parseFloat(e.target.value) || 0))}
               className={inputClass} />
@@ -65,13 +65,13 @@ export function KellyCalc() {
             <div className="p-4 rounded-xl bg-negative/10 border border-negative/30">
               <p className="text-sm font-semibold text-negative">EV negativo — Kelly = 0%</p>
               <p className="text-xs text-muted-foreground mt-1">
-                Com esta probabilidade e odd, o Kelly recomenda não apostar.
+                Com esta probabilidade e odd, o Kelly recomenda não entrar.
                 A odd implica {(impliedProb * 100).toFixed(1)}% mas você estima {prob}%.
               </p>
             </div>
           ) : (
             <>
-              <ResultBox big label="½ Kelly — quanto apostar"
+              <ResultBox big label="½ Kelly — quanto pôr"
                 value={`${(halfKelly * 100).toFixed(1)}%`}
                 color="text-positive"
                 hint={`Aposte esta fração do bankroll — R$ ${halfStake.toFixed(0)}. É o padrão dos profissionais: cresce quase igual ao Kelly cheio, com muito menos risco.`} />
@@ -89,7 +89,7 @@ export function KellyCalc() {
           )}
 
           <InsightBox>
-            <strong className="text-foreground">Regra prática:</strong> nunca aposte mais que o Kelly completo. Apostadores profissionais usam ½ Kelly como padrão. Se sua estimativa de probabilidade tem incerteza alta, use ¼ Kelly.
+            <strong className="text-foreground">Regra prática:</strong> nunca ponha mais que o Kelly completo. Profissionais usam ½ Kelly como padrão. Se sua estimativa de probabilidade tem incerteza alta, use ¼ Kelly.
           </InsightBox>
         </div>
       </div>

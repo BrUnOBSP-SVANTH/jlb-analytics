@@ -42,7 +42,7 @@ export function ValorEsperado() {
     <CalcCard title="Calculadora de Valor Esperado" icon={Calculator}>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="space-y-4">
-          <Field label="Valor da Posição (R$)" htmlFor="ev-stake" hint="Quanto você vai apostar de verdade.">
+          <Field label="Valor da Posição (R$)" htmlFor="ev-stake" hint="Quanto você vai colocar de verdade.">
             <input id="ev-stake" type="number" min={0} step={10} value={stake}
               onChange={(e) => setStake(Math.max(0, parseFloat(e.target.value) || 0))}
               className={inputClass} />
@@ -50,7 +50,7 @@ export function ValorEsperado() {
 
           <div className="space-y-2">
             <p className={labelClass}>Cenários</p>
-            <p className="text-[11px] text-muted-foreground/80 leading-snug">Probabilidade = a chance REAL que você acredita · Odd = quanto recebe de volta (1.8 = 1,8× a aposta).</p>
+            <p className="text-[11px] text-muted-foreground/80 leading-snug">Probabilidade = a chance REAL que você acredita · Odd = quanto recebe de volta (1.8 = 1,8× a posição).</p>
             {outcomes.map((o, i) => (
               <div key={i} className="flex gap-2 items-end">
                 <div className="flex-1">
@@ -91,26 +91,26 @@ export function ValorEsperado() {
           <ResultBox big label="Valor Esperado por posição"
             value={`${isPositive ? "+" : ""}R$ ${evReais.toFixed(2)}`}
             color={evColor}
-            hint="Se você fizesse esta aposta muitas vezes, ganharia (ou perderia) isso EM MÉDIA por vez."
-            sub={`por R$ ${stake} apostado`} />
+            hint="Se você fizesse esta posição muitas vezes, ganharia (ou perderia) isso EM MÉDIA por vez."
+            sub={`por R$ ${stake} na posição`} />
           <div className="grid grid-cols-2 gap-3">
             <ResultBox label="ROI esperado"
               value={`${isPositive ? "+" : ""}${roi.toFixed(1)}%`}
               color={evColor}
-              hint="retorno médio sobre o que você aposta" />
+              hint="retorno médio sobre o que você põe" />
             <ResultBox label="EV por R$ 1"
               value={`${isPositive ? "+" : ""}R$ ${ev.toFixed(3)}`}
               color={evColor}
-              hint="pra comparar apostas de tamanhos diferentes" />
+              hint="pra comparar posições de tamanhos diferentes" />
           </div>
 
           <div className={`p-4 rounded-xl border ${isNeutral ? "bg-secondary/20 border-border/30" : isPositive ? "bg-positive/10 border-positive/30" : "bg-negative/10 border-negative/30"}`}>
             <p className={`text-sm font-semibold ${evColor}`}>
-              {isNeutral ? "EV zero — aposta justa" : isPositive ? "EV+ — matematicamente favorável" : "EV− — matematicamente perdedor"}
+              {isNeutral ? "EV zero — posição justa" : isPositive ? "EV+ — matematicamente favorável" : "EV− — matematicamente perdedor"}
             </p>
             <p className="text-xs text-muted-foreground mt-1">
               {isNeutral
-                ? "Retorno esperado igual ao valor apostado. Sem margem da casa e sem vantagem sua — raro no mundo real."
+                ? "Retorno esperado igual ao valor da posição. Sem margem da casa e sem vantagem sua — raro no mundo real."
                 : isPositive
                 ? "No longo prazo, esta posição tende a lucrar. Mas variância de curto prazo é inevitável."
                 : "No longo prazo, toda posição EV− resulta em perda. A frequência de acerto não muda isso."}
