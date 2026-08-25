@@ -244,7 +244,7 @@ function MethodologyPanel() {
         <Brain className="w-4 h-4 text-gold shrink-0" />
         <div className="flex-1">
           <p className="text-sm font-semibold text-foreground">Metodologia — Modelo Hoffmann-Klement</p>
-          <p className="text-xs text-muted-foreground mt-0.5">Paper acadêmico de 2002 + ranking FIFA · favorito = campeão em 3 Copas (n=3)</p>
+          <p className="text-xs text-muted-foreground mt-0.5">Paper acadêmico de 2002 + ranking FIFA · 3 de 4 (errou 2026: Holanda)</p>
         </div>
         {open ? <ChevronUp className="w-4 h-4 text-gold/60" /> : <ChevronDown className="w-4 h-4 text-gold/60" />}
       </button>
@@ -280,23 +280,25 @@ function MethodologyPanel() {
           </div>
 
           <div>
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Histórico do modelo <span className="text-muted-foreground/50 normal-case">— n=3, anedótico, não é skill validado</span></p>
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Histórico do modelo <span className="text-muted-foreground/50 normal-case">— 3 de 4 · amostra pequena, não é skill validado</span></p>
             <div className="flex flex-wrap gap-2">
               {[
-                { year: "2014", winner: "🇩🇪 Alemanha" },
-                { year: "2018", winner: "🇫🇷 França" },
-                { year: "2022", winner: "🇦🇷 Argentina" },
+                { year: "2014", winner: "🇩🇪 Alemanha", hit: true },
+                { year: "2018", winner: "🇫🇷 França", hit: true },
+                { year: "2022", winner: "🇦🇷 Argentina", hit: true },
+                { year: "2026", winner: "🇳🇱 Holanda", hit: false },
               ].map(r => (
-                <div key={r.year} className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-positive/30 bg-positive/10 text-positive text-xs">
+                <div key={r.year} className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs ${r.hit ? "border-positive/30 bg-positive/10 text-positive" : "border-negative/30 bg-negative/10 text-negative"}`}>
                   <span className="font-mono font-bold">{r.year}</span>
                   <span>{r.winner}</span>
-                  <span>✓</span>
+                  <span>{r.hit ? "✓" : "✗ eliminada"}</span>
                 </div>
               ))}
             </div>
             <p className="text-[11px] text-muted-foreground mt-2 italic">
               "If you bet money on the World Cup because of this model, nobody can help you." — Joachim Klement
             </p>
+            <p className="text-[10px] text-muted-foreground/50 mt-1">Histórico conforme ESPN Brasil / Klement on Investing.</p>
           </div>
 
           <a
@@ -382,7 +384,7 @@ export default function KlementSection({ onClose }: { onClose: () => void }) {
         <div className="flex-1">
           <h2 className="text-base font-bold text-foreground">Copa do Mundo 2026 — Modelo Klement</h2>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Hoffmann, Ging &amp; Ramasamy (2002) + ranking FIFA · favorito = campeão em 3 Copas (n=3, anedótico) · Monte Carlo {N_SIMULATIONS.toLocaleString("pt-BR")} iterações
+            Hoffmann, Ging &amp; Ramasamy (2002) + ranking FIFA · 3 de 4 Copas — errou 2026 (Holanda) · Monte Carlo {N_SIMULATIONS.toLocaleString("pt-BR")} iterações
           </p>
         </div>
         <button
@@ -399,7 +401,7 @@ export default function KlementSection({ onClose }: { onClose: () => void }) {
       <AnimatedSection>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
-            { label: "Alinhamento histórico", value: "3/3", sub: "favorito = campeão em 2014·18·22 (n=3, anedótico)", color: "text-gold" },
+            { label: "Alinhamento histórico", value: "3/4", sub: "acertou 2014·18·22; errou 2026 (Holanda)", color: "text-gold" },
             { label: "Poder explicativo",  value: "~55%", sub: "variância na performance (Hoffmann 2002)",  color: "text-gold" },
             { label: "Iterações MC",       value: `${N_SIMULATIONS / 1000}k`, sub: "Simulações do torneio completo",   color: "text-neon-blue" },
             { label: "Seleções",           value: "48",   sub: "Todas as classificadas para 2026", color: "text-foreground" },
