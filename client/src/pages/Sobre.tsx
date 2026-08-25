@@ -18,7 +18,7 @@ const OFFERINGS = [
   { icon: GraduationCap, title: "5 Níveis de Educação",        desc: "Progressão estruturada: Fundamentos → Dados → Modelos → Vieses → Análise Integrada. Cada nível com calculadoras interativas." },
   { icon: BarChart3,     title: "Modelos Quantitativos",        desc: "Poisson + Dixon-Coles, Elo, GARCH, Regra de Taylor, ENSO. Cada modelo com premissas e limites documentados — implementados em TypeScript." },
   { icon: Calculator,    title: "Calculadoras EV, Kelly, Brier", desc: "Ferramentas interativas para Valor Esperado, Overround, Brier Score e Kelly — os fundamentos que 99% dos apostadores nunca calcularam." },
-  { icon: Activity,      title: "Simuladores Monte Carlo",      desc: "Lei dos Grandes Números, Kelly Criterion e calibração interativa. Simulações de até 1.000 apostas com visualização em tempo real." },
+  { icon: Activity,      title: "Simuladores Monte Carlo",      desc: "Lei dos Grandes Números, Kelly Criterion e calibração interativa. Simulações de até 1.000 rodadas com visualização em tempo real." },
   { icon: Brain,         title: "IA Adaptativa por Domínio",    desc: "Previsão Guiada detecta o nível do usuário (leigo / intermediário / avançado) e aplica o modelo econométrico correto para cada pergunta." },
   { icon: GitMerge,      title: "Cerebro — Base Proprietária",  desc: "Base de conhecimento curada: coleta notícias por RSS e gera sínteses por IA — o motor de contexto que alimenta todas as análises. (Contagem real na seção de métricas.)" },
 ];
@@ -44,7 +44,7 @@ const MARKET_FACTS = [
 ];
 
 const ROADMAP = [
-  { phase: "MVP — concluído",      status: "done",    items: ["Apostas ao vivo (Polymarket + Kalshi)", "IA adaptativa por domínio e nível", "5 níveis educacionais com calculadoras", "Cerebro (base curada por RSS + IA)", "Dashboard de calibração pessoal", "Sync de previsões em nuvem (Supabase)", "Rankings de calibração públicos", "Comunidade de forecasters (duelos)"] },
+  { phase: "MVP — concluído",      status: "done",    items: ["Mercados ao vivo (Polymarket + Kalshi)", "IA adaptativa por domínio e nível", "5 níveis educacionais com calculadoras", "Cerebro (base curada por RSS + IA)", "Dashboard de calibração pessoal", "Sync de previsões em nuvem (Supabase)", "Rankings de calibração públicos", "Comunidade de forecasters (duelos)"] },
   { phase: "Q3 2026 — em andamento", status: "active",  items: ["Integração Stripe (plano premium)", "Mobile app (PWA avançado)"] },
   { phase: "Q4 2026 — planejado",  status: "planned", items: ["API para desenvolvedores", "Integração B3 Mercados Preditivos"] },
 ];
@@ -273,7 +273,7 @@ export default function Sobre() {
               </Link>
               <Link href="/apostas">
                 <span className="inline-flex items-center gap-2 px-7 py-3 rounded-lg border border-border/50 text-foreground font-medium hover:bg-secondary/30 transition-colors">
-                  Ver Apostas ao Vivo <Map className="w-4 h-4" aria-hidden="true" />
+                  Ver Mercados ao Vivo <Map className="w-4 h-4" aria-hidden="true" />
                 </span>
               </Link>
             </div>

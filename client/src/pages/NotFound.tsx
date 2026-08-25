@@ -31,7 +31,7 @@ export default function NotFound() {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full max-w-md mb-8">
         {[
           { href: "/",          label: "Início",     icon: Home,            desc: "Voltar ao início" },
-          { href: "/apostas",   label: "Mercados",   icon: TrendingUp,      desc: "Apostas em Hype" },
+          { href: "/apostas",   label: "Mercados",   icon: TrendingUp,      desc: "Mercados em Hype" },
           { href: "/dashboard", label: "Dashboard",  icon: LayoutDashboard, desc: "Suas métricas" },
         ].map(({ href, label, icon: Icon, desc }) => (
           <Link key={href} href={href}>

@@ -75,7 +75,7 @@ export function OverroundCalc() {
           <ResultBox label="Margem da casa"
             value={`${margin.toFixed(1)}%`}
             color={margin > 5 ? "text-negative" : margin > 2 ? "text-warning" : "text-positive"}
-            hint="a fatia do total apostado que vira lucro garantido da casa" />
+            hint="a fatia do total movimentado que vira lucro garantido da casa" />
 
           <div className={`p-3 rounded-xl border flex items-center gap-2 ${marginLabel.color.includes("positive") ? "bg-positive/10 border-positive/30" : marginLabel.color.includes("neon") ? "bg-neon-blue/10 border-neon-blue/30" : marginLabel.color.includes("yellow") ? "bg-warning/10 border-warning/30" : "bg-negative/10 border-negative/30"}`}>
             <span className={`text-sm font-semibold ${marginLabel.color}`}>{marginLabel.text}</span>

@@ -427,7 +427,7 @@ export default function Briefing() {
                 </Link>
                 <Link href="/apostas">
                   <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors">
-                    Tendências de Apostas <ArrowRight className="w-3 h-3" />
+                    Tendências de Mercados <ArrowRight className="w-3 h-3" />
                   </span>
                 </Link>
               </div>

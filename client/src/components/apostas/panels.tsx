@@ -64,7 +64,7 @@ function EdgeCalculator({ marketProb }: { marketProb: number }) {
           <p className={`text-base font-mono font-bold ${evNeutral ? "text-muted-foreground" : hasValue ? "text-positive" : "text-negative"}`}>
             {evNeutral ? "0.0" : `${ev >= 0 ? "+" : ""}${(ev * 100).toFixed(1)}`}%
           </p>
-          <p className="text-[9px] text-muted-foreground mt-0.5">por real apostado</p>
+          <p className="text-[9px] text-muted-foreground mt-0.5">por real na posição</p>
         </div>
         <div className={`p-2.5 rounded-lg border ${edge > 0 ? "border-neon-blue/20 bg-neon-blue/5" : "border-border/20 bg-secondary/10"}`}>
           <p className="text-[9px] text-muted-foreground uppercase tracking-wider mb-1">Edge vs Mercado</p>
@@ -88,7 +88,7 @@ function EdgeCalculator({ marketProb }: { marketProb: number }) {
         <Zap className={`w-3 h-3 shrink-0 ${hasValue ? "text-positive" : "text-muted-foreground"}`} />
         <p className="text-[10px] leading-relaxed">
           {hasValue
-            ? `Valor positivo detectado. Com ½ Kelly: arrisque ${(halfKelly * 100).toFixed(1)}% da banca. EV de longo prazo: ${(ev * 100).toFixed(1)}% por aposta.`
+            ? `Valor positivo detectado. Com ½ Kelly: arrisque ${(halfKelly * 100).toFixed(1)}% da banca. EV de longo prazo: ${(ev * 100).toFixed(1)}% por posição.`
             : evNeutral
             ? "EV zero — sua estimativa coincide com o preço do mercado. Não há vantagem matemática de nenhum lado."
             : "Sem valor com esta estimativa — o mercado está pagando menos do que sua probabilidade justifica. Reduza o tamanho ou reavalie."}
@@ -393,7 +393,7 @@ export function NewsAnalysisPanel({ item }: { item: TrendingItem }) {
           {/* Betting angle */}
           {result.bettingAngle && (
             <div className="p-2.5 rounded-lg bg-gold/5 border border-gold/15">
-              <p className="text-[9px] font-semibold text-gold/70 uppercase tracking-wider mb-1">Ângulo de apostas</p>
+              <p className="text-[9px] font-semibold text-gold/70 uppercase tracking-wider mb-1">Ângulo de mercado</p>
               <p className="text-xs text-muted-foreground leading-relaxed">{result.bettingAngle}</p>
             </div>
           )}

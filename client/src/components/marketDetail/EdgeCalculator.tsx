@@ -81,7 +81,7 @@ export function EdgeCalculator({ marketProb, marketId, question }: { marketProb:
       </div>
       <Explain>
         Esta é a ponte entre o "eu acho" e os números: diga qual chance <strong className="text-foreground">você</strong> acredita ser a real,
-        e a calculadora mostra se a aposta tem <strong className="text-foreground">Valor Esperado positivo</strong> (lucro esperado a longo prazo)
+        e a calculadora mostra se a posição tem <strong className="text-foreground">Valor Esperado positivo</strong> (lucro esperado a longo prazo)
         e <strong className="text-foreground">quanto arriscar</strong> sem quebrar a banca (a fração de Kelly). Mova o controle e veja os números reagirem.
       </Explain>
       <div>
@@ -104,7 +104,7 @@ export function EdgeCalculator({ marketProb, marketId, question }: { marketProb:
           <p className={`text-xl font-mono font-bold ${evNeutral ? "text-muted-foreground" : hasValue ? "text-positive" : "text-negative"}`}>
             {evNeutral ? "0.0" : `${ev >= 0 ? "+" : ""}${(ev * 100).toFixed(1)}`}%
           </p>
-          <p className="text-[10px] text-muted-foreground mt-0.5">por real apostado</p>
+          <p className="text-[10px] text-muted-foreground mt-0.5">por real na posição</p>
         </div>
         <div className={`p-3 rounded-lg border ${edge > 0 ? "border-neon-blue/20 bg-neon-blue/5" : "border-border/20 bg-secondary/10"}`}>
           <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Edge vs Mercado</p>
@@ -130,7 +130,7 @@ export function EdgeCalculator({ marketProb, marketId, question }: { marketProb:
         <Zap className={`w-4 h-4 shrink-0 ${hasValue ? "text-positive" : "text-muted-foreground"}`} />
         <p className="text-xs leading-relaxed">
           {hasValue
-            ? `Valor positivo detectado. Com ½ Kelly: arrisque ${(halfKelly * 100).toFixed(1)}% da banca. EV de longo prazo: ${(ev * 100).toFixed(1)}% por aposta.`
+            ? `Valor positivo detectado. Com ½ Kelly: arrisque ${(halfKelly * 100).toFixed(1)}% da banca. EV de longo prazo: ${(ev * 100).toFixed(1)}% por posição.`
             : evNeutral
             ? "EV zero — sua estimativa coincide com o preço do mercado. Não há vantagem matemática de nenhum lado."
             : "Sem valor com esta estimativa — o mercado está pagando menos do que sua probabilidade justifica. Reduza o tamanho ou reavalie."}
@@ -155,7 +155,7 @@ export function EdgeCalculator({ marketProb, marketId, question }: { marketProb:
               <div><span className="font-semibold text-foreground/70">Por que o mercado pode errar: </span><span className="text-muted-foreground">{explain.whyMarketMightBeMistaken}</span></div>
               <div><span className="font-semibold text-gold/80">💡 Insight: </span><span className="text-muted-foreground">{explain.keyInsight}</span></div>
               <div><span className="font-semibold text-negative/70">⚠️ Risco: </span><span className="text-muted-foreground">{explain.riskFactor}</span></div>
-              <p className="text-[10px] text-muted-foreground/50 pt-1 border-t border-border/15">Análise educacional da IA — nunca uma recomendação de aposta.{explain.cached ? " (cache)" : ""}</p>
+              <p className="text-[10px] text-muted-foreground/50 pt-1 border-t border-border/15">Análise educacional da IA — nunca uma recomendação de compra.{explain.cached ? " (cache)" : ""}</p>
             </div>
           )}
         </div>

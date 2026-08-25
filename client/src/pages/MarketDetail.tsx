@@ -565,7 +565,7 @@ export default function MarketDetail() {
                   A IA lê <strong className="text-foreground">notícias reais</strong> e compara este evento com casos parecidos do passado para
                   estimar um <strong className="text-foreground">valor justo</strong> independente do preço do mercado. O{" "}
                   <strong className="text-foreground">Edge</strong> é a diferença entre esse valor justo e o mercado — é ali que pode estar a vantagem.
-                  Pense nela como uma segunda opinião fundamentada, com as fontes à mostra — nunca um palpite ou recomendação de aposta.
+                  Pense nela como uma segunda opinião fundamentada, com as fontes à mostra — nunca um palpite ou recomendação de compra.
                 </Explain>
 
                 <button

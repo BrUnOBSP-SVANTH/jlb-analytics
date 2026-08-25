@@ -28,7 +28,7 @@ interface CmdArticle {
 type CmdItem = CmdPage | CmdArticle;
 
 const PAGES: CmdPage[] = [
-  { type: "page", label: "Apostas ao Vivo",    href: "/apostas",      icon: Zap,            keywords: "apostas mercados polymarket kalshi hype" },
+  { type: "page", label: "Mercados ao Vivo",    href: "/apostas",      icon: Zap,            keywords: "apostas mercados polymarket kalshi hype" },
   { type: "page", label: "Análise de Mercados", href: "/noticias",    icon: Newspaper,      keywords: "noticias análise mercados preditivos" },
   { type: "page", label: "Previsão Guiada IA", href: "/previsao",    icon: Brain,          keywords: "previsão ia modelo econométrico" },
   { type: "page", label: "Briefing Diário IA", href: "/briefing",    icon: Zap,            keywords: "briefing diário análise matinal" },

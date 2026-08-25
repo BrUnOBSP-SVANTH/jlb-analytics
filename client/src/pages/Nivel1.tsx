@@ -92,7 +92,7 @@ function EVCalculator() {
         <h3 className="font-semibold text-foreground text-sm">Valor Esperado — E[X] = Σ pᵢ · xᵢ</h3>
       </div>
       <p className="text-xs text-muted-foreground">
-        A métrica mais ignorada e mais importante. Se E[X] {"<"} 0, a aposta é matematicamente perdedora
+        A métrica mais ignorada e mais importante. Se E[X] {"<"} 0, a posição é matematicamente perdedora
         — independente do resultado individual.
       </p>
 
@@ -325,7 +325,7 @@ function BayesCalculator() {
 
 // ─── Página principal ─────────────────────────────────────────────────────────
 export default function Nivel1() {
-  useSEO("Nível 1 — Fundamentos", "Probabilidade, odds e Valor Esperado do zero: a base matemática para apostar com lógica.");
+  useSEO("Nível 1 — Fundamentos", "Probabilidade, odds e Valor Esperado do zero: a base matemática para operar com lógica.");
   useEffect(() => {
     awardPoints("level_visited", "Visitou o Nível 1 — Fundamentos", "level_visited_1");
   }, []);

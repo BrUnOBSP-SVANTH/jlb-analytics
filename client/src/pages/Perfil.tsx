@@ -326,7 +326,7 @@ export default function Perfil() {
                 <p className="text-sm text-muted-foreground">Nenhuma previsão ainda.</p>
                 <Link href="/apostas">
                   <span className="text-xs text-primary hover:underline">
-                    Registre sua primeira previsão em Apostas →
+                    Registre sua primeira previsão em Mercados →
                   </span>
                 </Link>
               </div>

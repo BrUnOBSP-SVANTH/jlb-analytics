@@ -17,8 +17,8 @@ const STEPS = [
   {
     icon: Flame,
     iconColor: "text-orange-400",
-    title: "Apostas ao Vivo",
-    description: "Acompanhe o que o mundo está apostando em tempo real.",
+    title: "Mercados ao Vivo",
+    description: "Acompanhe o que o mundo está negociando em tempo real.",
     detail: "Polymarket + Kalshi + Reddit — probabilidades, volume e análise de IA para cada mercado.",
   },
   {

@@ -19,8 +19,8 @@ const STORAGE_KEY = "jlb_chat_history_v1";
 const MAX_STORED = 30;
 
 const SUGGESTIONS = [
-  "O que é valor esperado numa aposta?",
-  "Como o Critério de Kelly define o tamanho da aposta?",
+  "O que é valor esperado numa posição?",
+  "Como o Critério de Kelly define o tamanho da posição?",
   "Como ler a probabilidade de um mercado do Polymarket?",
 ];
 
@@ -238,7 +238,7 @@ export default function ChatPanel({ open, onClose, onReady }: { open: boolean; o
           <Sparkles className="w-4 h-4 text-primary" aria-hidden="true" />
           <div>
             <p className="text-sm font-semibold text-foreground leading-none">Analista JLB</p>
-            <p className="text-[10px] text-muted-foreground mt-0.5">Educacional — nunca recomenda apostas</p>
+            <p className="text-[10px] text-muted-foreground mt-0.5">Educacional — nunca recomenda posições</p>
           </div>
         </div>
         {messages.length > 0 && (

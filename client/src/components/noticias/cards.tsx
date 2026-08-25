@@ -97,7 +97,7 @@ export function ArticleCard({ article, onCardClick }: { article: Article; onCard
       onClick={() => onCardClick(article)}
       onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") onCardClick(article); }}
       className="group cursor-pointer glass-card rounded-xl p-5 hover:border-gold/30 transition-colors space-y-3"
-      aria-label={`Analisar apostas para: ${article.title}`}
+      aria-label={`Analisar mercados para: ${article.title}`}
     >
       {/* Image */}
       {article.imageUrl && (
@@ -146,7 +146,7 @@ export function ArticleCard({ article, onCardClick }: { article: Article; onCard
       <div className="flex items-center justify-between pt-1 border-t border-border/20">
         <div className="flex items-center gap-1 text-[11px] text-gold font-medium">
           <Zap className="w-3 h-3" aria-hidden="true" />
-          Ver apostas relacionadas
+          Ver mercados relacionados
         </div>
         <a
           href={article.url}

@@ -153,7 +153,7 @@ export function ArticleDetailModal({ article, onClose }: ArticleDetailModalProps
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">
               <Zap className="w-4 h-4 text-gold shrink-0" />
-              <span className="text-xs font-semibold text-gold uppercase tracking-wide">Apostas relacionadas</span>
+              <span className="text-xs font-semibold text-gold uppercase tracking-wide">Mercados relacionados</span>
             </div>
             <p className="text-sm font-medium text-foreground leading-snug line-clamp-2">{article.title}</p>
             <div className="flex items-center gap-2 mt-1.5">
@@ -287,7 +287,7 @@ export function ArticleDetailModal({ article, onClose }: ArticleDetailModalProps
               ))}
 
               <p className="text-[10px] text-muted-foreground/50 text-center pt-2">
-                Análise educacional — não é recomendação de aposta · {result.marketsAvailable} mercados analisados
+                Análise educacional — não é recomendação de compra · {result.marketsAvailable} mercados analisados
               </p>
             </>
           )}
