@@ -298,7 +298,7 @@ function MethodologyPanel() {
             <p className="text-[11px] text-muted-foreground mt-2 italic">
               "If you bet money on the World Cup because of this model, nobody can help you." — Joachim Klement
             </p>
-            <p className="text-[10px] text-muted-foreground/50 mt-1">Histórico conforme ESPN Brasil / Klement on Investing.</p>
+            <p className="text-[10px] text-muted-foreground/50 mt-1">Histórico conforme ESPN Brasil / Klement on Investing. Campeão real de 2026: 🇪🇸 Espanha.</p>
           </div>
 
           <a
@@ -403,8 +403,9 @@ export default function KlementSection({ onClose }: { onClose: () => void }) {
         <p className="text-xs text-muted-foreground leading-relaxed">
           <strong className="text-foreground">Retrospectiva — a Copa de 2026 já terminou.</strong>{" "}
           Esta seção mostra como o modelo via o torneio <strong className="text-foreground">antes</strong> de ele começar.
-          O palpite publicado do próprio Klement para 2026 foi a <strong className="text-foreground">Holanda</strong>, que foi{" "}
-          <strong className="text-negative">eliminada</strong> — ou seja, o modelo <strong className="text-foreground">errou 2026</strong> (3 de 4 no histórico dele).
+          O campeão real foi a <strong className="text-foreground">🇪🇸 Espanha</strong>. O palpite publicado do próprio Klement para 2026 foi a{" "}
+          <strong className="text-foreground">Holanda</strong>, que foi <strong className="text-negative">eliminada</strong> — ou seja, o modelo{" "}
+          <strong className="text-foreground">errou 2026</strong> (3 de 4 no histórico dele).
           A simulação abaixo é uma re-implementação educacional nossa e pode divergir dos números exatos do Klement.
         </p>
       </div>
