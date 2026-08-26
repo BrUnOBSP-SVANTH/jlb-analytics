@@ -12,6 +12,7 @@ import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { RefreshCw, Send, Sparkles, Square, ThumbsDown, ThumbsUp, Trash2 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { track } from "@/lib/analytics";
+import { openUpgrade } from "@/lib/upgrade";
 
 interface ChatMessage { role: "user" | "assistant"; content: string }
 
@@ -126,6 +127,11 @@ export default function ChatPanel({ open, onClose, onReady }: { open: boolean; o
         const err = await res.json().catch(() => ({})) as { message?: string; error?: string };
         // Cota mensal esgotada = momento de maior intenção de upgrade do
         // funil — merece um cartão de conversão, não um erro genérico.
+        if (err.error === "login_required") {
+          openUpgrade({ reason: "login" });
+          setMessages(base);
+          return;
+        }
         if (err.error === "credits_exhausted") {
           setExhausted(true);
           setMessages(base);
@@ -290,7 +296,7 @@ export default function ChatPanel({ open, onClose, onReady }: { open: boolean; o
         ))}
         {exhausted && (
           <div className="rounded-xl border border-gold/30 bg-gold/8 px-3.5 py-3 space-y-2">
-            <p className="text-xs font-semibold text-foreground">Você usou suas 30 análises grátis do mês 🎉</p>
+            <p className="text-xs font-semibold text-foreground">Você usou suas 4 análises grátis do mês 🎉</p>
             <p className="text-[11px] text-muted-foreground leading-relaxed">
               Isso é sinal de que o método está sendo usado de verdade. No Premium as análises de IA são ilimitadas — e você apoia a plataforma.
             </p>
@@ -353,7 +359,7 @@ export default function ChatPanel({ open, onClose, onReady }: { open: boolean; o
       </form>
       {credits && credits.limit !== "unlimited" && (() => {
         const remaining = Math.max(0, Number(credits.limit) - Number(credits.used));
-        const low = remaining <= 5;
+        const low = remaining <= 2;
         return (
           <p className={`text-[10px] text-center pb-1.5 -mt-0.5 ${low ? "text-gold font-medium" : "text-muted-foreground"}`}>
             {low

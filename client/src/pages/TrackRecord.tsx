@@ -14,6 +14,7 @@ import { useSEO } from "@/hooks/useSEO";
 import { AiTrackRecord, ResultComparator } from "@/components/previsao/GuideAndTrackRecord";
 import { AccuracyAnalysis } from "@/components/previsao/AccuracyAnalysis";
 import { ShareCard } from "@/components/previsao/ShareCard";
+import MarginOfError from "@/components/MarginOfError";
 import {
   ShieldCheck, ClipboardList, Scale, Layers, ArrowRight, Sparkles, BookOpen,
 } from "lucide-react";
@@ -56,6 +57,9 @@ export default function TrackRecord() {
       />
 
       <div className="container py-10 space-y-6 max-w-4xl">
+        {/* Margem de erro em destaque — a honestidade é a tese da página */}
+        <MarginOfError />
+
         {/* ── Tese ── */}
         <AnimatedSection>
           <div className="glass-card rounded-2xl p-6 border border-positive/20 bg-positive/[0.03]">

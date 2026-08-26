@@ -16,7 +16,8 @@ import { MODEL_COUNT } from "@/lib/brand";
 import AnaliseTabs from "@/components/AnaliseTabs";
 import KlementSection from "@/components/KlementSection";
 import { supabase } from "@/lib/supabase";
-import { maybeUpgrade } from "@/lib/upgrade";
+import { maybeAuthGate } from "@/lib/upgrade";
+import MarginOfError from "@/components/MarginOfError";
 import {
   Brain, Zap, Clock, BarChart2, AlertCircle,
   ChevronDown, ChevronUp, BookOpen, Target,
@@ -191,7 +192,7 @@ export default function Previsao() {
           }),
         });
         if (!res.ok || !res.body) {
-          if (await maybeUpgrade(res)) return;   // cota mensal esgotada → paywall, não erro
+          if (await maybeAuthGate(res)) return;   // 401 login ou cota esgotada → modal, não erro
           const err = await res.json().catch(() => ({})) as { message?: string };
           throw new Error(err.message ?? `HTTP ${res.status}`);
         }
@@ -263,6 +264,9 @@ export default function Previsao() {
         {showKlement && (
           <KlementSection onClose={() => setShowKlement(false)} />
         )}
+
+        {/* Margem de erro em destaque — empresa de previsão não se vende como perfeita */}
+        <MarginOfError />
 
         {/* ── Track record verificado da IA ── */}
         <AiTrackRecord />

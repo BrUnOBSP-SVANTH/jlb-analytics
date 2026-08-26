@@ -13,7 +13,7 @@ import { track } from "@/lib/analytics";
 import type { UpgradeDetail } from "@/lib/upgrade";
 
 const BENEFITS = [
-  "Análises de IA ilimitadas (sem a cota mensal de 30)",
+  "Análises de IA ilimitadas (sem a cota mensal de 4)",
   "Previsão Guiada + Briefing por IA sem limite",
   "Histórico de previsões sincronizado na nuvem",
   "Apoio ao projeto + prioridade em novos recursos",
@@ -65,10 +65,18 @@ export default function UpgradeModal() {
   }
 
   const isCredits = detail.reason === "credits";
-  const title = isCredits ? "Você usou suas análises grátis do mês" : "Vire Premium";
-  const subtitle = isCredits
-    ? `Foram ${detail.used ?? 30} de ${detail.limit ?? 30} análises de IA. Libere ilimitado e continue de onde parou.`
+  const isLogin = detail.reason === "login";
+  const title = isLogin
+    ? "Crie sua conta grátis"
+    : isCredits ? "Você usou suas análises grátis do mês" : "Vire Premium";
+  const subtitle = isLogin
+    ? "A IA é liberada para quem tem conta — 4 análises grátis por mês, sem cartão. Leva 30 segundos."
+    : isCredits
+    ? `Foram ${detail.used ?? 4} de ${detail.limit ?? 4} análises de IA. Libere ilimitado e continue de onde parou.`
     : "Análises de IA ilimitadas, Previsão Guiada sem limite e apoio ao projeto.";
+  const benefits = isLogin
+    ? ["4 análises de IA grátis por mês", "Histórico de previsões sincronizado", "Sem cartão de crédito", "Vira Premium quando quiser"]
+    : BENEFITS;
 
   return (
     <div
@@ -76,7 +84,7 @@ export default function UpgradeModal() {
       onClick={() => setOpen(false)}
       role="dialog"
       aria-modal="true"
-      aria-label="Assinar Premium"
+      aria-label={isLogin ? "Criar conta grátis" : "Assinar Premium"}
     >
       <div
         className="glass-card rounded-2xl p-6 max-w-md w-full border border-gold/30 bg-gradient-to-br from-gold/10 to-transparent relative"
@@ -99,20 +107,20 @@ export default function UpgradeModal() {
         <p className="text-sm text-muted-foreground mb-5">{subtitle}</p>
 
         <div className="space-y-2 mb-6">
-          {BENEFITS.map((b) => (
+          {benefits.map((b) => (
             <div key={b} className="flex items-start gap-2 text-xs text-muted-foreground">
               <CheckCircle className="w-3.5 h-3.5 text-gold shrink-0 mt-0.5" /> {b}
             </div>
           ))}
         </div>
 
-        {!user ? (
+        {(!user || isLogin) ? (
           <Link href="/login">
             <span
               className="block w-full text-center px-6 py-2.5 rounded-lg bg-gold text-on-accent text-sm font-semibold hover:opacity-90 transition-opacity cursor-pointer"
               onClick={() => setOpen(false)}
             >
-              Entrar para assinar
+              {isLogin ? "Criar conta grátis" : "Entrar para assinar"}
             </span>
           </Link>
         ) : priceId ? (
@@ -141,7 +149,7 @@ export default function UpgradeModal() {
           onClick={() => setOpen(false)}
           className="w-full text-center text-[11px] text-muted-foreground/50 hover:text-muted-foreground mt-3 transition-colors"
         >
-          {isCredits ? "Continuo grátis por enquanto" : "Agora não"} · sem compromisso, cancele quando quiser
+          {isLogin ? "Agora não · conta grátis, sem cartão" : isCredits ? "Continuo grátis por enquanto · sem compromisso, cancele quando quiser" : "Agora não · sem compromisso, cancele quando quiser"}
         </button>
       </div>
     </div>

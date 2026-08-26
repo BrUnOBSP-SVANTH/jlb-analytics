@@ -9,8 +9,8 @@
  */
 
 export interface UpgradeDetail {
-  /** "credits" = estourou a cota (mostra a mensagem de limite); "manual" = CTA direto. */
-  reason: "credits" | "manual";
+  /** "credits" = estourou a cota; "manual" = CTA direto; "login" = IA exige conta grátis. */
+  reason: "credits" | "manual" | "login";
   used?: number;
   limit?: number;
 }
@@ -42,4 +42,28 @@ export async function maybeUpgrade(res: Response): Promise<boolean> {
     /* corpo não-JSON → é rate-limit puro, deixa o chamador tratar como sempre */
   }
   return false;
+}
+
+/**
+ * Gate unificado das chamadas de IA. Trata os dois "portões" e retorna `true`
+ * quando um modal assumiu (o chamador deve ENCERRAR o fluxo em silêncio):
+ *   • 401 login_required    → IA exige conta grátis: abre o modal de login.
+ *   • 429 credits_exhausted → cota grátis do mês esgotada: abre o paywall.
+ * Retorna `false` para qualquer outra resposta (inclusive 429 de rate-limit
+ * puro por rajada), deixando o chamador seguir o tratamento normal de erro.
+ */
+export async function maybeAuthGate(res: Response): Promise<boolean> {
+  if (res.status === 401) {
+    try {
+      const body = (await res.clone().json()) as { error?: string };
+      if (body?.error === "login_required") {
+        openUpgrade({ reason: "login" });
+        return true;
+      }
+    } catch {
+      /* 401 sem corpo JSON → deixa o chamador tratar */
+    }
+    return false;
+  }
+  return maybeUpgrade(res);
 }

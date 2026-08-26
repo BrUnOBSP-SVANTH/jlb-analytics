@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import AnimatedSection from "@/components/AnimatedSection";
 import MercadosTabs from "@/components/MercadosTabs";
-import { maybeUpgrade } from "@/lib/upgrade";
+import { maybeAuthGate } from "@/lib/upgrade";
 import {
   ResponsiveContainer, AreaChart, Area, XAxis, YAxis,
   Tooltip, ReferenceLine,
@@ -224,10 +224,8 @@ export default function MarketDetail() {
         }),
         signal: AbortSignal.timeout(50_000),
       });
-      if (res.status === 429) {
-        if (await maybeUpgrade(res)) { setLoadingAi(false); return; }
-        throw new Error("RATE_LIMIT");
-      }
+      if (await maybeAuthGate(res)) { setLoadingAi(false); return; }
+      if (res.status === 429) throw new Error("RATE_LIMIT");
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json() as AiResult;
       setAiAnalysis(data);

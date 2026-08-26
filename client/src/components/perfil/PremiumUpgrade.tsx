@@ -57,7 +57,7 @@ export function PremiumUpgrade({ userId, userEmail }: { userId: string; userEmai
   }
 
   const benefits = [
-    "Análises de IA ilimitadas (sem a cota mensal de 30)",
+    "Análises de IA ilimitadas (sem a cota mensal de 4)",
     "Previsão Guiada + Briefing por IA sem limite",
     "Histórico de previsões sincronizado na nuvem",
     "Apoio ao projeto + prioridade em novos recursos",

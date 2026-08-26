@@ -8,6 +8,7 @@ import { supabase } from "@/lib/supabase";
 import { getMarkets, getAllMarkets } from "@/lib/marketsCache";
 import { useSEO } from "@/hooks/useSEO";
 import CalibrationTest from "@/components/CalibrationTest";
+import MarginOfError from "@/components/MarginOfError";
 import { MODEL_COUNT } from "@/lib/brand";
 import { track } from "@/lib/analytics";
 import { Link } from "wouter";
@@ -323,6 +324,13 @@ export default function Home() {
             <span className="hidden sm:inline text-border/60">·</span>
             <span><strong className="text-foreground">Grátis</strong> para começar</span>
           </div>
+        </div>
+      </section>
+
+      {/* Margem de erro — honestidade em destaque logo após o hero */}
+      <section className="px-4 py-4 border-b border-border/20 bg-secondary/5" aria-label="Margem de erro da IA">
+        <div className="max-w-3xl mx-auto">
+          <MarginOfError />
         </div>
       </section>
 

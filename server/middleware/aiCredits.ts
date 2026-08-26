@@ -1,8 +1,8 @@
 /**
  * aiCredits middleware — JLB Analytics
  *
- * Controla consumo de chamadas de IA por usuário/IP.
- * Plano free: 30 análises por mês. Plano premium: ilimitado.
+ * Controla consumo de chamadas de IA por usuário.
+ * Plano free: 4 análises por mês (EXIGE login). Plano premium: ilimitado.
  *
  * Fluxo:
  *   1. Identifica usuário pelo header Authorization (JWT Supabase) ou por IP.
@@ -21,7 +21,7 @@ import { log } from "../lib/log.ts";
 const SUPABASE_URL = process.env.SUPABASE_URL ?? process.env.VITE_SUPABASE_URL ?? "";
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY ?? "";
 
-const FREE_LIMIT = 30;
+const FREE_LIMIT = 4;
 
 /**
  * O reset mensal no banco é um trigger BEFORE UPDATE — só dispara quando o
@@ -116,18 +116,29 @@ export async function verifyUserId(authHeader: string): Promise<string | null> {
   return userId;
 }
 
+// IA exige conta: resposta padrão para requisição sem login válido.
+function loginRequired(res: Response) {
+  return res.status(401).json({
+    error: "login_required",
+    message: "Crie uma conta grátis para usar a IA — 4 análises por mês no plano gratuito.",
+  });
+}
+
 export function aiCreditsMiddleware(req: Request, res: Response, next: NextFunction) {
-  // Sem Supabase → pass through
+  // Sem Supabase configurado → não há auth nem cota para conferir: deixa passar
+  // (degradação graciosa em dev / ambiente sem backend).
   if (!SUPABASE_URL || !SUPABASE_KEY) return next();
 
   const authHeader = String(req.headers["authorization"] ?? "");
 
-  // Sem token (ou token inválido/forjado, abaixo): anônimo — o isRateLimited
-  // por IP das rotas cuida do abuso.
-  if (!authHeader) return next();
+  // IA agora EXIGE conta: sem token (anônimo) → 401 login_required. O limite
+  // grátis de 4/mês só vale de verdade se o anônimo não puder burlar apenas
+  // não logando. Rate-limit por IP das rotas segue como defesa extra.
+  if (!authHeader) return loginRequired(res);
 
   verifyUserId(authHeader).then((userId) => {
-    if (!userId) return next();
+    // Token presente mas sem usuário válido (expirado/forjado) → pedir login.
+    if (!userId) return loginRequired(res);
 
     return getOrCreateCredits(userId).then((credits) => {
       if (!credits) return next(); // Supabase indisponível → pass through
