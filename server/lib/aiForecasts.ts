@@ -6,6 +6,7 @@ import { SUPABASE_URL, SUPABASE_KEY, supaWriteHeaders } from "./supabaseRest.ts"
 import { CATEGORY_BASE_RATES } from "./categoryRates.ts";
 import { callClaude } from "./anthropic.ts";
 import { clampFairValue } from "./ai/guardrails.ts";
+import { computeCategoryBiases, applyCategoryCalibration, type BiasMap } from "./ai/calibration.ts";
 import { extractJson } from "./extractJson.ts";
 import { getCache, setCache } from "./cache.ts";
 import { fetchCerebroContext } from "./cerebro.ts";
@@ -46,9 +47,32 @@ export async function getCalibrationMemo(): Promise<string> {
   } catch { return ""; }
 }
 
+/**
+ * Mapa de viés POR CATEGORIA (shadow do loop de calibração). Upgrade do memo
+ * global acima: aquele é agregado (~0, porque crypto −15pp e política +21pp se
+ * cancelam) e via prompt (a LLM não obedece "desloque Xpp"); este é por categoria
+ * e determinístico. Lê os resolvidos e aplica o gating de calibration.ts. Cache 6h.
+ */
+export async function getCategoryBiasMap(): Promise<BiasMap> {
+  if (!SUPABASE_URL || !SUPABASE_KEY) return {};
+  const cached = getCache<BiasMap>("ai-category-bias-map");
+  if (cached !== null) return cached;
+  try {
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/ai_forecasts?resolved=eq.true&outcome=not.is.null&select=ai_fair_value,outcome,category&order=resolved_at.desc&limit=1000`,
+      { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }, signal: AbortSignal.timeout(6_000) },
+    );
+    if (!res.ok) return {};
+    const rows = await res.json() as Array<{ ai_fair_value: number; outcome: boolean; category: string | null }>;
+    const map = computeCategoryBiases(rows.map((r) => ({ fairValue: Number(r.ai_fair_value), outcome: r.outcome, category: r.category })));
+    setCache("ai-category-bias-map", map, 6 * 3600);
+    return map;
+  } catch { return {}; }
+}
+
 export async function logAiForecast(f: {
   marketId: string; source: string; title: string; category?: string;
-  marketProb: number; aiFairValue: number; confidence?: string; model?: string;
+  marketProb: number; aiFairValue: number; aiFairValueCalibrated?: number; confidence?: string; model?: string;
 }): Promise<void> {
   if (!SUPABASE_URL || !SUPABASE_KEY) return;
   if (!f.marketId || (!f.marketId.startsWith("poly-") && !f.marketId.startsWith("kalshi-"))) return;
@@ -57,6 +81,8 @@ export async function logAiForecast(f: {
     category: f.category ?? "other", market_prob: f.marketProb,
     ai_fair_value: f.aiFairValue, confidence: f.confidence ?? "media",
   };
+  // Shadow do loop de calibração (migration 021): gravado em paralelo, não exibido.
+  if (typeof f.aiFairValueCalibrated === "number") base.ai_fair_value_calibrated = f.aiFairValueCalibrated;
   // `model` só é gravado se a coluna existir (migration 015). Antes disso, o
   // PostgREST responde 400 PGRST204 → refaz o insert sem o campo. Auto-heal:
   // funciona igual antes e depois da migration, sem env flag.
@@ -485,6 +511,7 @@ export async function seedAiForecasts(maxMarkets = 30): Promise<{ started: boole
     // O seed gera a MAIORIA das previsões do track record público — era o
     // caminho sem guardrail nenhum (fonte principal do Brier ruim da IA).
     const memo = await getCalibrationMemo();
+    const biasMap = await getCategoryBiasMap(); // shadow: viés por categoria — grava em paralelo, não muda o exibido
     for (const t of queue) {
       try {
         const catKey = t.category.toLowerCase().replace(/[^a-z]/g, "") || "other";
@@ -531,7 +558,8 @@ JSON apenas: {"fairValue": <inteiro 5-95>, "confidence": "baixa|media|alta"}`;
           } catch { if (attempt === 0) await sleep(3_000); } // backoff antes da 2ª tentativa
         }
         if (!isNaN(fv)) {
-          await logAiForecast({ marketId: t.marketId, source: t.source, title: t.title, category: t.category, marketProb: t.marketProb, aiFairValue: fv, confidence: conf, model: provider });
+          const cal = applyCategoryCalibration(fv, t.category, biasMap); // shadow — grava em paralelo, não muda o edge exibido
+          await logAiForecast({ marketId: t.marketId, source: t.source, title: t.title, category: t.category, marketProb: t.marketProb, aiFairValue: fv, aiFairValueCalibrated: cal.fairValue, confidence: conf, model: provider });
           done++;
         }
       } catch { /* pula mercado */ }
