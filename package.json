@@ -16,6 +16,7 @@
     "icons": "node scripts/generate-icons.mjs",
     "prerender": "node scripts/prerender.mjs",
     "doctor:quick": "node scripts/jlb-doctor.mjs --quick",
+    "backtest:sports": "node scripts/backtest-sports.mjs",
     "format": "prettier --write .",
     "lint": "eslint .",
     "test": "vitest run",
