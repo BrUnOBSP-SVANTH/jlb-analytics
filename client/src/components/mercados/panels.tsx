@@ -11,7 +11,7 @@ import {
 import { type TrendingItem, formatVolume, formatOdds } from "@/lib/trending";
 import { awardPoints } from "@/lib/userProgress";
 import { maybeAuthGate } from "@/lib/upgrade";
-import { VolumeTrend } from "@/components/apostas/cards";
+import { VolumeTrend } from "@/components/mercados/cards";
 
 function calcEV(yourProb: number, marketProb: number): number {
   if (marketProb <= 0 || marketProb >= 1) return 0;

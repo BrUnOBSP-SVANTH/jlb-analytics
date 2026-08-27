@@ -17,16 +17,16 @@ import { syncPushWatchlist } from "@/hooks/usePushNotifications";
 import {
   type TrendingItem, type CategoryFilter, CATEGORY_LABELS, formatVolume, fetchRedditSub, fetchPolymarketSports, fetchManifold, fetchKalshi, REDDIT_SUBS,
 } from "@/lib/trending";
-import { SourceBadge, BADGE_CONFIG } from "@/components/apostas/cards";
-import { TrendingCard } from "@/components/apostas/TrendingCard";
-import { ComparePanel } from "@/components/apostas/ComparePanel";
-import { CompactRow } from "@/components/apostas/CompactRow";
-import { LoadingSkeleton } from "@/components/apostas/LoadingSkeleton";
-import { DivergencesSection } from "@/components/apostas/DivergencesSection";
+import { SourceBadge, BADGE_CONFIG } from "@/components/mercados/cards";
+import { TrendingCard } from "@/components/mercados/TrendingCard";
+import { ComparePanel } from "@/components/mercados/ComparePanel";
+import { CompactRow } from "@/components/mercados/CompactRow";
+import { LoadingSkeleton } from "@/components/mercados/LoadingSkeleton";
+import { DivergencesSection } from "@/components/mercados/DivergencesSection";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-// formatAge foi para components/apostas/TrendingCard.tsx (único consumidor).
+// formatAge foi para components/mercados/TrendingCard.tsx (único consumidor).
 
 // ─── Comparison Panel ─────────────────────────────────────────────────────────
 

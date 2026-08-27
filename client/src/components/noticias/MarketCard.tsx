@@ -7,7 +7,7 @@ import { Link } from "wouter";
 import { Languages, ChevronUp, BookmarkPlus, Check, X as XIcon, ExternalLink, Zap, ArrowRight } from "lucide-react";
 import { type PolyMarket, parseOutcomePrices, daysLeft, formatVolume } from "@/lib/noticiasShared";
 import { CategoryBadge } from "@/components/noticias/cards";
-import { ProbHero, ProbBar } from "@/components/apostas/cards";
+import { ProbHero, ProbBar } from "@/components/mercados/cards";
 import { addPrediction, edge, kellyFraction, type StoredPrediction } from "@/lib/predictions";
 import { awardPoints } from "@/lib/userProgress";
 import { track } from "@/lib/analytics";

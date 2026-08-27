@@ -6,7 +6,7 @@ import { useState, useEffect } from "react";
 import { Link } from "wouter";
 import { Scale } from "lucide-react";
 import AnimatedSection from "@/components/AnimatedSection";
-import { publishEdges, type Divergence } from "@/components/apostas/edgeStore";
+import { publishEdges, type Divergence } from "@/components/mercados/edgeStore";
 
 export function DivergencesSection() {
   const [divs, setDivs] = useState<Divergence[]>([]);

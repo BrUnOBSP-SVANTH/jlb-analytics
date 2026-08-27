@@ -3,7 +3,7 @@
  */
 import { Scale, BookmarkCheck, Bookmark, ExternalLink } from "lucide-react";
 import { type TrendingItem, CATEGORY_LABELS, formatVolume } from "@/lib/trending";
-import { SourceBadge, MarketBadge } from "@/components/apostas/cards";
+import { SourceBadge, MarketBadge } from "@/components/mercados/cards";
 
 export function CompactRow({ item, onCompare, inCompare, onWatch, watched }: {
   item: TrendingItem;

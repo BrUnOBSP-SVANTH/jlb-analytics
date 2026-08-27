@@ -16,9 +16,9 @@ import { useLivePrice } from "@/lib/livePrices";
 import { type TrendingItem, CATEGORY_LABELS, formatVolume } from "@/lib/trending";
 import {
   ProbSparkline, MarketBadge, SentimentBadge, SourceBadge, ProbHero, ProbBar, MultiOutcomePills,
-} from "@/components/apostas/cards";
-import { NewsAnalysisPanel } from "@/components/apostas/panels";
-import { useEdge } from "@/components/apostas/edgeStore";
+} from "@/components/mercados/cards";
+import { NewsAnalysisPanel } from "@/components/mercados/panels";
+import { useEdge } from "@/components/mercados/edgeStore";
 
 function formatAge(hours: number) {
   if (hours < 1) return `${Math.round(hours * 60)}min atrás`;

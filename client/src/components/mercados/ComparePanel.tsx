@@ -4,7 +4,7 @@
 import { toast } from "sonner";
 import { Scale, Link2, X as CloseX } from "lucide-react";
 import { type TrendingItem, CATEGORY_LABELS, formatVolume } from "@/lib/trending";
-import { SourceBadge } from "@/components/apostas/cards";
+import { SourceBadge } from "@/components/mercados/cards";
 
 export function ComparePanel({ items, onClear }: { items: TrendingItem[]; onClear: () => void }) {
   const [a, b] = items;
