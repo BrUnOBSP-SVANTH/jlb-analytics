@@ -166,12 +166,18 @@ export function aiCreditsMiddleware(req: Request, res: Response, next: NextFunct
   }).catch(() => next()); // Erro (verificação ou Supabase) → pass through
 }
 
-// RPC helper — adicionar ao Supabase se quiser atomicidade no incremento
+// RPC atômica no Supabase (migration 020). O reset mensal mora AQUI: se a linha
+// é de um mês antigo, a chamada atual já conta como a 1ª do novo mês (=1) e
+// month_reset vira o mês corrente; senão, +1. Sem off-by-one (a 1ª chamada do
+// mês conta). O trigger reset_monthly_credits vira no-op de segurança.
 // CREATE OR REPLACE FUNCTION public.increment_ai_credits(p_user_id uuid)
-// RETURNS void LANGUAGE sql SECURITY DEFINER AS $$
-//   INSERT INTO public.ai_credits (user_id, used_this_month, plan)
-//   VALUES (p_user_id, 1, 'free')
+// RETURNS void LANGUAGE sql SECURITY DEFINER SET search_path = public, pg_temp AS $$
+//   INSERT INTO public.ai_credits (user_id, used_this_month, plan, month_reset)
+//   VALUES (p_user_id, 1, 'free', date_trunc('month', now())::date)
 //   ON CONFLICT (user_id) DO UPDATE
-//   SET used_this_month = ai_credits.used_this_month + 1,
+//   SET used_this_month = CASE
+//         WHEN ai_credits.month_reset < date_trunc('month', now())::date THEN 1
+//         ELSE ai_credits.used_this_month + 1 END,
+//       month_reset = date_trunc('month', now())::date,
 //       updated_at = now();
 // $$;
