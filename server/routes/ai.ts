@@ -1,6 +1,6 @@
 import { Router, type Request, type Response, type NextFunction } from "express";
 import { getCache, setCache, isRateLimited } from "../lib/cache.ts";
-import { aiCreditsMiddleware, verifyUserId, isStaleMonth } from "../middleware/aiCredits.ts";
+import { aiCreditsMiddleware, verifyUserId, isStaleMonth, FREE_LIMIT } from "../middleware/aiCredits.ts";
 import { extractJson } from "../lib/extractJson.ts";
 import { callClaude, anthropicBreakerState } from "../lib/anthropic.ts";
 import { aiMetricsSnapshot } from "../lib/ai/metrics.ts";
@@ -40,7 +40,6 @@ const ipLimit = (name: string, max: number, windowMs: number) =>
 router.get("/credits", async (req, res) => {
   const SUPABASE_URL = process.env.SUPABASE_URL ?? process.env.VITE_SUPABASE_URL ?? "";
   const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY ?? "";
-  const FREE_LIMIT = 30;
 
   if (!SUPABASE_URL || !SUPABASE_KEY) {
     return res.json({ used: 0, limit: FREE_LIMIT, plan: "free" });

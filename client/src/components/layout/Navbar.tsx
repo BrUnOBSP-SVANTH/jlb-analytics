@@ -157,7 +157,7 @@ function UserMenu() {
   }
 
   const creditUsed = credits?.used ?? 0;
-  const creditLimit = credits?.limit ?? 30;
+  const creditLimit = credits?.limit ?? 4; // fallback = cota grátis (FREE_LIMIT no servidor)
   const isPremium = credits?.plan === "premium";
   const creditPct = isPremium ? 100 : Math.min(100, (creditUsed / creditLimit) * 100);
   const creditColor = creditPct >= 90 ? "bg-negative" : creditPct >= 70 ? "bg-warning" : "bg-positive";
