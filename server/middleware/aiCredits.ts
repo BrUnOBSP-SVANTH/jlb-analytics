@@ -153,8 +153,14 @@ export function aiCreditsMiddleware(req: Request, res: Response, next: NextFunct
         });
       }
 
-      // Incrementa de forma assíncrona — não bloqueia a resposta
-      void incrementCredits(userId);
+      // Cobrança DIFERIDA: só debita 1 crédito quando houve geração REAL de IA —
+      // nunca em cache-hit (o handler seta res.locals.aiCacheHit) nem em erro
+      // (status fora de 2xx). Antes o incremento era upfront: um acerto de cache
+      // ou um 503 queimava crédito — irrelevante com 30/mês, injusto com 4/mês.
+      res.on("finish", () => {
+        const ok = res.statusCode >= 200 && res.statusCode < 300;
+        if (ok && !res.locals.aiCacheHit) void incrementCredits(userId);
+      });
 
       // Expõe info no header para o cliente poder mostrar contador
       res.setHeader("X-AI-Credits-Used", String(credits.used + 1));

@@ -22,7 +22,7 @@ export async function crossrefHandler(req: Request, res: Response) {
 
   const cacheKey = `article-crossref:${title.slice(0, 80)}`;
   const cached = getCache<object>(cacheKey);
-  if (cached) return res.json({ ...cached, cached: true });
+  if (cached) { res.locals.aiCacheHit = true; return res.json({ ...cached, cached: true }); }
 
   // Busca mercados do cache (populados pelas rotas /polymarket/markets e /kalshi/markets)
   let polyMarkets = getCache<Array<{ id: string; question: string; outcomePrices?: string; category?: string; volume?: number; eventSlug?: string; slug?: string }>>("polymarket:markets:active") ?? [];

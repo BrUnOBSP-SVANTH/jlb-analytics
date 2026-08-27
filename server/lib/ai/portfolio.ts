@@ -16,7 +16,7 @@ export async function portfolioHandler(req: Request, res: Response) {
     // Cache compartilhado (cache.ts) — expiry-on-read, sem o vazamento do Map próprio.
     const cacheKey = `portfolio:${positions.map(p => `${p.title.slice(0, 20)}${Math.round(p.entryProb * 100)}`).join("|")}`;
     const cached = getCache<object>(cacheKey);
-    if (cached) return res.json({ ...cached, cached: true });
+    if (cached) { res.locals.aiCacheHit = true; return res.json({ ...cached, cached: true }); }
 
     const positionsList = positions.map(p =>
       `- "${p.title.slice(0, 60)}": ${p.position.toUpperCase()} @ ${Math.round(p.entryProb * 100)}% entrada, atual ${Math.round((p.currentProb ?? p.entryProb) * 100)}%, USD ${p.betSize.toFixed(0)}, P&L: ${p.pnl != null ? (p.pnl >= 0 ? "+" : "") + p.pnl.toFixed(2) : "N/A"}`

@@ -123,7 +123,7 @@ router.post("/explain-edge", ipLimit("explain-edge", 10, 60_000), aiCreditsMiddl
 
   const cacheKey = `explain-edge:${title.slice(0, 60)}:${Math.round(marketProb * 100)}:${Math.round(userProb * 100)}`;
   const cached = getCache<object>(cacheKey);
-  if (cached) return res.json({ ...cached, cached: true });
+  if (cached) { res.locals.aiCacheHit = true; return res.json({ ...cached, cached: true }); }
 
   const edge = Math.round((userProb - marketProb) * 100);
   const direction = edge > 0 ? "acima" : "abaixo";
@@ -234,7 +234,7 @@ router.post("/analyze", aiCreditsMiddleware, async (req, res) => {
 
     const cacheKey = ANALYZE_CACHE_KEY(body);
     const cached = getCache<object>(cacheKey);
-    if (cached) return res.json({ ...cached, cached: true });
+    if (cached) { res.locals.aiCacheHit = true; return res.json({ ...cached, cached: true }); }
 
     const result = await runMarketAnalysis(body);
     setCache(cacheKey, result, 1800);
@@ -268,6 +268,7 @@ router.post("/analyze/stream", aiCreditsMiddleware, async (req, res) => {
   const cacheKey = ANALYZE_CACHE_KEY(body);
   const cached = getCache<object>(cacheKey);
   if (cached) {
+    res.locals.aiCacheHit = true;
     send("result", { ...cached, cached: true });
     send("done", {});
     return res.end();
@@ -291,7 +292,7 @@ router.post("/analyze/stream", aiCreditsMiddleware, async (req, res) => {
 router.get("/track-record", async (_req, res) => {
   if (!SUPABASE_URL || !SUPABASE_KEY) return res.json({ available: false });
   const cached = getCache<object>("ai-track-record");
-  if (cached) return res.json({ ...cached, cached: true });
+  if (cached) { res.locals.aiCacheHit = true; return res.json({ ...cached, cached: true }); }
   try {
     const r = await fetch(`${SUPABASE_URL}/rest/v1/ai_track_record?select=*`, {
       headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` },
@@ -339,7 +340,7 @@ router.get("/resolved", async (req, res) => {
   const limit = Math.min(Math.max(parseInt(String(req.query.limit ?? "12"), 10) || 12, 1), 50);
   const cacheKey = `ai-resolved-${limit}`;
   const cached = getCache<object>(cacheKey);
-  if (cached) return res.json({ ...cached, cached: true });
+  if (cached) { res.locals.aiCacheHit = true; return res.json({ ...cached, cached: true }); }
   const BASE = "market_id,source,title,category,ai_fair_value,market_prob,outcome,resolved_at";
   const fetchRows = (withSource: boolean) => fetch(
     `${SUPABASE_URL}/rest/v1/ai_forecasts?resolved=eq.true&select=${withSource ? `${BASE},resolution_source` : BASE}&order=resolved_at.desc&limit=${limit}`,
@@ -383,7 +384,7 @@ router.get("/resolved", async (req, res) => {
 router.get("/divergences", async (_req, res) => {
   if (!SUPABASE_URL || !SUPABASE_KEY) return res.json({ divergences: [] });
   const cached = getCache<object>("ai-divergences");
-  if (cached) return res.json({ ...cached, cached: true });
+  if (cached) { res.locals.aiCacheHit = true; return res.json({ ...cached, cached: true }); }
   const divergences = await computeDivergences();
   const result = { divergences, count: divergences.length };
   setCache("ai-divergences", result, 300);
@@ -393,7 +394,7 @@ router.get("/divergences", async (_req, res) => {
 // ── Resumo Semanal JLB (digest) — conteúdo compartilhado app + email ─────────
 router.get("/weekly-digest", async (_req, res) => {
   const cached = getCache<object>("weekly-digest");
-  if (cached) return res.json({ ...cached, cached: true });
+  if (cached) { res.locals.aiCacheHit = true; return res.json({ ...cached, cached: true }); }
   try {
     const digest = await buildDigest();
     setCache("weekly-digest", digest, 1800); // 30 min
@@ -448,7 +449,7 @@ router.post("/model-predict", aiCreditsMiddleware, async (req, res) => {
 
   const cacheKey = PREDICT_CACHE_KEY(body);
   const cached = getCache<object>(cacheKey);
-  if (cached) return res.json({ ...cached, cached: true });
+  if (cached) { res.locals.aiCacheHit = true; return res.json({ ...cached, cached: true }); }
   try {
     const result = await runModelPredict(body);
     setCache(cacheKey, result, 900);
@@ -475,7 +476,7 @@ router.post("/model-predict/stream", aiCreditsMiddleware, async (req, res) => {
 
   const cacheKey = PREDICT_CACHE_KEY(body);
   const cached = getCache<object>(cacheKey);
-  if (cached) { send("result", { ...cached, cached: true }); send("done", {}); return res.end(); }
+  if (cached) { res.locals.aiCacheHit = true; send("result", { ...cached, cached: true }); send("done", {}); return res.end(); }
 
   try {
     const result = await runModelPredict(body, (step, data) => send("phase", { step, ...data }));
@@ -504,7 +505,7 @@ router.post("/reddit-context", aiCreditsMiddleware, async (req, res) => {
 
   const cacheKey = `reddit-ctx:${title.slice(0, 100)}`;
   const cached = getCache<object>(cacheKey);
-  if (cached) return res.json({ ...cached, cached: true });
+  if (cached) { res.locals.aiCacheHit = true; return res.json({ ...cached, cached: true }); }
 
   const NEWS_KEY = process.env.NEWS_API_KEY ?? "";
   // Usa o pipeline unificado com detecção de idioma
