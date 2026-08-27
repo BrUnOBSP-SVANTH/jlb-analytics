@@ -81,6 +81,70 @@ export async function getCategoryBiasMap(): Promise<BiasMap> {
   } catch { return {}; }
 }
 
+/**
+ * Status do loop de calibração em SHADOW — a régua do go-live, sem SQL na mão.
+ *
+ * Devolve (a) o mapa de viés ativo (quais categorias estão sendo corrigidas) e
+ * (b) a medição do shadow: Brier cru vs calibrado vs mercado, DEDUPLICADO por
+ * mercado (1 forecast, o mais antigo — igual à view do track record; sem isso a
+ * repetição do mesmo mercado infla o resultado). Só conta linhas que têm shadow
+ * gravado, ou seja, forecasts criados DEPOIS do shadow ligar = out-of-sample real.
+ */
+export async function getCalibrationStatus(): Promise<{
+  available: boolean;
+  biasMap?: BiasMap;
+  measured?: { n: number; rawBrier: number; shadowBrier: number; marketBrier: number; skillVsMarket: number; verdict: string };
+}> {
+  if (!SUPABASE_URL || !SUPABASE_KEY) return { available: false };
+  try {
+    const biasMap = await getCategoryBiasMap();
+    const r = await fetch(
+      `${SUPABASE_URL}/rest/v1/ai_forecasts?resolved=eq.true&outcome=not.is.null&ai_fair_value_calibrated=not.is.null&select=market_id,ai_fair_value,ai_fair_value_calibrated,market_prob,outcome,forecast_date,created_at&limit=2000`,
+      { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }, signal: AbortSignal.timeout(8_000) },
+    );
+    if (!r.ok) return { available: true, biasMap };
+    const rows = await r.json() as Array<{ market_id: string; ai_fair_value: number; ai_fair_value_calibrated: number; market_prob: number; outcome: boolean; forecast_date: string; created_at: string }>;
+
+    // Dedup por mercado (o mais antigo) — mesma regra da view 019.
+    const earliest = new Map<string, typeof rows[number]>();
+    for (const row of rows) {
+      const cur = earliest.get(row.market_id);
+      if (!cur || row.forecast_date < cur.forecast_date || (row.forecast_date === cur.forecast_date && row.created_at < cur.created_at)) {
+        earliest.set(row.market_id, row);
+      }
+    }
+    const d = Array.from(earliest.values());
+    if (d.length === 0) return { available: true, biasMap };
+
+    const mean = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length;
+    const sq = (p: number, y: number) => (p / 100 - y) ** 2;
+    const ys = d.map((x) => (x.outcome ? 1 : 0));
+    const rawBrier = mean(d.map((x, i) => sq(Number(x.ai_fair_value), ys[i])));
+    const shadowBrier = mean(d.map((x, i) => sq(Number(x.ai_fair_value_calibrated), ys[i])));
+    const marketBrier = mean(d.map((x, i) => sq(Number(x.market_prob), ys[i])));
+    const skill = marketBrier > 0 ? 1 - shadowBrier / marketBrier : 0;
+
+    const round = (v: number, p = 4) => Number(v.toFixed(p));
+    return {
+      available: true,
+      biasMap,
+      measured: {
+        n: d.length,
+        rawBrier: round(rawBrier), shadowBrier: round(shadowBrier), marketBrier: round(marketBrier),
+        skillVsMarket: round(skill, 3),
+        // Régua honesta do go-live: precisa ganhar do CRU e do MERCADO, com amostra.
+        verdict: d.length < 30
+          ? `amostra pequena (${d.length}/30) — ainda medindo`
+          : shadowBrier < rawBrier && shadowBrier < marketBrier
+            ? "calibração VENCE cru e mercado — candidata a go-live"
+            : shadowBrier < rawBrier
+              ? "melhora o cru, mas ainda não bate o mercado"
+              : "não melhorou — NÃO promover",
+      },
+    };
+  } catch { return { available: false }; }
+}
+
 export async function logAiForecast(f: {
   marketId: string; source: string; title: string; category?: string;
   marketProb: number; aiFairValue: number; aiFairValueCalibrated?: number; confidence?: string; model?: string;

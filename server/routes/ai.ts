@@ -8,7 +8,7 @@ import { embeddingsEnabled } from "../lib/embeddings.ts";
 import { embedCerebroBatch } from "../lib/cerebroEmbeddings.ts";
 import { getNewsForMarket } from "../lib/news.ts";
 import { SUPABASE_URL, SUPABASE_KEY, supaWriteHeaders } from "../lib/supabaseRest.ts";
-import { seedAiForecasts, computeDivergences } from "../lib/aiForecasts.ts";
+import { seedAiForecasts, computeDivergences, getCalibrationStatus } from "../lib/aiForecasts.ts";
 import { log } from "../lib/log.ts";
 // Lógica de domínio extraída para módulos de serviço (router fino, comportamento idêntico):
 import { buildDigest, sendWeeklyDigests } from "../lib/ai/digest.ts";
@@ -83,6 +83,13 @@ router.get("/credits", async (req, res) => {
 // estado do circuit breaker. Dado direcional para operar a IA (e decidir recarga).
 router.get("/metrics", (_req, res) => {
   res.json({ ...aiMetricsSnapshot(), breaker: anthropicBreakerState() });
+});
+
+// Status do loop de calibração (shadow) — a régua do go-live: quais categorias
+// estão sendo corrigidas e se o valor calibrado está de fato ganhando do cru e do
+// mercado nas resoluções novas. Read-only e agregado (sem dado de usuário).
+router.get("/calibration-status", async (_req, res) => {
+  res.json(await getCalibrationStatus());
 });
 
 // ── Backfill de embeddings do Cerebro (RAG semântico) ─────────────────────────
