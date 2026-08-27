@@ -59,12 +59,23 @@ export async function getCategoryBiasMap(): Promise<BiasMap> {
   if (cached !== null) return cached;
   try {
     const res = await fetch(
-      `${SUPABASE_URL}/rest/v1/ai_forecasts?resolved=eq.true&outcome=not.is.null&select=ai_fair_value,outcome,category&order=resolved_at.desc&limit=1000`,
+      `${SUPABASE_URL}/rest/v1/ai_forecasts?resolved=eq.true&outcome=not.is.null&select=market_id,ai_fair_value,outcome,category,forecast_date,created_at&order=resolved_at.desc&limit=2000`,
       { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }, signal: AbortSignal.timeout(6_000) },
     );
     if (!res.ok) return {};
-    const rows = await res.json() as Array<{ ai_fair_value: number; outcome: boolean; category: string | null }>;
-    const map = computeCategoryBiases(rows.map((r) => ({ fairValue: Number(r.ai_fair_value), outcome: r.outcome, category: r.category })));
+    const rows = await res.json() as Array<{ market_id: string; ai_fair_value: number; outcome: boolean; category: string | null; forecast_date: string; created_at: string }>;
+    // Dedup: 1 forecast por mercado (o mais ANTIGO), igual à view do track record
+    // (019). Sem isso, um mercado previsto em 6 dias contaria 6× e distorceria o
+    // viés — foi o que o item #3 revelou (backtest bruto +5,4% vs deduplicado +3,1%).
+    const earliest = new Map<string, typeof rows[number]>();
+    for (const r of rows) {
+      const cur = earliest.get(r.market_id);
+      if (!cur || r.forecast_date < cur.forecast_date || (r.forecast_date === cur.forecast_date && r.created_at < cur.created_at)) {
+        earliest.set(r.market_id, r);
+      }
+    }
+    const deduped = Array.from(earliest.values(), (r) => ({ fairValue: Number(r.ai_fair_value), outcome: r.outcome, category: r.category }));
+    const map = computeCategoryBiases(deduped);
     setCache("ai-category-bias-map", map, 6 * 3600);
     return map;
   } catch { return {}; }
