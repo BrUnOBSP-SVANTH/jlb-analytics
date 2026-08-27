@@ -90,6 +90,8 @@ router.get("/metrics", (_req, res) => {
 // Embeda em lote os artigos ativos que ainda não têm vetor. Idempotente e
 // bounded (chame repetidamente até remaining=0; um cron pode fazer isso). Só
 // funciona após aplicar a migração 016_cerebro_embeddings.sql.
+// EXCEÇÃO ao login-gate de IA (de propósito): é manutenção do corpus RAG (mesmo
+// código do cron), não análise de usuário — por isso fica fora do aiCreditsMiddleware.
 router.post("/embed-cerebro", async (req, res) => {
   if (!SUPABASE_URL || !SUPABASE_KEY) return res.status(503).json({ error: "supabase ausente" });
   if (!embeddingsEnabled()) return res.status(503).json({ error: "GEMINI_API_KEY ausente" });
@@ -551,7 +553,9 @@ JSON exato:
 });
 
 // ── Daily Briefing ────────────────────────────────────────────────────────────
-
+// EXCEÇÃO ao login-gate de IA (de propósito): o briefing é conteúdo diário
+// COMPARTILHADO (um por dia pra todos, cacheado), não geração por usuário — e é o
+// gancho "primeiro valor sem login" da Home. Gatear quebraria a aquisição.
 router.get("/daily-briefing", ipLimit("briefing", 20, 60_000), dailyBriefingHandler);
 
 // ── Portfolio Analysis ────────────────────────────────────────────────────────
