@@ -10,6 +10,7 @@ import PageHeader from "@/components/PageHeader";
 import AnimatedSection from "@/components/AnimatedSection";
 import MercadosTabs from "@/components/MercadosTabs";
 import { getAllMarkets } from "@/lib/marketsCache";
+import { maybeAuthGate } from "@/lib/upgrade";
 import {
   Plus, Trash2, ExternalLink,
   RefreshCw, Info, BarChart2, Download, Sparkles,
@@ -453,6 +454,7 @@ function PortfolioAnalysisPanel({ positions }: { positions: PortfolioPosition[] 
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ positions: payload }),
       });
+      if (await maybeAuthGate(res)) return;   // 401 login ou 429 cota → modal assume
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json() as PortfolioAnalysisResult;
       setResult(data);

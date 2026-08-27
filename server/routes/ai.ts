@@ -492,7 +492,7 @@ router.post("/model-predict/stream", aiCreditsMiddleware, async (req, res) => {
 
 // ── Reddit Context ────────────────────────────────────────────────────────────
 
-router.post("/reddit-context", async (req, res) => {
+router.post("/reddit-context", aiCreditsMiddleware, async (req, res) => {
   if (!process.env.ANTHROPIC_API_KEY) return res.status(503).json({ error: "ANTHROPIC_API_KEY não configurada." });
 
   const ip = req.ip ?? "unknown";
@@ -555,12 +555,12 @@ router.get("/daily-briefing", ipLimit("briefing", 20, 60_000), dailyBriefingHand
 
 // ── Portfolio Analysis ────────────────────────────────────────────────────────
 
-router.post("/portfolio-analysis", ipLimit("portfolio", 6, 60_000), portfolioHandler);
+router.post("/portfolio-analysis", ipLimit("portfolio", 6, 60_000), aiCreditsMiddleware, portfolioHandler);
 
 // ── Article Cross-Reference ───────────────────────────────────────────────────
 // Dado um artigo de notícias, busca os mercados preditivos relacionados e faz
 // uma avaliação honesta da probabilidade real, podendo discordar do preço do mercado.
 
-router.post("/article-crossref", ipLimit("crossref", 10, 60_000), crossrefHandler);
+router.post("/article-crossref", ipLimit("crossref", 10, 60_000), aiCreditsMiddleware, crossrefHandler);
 
 export default router;

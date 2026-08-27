@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { useModalA11y } from "@/hooks/useModalA11y";
 import { type Article, timeAgoISO } from "@/lib/noticiasShared";
+import { maybeAuthGate } from "@/lib/upgrade";
 
 
 // ── Article Cross-Reference types ─────────────────────────────────────────
@@ -105,6 +106,7 @@ export function ArticleDetailModal({ article, onClose }: ArticleDetailModalProps
           body: JSON.stringify({ title: article.title, description: article.description }),
           signal: AbortSignal.timeout(35_000),
         });
+        if (await maybeAuthGate(res)) return;   // 401 login ou 429 cota → modal assume
         if (!res.ok) {
           if (res.status === 429) throw new Error("rate_limited");
           throw new Error(`http_${res.status}`);
