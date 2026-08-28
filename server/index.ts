@@ -27,6 +27,7 @@ import redditRouter   from "./routes/reddit.ts";
 import newsRouter     from "./routes/news.ts";
 import aiRouter, { sendWeeklyDigests } from "./routes/ai.ts";
 import { scoreAiForecasts, seedAiForecasts } from "./lib/aiForecasts.ts";
+import { resolveUserPredictions } from "./lib/userPredictions.ts";
 import { runDailyEmbedBackfill } from "./lib/cerebroEmbeddings.ts";
 import stripeRouter   from "./routes/stripe.ts";
 import manifoldRouter from "./routes/manifold.ts";
@@ -616,6 +617,13 @@ async function startServer() {
     setTimeout(() => { void scoreAiForecasts(); void resolveActiveDuels(); }, 3 * 60_000);
     setInterval(() => { void scoreAiForecasts(); void resolveActiveDuels(); }, 6 * 60 * 60 * 1000); // a cada 6h
     log.info("   AI track record + duelos: scoring automático a cada 6h ✅");
+
+    // Previsões DO USUÁRIO: antes só resolviam quando ele abria o Dashboard —
+    // quem sumia nunca via o resultado nem tinha motivo pra voltar (laço morto).
+    // Agora o servidor resolve pelo settlement oficial e avisa por push.
+    setTimeout(() => { void resolveUserPredictions(); }, 5 * 60_000);
+    setInterval(() => { void resolveUserPredictions(); }, 6 * 60 * 60 * 1000);
+    log.info("   Previsões do usuário: resolução oficial + push de retorno, a cada 6h ✅");
 
     // Seed de previsões da IA: 4min após o boot, depois a cada 6h. Frequência
     // subiu de 24h→6h porque o seed agora é news-aware (lê o Cerebro): rodar

@@ -52,7 +52,7 @@ async function loadSubscriptions(): Promise<StoredSub[]> {
 }
 
 /** Envia um payload para todas as assinaturas de um usuário (limpa as mortas). */
-async function pushToUser(userId: string, payload: { title: string; body: string; url: string }): Promise<number> {
+export async function pushToUser(userId: string, payload: { title: string; body: string; url: string }): Promise<number> {
   if (!pushEnabled()) return 0;
   const subs = (await loadSubscriptions()).filter((s) => s.user_id === userId);
   if (subs.length === 0) return 0;
