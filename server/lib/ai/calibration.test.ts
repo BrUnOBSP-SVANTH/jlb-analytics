@@ -3,8 +3,35 @@ import {
   normalizeCategory,
   computeCategoryBiases,
   applyCategoryCalibration,
+  deficitWeight,
   type ResolvedForecast,
 } from "./calibration.ts";
+
+describe("deficitWeight — amostrar onde a prova é fina", () => {
+  it("categoria zerada tem prioridade máxima (4x)", () => {
+    expect(deficitWeight(0)).toBe(4);
+  });
+
+  it("categoria saturada perde o boost, mas não zera", () => {
+    expect(deficitWeight(30)).toBe(1);
+    expect(deficitWeight(82)).toBe(1); // esports hoje — nunca negativo
+  });
+
+  it("desce continuamente conforme a amostra engorda", () => {
+    const w2 = deficitWeight(2);    // economia hoje
+    const w15 = deficitWeight(15);  // política hoje
+    expect(w2).toBeGreaterThan(w15);
+    expect(w15).toBeGreaterThan(deficitWeight(29));
+  });
+
+  it("respeita alvo customizado", () => {
+    expect(deficitWeight(50, 100)).toBe(2.5); // metade do caminho
+  });
+
+  it("trata contagem negativa como zero (defensivo)", () => {
+    expect(deficitWeight(-5)).toBe(4);
+  });
+});
 
 describe("normalizeCategory — taxonomia canônica", () => {
   it("agrupa variações de crypto", () => {

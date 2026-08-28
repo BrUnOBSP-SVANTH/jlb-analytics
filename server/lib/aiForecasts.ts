@@ -6,7 +6,10 @@ import { SUPABASE_URL, SUPABASE_KEY, supaWriteHeaders } from "./supabaseRest.ts"
 import { CATEGORY_BASE_RATES } from "./categoryRates.ts";
 import { callClaude } from "./anthropic.ts";
 import { clampFairValue } from "./ai/guardrails.ts";
-import { computeCategoryBiases, applyCategoryCalibration, type BiasMap } from "./ai/calibration.ts";
+import {
+  computeCategoryBiases, applyCategoryCalibration, normalizeCategory, deficitWeight,
+  type BiasMap, type CanonicalCategory,
+} from "./ai/calibration.ts";
 import { extractJson } from "./extractJson.ts";
 import { getCache, setCache } from "./cache.ts";
 import { fetchCerebroContext } from "./cerebro.ts";
@@ -143,6 +146,51 @@ export async function getCalibrationStatus(): Promise<{
       },
     };
   } catch { return { available: false }; }
+}
+
+/**
+ * Peso de DÉFICIT por categoria — onde a amostra ainda é fina.
+ *
+ * O gargalo real (medido em 2026-08-27): esports já tem 82 resolvidos e economia
+ * tem 2, mas o seed não sabia disso e continuava enchendo o que já estava
+ * saturado. Sem n≥30 por categoria (o mesmo limiar que a plataforma exige para
+ * Brier estável) não dá para calibrar por segmento — trava os itens 01 e 05.
+ *
+ * Peso contínuo: categoria zerada vale ~4×, categoria já em 30+ vale 1× (sem
+ * boost). Deduplicado por mercado, como a view do track record.
+ */
+export async function getCategoryDeficitWeights(target = 30): Promise<Map<CanonicalCategory, number>> {
+  const cached = getCache<Array<[CanonicalCategory, number]>>("ai-category-deficits");
+  if (cached !== null) return new Map(cached);
+  const weights = new Map<CanonicalCategory, number>();
+  if (!SUPABASE_URL || !SUPABASE_KEY) return weights;
+  try {
+    const r = await fetch(
+      `${SUPABASE_URL}/rest/v1/ai_forecasts?resolved=eq.true&outcome=not.is.null&select=market_id,category,forecast_date,created_at&limit=2000`,
+      { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }, signal: AbortSignal.timeout(6_000) },
+    );
+    if (!r.ok) return weights;
+    const rows = await r.json() as Array<{ market_id: string; category: string | null; forecast_date: string; created_at: string }>;
+
+    const earliest = new Map<string, typeof rows[number]>();
+    for (const row of rows) {
+      const cur = earliest.get(row.market_id);
+      if (!cur || row.forecast_date < cur.forecast_date || (row.forecast_date === cur.forecast_date && row.created_at < cur.created_at)) {
+        earliest.set(row.market_id, row);
+      }
+    }
+    const counts = new Map<CanonicalCategory, number>();
+    earliest.forEach((row) => {
+      const b = normalizeCategory(row.category);
+      counts.set(b, (counts.get(b) ?? 0) + 1);
+    });
+    // Toda categoria conhecida entra: as ausentes (n=0) são justamente as que mais precisam.
+    for (const b of ["crypto", "politics", "sports", "tennis", "esports", "culture", "economy", "science", "climate", "other"] as CanonicalCategory[]) {
+      weights.set(b, deficitWeight(counts.get(b) ?? 0, target));
+    }
+    setCache("ai-category-deficits", Array.from(weights.entries()), 6 * 3600);
+    return weights;
+  } catch { return weights; }
 }
 
 export async function logAiForecast(f: {
@@ -564,11 +612,19 @@ export async function seedAiForecasts(maxMarkets = 30): Promise<{ started: boole
   // — e os de maior volume são perpétuos ("Elon a Marte 2099", "próximo Papa", eleição
   // 2028) que NUNCA liquidam, então o track record não ganhava resultados oficiais.
   // Agora: tier de urgência primeiro (quanto antes fecha = mais retorno), volume desempata.
+  // DÉFICIT: onde a amostra ainda é fina (n < 30 resolvidos na categoria). Sem isso
+  // o seed continuava enchendo esports (82 resolvidos) e ignorando economia (2) —
+  // e sem n≥30 por categoria não dá para calibrar por segmento.
+  const deficits = await getCategoryDeficitWeights();
+  const priority = (t: { category: string }) =>
+    categoryEdgeWeight(t.category) * (deficits.get(normalizeCategory(t.category)) ?? 1);
+
   const queue = (fresh.length >= Math.min(6, maxMarkets) ? fresh : pool)
     .sort((a, b) => {
-      // 1º: categoria onde a IA TEM edge (política/economia) antes de esporte eficiente.
-      const w = categoryEdgeWeight(b.category) - categoryEdgeWeight(a.category);
-      if (w !== 0) return w;
+      // 1º: prioridade = edge da categoria × déficit de amostra. Onde a IA ganha E
+      // onde ainda falta prova vem primeiro; categoria saturada perde o boost.
+      const w = priority(b) - priority(a);
+      if (Math.abs(w) > 0.01) return w > 0 ? 1 : -1;
       // 2º: resolve cedo (enche a prova rápido). 3º: volume.
       const d = tierForClose(b.closeMs, now) - tierForClose(a.closeMs, now);
       return d !== 0 ? d : (b.volume - a.volume);

@@ -103,6 +103,18 @@ export function computeCategoryBiases(rows: ResolvedForecast[], opts: Calibratio
   return map;
 }
 
+/**
+ * Peso de amostragem por DÉFICIT: quanto mais longe do alvo (n resolvidos por
+ * categoria), maior a prioridade no seed. Categoria zerada vale 4×; já saturada
+ * (n ≥ alvo) vale 1× — sem boost, mas nunca zero (continua elegível se for a
+ * única opção). Puro e testável; a leitura do banco vive em aiForecasts.
+ */
+export function deficitWeight(resolvedCount: number, target = 30): number {
+  const n = Math.max(0, resolvedCount);
+  const deficit = Math.max(0, target - n) / target; // 1 = zerada, 0 = saturada
+  return Number((1 + 3 * deficit).toFixed(2));
+}
+
 // ── Aplicação (o que roda em cada análise) ────────────────────────────────────
 
 export interface CalibrationResult {
