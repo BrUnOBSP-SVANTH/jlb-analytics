@@ -36,14 +36,22 @@ const doResolve = has("resolve") || (!has("predict") && !has("resolve"));
 
 // ── Credenciais (.env, mesmo padrão do jlb-doctor) ───────────────────────────
 
+/**
+ * process.env PRIMEIRO: em produção (Render/cron do servidor) não existe .env —
+ * as variáveis vêm do ambiente e são herdadas pelo spawn. O arquivo é só o
+ * conforto do dev local. Sem esta ordem o job silenciosamente abortava em prod.
+ */
 function loadEnv() {
-  const f = join(ROOT, ".env");
-  if (!existsSync(f)) return {};
-  return Object.fromEntries(
-    readFileSync(f, "utf8").split("\n")
-      .map((l) => l.trim()).filter((l) => l && !l.startsWith("#"))
-      .map((l) => { const i = l.indexOf("="); return [l.slice(0, i).trim(), l.slice(i + 1).trim()]; }),
-  );
+  const fromFile = (() => {
+    const f = join(ROOT, ".env");
+    if (!existsSync(f)) return {};
+    return Object.fromEntries(
+      readFileSync(f, "utf8").split("\n")
+        .map((l) => l.trim()).filter((l) => l && !l.startsWith("#"))
+        .map((l) => { const i = l.indexOf("="); return [l.slice(0, i).trim(), l.slice(i + 1).trim()]; }),
+    );
+  })();
+  return { ...fromFile, ...Object.fromEntries(Object.entries(process.env).filter(([, v]) => v)) };
 }
 const env = loadEnv();
 const SUPABASE_URL = env.SUPABASE_URL || env.VITE_SUPABASE_URL;

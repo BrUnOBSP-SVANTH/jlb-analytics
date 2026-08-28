@@ -82,6 +82,33 @@ async function runCerebroCollection() {
   log.info("[cerebro] Síntese concluída.");
 }
 
+/**
+ * Track record PROSPECTIVO dos modelos esportivos: resolve as previsões dos jogos
+ * que já aconteceram (contra o placar oficial) e grava a previsão dos próximos
+ * ANTES da bola rolar. É o que sustenta o pivô de apostas com prova, não retórica.
+ * Roda o mesmo script do `pnpm sports:forecast` — uma só implementação.
+ */
+const SCRIPTS_DIR = path.resolve(__dirname, "..", "scripts");
+
+function runSportsForecast(): Promise<void> {
+  return new Promise((resolve) => {
+    const child = spawn(process.execPath, [path.join(SCRIPTS_DIR, "sports-forecast.mjs")], {
+      env: { ...process.env },
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+    child.stdout.on("data", (d: Buffer) => process.stdout.write(`[sports] ${d}`));
+    child.stderr.on("data", (d: Buffer) => process.stderr.write(`[sports] ${d}`));
+    child.on("close", (code) => {
+      if (code !== 0) log.warn(`[sports] forecast saiu com código ${code}`);
+      resolve();
+    });
+    child.on("error", (err) => {
+      log.warn(`[sports] não foi possível iniciar o forecast: ${err.message}`);
+      resolve();
+    });
+  });
+}
+
 async function runMarketSnapshots() {
   if (!process.env.SUPABASE_SERVICE_KEY) {
     log.warn("[snapshots] SUPABASE_SERVICE_KEY ausente — snapshots desativados.");
@@ -608,6 +635,13 @@ async function startServer() {
     setTimeout(() => { void runDailyEmbedBackfill(); }, 6 * 60_000);
     setInterval(() => { void runDailyEmbedBackfill(); }, 24 * 60 * 60 * 1000);
     log.info("   Embeddings Cerebro: backfill diário (~800/dia, respeita a cota free) ✅");
+
+    // Modelos esportivos: 8min após o boot, depois 2×/dia. Prever cedo importa —
+    // a previsão só vale se estiver gravada ANTES do jogo; e resolver 2×/dia
+    // fecha as rodadas do fim de semana sem esperar um dia inteiro.
+    setTimeout(() => { void runSportsForecast(); }, 8 * 60_000);
+    setInterval(() => { void runSportsForecast(); }, 12 * 60 * 60 * 1000);
+    log.info("   Esportes: previsão dos próximos jogos + resolução, 2×/dia ✅");
   } else {
     log.warn("   Cerebro/Snapshots: SUPABASE_SERVICE_KEY ausente — coleta manual apenas.");
   }
