@@ -8,7 +8,8 @@ import { embeddingsEnabled } from "../lib/embeddings.ts";
 import { embedCerebroBatch } from "../lib/cerebroEmbeddings.ts";
 import { getNewsForMarket } from "../lib/news.ts";
 import { SUPABASE_URL, SUPABASE_KEY, supaWriteHeaders } from "../lib/supabaseRest.ts";
-import { seedAiForecasts, computeDivergences, getCalibrationStatus } from "../lib/aiForecasts.ts";
+import { seedAiForecasts, computeDivergences } from "../lib/aiForecasts.ts";
+import { getCalibrationStatus } from "../lib/calibrationData.ts";
 import { log } from "../lib/log.ts";
 // Lógica de domínio extraída para módulos de serviço (router fino, comportamento idêntico):
 import { buildDigest, sendWeeklyDigests } from "../lib/ai/digest.ts";
