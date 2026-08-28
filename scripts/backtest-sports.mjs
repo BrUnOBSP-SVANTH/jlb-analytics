@@ -15,14 +15,19 @@
  *   Poisson/DC: λcasa = atq_casa × def_fora × médiaGols × 1.10 ; τ com rho = −0.13
  *   Elo:        p = 1 / (1 + 10^((rB − rA_ajustado)/400)), vantagem de casa 65, K 32
  *
- * Uso:  node scripts/backtest-sports.mjs [--liga bra.1] [--ano 2026] [--warmup 60]
+ * Uso:  node scripts/backtest-sports.mjs [--liga bra.1] [--anos 2023,2024,2025,2026] [--warmup 60]
+ *
+ * Multi-temporada: cada ano roda ISOLADO (ratings e Elo zeram a cada temporada — time
+ * muda de elenco, carregar rating entre anos contaminaria), e as previsões
+ * out-of-sample de todos os anos são AGRUPADAS no resultado final. Mais amostra,
+ * sem misturar temporadas.
  */
 
 const args = process.argv.slice(2);
 const arg = (k, d) => { const i = args.indexOf(`--${k}`); return i >= 0 ? args[i + 1] : d; };
 
 const LEAGUE = arg("liga", "bra.1");
-const YEAR = Number(arg("ano", "2026"));
+const YEARS = String(arg("anos", arg("ano", "2026"))).split(",").map((y) => Number(y.trim())).filter(Boolean);
 const WARMUP = Number(arg("warmup", "60")); // jogos usados só para treinar (sem prever)
 
 // Constantes DO SITE (levels.ts) — o modelo sob teste é o que ensinamos.
@@ -52,18 +57,19 @@ async function fetchMonth(y, m) {
   return out;
 }
 
-async function fetchSeason() {
+async function fetchSeason(year) {
   const all = [];
   for (let m = 1; m <= 12; m++) {
-    const batch = await fetchMonth(YEAR, m);
+    const batch = await fetchMonth(year, m);
     all.push(...batch);
-    process.stdout.write(`\r  coletando… ${all.length} jogos`);
+    process.stdout.write(`\r  ${year}: coletando… ${all.length} jogos   `);
   }
-  process.stdout.write("\n");
   const seen = new Set();
-  return all
+  const games = all
     .filter((g) => { const k = `${g.date}|${g.home}|${g.away}`; if (seen.has(k)) return false; seen.add(k); return true; })
     .sort((a, b) => new Date(a.date) - new Date(b.date));
+  process.stdout.write(`\r  ${year}: ${games.length} jogos encerrados      \n`);
+  return games;
 }
 
 // ── Modelo 1: Poisson + Dixon-Coles (idêntico a levels.ts) ───────────────────
@@ -173,39 +179,47 @@ function summarize(name, preds, actuals) {
   console.log(`\n╔══════════════════════════════════════════════════════════╗`);
   console.log(`║  BACKTEST DOS MODELOS ESPORTIVOS — dados REAIS (ESPN)     ║`);
   console.log(`╚══════════════════════════════════════════════════════════╝`);
-  console.log(`  liga=${LEAGUE}  temporada=${YEAR}  warmup=${WARMUP} jogos\n`);
-
-  const games = await fetchSeason();
-  if (games.length < WARMUP + 20) {
-    console.log(`\n  ⚠️  Só ${games.length} jogos encerrados — amostra insuficiente para um teste honesto.`);
-    console.log(`      (precisa de warmup ${WARMUP} + ao menos 20 para prever). Abortando sem inventar número.\n`);
-    process.exit(0);
-  }
-  console.log(`  ${games.length} jogos encerrados coletados.`);
-  console.log(`  Treino inicial: ${WARMUP} · Previstos (out-of-sample): ${games.length - WARMUP}\n`);
-
-  const elo = new Map();
-  for (let i = 0; i < WARMUP; i++) updateElo(elo, games[i]); // aquece o Elo sem prever
+  console.log(`  liga=${LEAGUE}  temporadas=${YEARS.join(", ")}  warmup=${WARMUP} jogos/temporada\n`);
 
   const preds = { poisson: [], elo: [], baseline: [] };
   const actuals = [];
+  const perSeason = [];
 
-  for (let i = WARMUP; i < games.length; i++) {
-    const g = games[i];
-    const history = games.slice(0, i);                       // SÓ o passado
+  for (const year of YEARS) {
+    const games = await fetchSeason(year);
+    if (games.length < WARMUP + 20) {
+      console.log(`     ↳ pulada: amostra insuficiente (precisa de ${WARMUP}+20).`);
+      continue;
+    }
 
-    const { ratings, leagueAvg } = ratingsFrom(history);
-    const counts = history.reduce((a, m) => { a[outcomeIndex(m)]++; return a; }, [0, 0, 0]);
-    const baseRates = counts.map((c) => c / history.length);  // base rate da liga (baseline)
-    const drawRate = baseRates[1];
+    const elo = new Map();                                   // Elo zera a cada temporada
+    for (let i = 0; i < WARMUP; i++) updateElo(elo, games[i]); // aquece sem prever
+    const before = actuals.length;
 
-    preds.poisson.push(predictPoisson(g.home, g.away, ratings, leagueAvg));
-    preds.elo.push(predictElo(elo.get(g.home) ?? ELO.start, elo.get(g.away) ?? ELO.start, drawRate));
-    preds.baseline.push(baseRates);
-    actuals.push(outcomeIndex(g));
+    for (let i = WARMUP; i < games.length; i++) {
+      const g = games[i];
+      const history = games.slice(0, i);                     // SÓ o passado DESTA temporada
 
-    updateElo(elo, g); // só DEPOIS de prever
+      const { ratings, leagueAvg } = ratingsFrom(history);
+      const counts = history.reduce((a, m) => { a[outcomeIndex(m)]++; return a; }, [0, 0, 0]);
+      const baseRates = counts.map((c) => c / history.length); // base rate da liga (baseline)
+      const drawRate = baseRates[1];
+
+      preds.poisson.push(predictPoisson(g.home, g.away, ratings, leagueAvg));
+      preds.elo.push(predictElo(elo.get(g.home) ?? ELO.start, elo.get(g.away) ?? ELO.start, drawRate));
+      preds.baseline.push(baseRates);
+      actuals.push(outcomeIndex(g));
+
+      updateElo(elo, g); // só DEPOIS de prever
+    }
+    perSeason.push({ year, previstos: actuals.length - before });
   }
+
+  if (actuals.length === 0) {
+    console.log(`\n  ⚠️  Nenhuma temporada com amostra suficiente. Abortando sem inventar número.\n`);
+    process.exit(0);
+  }
+  console.log(`\n  Previstos (out-of-sample): ${actuals.length}  [${perSeason.map((s) => `${s.year}: ${s.previstos}`).join(" · ")}]\n`);
 
   const rows = [
     summarize("Poisson + Dixon-Coles", preds.poisson, actuals),
