@@ -30,137 +30,22 @@ const LEAGUE = arg("liga", "bra.1");
 const YEARS = String(arg("anos", arg("ano", "2026"))).split(",").map((y) => Number(y.trim())).filter(Boolean);
 const WARMUP = Number(arg("warmup", "60")); // jogos usados só para treinar (sem prever)
 
-// Constantes DO SITE (levels.ts) — o modelo sob teste é o que ensinamos.
-const POISSON = { maxGoals: 10, rho: -0.13, homeAdv: 1.10 };
-const ELO = { kBase: 32, homeAdvantage: 65, start: 1500 };
+import {
+  fetchFinishedSeason, ratingsFrom, predictPoisson, predictElo, updateElo,
+  baseRatesFrom, brier, outcomeIndex, ELO,
+} from "./lib/sports-models.mjs";
 
-// ── Coleta: ESPN scoreboard (público, sem chave) ─────────────────────────────
+// Modelos, coleta e métricas vivem em lib/sports-models.mjs — COMPARTILHADOS com o
+// preditor prospectivo (sports-forecast.mjs). Duas implementações do mesmo modelo
+// divergiriam e os números deixariam de ser comparáveis.
 
-async function fetchMonth(y, m) {
-  const start = `${y}${String(m).padStart(2, "0")}01`;
-  const endDay = new Date(y, m, 0).getDate();
-  const end = `${y}${String(m).padStart(2, "0")}${endDay}`;
-  const url = `https://site.api.espn.com/apis/site/v2/sports/soccer/${LEAGUE}/scoreboard?dates=${start}-${end}&limit=400`;
-  const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
-  if (!res.ok) return [];
-  const data = await res.json();
-  const out = [];
-  for (const ev of data.events ?? []) {
-    const c = ev.competitions?.[0];
-    if (!c?.status?.type?.completed) continue;           // só jogos encerrados
-    const home = c.competitors.find((x) => x.homeAway === "home");
-    const away = c.competitors.find((x) => x.homeAway === "away");
-    const hg = Number(home?.score), ag = Number(away?.score);
-    if (!home || !away || !Number.isFinite(hg) || !Number.isFinite(ag)) continue;
-    out.push({ date: ev.date, home: home.team.displayName, away: away.team.displayName, hg, ag });
-  }
-  return out;
-}
-
-async function fetchSeason(year) {
-  const all = [];
-  for (let m = 1; m <= 12; m++) {
-    const batch = await fetchMonth(year, m);
-    all.push(...batch);
-    process.stdout.write(`\r  ${year}: coletando… ${all.length} jogos   `);
-  }
-  const seen = new Set();
-  const games = all
-    .filter((g) => { const k = `${g.date}|${g.home}|${g.away}`; if (seen.has(k)) return false; seen.add(k); return true; })
-    .sort((a, b) => new Date(a.date) - new Date(b.date));
-  process.stdout.write(`\r  ${year}: ${games.length} jogos encerrados      \n`);
+const fetchSeason = async (year) => {
+  const games = await fetchFinishedSeason(LEAGUE, year, (n) =>
+    process.stdout.write(`  ${year}: coletando… ${n} jogos   `));
+  process.stdout.write(`  ${year}: ${games.length} jogos encerrados      
+`);
   return games;
-}
-
-// ── Modelo 1: Poisson + Dixon-Coles (idêntico a levels.ts) ───────────────────
-
-function poissonPmf(k, lam) {
-  if (lam <= 0) return k === 0 ? 1 : 0;
-  let logP = -lam + k * Math.log(lam);
-  for (let i = 1; i <= k; i++) logP -= Math.log(i);
-  return Math.exp(logP);
-}
-
-/** Forças atk/def multiplicativas (relativas à média da liga) a partir do histórico. */
-function ratingsFrom(history) {
-  const s = new Map();
-  const get = (t) => { if (!s.has(t)) s.set(t, { gf: 0, ga: 0, n: 0 }); return s.get(t); };
-  let goals = 0;
-  for (const g of history) {
-    const h = get(g.home), a = get(g.away);
-    h.gf += g.hg; h.ga += g.ag; h.n++;
-    a.gf += g.ag; a.ga += g.hg; a.n++;
-    goals += g.hg + g.ag;
-  }
-  const leagueAvg = history.length ? goals / (history.length * 2) : 1.35; // gols por time por jogo
-  const out = new Map();
-  s.forEach((v, t) => {
-    out.set(t, {
-      attack: v.n && leagueAvg > 0 ? (v.gf / v.n) / leagueAvg : 1,
-      defense: v.n && leagueAvg > 0 ? (v.ga / v.n) / leagueAvg : 1,
-      n: v.n,
-    });
-  });
-  return { ratings: out, leagueAvg };
-}
-
-function predictPoisson(homeTeam, awayTeam, ratings, leagueAvg) {
-  const h = ratings.get(homeTeam) ?? { attack: 1, defense: 1 };
-  const a = ratings.get(awayTeam) ?? { attack: 1, defense: 1 };
-  const lamH = h.attack * a.defense * leagueAvg * POISSON.homeAdv;
-  const lamA = a.attack * h.defense * leagueAvg;
-
-  let pH = 0, pD = 0, pA = 0, total = 0;
-  for (let i = 0; i <= POISSON.maxGoals; i++) {
-    for (let j = 0; j <= POISSON.maxGoals; j++) {
-      let p = poissonPmf(i, lamH) * poissonPmf(j, lamA);
-      // Correção Dixon-Coles para placares baixos (dependência 0-0/1-0/0-1/1-1)
-      const rho = POISSON.rho;
-      let tau = 1;
-      if (i === 0 && j === 0) tau = 1 - lamH * lamA * rho;
-      else if (i === 1 && j === 0) tau = 1 + lamA * rho;
-      else if (i === 0 && j === 1) tau = 1 + lamH * rho;
-      else if (i === 1 && j === 1) tau = 1 - rho;
-      p *= tau;
-      total += p;
-      if (i > j) pH += p; else if (i === j) pD += p; else pA += p;
-    }
-  }
-  return total > 0 ? [pH / total, pD / total, pA / total] : [1 / 3, 1 / 3, 1 / 3];
-}
-
-// ── Modelo 2: Elo (idêntico a levels.ts) ─────────────────────────────────────
-
-function eloExpected(rHome, rAway) {
-  return 1 / (1 + Math.pow(10, (rAway - (rHome + ELO.homeAdvantage)) / 400));
-}
-
-/**
- * Elo é binário por natureza; futebol tem 3 desfechos. Convertemos usando a taxa de
- * empate OBSERVADA no treino (não um chute), dividindo o resto pela razão do Elo.
- */
-function predictElo(rHome, rAway, drawRate) {
-  const e = eloExpected(rHome, rAway);
-  return [(1 - drawRate) * e, drawRate, (1 - drawRate) * (1 - e)];
-}
-
-function updateElo(elo, g) {
-  const rH = elo.get(g.home) ?? ELO.start;
-  const rA = elo.get(g.away) ?? ELO.start;
-  const exp = eloExpected(rH, rA);
-  const score = g.hg > g.ag ? 1 : g.hg === g.ag ? 0.5 : 0;
-  elo.set(g.home, rH + ELO.kBase * (score - exp));
-  elo.set(g.away, rA + ELO.kBase * ((1 - score) - (1 - exp)));
-}
-
-// ── Métricas ─────────────────────────────────────────────────────────────────
-
-const outcomeIndex = (g) => (g.hg > g.ag ? 0 : g.hg === g.ag ? 1 : 2);
-
-/** Brier multiclasse: soma dos quadrados dos erros nos 3 desfechos (menor = melhor). */
-function brier(p, idx) {
-  return p.reduce((acc, pi, i) => acc + (pi - (i === idx ? 1 : 0)) ** 2, 0);
-}
+};
 
 function summarize(name, preds, actuals) {
   const bs = preds.map((p, i) => brier(p, actuals[i]));
@@ -201,8 +86,7 @@ function summarize(name, preds, actuals) {
       const history = games.slice(0, i);                     // SÓ o passado DESTA temporada
 
       const { ratings, leagueAvg } = ratingsFrom(history);
-      const counts = history.reduce((a, m) => { a[outcomeIndex(m)]++; return a; }, [0, 0, 0]);
-      const baseRates = counts.map((c) => c / history.length); // base rate da liga (baseline)
+      const baseRates = baseRatesFrom(history);              // base rate da liga (baseline)
       const drawRate = baseRates[1];
 
       preds.poisson.push(predictPoisson(g.home, g.away, ratings, leagueAvg));
