@@ -143,8 +143,19 @@ function checkUnusedHooksAndLibs() {
   let unused = 0;
   for (const f of targets) {
     const name = basename(f).replace(/\.tsx?$/, "");
-    // Casa import por caminho ("@/hooks/useX", "./useX") ou por símbolo nomeado.
-    const re = new RegExp(`(from\\s+["'][^"']*/${name}["']|\\b${name}\\s*\\()`);
+    const src = read(f);
+    // ⚠️ Um arquivo pode exportar símbolos com nome DIFERENTE do arquivo — o
+    // useMarketData.ts exportava useRates/useBrQuotes/useIndices/... Checar só o
+    // nome do arquivo daria falso-positivo (ou falso-negativo) em massa. Então
+    // consideramos "usado" se QUALQUER export dele aparecer em outro arquivo.
+    const exported = Array.from(
+      src.matchAll(/export\s+(?:async\s+)?(?:function|const|class)\s+([A-Za-z_$][\w$]*)/g),
+      (m) => m[1],
+    );
+    const names = Array.from(new Set([name, ...exported]));
+    const re = new RegExp(
+      `(from\\s+["'][^"']*/${name}["']|\\b(${names.join("|")})\\s*[(<]|\\b(${names.join("|")})\\b\\s*[,}])`,
+    );
     const others = corpus.filter((x) => x !== f).map(read).join("\n");
     if (!re.test(others)) {
       const loc = read(f).split("\n").length;
