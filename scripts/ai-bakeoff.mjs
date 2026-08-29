@@ -72,9 +72,13 @@ async function askGroq(model, system, prompt) {
   return d.choices?.[0]?.message?.content ?? "";
 }
 
+// gemini-flash (cheio) foi TESTADO e ELIMINADO: o free tier dá 20 requisições e
+// vive esgotado — 30/30 falhas com 429 RESOURCE_EXHAUSTED (verificado 2026-08-29).
+// Não é candidato a primário mesmo se previsse melhor: não há cota para rodar o
+// seed. Isso confirma a escolha original pelo "lite". Mantido fora da lista para
+// não zerar o subconjunto comum sozinho.
 const PROVIDERS = [
   { id: "gemini-flash-lite (ATUAL)", ask: (s, p) => askGemini("gemini-flash-lite-latest", s, p), pause: 4000 },
-  { id: "gemini-flash",              ask: (s, p) => askGemini("gemini-flash-latest", s, p),      pause: 4000 },
   { id: "groq gpt-oss-120b",         ask: (s, p) => askGroq("openai/gpt-oss-120b", s, p),        pause: 800 },
   { id: "groq gpt-oss-20b",          ask: (s, p) => askGroq("openai/gpt-oss-20b", s, p),         pause: 800 },
   { id: "groq qwen3.8-27b",          ask: (s, p) => askGroq("qwen/qwen3.8-27b", s, p),           pause: 800 },
