@@ -31,9 +31,17 @@ export async function logAiForecast(f: {
   // `model` só é gravado se a coluna existir (migration 015). Antes disso, o
   // PostgREST responde 400 PGRST204 → refaz o insert sem o campo. Auto-heal:
   // funciona igual antes e depois da migration, sem env flag.
+  // ⚠️ ignore-duplicates (NÃO merge): se já existe previsão para este mercado
+  // NESTE dia, a primeira PERMANECE. Com merge-duplicates, um segundo seed no
+  // mesmo dia sobrescrevia ai_fair_value/model mantendo o created_at original —
+  // ou seja, a previsão avaliada não era a feita no horário registrado (flagrado
+  // em 2026-08-29: linhas do Gemini de 01:01 UTC reescritas como 'groq' à tarde,
+  // horas antes do groq.ts sequer existir). Num site cuja tese é "registramos
+  // ANTES e não editamos", isso é editar o passado. A 1ª previsão é a honesta.
   const post = (row: Record<string, unknown>) =>
     fetch(`${SUPABASE_URL}/rest/v1/ai_forecasts?on_conflict=market_id,source,forecast_date`, {
-      method: "POST", headers: supaWriteHeaders(),
+      method: "POST",
+      headers: { ...supaWriteHeaders(), Prefer: "resolution=ignore-duplicates,return=minimal" },
       body: JSON.stringify(row), signal: AbortSignal.timeout(6_000),
     });
   try {
