@@ -204,10 +204,28 @@ export async function scoreAiForecasts(): Promise<{ scored: number; settled: num
     // Pendentes (nunca resolvidos) + já resolvidos mas AINDA NÃO OFICIAIS (source nulo
     // — legado pré-migration — ou 'inferred') que vamos RE-VERIFICAR contra o settlement
     // oficial. Conserta o "inferido/legado pra sempre" e é o que oficializa as %.
-    const [pending, unofficial] = await Promise.all([
-      fetchRows("resolved=eq.false&select=id,market_id,source&order=created_at.asc&limit=500"),
+    //
+    // ⚠️ FILA DIVIDIDA (não mais só "as 500 mais antigas"). O bug que isto conserta:
+    // com `order=created_at.asc&limit=500`, as previsões ANTIGAS insolúveis (mercados
+    // que nunca liquidam — a mais velha era de 21/jun) ocupavam quase todos os 500
+    // lugares em TODA execução, e as novas nunca chegavam a ser verificadas.
+    // Flagrado em 29/08: 1.056 pendentes, sendo 493 antigas; TUDO criado a partir de
+    // 26/08 (563 previsões) estava com ZERO resoluções, enquanto o cron resolvia ~45/dia
+    // só de linhas velhas. Isso congelava o track record público E os experimentos.
+    // Agora o orçamento é dividido: a maior parte para as MAIS NOVAS (que resolvem
+    // rápido — mediana de 0,7 dia) e uma fatia para o backlog antigo, que continua
+    // sendo re-tentado sem monopolizar a fila.
+    const [pendingNew, pendingOld, unofficial] = await Promise.all([
+      fetchRows("resolved=eq.false&select=id,market_id,source&order=created_at.desc&limit=350"),
+      fetchRows("resolved=eq.false&select=id,market_id,source&order=created_at.asc&limit=150"),
       fetchRows("resolved=eq.true&or=(resolution_source.is.null,resolution_source.eq.inferred)&select=id,market_id,source&order=resolved_at.asc&limit=400"),
     ]);
+    const seenPending = new Set<string>();
+    const pending = [...pendingNew, ...pendingOld].filter((f) => {
+      if (seenPending.has(f.id)) return false;   // as duas pontas podem se encontrar
+      seenPending.add(f.id);
+      return true;
+    });
     if (pending.length === 0 && unofficial.length === 0) return EMPTY;
 
     // Fonte 1 (autoritativa): resultado OFICIAL em lote para PENDENTES e NÃO-OFICIAIS.
