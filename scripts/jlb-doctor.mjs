@@ -128,6 +128,34 @@ function checkUnusedComponents() {
   line("ℹ️", paint(`(kit shadcn/ui ignorado — design system)`, c.dim));
 }
 
+// ── 3b. Hooks e libs não usados ──────────────────────────────────────────────
+// Ponto cego que existia até 29/08/2026: o doctor só auditava COMPONENTES, então
+// 428 linhas mortas em 3 hooks (useMarketData, usePositions, useRealtimeQuotes)
+// passaram despercebidas por meses. Mesma lógica dos componentes, aplicada a
+// client/src/hooks e client/src/lib — onde mora metade da lógica do front.
+function checkUnusedHooksAndLibs() {
+  section("Hooks e libs não usados");
+  const targets = [join(CLIENT_SRC, "hooks"), join(CLIENT_SRC, "lib")]
+    .filter((d) => existsSync(d))
+    .flatMap((d) => walk(d))
+    .filter((f) => (f.endsWith(".ts") || f.endsWith(".tsx")) && !f.includes(".test."));
+  const corpus = walk(CLIENT_SRC).filter((f) => !f.includes(".test."));
+  let unused = 0;
+  for (const f of targets) {
+    const name = basename(f).replace(/\.tsx?$/, "");
+    // Casa import por caminho ("@/hooks/useX", "./useX") ou por símbolo nomeado.
+    const re = new RegExp(`(from\\s+["'][^"']*/${name}["']|\\b${name}\\s*\\()`);
+    const others = corpus.filter((x) => x !== f).map(read).join("\n");
+    if (!re.test(others)) {
+      const loc = read(f).split("\n").length;
+      line("⚠️", `Sem uso: ${paint(rel(f), c.yellow)}`, `${loc} linhas — código morto`);
+      add("warn", "Código morto", `${rel(f)} não é importado (${loc} linhas)`);
+      unused++;
+    }
+  }
+  if (unused === 0) { line("✅", "Todos os hooks e libs estão em uso"); add("ok", "Código morto", "Nenhum hook/lib órfão"); }
+}
+
 // ── 4. Fetches de mercado fora do cache (escalabilidade) ─────────────────────
 function checkCentralizedFetch() {
   section("Camada de dados (fetches de mercado centralizados)");
@@ -251,14 +279,30 @@ async function checkSupabase(env) {
   if (!url || !key) { line("⚠️", "Credenciais Supabase ausentes — pulando"); return; }
   const h = { apikey: key, Authorization: `Bearer ${key}` };
 
+  // 1 retry + MOTIVO da falha. Antes: uma falha transitória virava "indisponível"
+  // sem explicação, e o catch mudo escondia se era rede, permissão ou tabela
+  // inexistente. Alarme sem causa ensina a ignorar alarme — e este script existe
+  // justamente para ser confiável. (Flagrado em 29/08: o Cérebro apareceu como
+  // "indisponível" com 19.893 artigos vivos no banco.)
+  let lastReason = "";
   async function count(table, filter = "") {
-    try {
-      const r = await fetch(`${url}/rest/v1/${table}?select=id${filter}`, {
-        method: "HEAD", headers: { ...h, Prefer: "count=exact", Range: "0-0" },
-      });
-      const cr = r.headers.get("content-range");
-      return cr ? Number(cr.split("/")[1]) : null;
-    } catch { return null; }
+    lastReason = "";
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        const r = await fetch(`${url}/rest/v1/${table}?select=id${filter}`, {
+          method: "HEAD",
+          headers: { ...h, Prefer: "count=exact", Range: "0-0" },
+          signal: AbortSignal.timeout(15_000),
+        });
+        const cr = r.headers.get("content-range");
+        if (cr) return Number(cr.split("/")[1]);
+        lastReason = `HTTP ${r.status} sem content-range`;
+      } catch (e) {
+        lastReason = e instanceof Error ? e.message.slice(0, 60) : "erro desconhecido";
+      }
+      if (attempt === 0) await new Promise((r) => setTimeout(r, 1200));
+    }
+    return null;
   }
 
   const checks = [
@@ -271,7 +315,11 @@ async function checkSupabase(env) {
   ];
   for (const [table, filter, label, min] of checks) {
     const n = await count(table, filter);
-    if (n === null) { line("⚠️", `${label}: ${paint("indisponível", c.yellow)}`); continue; }
+    if (n === null) {
+      line("⚠️", `${label}: ${paint("indisponível", c.yellow)}`, `após 2 tentativas — ${lastReason || "sem motivo reportado"}`);
+      add("warn", "Dados", `${label}: consulta falhou (${lastReason || "?"})`);
+      continue;
+    }
     const icon = n >= min ? "✅" : (min > 0 ? "⚠️" : "ℹ️");
     line(icon, `${label}: ${paint(String(n), n >= min ? c.green : c.yellow)}`);
     if (min > 0 && n < min) add("warn", "Dados", `${label} baixo (${n} < ${min})`);
@@ -465,6 +513,7 @@ function report() {
   try { checkTypeScript(); } catch (e) { add("warn", "Doctor", "checkTypeScript falhou: " + e.message); }
   try { checkOrphanPages(); } catch (e) { add("warn", "Doctor", "checkOrphanPages falhou: " + e.message); }
   try { checkUnusedComponents(); } catch (e) { add("warn", "Doctor", "checkUnusedComponents falhou: " + e.message); }
+  try { checkUnusedHooksAndLibs(); } catch (e) { add("warn", "Doctor", "checkUnusedHooksAndLibs falhou: " + e.message); }
   try { checkCentralizedFetch(); } catch (e) { add("warn", "Doctor", "checkCentralizedFetch falhou: " + e.message); }
   try { checkCodeSmells(); } catch (e) { add("warn", "Doctor", "checkCodeSmells falhou: " + e.message); }
   try { checkBigFiles(); } catch (e) { add("warn", "Doctor", "checkBigFiles falhou: " + e.message); }
