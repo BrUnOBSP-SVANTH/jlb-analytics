@@ -311,6 +311,34 @@ router.get("/track-record", async (_req, res) => {
     const rows = await r.json() as Array<Record<string, number | null>>;
     const t = rows[0] ?? {};
     const resolvedCount = Number(t.resolved_count ?? 0);
+
+    // Fatiamento POR PROVEDOR (migration 023). O número principal é a soma de
+    // modelos diferentes — hoje quase tudo é o fallback Gemini, com 0 do Claude.
+    // Sem separar, três níveis de qualidade viram um número só que ninguém
+    // consegue auditar. Mesma regra de dedup, então as partes somam o todo.
+    const byProvider = await fetch(`${SUPABASE_URL}/rest/v1/ai_track_record_by_model?select=*&order=resolved_count.desc`, {
+      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` },
+      signal: AbortSignal.timeout(8_000),
+    })
+      .then((pr) => pr.ok ? pr.json() as Promise<Array<Record<string, number | string | null>>> : [])
+      .then((provRows) => provRows
+        .filter((p) => Number(p.resolved_count ?? 0) > 0)
+        .map((p) => {
+          const dir = Number(p.directional_count ?? 0);
+          const aiB = p.ai_brier !== null ? Number(p.ai_brier) : null;
+          const mktB = p.market_brier !== null ? Number(p.market_brier) : null;
+          return {
+            provider: String(p.model ?? "desconhecido"),
+            resolvedCount: Number(p.resolved_count ?? 0),
+            aiBrier: aiB,
+            marketBrier: mktB,
+            hitRate: dir > 0 ? Math.round((Number(p.hit_count ?? 0) / dir) * 100) : null,
+            skillVsMarket: (aiB !== null && mktB !== null && mktB > 0)
+              ? Number((1 - aiB / mktB).toFixed(3)) : null,
+            settledCount: Number(p.settled_count ?? 0),
+          };
+        }))
+      .catch(() => []);
     // Taxa de acerto DIRECIONAL (colunas da migration 018; ausentes antes dela → 0 → null).
     const directionalCount = Number(t.directional_count ?? 0);
     const hitCount = Number(t.hit_count ?? 0);
@@ -332,6 +360,7 @@ router.get("/track-record", async (_req, res) => {
       marketHitRate: marketDirectionalCount > 0 ? Math.round((marketHitCount / marketDirectionalCount) * 100) : null,
       directionalCount,
       settledCount: Number(t.settled_count ?? 0),
+      byProvider,
     };
     setCache("ai-track-record", result, 600);
     res.json(result);

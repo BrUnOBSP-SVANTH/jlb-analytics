@@ -14,6 +14,7 @@ import { useSEO } from "@/hooks/useSEO";
 import { AiTrackRecord, ResultComparator } from "@/components/previsao/GuideAndTrackRecord";
 import { AccuracyAnalysis } from "@/components/previsao/AccuracyAnalysis";
 import { ShareCard } from "@/components/previsao/ShareCard";
+import { ProviderBreakdown } from "@/components/previsao/ProviderBreakdown";
 import MarginOfError from "@/components/MarginOfError";
 import {
   ShieldCheck, ClipboardList, Scale, Layers, ArrowRight, Sparkles, BookOpen,
@@ -80,6 +81,11 @@ export default function TrackRecord() {
 
         {/* ── Números verificados (card já provado) ── */}
         <AiTrackRecord />
+
+        {/* ── De qual modelo veio o número (a manchete soma provedores diferentes) ── */}
+        <AnimatedSection>
+          <ProviderBreakdown />
+        </AnimatedSection>
 
         {/* ── Ferramenta de análise: onde a IA tem edge, por tema (métricas honestas) ── */}
         <AccuracyAnalysis />
