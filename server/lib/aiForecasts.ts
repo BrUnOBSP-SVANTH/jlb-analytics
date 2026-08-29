@@ -5,6 +5,7 @@
 import { SUPABASE_URL, SUPABASE_KEY, supaWriteHeaders } from "./supabaseRest.ts";
 import { CATEGORY_BASE_RATES } from "./categoryRates.ts";
 import { callClaude } from "./anthropic.ts";
+import { callGroq, groqEnabled } from "./groq.ts";
 import { clampFairValue } from "./ai/guardrails.ts";
 import { applyCategoryCalibration, normalizeCategory } from "./ai/calibration.ts";
 import { getCalibrationMemo, getCategoryBiasMap, getCategoryDeficitWeights } from "./calibrationData.ts";
@@ -15,9 +16,67 @@ import { fetchRealOutcomesBatch, stripPrefix, chunk } from "./resolveOutcomes.ts
 import { fetchWithRetry } from "./fetcher.ts";
 import { log } from "./log.ts";
 
+/**
+ * EXPERIMENTO DA DIVERGÊNCIA (shadow, migration 024).
+ *
+ * A previsão de produção é instruída a colar no mercado (±3pp) — e obedece: não
+ * existe uma previsão resolvida com desvio ≥3pp. Por isso ela empata com o
+ * mercado e nunca poderia superá-lo. Mas simplesmente soltar a trava repetiria um
+ * erro já medido: sem guardrail, a IA alucinava desvios enormes e o Brier PIOROU.
+ *
+ * O desenho é CEGO — e isso é o ponto central. A 1ª versão deste experimento
+ * mostrava o preço e pedia "divirja se tiver motivo": o modelo respondia "sem
+ * motivo para divergir" em tudo, porque ver o preço ANCORA o julgamento. Não dá
+ * para medir opinião independente ancorando a opinião.
+ *
+ * Aqui o modelo NÃO vê o preço: estima do zero (base rate + evidência do Cérebro)
+ * e depois nós comparamos. Assim a concordância, quando acontece, é genuína — e a
+ * divergência também. É a diferença entre ser autêntico (ter razão própria) e ser
+ * contrário (divergir por esporte). Verificado no desenho cego: em 2 de 3 casos o
+ * modelo chegou sozinho ao mesmo número do mercado; num terceiro divergiu +28pp
+ * com raciocínio concreto.
+ *
+ * Roda no GROQ de propósito: é grátis e rápido, então não consome a cota do
+ * Gemini que sustenta a previsão de produção. Falha em silêncio — este
+ * experimento nunca pode derrubar o seed.
+ */
+async function boldEstimate(
+  t: { title: string; category: string; marketProb: number },
+  newsCtx: string,
+): Promise<{ fairValue: number; rationale: string } | null> {
+  if (!groqEnabled()) return null;
+  // ⚠️ O preço de mercado NÃO entra no prompt — é justamente o que queremos que
+  // o modelo não veja. t.marketProb é usado só na comparação, depois.
+  const prompt = `Pergunta: "${t.title}"
+Categoria: ${t.category}
+${newsCtx ? `\nNOTÍCIAS RECENTES (base curada, fontes em português):\n${newsCtx}\n` : ""}
+Estime a probabilidade REAL deste evento acontecer, do zero, com seu próprio
+raciocínio: a base rate da classe de referência, ajustada pelas evidências acima.
+Não há preço de mercado aqui — é a SUA estimativa independente que importa.
+
+JSON apenas: {"fairValue": <inteiro 5-95>, "rationale": "<raciocínio em 1 frase>"}`;
+  try {
+    const raw = await callGroq({
+      system: "Você é um superforecaster. Responda APENAS JSON.",
+      messages: [{ role: "user", content: prompt }],
+      maxTokens: 250, timeoutMs: 25_000,
+    });
+    const parsed = extractJson(raw) as { fairValue?: number; rationale?: string };
+    const v = Math.round(Number(parsed.fairValue));
+    if (!Number.isFinite(v) || v < 1 || v > 99) return null;
+    // Piso/teto absolutos continuam (5-95), mas SEM a trava de ±15pp vs mercado —
+    // é justamente o desvio que queremos medir.
+    return {
+      fairValue: Math.max(5, Math.min(95, v)),
+      rationale: String(parsed.rationale ?? "").slice(0, 300),
+    };
+  } catch { return null; }
+}
+
 export async function logAiForecast(f: {
   marketId: string; source: string; title: string; category?: string;
-  marketProb: number; aiFairValue: number; aiFairValueCalibrated?: number; confidence?: string; model?: string;
+  marketProb: number; aiFairValue: number; aiFairValueCalibrated?: number;
+  aiFairValueBold?: number; boldRationale?: string; confidence?: string; model?: string;
 }): Promise<void> {
   if (!SUPABASE_URL || !SUPABASE_KEY) return;
   if (!f.marketId || (!f.marketId.startsWith("poly-") && !f.marketId.startsWith("kalshi-"))) return;
@@ -28,6 +87,9 @@ export async function logAiForecast(f: {
   };
   // Shadow do loop de calibração (migration 021): gravado em paralelo, não exibido.
   if (typeof f.aiFairValueCalibrated === "number") base.ai_fair_value_calibrated = f.aiFairValueCalibrated;
+  // Shadow do experimento de divergência (migration 024).
+  if (typeof f.aiFairValueBold === "number") base.ai_fair_value_bold = f.aiFairValueBold;
+  if (f.boldRationale) base.bold_rationale = f.boldRationale;
   // `model` só é gravado se a coluna existir (migration 015). Antes disso, o
   // PostgREST responde 400 PGRST204 → refaz o insert sem o campo. Auto-heal:
   // funciona igual antes e depois da migration, sem env flag.
@@ -522,7 +584,13 @@ JSON apenas: {"fairValue": <inteiro 5-95>, "confidence": "baixa|media|alta"}`;
         }
         if (!isNaN(fv)) {
           const cal = applyCategoryCalibration(fv, t.category, biasMap); // shadow — grava em paralelo, não muda o edge exibido
-          await logAiForecast({ marketId: t.marketId, source: t.source, title: t.title, category: t.category, marketProb: t.marketProb, aiFairValue: fv, aiFairValueCalibrated: cal.fairValue, confidence: conf, model: provider });
+          const bold = await boldEstimate(t, newsCtx);                    // shadow — experimento da divergência
+          await logAiForecast({
+            marketId: t.marketId, source: t.source, title: t.title, category: t.category,
+            marketProb: t.marketProb, aiFairValue: fv, aiFairValueCalibrated: cal.fairValue,
+            aiFairValueBold: bold?.fairValue, boldRationale: bold?.rationale,
+            confidence: conf, model: provider,
+          });
           done++;
         }
       } catch { /* pula mercado */ }

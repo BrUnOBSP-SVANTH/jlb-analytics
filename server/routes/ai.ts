@@ -9,7 +9,7 @@ import { embedCerebroBatch } from "../lib/cerebroEmbeddings.ts";
 import { getNewsForMarket } from "../lib/news.ts";
 import { SUPABASE_URL, SUPABASE_KEY, supaWriteHeaders } from "../lib/supabaseRest.ts";
 import { seedAiForecasts, computeDivergences } from "../lib/aiForecasts.ts";
-import { getCalibrationStatus } from "../lib/calibrationData.ts";
+import { getCalibrationStatus, getBoldExperimentStatus } from "../lib/calibrationData.ts";
 import { log } from "../lib/log.ts";
 // Lógica de domínio extraída para módulos de serviço (router fino, comportamento idêntico):
 import { buildDigest, sendWeeklyDigests } from "../lib/ai/digest.ts";
@@ -91,6 +91,11 @@ router.get("/metrics", (_req, res) => {
 // mercado nas resoluções novas. Read-only e agregado (sem dado de usuário).
 router.get("/calibration-status", async (_req, res) => {
   res.json(await getCalibrationStatus());
+});
+
+// Veredito do experimento da divergência: divergir do mercado paga? Read-only.
+router.get("/bold-status", async (_req, res) => {
+  res.json(await getBoldExperimentStatus());
 });
 
 // ── Backfill de embeddings do Cerebro (RAG semântico) ─────────────────────────

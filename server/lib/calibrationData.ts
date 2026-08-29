@@ -95,6 +95,71 @@ export async function getCategoryBiasMap(): Promise<BiasMap> {
  * repetição do mesmo mercado infla o resultado). Só conta linhas que têm shadow
  * gravado, ou seja, forecasts criados DEPOIS do shadow ligar = out-of-sample real.
  */
+/**
+ * Veredito do EXPERIMENTO DA DIVERGÊNCIA (migration 024).
+ *
+ * Responde a pergunta que hoje não tem resposta: divergir do mercado PAGA? A
+ * estimativa "bold" pode se afastar do preço (com motivo); a de produção não pode.
+ * Comparamos as duas contra o resultado real, no MESMO conjunto — e só nos
+ * mercados em que ela de fato divergiu, senão estaríamos medindo concordância.
+ */
+export async function getBoldExperimentStatus(): Promise<{
+  available: boolean;
+  n?: number; nDiverged?: number;
+  boldBrier?: number; prodBrier?: number; marketBrier?: number;
+  avgDeviationPp?: number; verdict?: string;
+}> {
+  if (!SUPABASE_URL || !SUPABASE_KEY) return { available: false };
+  try {
+    const r = await fetch(
+      `${SUPABASE_URL}/rest/v1/ai_forecasts?resolved=eq.true&outcome=not.is.null&ai_fair_value_bold=not.is.null`
+      + `&select=market_id,ai_fair_value,ai_fair_value_bold,market_prob,outcome,forecast_date,created_at&limit=2000`,
+      { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }, signal: AbortSignal.timeout(8_000) },
+    );
+    if (!r.ok) return { available: false };
+    const rows = await r.json() as Array<{ market_id: string; ai_fair_value: number; ai_fair_value_bold: number; market_prob: number; outcome: boolean; forecast_date: string; created_at: string }>;
+
+    // Dedup por mercado (regra da view 019) — repetição infla o resultado.
+    const earliest = new Map<string, typeof rows[number]>();
+    for (const row of rows) {
+      const cur = earliest.get(row.market_id);
+      if (!cur || row.forecast_date < cur.forecast_date || (row.forecast_date === cur.forecast_date && row.created_at < cur.created_at)) {
+        earliest.set(row.market_id, row);
+      }
+    }
+    const d = Array.from(earliest.values());
+    if (d.length === 0) return { available: true, n: 0, verdict: "nenhuma previsão ousada resolvida ainda" };
+
+    const mean = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length;
+    const sq = (p: number, y: number) => (Number(p) / 100 - y) ** 2;
+    const ys = d.map((x) => (x.outcome ? 1 : 0));
+    const round = (v: number, p = 4) => Number(v.toFixed(p));
+
+    const boldBrier = mean(d.map((x, i) => sq(x.ai_fair_value_bold, ys[i])));
+    const prodBrier = mean(d.map((x, i) => sq(x.ai_fair_value, ys[i])));
+    const marketBrier = mean(d.map((x, i) => sq(x.market_prob, ys[i])));
+    const devs = d.map((x) => Math.abs(Number(x.ai_fair_value_bold) - Number(x.market_prob)));
+    // Só conta como "divergiu" um afastamento maior que a trava da produção (3pp).
+    const nDiverged = devs.filter((v) => v >= 3).length;
+
+    const verdict = d.length < 30
+      ? `amostra pequena (${d.length}/30) — ainda medindo`
+      : nDiverged < 10
+        ? `divergiu pouco (${nDiverged} de ${d.length}) — o modelo concorda com o mercado mesmo SEM a trava, o que já é uma resposta`
+        : boldBrier < marketBrier && boldBrier < prodBrier
+          ? "DIVERGIR PAGOU — bateu o mercado e a versão travada. Candidato a virar produção."
+          : boldBrier < prodBrier
+            ? "melhor que a versão travada, mas ainda não bate o mercado"
+            : "divergir PIOROU — a trava estava certa. Não promover.";
+
+    return {
+      available: true, n: d.length, nDiverged,
+      boldBrier: round(boldBrier), prodBrier: round(prodBrier), marketBrier: round(marketBrier),
+      avgDeviationPp: round(mean(devs), 1), verdict,
+    };
+  } catch { return { available: false }; }
+}
+
 export async function getCalibrationStatus(): Promise<{
   available: boolean;
   biasMap?: BiasMap;
