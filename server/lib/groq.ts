@@ -18,10 +18,17 @@
 import { log } from "./log.ts";
 
 const GROQ_KEY = () => process.env.GROQ_API_KEY ?? "";
-// Override via GROQ_MODEL. O padrão é um modelo pequeno/rápido do free tier —
-// para fair value + confiança (saída curta em JSON) isso basta. Se o id sair do
-// ar, o erro é visível no log de fallback e troca-se por env, sem deploy.
-const GROQ_MODEL = () => process.env.GROQ_MODEL ?? "llama-3.3-70b-versatile";
+// Override via GROQ_MODEL. Padrão escolhido por TESTE na conta real (2026-08-29),
+// com o prompt do seed — não por chute (o palpite inicial, llama-3.3-70b, sequer
+// existia mais: 404 model_not_found):
+//   openai/gpt-oss-120b   919ms  JSON ok  fair value 62 (= preço de mercado)
+//   openai/gpt-oss-20b    495ms  JSON ok  70  (+8pp)
+//   qwen/qwen3.8-27b      269ms  JSON ok  45  (−17pp → seria cortado pelo clamp)
+// Escolhido o 120b: maior modelo, ancoragem sóbria e latência aceitável para um
+// 3º fallback. Se o id sair do ar, o erro aparece no log e troca-se por env.
+// ⚠️ n=1: isto valida FORMATO e disponibilidade, não calibração. A prova real, se
+// este provedor chegar a responder, vem do track record (coluna `model`).
+const GROQ_MODEL = () => process.env.GROQ_MODEL ?? "openai/gpt-oss-120b";
 
 export function groqEnabled(): boolean {
   return GROQ_KEY().length > 0;
