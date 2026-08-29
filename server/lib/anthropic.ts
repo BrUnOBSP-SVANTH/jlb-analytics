@@ -3,6 +3,7 @@
 // por crédito/rate limit/instabilidade — ver lib/gemini.ts. Sem GEMINI_API_KEY
 // o comportamento é idêntico ao de antes (erro propaga).
 import { callGemini, geminiEnabled, shouldFallback, logFallback } from "./gemini.ts";
+import { callGroq, groqEnabled, logGroqFallback } from "./groq.ts";
 import { recordAiCall } from "./ai/metrics.ts";
 
 export interface ClaudeMessage { role: "user" | "assistant"; content: string }
@@ -89,23 +90,39 @@ export async function streamClaude(opts: {
     });
   }
 
-  /** Gemini não faz streaming aqui: emite o texto inteiro num delta só.
-   *  Só é seguro ANTES do primeiro byte — depois disso duplicaria conteúdo. */
-  async function fallbackToGemini(err: unknown): Promise<string> {
-    logFallback("streamClaude", err);
-    const text = await callGemini({
+  /** Cadeia de fallback: Gemini → Groq. Nenhum dos dois faz streaming aqui —
+   *  emitem o texto inteiro num delta só, o que só é seguro ANTES do primeiro
+   *  byte (depois duplicaria conteúdo). Percorre os provedores disponíveis e só
+   *  desiste quando todos falharem. */
+  async function fallbackChain(err: unknown): Promise<string> {
+    const payload = {
       messages: opts.messages.map((m) => ({ role: m.role, content: m.content })),
       system: [opts.system, opts.systemDynamic].filter(Boolean).join("\n\n"),
       maxTokens: opts.maxTokens,
       timeoutMs: opts.timeoutMs,
-    });
-    opts.onDelta?.(text);
-    recordAiCall("gemini", Date.now() - t0);
-    return text;
+    };
+    const chain: Array<{ name: "gemini" | "groq"; call: () => Promise<string>; logIt: (w: string, e: unknown) => void }> = [];
+    if (geminiEnabled()) chain.push({ name: "gemini", call: () => callGemini(payload), logIt: logFallback });
+    if (groqEnabled()) chain.push({ name: "groq", call: () => callGroq(payload), logIt: logGroqFallback });
+
+    let lastErr = err;
+    for (const p of chain) {
+      p.logIt("streamClaude", lastErr);
+      try {
+        const text = await p.call();
+        opts.onDelta?.(text);
+        recordAiCall(p.name, Date.now() - t0);
+        return text;
+      } catch (e) { lastErr = e; }
+    }
+    recordAiCall("error", Date.now() - t0);
+    throw lastErr;
   }
 
-  // Circuit breaker: Anthropic "aberta" (falhas recentes) → direto pro Gemini.
-  if (geminiEnabled() && anthropicBlocked()) return fallbackToGemini(new Error("anthropic circuit open"));
+  const hasFallback = () => geminiEnabled() || groqEnabled();
+
+  // Circuit breaker: Anthropic "aberta" (falhas recentes) → direto pro fallback.
+  if (hasFallback() && anthropicBlocked()) return fallbackChain(new Error("anthropic circuit open"));
 
   let response: Response;
   try {
@@ -120,7 +137,7 @@ export async function streamClaude(opts: {
       response = await connect();
     } catch (retryErr) {
       recordAnthropicFailure();
-      if (geminiEnabled()) return fallbackToGemini(retryErr); // seguro: nada foi transmitido ainda
+      if (hasFallback()) return fallbackChain(retryErr); // seguro: nada foi transmitido ainda
       recordAiCall("error", Date.now() - t0);
       throw retryErr;
     }
@@ -128,7 +145,7 @@ export async function streamClaude(opts: {
   if (!response.ok || !response.body) {
     const err = await response.text().catch(() => "");
     const error = new Error(`Claude HTTP ${response.status}: ${err.slice(0, 300)}`);
-    if (geminiEnabled() && shouldFallback(error)) { recordAnthropicFailure(); return fallbackToGemini(error); }
+    if (hasFallback() && shouldFallback(error)) { recordAnthropicFailure(); return fallbackChain(error); }
     recordAiCall("error", Date.now() - t0);
     throw error;
   }
@@ -170,7 +187,7 @@ export async function callClaude(opts: {
   timeoutMs?: number;
   prefillJson?: boolean; // força a resposta a começar com {
   cacheSystem?: boolean; // prompt caching do system (prefixo grande e estático)
-  onProvider?: (p: "anthropic" | "gemini") => void; // qual provedor respondeu (p/ track record honesto)
+  onProvider?: (p: "anthropic" | "gemini" | "groq") => void; // qual provedor respondeu (p/ track record honesto)
 }): Promise<string> {
   const apiKey = process.env.ANTHROPIC_API_KEY ?? "";
   const t0 = Date.now();
@@ -207,18 +224,39 @@ export async function callClaude(opts: {
     });
   }
 
-  // Circuit breaker: Anthropic "aberta" → direto pro Gemini, sem round-trip que falha.
-  if (geminiEnabled() && anthropicBlocked()) {
-    logFallback("callClaude(breaker)", new Error("anthropic circuit open"));
-    const text = await callGemini({
+  /** Cadeia de fallback: Gemini → Groq. Grava QUAL provedor respondeu (onProvider)
+   *  — é o que permite fatiar o track record por modelo e nunca misturar níveis
+   *  de qualidade num número público sem poder separar. */
+  async function fallbackChain(err: unknown, where: string): Promise<string> {
+    const payload = {
       messages: opts.messages.map((m) => ({ role: m.role, content: m.content })),
       system: opts.system,
       maxTokens: opts.maxTokens,
       timeoutMs: opts.timeoutMs,
-    });
-    opts.onProvider?.("gemini");
-    recordAiCall("gemini", Date.now() - t0);
-    return text;
+    };
+    const chain: Array<{ name: "gemini" | "groq"; call: () => Promise<string>; logIt: (w: string, e: unknown) => void }> = [];
+    if (geminiEnabled()) chain.push({ name: "gemini", call: () => callGemini(payload), logIt: logFallback });
+    if (groqEnabled()) chain.push({ name: "groq", call: () => callGroq(payload), logIt: logGroqFallback });
+
+    let lastErr = err;
+    for (const p of chain) {
+      p.logIt(where, lastErr);
+      try {
+        const text = await p.call();
+        opts.onProvider?.(p.name);
+        recordAiCall(p.name, Date.now() - t0);
+        return text;
+      } catch (e) { lastErr = e; }
+    }
+    recordAiCall("error", Date.now() - t0);
+    throw lastErr;
+  }
+
+  const hasFallback = () => geminiEnabled() || groqEnabled();
+
+  // Circuit breaker: Anthropic "aberta" → direto pro fallback, sem round-trip que falha.
+  if (hasFallback() && anthropicBlocked()) {
+    return fallbackChain(new Error("anthropic circuit open"), "callClaude(breaker)");
   }
 
   try {
@@ -240,19 +278,11 @@ export async function callClaude(opts: {
     opts.onProvider?.("anthropic");
     return opts.prefillJson ? "{" + text : text;
   } catch (err) {
-    // Fallback de provedor: sem crédito/rate limit/instabilidade, o site
-    // responde pelo Gemini em vez de degradar. Inerte sem GEMINI_API_KEY.
-    if (!geminiEnabled() || !shouldFallback(err)) { recordAiCall("error", Date.now() - t0); throw err; }
+    // Fallback de provedor: sem crédito/rate limit/instabilidade, o site responde
+    // pelo Gemini e, se ele também falhar (cota diária estourada), pelo Groq —
+    // em vez de degradar. Inerte sem as chaves.
+    if (!hasFallback() || !shouldFallback(err)) { recordAiCall("error", Date.now() - t0); throw err; }
     recordAnthropicFailure();
-    logFallback("callClaude", err);
-    const text = await callGemini({
-      messages: opts.messages.map((m) => ({ role: m.role, content: m.content })),
-      system: opts.system,
-      maxTokens: opts.maxTokens,
-      timeoutMs: opts.timeoutMs,
-    });
-    opts.onProvider?.("gemini");
-    recordAiCall("gemini", Date.now() - t0);
-    return text;
+    return fallbackChain(err, "callClaude");
   }
 }

@@ -488,7 +488,9 @@ REGRAS DE CALIBRAÇÃO (nosso Brier é medido publicamente):
 
 Dê seu fair value independente — sua melhor estimativa honesta da probabilidade real de SIM (5-95).
 JSON apenas: {"fairValue": <inteiro 5-95>, "confidence": "baixa|media|alta"}`;
-        let provider: "anthropic" | "gemini" = "anthropic";
+        // Gravado na coluna `model` — é o que permite fatiar o track record por
+        // provedor e não misturar níveis de qualidade num número público.
+        let provider: "anthropic" | "gemini" | "groq" = "anthropic";
         // Retry (2 tentativas): o free tier do Gemini tem falhas transitórias —
         // timeout ocasional, rate limit (429), resposta vazia. Sem retry, cada
         // tropeço custava o mercado inteiro (rendimento caiu de 15/18 → 5/18 ao

@@ -7,12 +7,13 @@
  * o GET /api/ai/metrics. Não é billing — é sinal direcional para operar a IA.
  */
 
-type Provider = "anthropic" | "gemini" | "error";
+type Provider = "anthropic" | "gemini" | "groq" | "error";
 
 interface AiMetrics {
   calls: number;
   anthropic: number; // respondidas pela Anthropic (Claude)
   gemini: number;    // respondidas pelo fallback Gemini
+  groq: number;      // respondidas pelo 3º nível (Groq) — Gemini também falhou
   errors: number;    // nenhum provedor respondeu
   latencyMsTotal: number;
   latencyMsCount: number;
@@ -23,7 +24,7 @@ interface AiMetrics {
 }
 
 const M: AiMetrics = {
-  calls: 0, anthropic: 0, gemini: 0, errors: 0,
+  calls: 0, anthropic: 0, gemini: 0, groq: 0, errors: 0,
   latencyMsTotal: 0, latencyMsCount: 0,
   embedOk: 0, embedRateLimited: 0, clampHits: 0,
   since: new Date().toISOString(),
@@ -34,6 +35,7 @@ export function recordAiCall(provider: Provider, latencyMs?: number): void {
   M.calls += 1;
   if (provider === "anthropic") M.anthropic += 1;
   else if (provider === "gemini") M.gemini += 1;
+  else if (provider === "groq") M.groq += 1;
   else M.errors += 1;
   if (typeof latencyMs === "number" && Number.isFinite(latencyMs)) {
     M.latencyMsTotal += latencyMs;
@@ -56,18 +58,19 @@ export function recordClamp(): void { M.clampHits += 1; }
 
 /** Snapshot com métricas derivadas (média de latência, taxa de fallback). */
 export function aiMetricsSnapshot(): {
-  calls: number; anthropic: number; gemini: number; errors: number;
+  calls: number; anthropic: number; gemini: number; groq: number; errors: number;
   avgLatencyMs: number | null; fallbackRatePct: number; errorRatePct: number;
   embeddings: { ok: number; rateLimited: number }; clampHits: number; since: string;
 } {
-  const answered = M.anthropic + M.gemini;
+  const answered = M.anthropic + M.gemini + M.groq;
   return {
     calls: M.calls,
     anthropic: M.anthropic,
     gemini: M.gemini,
+    groq: M.groq,
     errors: M.errors,
     avgLatencyMs: M.latencyMsCount ? Math.round(M.latencyMsTotal / M.latencyMsCount) : null,
-    fallbackRatePct: answered ? Math.round((M.gemini / answered) * 100) : 0,
+    fallbackRatePct: answered ? Math.round(((M.gemini + M.groq) / answered) * 100) : 0,
     errorRatePct: M.calls ? Math.round((M.errors / M.calls) * 100) : 0,
     embeddings: { ok: M.embedOk, rateLimited: M.embedRateLimited },
     clampHits: M.clampHits,
@@ -77,7 +80,7 @@ export function aiMetricsSnapshot(): {
 
 /** Zera os contadores — usado nos testes. */
 export function _resetAiMetrics(): void {
-  M.calls = 0; M.anthropic = 0; M.gemini = 0; M.errors = 0;
+  M.calls = 0; M.anthropic = 0; M.gemini = 0; M.groq = 0; M.errors = 0;
   M.latencyMsTotal = 0; M.latencyMsCount = 0;
   M.embedOk = 0; M.embedRateLimited = 0; M.clampHits = 0;
   M.since = new Date().toISOString();
