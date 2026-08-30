@@ -111,8 +111,13 @@ export async function getBoldExperimentStatus(): Promise<{
 }> {
   if (!SUPABASE_URL || !SUPABASE_KEY) return { available: false };
   try {
+    // ⚠️ SÓ v2. O prompt v1 não explicava a convenção do título e o modelo
+    // respondia a pergunta errada ("o jogo vai acontecer?" em vez de "A vence?"),
+    // gerando desvios de ~38pp que mediam um bug, não a hipótese. As linhas v1
+    // ficam no banco como registro, mas fora da medição.
     const r = await fetch(
       `${SUPABASE_URL}/rest/v1/ai_forecasts?resolved=eq.true&outcome=not.is.null&ai_fair_value_bold=not.is.null`
+      + `&bold_prompt_v=gte.2`
       + `&select=market_id,ai_fair_value,ai_fair_value_bold,market_prob,outcome,forecast_date,created_at&limit=2000`,
       { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }, signal: AbortSignal.timeout(8_000) },
     );

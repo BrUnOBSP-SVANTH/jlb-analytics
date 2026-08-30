@@ -40,6 +40,9 @@ import { log } from "./log.ts";
  * Gemini que sustenta a previsão de produção. Falha em silêncio — este
  * experimento nunca pode derrubar o seed.
  */
+/** v1 = sem a convenção de leitura do título (defeituoso). v2 = com. Só v2 é analisável. */
+const BOLD_PROMPT_V = 2;
+
 async function boldEstimate(
   t: { title: string; category: string; marketProb: number },
   newsCtx: string,
@@ -47,12 +50,25 @@ async function boldEstimate(
   if (!groqEnabled()) return null;
   // ⚠️ O preço de mercado NÃO entra no prompt — é justamente o que queremos que
   // o modelo não veja. t.marketProb é usado só na comparação, depois.
-  const prompt = `Pergunta: "${t.title}"
+  // ⚠️ A CONVENÇÃO precisa ser explícita. Sem o preço, a 1ª versão deste prompt
+  // deixou o modelo ADIVINHANDO qual era a pergunta — e ele adivinhou errado:
+  // em "San Diego Padres vs. Tampa Bay Rays" respondeu 90% raciocinando que "a
+  // MLB programa os confrontos" (ou seja, respondeu "o jogo vai acontecer?" em
+  // vez de "o primeiro time vence?"). Isso não é alucinação, é ambiguidade do
+  // título — e revela que o preço vinha fazendo o papel de dizer a pergunta.
+  const prompt = `Mercado binário: "${t.title}"
 Categoria: ${t.category}
 ${newsCtx ? `\nNOTÍCIAS RECENTES (base curada, fontes em português):\n${newsCtx}\n` : ""}
-Estime a probabilidade REAL deste evento acontecer, do zero, com seu próprio
-raciocínio: a base rate da classe de referência, ajustada pelas evidências acima.
-Não há preço de mercado aqui — é a SUA estimativa independente que importa.
+COMO LER O TÍTULO (o mercado resolve SIM quando):
+- "A vs B" → o PRIMEIRO citado (A) vence o confronto. NÃO é "o jogo vai ocorrer".
+- "... ↑ X" / "... acima de X" → o valor ATINGE ou supera X no prazo.
+- "... ↓ X" / "... abaixo de X" → o valor CAI para X ou menos no prazo.
+- "Quem/O que ...: <opção>" → aquela opção específica é a vencedora.
+- Pergunta direta ("Fulano fará X?") → o evento descrito acontece.
+
+Estime a probabilidade REAL de SIM, do zero, com seu próprio raciocínio: a base
+rate da classe de referência, ajustada pelas evidências acima. Não há preço de
+mercado aqui — é a SUA estimativa independente que importa.
 
 JSON apenas: {"fairValue": <inteiro 5-95>, "rationale": "<raciocínio em 1 frase>"}`;
   try {
@@ -76,8 +92,8 @@ JSON apenas: {"fairValue": <inteiro 5-95>, "rationale": "<raciocínio em 1 frase
 export async function logAiForecast(f: {
   marketId: string; source: string; title: string; category?: string;
   marketProb: number; aiFairValue: number; aiFairValueCalibrated?: number;
-  aiFairValueBold?: number; boldRationale?: string; confidence?: string; model?: string;
-  newsContextChars?: number;
+  aiFairValueBold?: number; boldRationale?: string; boldPromptV?: number;
+  confidence?: string; model?: string; newsContextChars?: number;
 }): Promise<void> {
   if (!SUPABASE_URL || !SUPABASE_KEY) return;
   if (!f.marketId || (!f.marketId.startsWith("poly-") && !f.marketId.startsWith("kalshi-"))) return;
@@ -91,6 +107,7 @@ export async function logAiForecast(f: {
   // Shadow do experimento de divergência (migration 024).
   if (typeof f.aiFairValueBold === "number") base.ai_fair_value_bold = f.aiFairValueBold;
   if (f.boldRationale) base.bold_rationale = f.boldRationale;
+  if (typeof f.boldPromptV === "number") base.bold_prompt_v = f.boldPromptV;
   // O Cérebro ajuda? (migration 025) — sem registrar isto, "RAG é nosso
   // diferencial" nunca sai do campo da retórica.
   if (typeof f.newsContextChars === "number") {
@@ -620,7 +637,7 @@ JSON apenas: {"fairValue": <inteiro 5-95>, "confidence": "baixa|media|alta"}`;
           await logAiForecast({
             marketId: t.marketId, source: t.source, title: t.title, category: t.category,
             marketProb: t.marketProb, aiFairValue: fv,
-            aiFairValueBold: bold?.fairValue, boldRationale: bold?.rationale,
+            aiFairValueBold: bold?.fairValue, boldRationale: bold?.rationale, boldPromptV: BOLD_PROMPT_V,
             confidence: conf, model: provider, newsContextChars: newsCtx.length,
           });
           done++;
