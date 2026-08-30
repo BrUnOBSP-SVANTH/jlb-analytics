@@ -7,8 +7,8 @@ import { CATEGORY_BASE_RATES } from "./categoryRates.ts";
 import { callClaude } from "./anthropic.ts";
 import { callGroq, groqEnabled } from "./groq.ts";
 import { clampFairValue } from "./ai/guardrails.ts";
-import { applyCategoryCalibration, normalizeCategory } from "./ai/calibration.ts";
-import { getCalibrationMemo, getCategoryBiasMap, getCategoryDeficitWeights } from "./calibrationData.ts";
+import { normalizeCategory } from "./ai/calibration.ts";
+import { getCalibrationMemo, getCategoryDeficitWeights } from "./calibrationData.ts";
 import { extractJson } from "./extractJson.ts";
 import { getCache, setCache } from "./cache.ts";
 import { fetchCerebroContext } from "./cerebro.ts";
@@ -559,7 +559,7 @@ export async function seedAiForecasts(maxMarkets = 30): Promise<{ started: boole
     // O seed gera a MAIORIA das previsões do track record público — era o
     // caminho sem guardrail nenhum (fonte principal do Brier ruim da IA).
     const memo = await getCalibrationMemo();
-    const biasMap = await getCategoryBiasMap(); // shadow: viés por categoria — grava em paralelo, não muda o exibido
+    // (o mapa de viés por categoria saiu daqui — experimento encerrado, ver acima)
     for (const t of queue) {
       try {
         const catKey = t.category.toLowerCase().replace(/[^a-z]/g, "") || "other";
@@ -608,11 +608,18 @@ JSON apenas: {"fairValue": <inteiro 5-95>, "confidence": "baixa|media|alta"}`;
           } catch { if (attempt === 0) await sleep(3_000); } // backoff antes da 2ª tentativa
         }
         if (!isNaN(fv)) {
-          const cal = applyCategoryCalibration(fv, t.category, biasMap); // shadow — grava em paralelo, não muda o edge exibido
+          // ⛔ Calibração por categoria ENCERRADA (2026-08-29) — ver o veredito no
+          // topo de ai/calibration.ts. Reprovada no teste prospectivo (piorou o
+          // Brier 7,7%, em 100% das categorias corrigidas) e o teste de
+          // estabilidade explicou por quê: o viés NÃO persiste — 4 de 5 categorias
+          // trocaram de sinal entre a 1ª e a 2ª metade dos dados (crypto foi de
+          // −14,7 para −2,5). Corrigir viés instável é adicionar ruído por
+          // construção. Deixamos de aplicar; o código e a coluna ficam como
+          // registro do experimento.
           const bold = await boldEstimate(t, newsCtx);                    // shadow — experimento da divergência
           await logAiForecast({
             marketId: t.marketId, source: t.source, title: t.title, category: t.category,
-            marketProb: t.marketProb, aiFairValue: fv, aiFairValueCalibrated: cal.fairValue,
+            marketProb: t.marketProb, aiFairValue: fv,
             aiFairValueBold: bold?.fairValue, boldRationale: bold?.rationale,
             confidence: conf, model: provider, newsContextChars: newsCtx.length,
           });
