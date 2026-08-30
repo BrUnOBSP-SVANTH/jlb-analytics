@@ -1,4 +1,23 @@
 /**
+ * 🔴 VEREDITO (2026-08-29): ESTE EXPERIMENTO FALHOU. NÃO PROMOVER PARA PRODUÇÃO.
+ *
+ * Medido fora da amostra, com 124 resoluções posteriores ao início do shadow:
+ *   Brier cru 0,1385  →  calibrado 0,1492   (PIOROU 7,7%)
+ *   skill vs mercado  −0,8%  →  −8,6%
+ *
+ * O backtest prometia +3,1% e não se sustentou. A causa foi identificada: o
+ * "viés por categoria" que isto corrigia é, na verdade, o viés do MERCADO numa
+ * amostra pequena (a IA copia o preço — o viés dela e o do mercado são
+ * praticamente idênticos: crypto −14,1 vs −13,4; politics +24,3 vs +23,6). Ou
+ * seja, corrigir isso é apostar que o mercado erra na mesma direção pra sempre —
+ * e a aposta perdeu.
+ *
+ * O código fica aqui como REGISTRO do experimento (e o shadow continua gravando,
+ * inofensivo). Se alguém no futuro pensar em ligar: os números acima são a razão
+ * de não ligar. Um novo experimento precisaria de mecanismo diferente, não de
+ * mais amostra.
+ *
+ * ── Descrição original ──────────────────────────────────────────────────────
  * Calibração por categoria — o "loop fechado" da IA JLB.
  *
  * Descoberta (backtest leave-one-out sobre 294 forecasts resolvidos, 2026-08-27):

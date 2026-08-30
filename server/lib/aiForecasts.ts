@@ -77,6 +77,7 @@ export async function logAiForecast(f: {
   marketId: string; source: string; title: string; category?: string;
   marketProb: number; aiFairValue: number; aiFairValueCalibrated?: number;
   aiFairValueBold?: number; boldRationale?: string; confidence?: string; model?: string;
+  newsContextChars?: number;
 }): Promise<void> {
   if (!SUPABASE_URL || !SUPABASE_KEY) return;
   if (!f.marketId || (!f.marketId.startsWith("poly-") && !f.marketId.startsWith("kalshi-"))) return;
@@ -90,6 +91,12 @@ export async function logAiForecast(f: {
   // Shadow do experimento de divergência (migration 024).
   if (typeof f.aiFairValueBold === "number") base.ai_fair_value_bold = f.aiFairValueBold;
   if (f.boldRationale) base.bold_rationale = f.boldRationale;
+  // O Cérebro ajuda? (migration 025) — sem registrar isto, "RAG é nosso
+  // diferencial" nunca sai do campo da retórica.
+  if (typeof f.newsContextChars === "number") {
+    base.had_news_context = f.newsContextChars > 0;
+    base.news_context_chars = f.newsContextChars;
+  }
   // `model` só é gravado se a coluna existir (migration 015). Antes disso, o
   // PostgREST responde 400 PGRST204 → refaz o insert sem o campo. Auto-heal:
   // funciona igual antes e depois da migration, sem env flag.
@@ -607,7 +614,7 @@ JSON apenas: {"fairValue": <inteiro 5-95>, "confidence": "baixa|media|alta"}`;
             marketId: t.marketId, source: t.source, title: t.title, category: t.category,
             marketProb: t.marketProb, aiFairValue: fv, aiFairValueCalibrated: cal.fairValue,
             aiFairValueBold: bold?.fairValue, boldRationale: bold?.rationale,
-            confidence: conf, model: provider,
+            confidence: conf, model: provider, newsContextChars: newsCtx.length,
           });
           done++;
         }
