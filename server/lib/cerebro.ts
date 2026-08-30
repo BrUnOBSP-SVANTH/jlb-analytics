@@ -76,6 +76,25 @@ export function rankHits<T extends { title: string; summary: string; kind?: stri
   return hits.map((h) => ({ h, s: score(h) })).sort((a, b) => b.s - a.s).map(({ h }) => h);
 }
 
+/**
+ * O item toca ALGUM termo distintivo da pergunta? Mesmo critério de sobreposição
+ * do rankHits, mas como filtro em vez de ordenação — usado para impedir que uma
+ * síntese entre no contexto só por ser síntese. Uma síntese de cripto liderando
+ * uma pergunta sobre o Lula é ruído bem formatado, e ruído bem formatado é o mais
+ * perigoso: parece fonte. Exportada p/ teste.
+ */
+export function overlapsQuery(
+  h: { title: string; summary: string },
+  terms: string[],
+  minMatches = 2,
+): boolean {
+  const nterms = Array.from(new Set(terms.map(normText).filter((t) => t.length >= 4)));
+  if (nterms.length === 0) return true;                 // sem termos distintivos, não dá para filtrar
+  const need = Math.min(minMatches, nterms.length);      // não exige mais do que existe
+  const text = normText(`${h.title} ${h.summary}`);
+  return nterms.filter((t) => text.includes(t)).length >= need;
+}
+
 /** Remove duplicatas por título normalizado (mesmo artigo sindicalizado em fontes diferentes). Exportada p/ teste. */
 export function dedupeByTitle<T extends { title: string }>(hits: T[]): T[] {
   const seen = new Set<string>();
@@ -162,7 +181,18 @@ async function semanticCerebro(searchText: string): Promise<CerebroHit[]> {
     const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/match_cerebro_articles`, {
       method: "POST",
       headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ query_embedding: `[${vec.join(",")}]`, match_count: 5, min_similarity: 0.4 }),
+      // ⚠️ PISO 0.65, calibrado por MEDIÇÃO (2026-08-30), não por chute. Com o
+      // piso antigo de 0.40 o filtro era inexistente e entravam absurdos —
+      // "San Diego Padres vs. Tampa Bay Rays" trazia posts do r/MMA como
+      // "contexto", e a IA raciocinava em cima disso. As similaridades reais
+      // separam sem sobreposição:
+      //    ruído  (MMA p/ beisebol, futebol p/ Valorant) → 0.564–0.573
+      //    sinal  (pesquisas do Lula p/ pergunta do Lula) → 0.731–0.741
+      //           (preço do BTC p/ pergunta do BTC)       → 0.744–0.764
+      // ~0.57 é só o chão de similaridade genérica entre dois textos quaisquer;
+      // 0.65 fica no vale entre os dois grupos. Contexto irrelevante é PIOR que
+      // nenhum: convida o modelo a raciocinar a partir de ruído.
+      body: JSON.stringify({ query_embedding: `[${vec.join(",")}]`, match_count: 5, min_similarity: 0.65 }),
       signal: AbortSignal.timeout(6_000),
     });
     if (!res.ok) return []; // RPC ausente (migração não aplicada) → fallback FTS
@@ -229,16 +259,32 @@ export async function fetchCerebroContext(title: string, description?: string): 
     // frente; nos artigos, intercala os do FTS (por sobreposição de termos) com os
     // semânticos (por similaridade) — o semântico NÃO é rebaixado por não ter match
     // de palavra-chave, que é exatamente o ponto dele.
+    // ⛔ NADA RELEVANTE > RUÍDO. Se só chegamos aqui afrouxando a busca (fallback)
+    // E o semântico não confirmou nada, a correspondência é fraca por definição.
+    // Antes devolvíamos assim mesmo com um aviso "ignore o que não for relevante"
+    // — e o modelo raciocinava em cima do ruído do mesmo jeito (respondia sobre
+    // beisebol citando posts de MMA). Contexto irrelevante não é neutro: ele
+    // convida a inventar. Melhor devolver vazio e deixar o modelo assumir que não
+    // sabe. (Medível: had_news_context passa a ser false nesses casos.)
+    if (usedFallback && semanticHits.length === 0) return { context: "", hits: [] };
+
     const deduped = dedupeByTitle([...hits, ...semanticHits]);
-    const synth = rankHits(deduped.filter((h) => h.kind === "síntese"), words);
-    const ftsArts = rankHits(deduped.filter((h) => h.kind === "artigo" && !h._semantic), words);
+    // Sínteses NÃO entram mais incondicionalmente na frente: elas são âncora de
+    // qualidade, mas uma síntese de cripto liderando uma pergunta sobre o Lula é
+    // ruído bem formatado. Agora concorrem por relevância como o resto.
+    // Os hits SEMÂNTICOS (piso 0.65) provaram-se precisos; os do FTS entram por
+    // sobreposição de palavra, e uma palavra comum basta para colar qualquer coisa
+    // (a pergunta sobre o Lula trazia síntese de cripto, "El Niño navio" e
+    // "Discord Justiça Federal", cada um tocando UM termo). Por isso o FTS agora
+    // precisa casar 2+ termos distintivos; o semântico passa pelo próprio piso.
+    const relevant = (h: CerebroHit) => h._semantic || overlapsQuery(h, words);
+    const synth = rankHits(deduped.filter((h) => h.kind === "síntese"), words).filter(relevant);
+    const ftsArts = rankHits(deduped.filter((h) => h.kind === "artigo" && !h._semantic), words).filter(relevant);
     const semArts = deduped.filter((h) => h.kind === "artigo" && h._semantic);
     hits = [...synth, ...interleave(semArts, ftsArts)].slice(0, 6);
+    if (hits.length === 0) return { context: "", hits: [] };
 
-    // Aviso de fallback só quando NÃO houve reforço semântico (que é relevante por si).
-    const note = usedFallback && semanticHits.length === 0
-      ? "(correspondência parcial por palavra-chave — use APENAS itens diretamente relevantes ao tema; ignore o resto)\n\n"
-      : "";
+    const note = "";
     const context = note + hits.map((h, i) => `[C${i + 1}] (${h.kind} · ${h.source}) "${h.title}"\n${h.summary}`).join("\n\n");
     return { context, hits };
   } catch { return { context: "", hits: [] }; }
