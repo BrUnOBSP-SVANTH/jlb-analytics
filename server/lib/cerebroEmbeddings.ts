@@ -28,8 +28,14 @@ export async function embedCerebroBatch(limit = 100): Promise<EmbedBatchResult> 
   if (!SUPABASE_URL || !SUPABASE_KEY) return none("supabase ausente");
   if (!embeddingsEnabled()) return none("gemini ausente");
 
+  // MAIS NOVO PRIMEIRO, explicitamente. Sem `order` a fila sai na ordem física do
+  // Postgres — que hoje calha de favorecer o recente, mas é coincidência, não
+  // garantia. Importa porque a cota gratuita do Gemini (1000/dia) é o gargalo: se
+  // a fila passar do teto diário, o que fica para trás tem que ser o artigo velho,
+  // nunca o do jogo de amanhã. Notícia esportiva tem validade de dias — virar
+  // vetor depois da partida é o mesmo que não virar.
   const sel = await fetch(
-    `${SUPABASE_URL}/rest/v1/cerebro_articles?embedding=is.null&status=eq.active&select=id,title,summary&limit=${limit}`,
+    `${SUPABASE_URL}/rest/v1/cerebro_articles?embedding=is.null&status=eq.active&select=id,title,summary&order=published_at.desc.nullslast&limit=${limit}`,
     { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } },
   ).catch(() => null);
   if (!sel || !sel.ok) return none("select_failed"); // coluna ausente → migração 016 não aplicada

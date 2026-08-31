@@ -237,6 +237,83 @@ FEEDS: list[dict[str, str]] = [
         "category": "esportes",
     },
 
+    # ── IMPRENSA ESPECIALIZADA (31/08/2026) ─────────────────────────────────
+    # Por que: as fontes de esporte acima são quase todas SUBREDDIT, e subreddit
+    # é conversa, não redação. Auditando o que o r/tennis realmente guardava:
+    # "Mirra no Insta 'só eu e meu crush'", "Confira o preço que paguei pela
+    # partida noturna", memes e fotos. Para o mercado "Alcaraz vs Sinner" isso
+    # não informa nada — o que informa é forma recente, chave do torneio, lesão.
+    # Fórum não publica isso de forma sistemática; redação especializada publica.
+    #
+    # A escolha foi por DEMANDA MEDIDA, não por palpite. Cruzando 270 mercados
+    # distintos de esporte/e-sports que já previmos:
+    #     tênis 46 · LoL 39 · CS 28 · Valorant 15 · Dota 11 · beisebol 10
+    #     futebol/NFL/NBA: ZERO
+    # Por isso NÃO entram BBC Sport (76 itens, mas pauta de futebol), ESPN
+    # Soccer, ESPN NBA e ESPN NFL, todos testados e funcionando: seriam volume
+    # sem demanda, gastando a cota de embeddings (Gemini free = 1000/dia).
+    #
+    # Cada candidato foi lido pelo CONTEÚDO, não pelo nome. Reprovados por
+    # entregarem notícia de game em vez de competição: Dexerto (0/8 — McDonald's,
+    # Chipotle), The Loadout (0/8 — lançamentos), Dot Esports (1/8 — loadouts de
+    # CoD), Upcomer (0/4 — GTA 6). Adicionar isso recriaria exatamente o ruído
+    # que acabamos de remover do Cérebro.
+    {
+        # 8/8 dos itens eram competição pura ("MOUZ secure semi-final berth over
+        # Falcons", "BLAST Open Porto playoff bracket set"). É a fonte que casa
+        # com os 28 mercados de CS — placar, chave e declaração de jogador.
+        "url": "https://www.hltv.org/rss/news",
+        "source": "HLTV",
+        "category": "esports",
+    },
+    {
+        # Valorant competitivo (4/4: "G2 books tickets to Shanghai", "Karmine
+        # Corp lifting EMEA Stage"). Cobre os 15 mercados de VCT.
+        "url": "https://www.vlr.gg/rss",
+        "source": "VLR.gg",
+        "category": "esports",
+    },
+    {
+        # LEC/LCK, Dota (TI) e o lado indústria. É o mais próximo que achamos de
+        # cobertura de LoL — nossa 2ª maior demanda (39) e a que segue mais
+        # descoberta: fontes dedicadas de LoL ou responderam 403/404 (Sheep
+        # Esports, Inven Global) ou eram notícia de game.
+        "url": "https://esportsinsider.com/feed",
+        "source": "Esports Insider",
+        "category": "esports",
+    },
+    {
+        # Misto (4/8 competitivo — o resto é skin/cosmético), mas os 4 acertam
+        # LoL, Valorant e CS de uma vez. Entra porque a régua de relevância do
+        # Cérebro agora exige 2+ termos distintivos: o cosmético não casa nada e
+        # morre no filtro, então o custo do ruído é baixo e o ganho é real.
+        "url": "https://esports.gg/feed/",
+        "source": "Esports.gg",
+        "category": "esports",
+    },
+    {
+        # Tênis é a MAIOR demanda isolada (46 mercados) e era servida só pelo
+        # r/tennis. 56 itens, com cobertura nominal de jogador — o item que abria
+        # o feed no teste era literalmente sobre o Alcaraz.
+        "url": "https://feeds.bbci.co.uk/sport/tennis/rss.xml",
+        "source": "BBC Tennis",
+        "category": "esportes",
+    },
+    {
+        # Segunda fonte de tênis, ângulo americano do circuito (US Open).
+        "url": "https://www.espn.com/espn/rss/tennis/news",
+        "source": "ESPN Tennis",
+        "category": "esportes",
+    },
+    {
+        # Beisebol (10 mercados). Fecha a lacuna que gerou o caso mais absurdo
+        # que já vimos: "San Diego Padres vs. Tampa Bay Rays" recebendo post de
+        # r/MMA como contexto, porque não havia a coisa certa para achar.
+        "url": "https://www.espn.com/espn/rss/mlb/news",
+        "source": "ESPN MLB",
+        "category": "esportes",
+    },
+
     # ── Cultura pop e games (lacuna fechada em 31/08/2026) ───────────────────
     # Prevemos 68 mercados de cultura/cinema em 45 dias (Oscar, prêmios, quem
     # aparece em qual faixa) e 9 de games (GTA VI) — e o Cérebro tinha ZERO
