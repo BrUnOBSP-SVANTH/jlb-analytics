@@ -58,7 +58,9 @@ export interface KalshiEvent {
   mutually_exclusive?: boolean;
   markets?: KalshiNestedMarket[];
 }
-export interface KalshiEventsResponse { events: KalshiEvent[] }
+// `cursor` = paginação do Kalshi. Sem ele a varredura pararia na 1ª página em
+// silêncio, e voltaríamos a mostrar os primeiros eventos em vez dos mais negociados.
+export interface KalshiEventsResponse { events: KalshiEvent[]; cursor?: string }
 export interface KalshiMarket {
   ticker: string; eventTicker: string; seriesTicker: string; title: string;
   yesProb: number; prevYesProb?: number;

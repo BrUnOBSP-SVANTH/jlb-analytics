@@ -7,14 +7,81 @@ import { log } from "../lib/log.ts";
 
 const router = Router();
 
+/** Páginas de 200 eventos varridas antes de ranquear. 10 cobre ~2.000 eventos
+ *  em ~3,5s — fundo suficiente para os líderes de volume aparecerem. */
+const PAGINAS_KALSHI = 10;
+
+/**
+ * Descarta título com buraco de interpolação e normaliza o espaçamento.
+ * Devolve `undefined` para o chamador cair na próxima alternativa.
+ */
+export function tituloLimpo(t?: string): string | undefined {
+  if (!t) return undefined;
+  const s = t.trim();                      // apara PRIMEIRO: sobra nas bordas é inofensiva
+  if (!s) return undefined;
+  if (/\s{2,}/.test(s)) return undefined;  // buraco INTERNO: "Will  become President" — falta o nome
+  return s;
+}
+
+/** Volume negociado em 24h somado nos mercados do evento — a régua de "vivo". */
+function volume24hDoEvento(ev: KalshiEvent): number {
+  return (ev.markets ?? []).reduce((s, m) => s + Math.round(parseFloat(m.volume_24h_fp ?? "0")), 0);
+}
+
+/** Volume total (histórico) — critério de desempate quando ninguém negociou hoje. */
+function volumeTotalDoEvento(ev: KalshiEvent): number {
+  return (ev.markets ?? []).reduce((s, m) => s + Math.round(parseFloat(m.volume_fp ?? "0")), 0);
+}
+
+/**
+ * Varre várias páginas de eventos abertos e devolve do mais negociado ao menos.
+ *
+ * Tolerante a falha no meio: se a página 3 cair, ranqueia o que já veio em vez de
+ * derrubar a resposta inteira — mercado desatualizado é ruim, tela vazia é pior.
+ */
+async function fetchRankedEvents(maxPaginas: number): Promise<KalshiEvent[]> {
+  const base = "https://api.elections.kalshi.com/trade-api/v2/events";
+  const acc: KalshiEvent[] = [];
+  let cursor = "";
+  for (let i = 0; i < maxPaginas; i++) {
+    const url = `${base}?limit=200&status=open&with_nested_markets=true${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`;
+    let data: KalshiEventsResponse;
+    try {
+      data = await fetchWithRetry<KalshiEventsResponse>(url, { "Accept": "application/json" });
+    } catch (err) {
+      log.warn(`[Kalshi] página ${i + 1} falhou, ranqueando ${acc.length} eventos já obtidos:`,
+        err instanceof Error ? err.message : err);
+      break;
+    }
+    const pagina = data.events ?? [];
+    acc.push(...pagina);
+    cursor = data.cursor ?? "";
+    if (!cursor || pagina.length === 0) break;
+  }
+  // Mais negociado hoje primeiro; empate (dia parado) desempata pelo histórico.
+  return acc.sort((a, b) =>
+    volume24hDoEvento(b) - volume24hDoEvento(a) || volumeTotalDoEvento(b) - volumeTotalDoEvento(a));
+}
+
 router.get("/markets", async (req, res) => {
   const limit = Math.min(parseInt(String(req.query.limit ?? "40"), 10), 100);
   try {
     // SWR: serve cache fresco na hora; se venceu, devolve o velho e atualiza em bg.
     const markets = await swr<KalshiMarket[]>("kalshi:markets", 120, async () => {
-      const url = `https://api.elections.kalshi.com/trade-api/v2/events?limit=${limit}&with_nested_markets=true`;
-      const data = await fetchWithRetry<KalshiEventsResponse>(url, { "Accept": "application/json" });
-      const events = data.events ?? [];
+      // ⚠️ PAGINAR E RANQUEAR, não pegar os primeiros. A API do Kalshi devolve os
+      // eventos em ordem própria (nem volume, nem data) e NÃO aceita ordenação.
+      // Pedir `?limit=40` direto trazia literalmente a borra do catálogo: em
+      // 31/08 os 40 mercados do site eram "Musk em Marte antes de 2099" (fecha em
+      // 73 anos), "Quem será o próximo Papa" (43 anos), TODOS fechando a mais de
+      // 2 anos, 33 dos 40 com volume ZERO em 24h. Eram mercados reais, mas
+      // mortos — e enquanto isso a Kalshi de verdade (indicação democrata de
+      // 2028, 861 mil em 24h; próximo porta-voz do Trump, 206 mil) não aparecia.
+      // O Polymarket nunca teve esse problema porque a rota dele já pede
+      // `order=volume`. Aqui a ordenação tem que ser nossa.
+      //
+      // Custo medido: 10 páginas × 200 = 2.000 eventos em ~3,5s, e o SWR serve o
+      // cache velho enquanto atualiza — só a primeira carga fria espera.
+      const events = await fetchRankedEvents(PAGINAS_KALSHI);
 
       // Um mercado aninhado do Kalshi → nosso formato normalizado.
       const toMarket = (m: KalshiNestedMarket, ev: KalshiEvent): KalshiMarket => {
@@ -24,7 +91,11 @@ router.get("/markets", async (req, res) => {
           eventTicker: ev.event_ticker,
           seriesTicker,
           externalUrl: kalshiMarketUrl(seriesTicker, ev.event_ticker),
-          title: m.title ?? ev.title ?? m.ticker,
+          // Espaço duplo denuncia interpolação vazia NA ORIGEM: o Kalshi publicou
+          // "Will  become President of the United States" — sem o nome. Preferimos
+          // o título do evento nesse caso; se nem ele existir, o ticker, que é feio
+          // mas verdadeiro. Nunca inventar o nome que falta.
+          title: tituloLimpo(m.title) ?? tituloLimpo(ev.title) ?? m.ticker,
           yesProb: kalshiYesProb(m.yes_bid_dollars, m.yes_ask_dollars, m.last_price_dollars),
           prevYesProb: m.previous_price_dollars
             ? parseFloat((parseFloat(m.previous_price_dollars) * 100).toFixed(1))
@@ -67,7 +138,15 @@ router.get("/markets", async (req, res) => {
           }
         }
         return active.map((m) => toMarket(m, ev));
-      }).slice(0, limit);
+      })
+        // Ranquear os EVENTOS não bastava: um evento se abre em vários mercados, e
+        // um só com escada de faixas ("ao menos 25%", "ao menos 30%"…) tomava as
+        // vagas seguintes com volume 1. Ordenar também no nível do mercado garante
+        // que os 40 exibidos sejam os 40 mais negociados, não os vizinhos dos mais
+        // negociados. Card agrupado entra com o volume somado do evento, então
+        // concorre em pé de igualdade.
+        .sort((a, b) => (b.volume24h ?? 0) - (a.volume24h ?? 0) || b.volume - a.volume)
+        .slice(0, limit);
     });
     res.json({ markets, source: "live" });
   } catch (err) {

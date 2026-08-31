@@ -349,7 +349,7 @@ let seedRunning = false;
 export interface RawKalshiMarket {
   ticker?: string; title?: string; yes_sub_title?: string;
   yes_bid_dollars?: string; yes_ask_dollars?: string; last_price_dollars?: string;
-  close_time?: string; volume_fp?: string;
+  close_time?: string; volume_fp?: string; volume_24h_fp?: string;
 }
 export interface ShortDatedTarget { ticker: string; title: string; prob: number; volume: number; closeMs: number }
 
@@ -463,12 +463,27 @@ export function categoryEdgeWeight(category: string): number {
  */
 async function fetchShortDatedKalshiTargets(daysAhead = 14, limit = 40): Promise<ShortDatedTarget[]> {
   try {
-    const maxTs = Math.floor(Date.now() / 1000) + daysAhead * 86_400;
+    const nowTs = Math.floor(Date.now() / 1000);
+    const maxTs = nowTs + daysAhead * 86_400;
+    // Pede FUNDO (1000) e ordena por volume aqui, em vez de pegar os `limit`
+    // primeiros. A API do Kalshi não aceita ordenação, então "os 40 primeiros que
+    // fecham em 14 dias" eram 40 quaisquer — e a IA gastava previsão em mercado
+    // sem ninguém negociando. A busca gêmea do Polymarket logo abaixo sempre pediu
+    // `order=volume`; esta ficou para trás. `min_close_ts` também exclui o que já
+    // fechou. O parser aplica o teto por série depois, então a variedade continua.
     const data = await fetchWithRetry<{ markets?: RawKalshiMarket[] }>(
-      `https://api.elections.kalshi.com/trade-api/v2/markets?status=open&max_close_ts=${maxTs}&limit=${limit}`,
+      `https://api.elections.kalshi.com/trade-api/v2/markets?status=open&min_close_ts=${nowTs}&max_close_ts=${maxTs}&limit=1000`,
       { Accept: "application/json" },
     );
-    return parseShortDatedKalshi(data?.markets ?? []);
+    const vol = (m: RawKalshiMarket, campo: "volume_24h_fp" | "volume_fp") => parseFloat(m[campo] ?? "0") || 0;
+    const ordenados = (data?.markets ?? [])
+      // Piso: alguém precisa ter negociado. O parser já exige preço real, mas
+      // preço sem volume é COTAÇÃO de formador de mercado, não preço que alguém
+      // pagou — e prever contra cotação parada não é prova de nada. Medido: dos
+      // 1.000 mercados que fecham em 14 dias, só 153 têm qualquer volume.
+      .filter((m) => vol(m, "volume_fp") > 0)
+      .sort((a, b) => vol(b, "volume_24h_fp") - vol(a, "volume_24h_fp") || vol(b, "volume_fp") - vol(a, "volume_fp"));
+    return parseShortDatedKalshi(ordenados).slice(0, limit);
   } catch { return []; }
 }
 
