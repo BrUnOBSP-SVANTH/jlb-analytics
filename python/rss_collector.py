@@ -62,18 +62,24 @@ FEEDS: list[dict[str, str]] = [
 
     # ── Política / Geopolítica (tópicos quentes em mercados preditivos) ──────
     {
-        "url": "https://feeds.reuters.com/reuters/politicsNews",
-        "source": "Reuters Politics",
-        "category": "política",
-    },
-    {
-        "url": "https://www.politico.com/rss/politicopicks.xml",
-        "source": "Politico",
+        "url": "https://thehill.com/news/feed/",
+        "source": "The Hill",
         "category": "política",
     },
     {
         "url": "https://feeds.bbci.co.uk/news/world/rss.xml",
         "source": "BBC World",
+        "category": "política",
+    },
+    # Cobertura internacional com ângulo NÃO-anglo: prevemos bastante Oriente
+    # Médio/geopolítica (iran 23 + geopolitics 7 + middle east 6 + military
+    # strikes 6 = 42 previsões em 45 dias) e a fonte era só BBC/Guardian, ambas
+    # britânicas. Al Jazeera cobre a região de dentro, com pauta e timing
+    # diferentes — é justamente onde um mercado global tende a demorar a
+    # precificar. Verificado: 25 itens.
+    {
+        "url": "https://www.aljazeera.com/xml/rss/all.xml",
+        "source": "Al Jazeera",
         "category": "política",
     },
     {
@@ -115,11 +121,6 @@ FEEDS: list[dict[str, str]] = [
 
     # ── Mercados preditivos (blog oficial das plataformas) ───────────────────
     {
-        "url": "https://insights.polymarket.com/feed",
-        "source": "Polymarket Insights",
-        "category": "mercados",
-    },
-    {
         "url": "https://kalshi.com/blog/rss",
         "source": "Kalshi Blog",
         "category": "mercados",
@@ -136,11 +137,6 @@ FEEDS: list[dict[str, str]] = [
     },
 
     # ── Macro / Economia ─────────────────────────────────────────────────────
-    {
-        "url": "https://feeds.reuters.com/reuters/businessNews",
-        "source": "Reuters Business",
-        "category": "macro",
-    },
     {
         "url": "https://search.cnbc.com/rs/search/combinedcms/view.xml?partnerId=wrss01&id=100003114",
         "source": "CNBC Markets",
@@ -179,7 +175,7 @@ FEEDS: list[dict[str, str]] = [
 
     # ── Esportes (futebol, NBA, NFL, MMA — grandes apostas) ─────────────────
     {
-        "url": "https://ge.globo.com/rss/gt/futebol/",
+        "url": "https://ge.globo.com/rss/ge/",
         "source": "Globo Esporte",
         "category": "esportes",
     },
@@ -243,7 +239,7 @@ FEEDS: list[dict[str, str]] = [
 
     # ── Cripto ───────────────────────────────────────────────────────────────
     {
-        "url": "https://cointelegraph.com/rss",
+        "url": "https://cointelegraph.com/feed",
         "source": "CoinTelegraph",
         "category": "cripto",
     },
@@ -267,11 +263,6 @@ FEEDS: list[dict[str, str]] = [
     {
         "url": "https://www.technologyreview.com/feed/",
         "source": "MIT Tech Review",
-        "category": "ciência",
-    },
-    {
-        "url": "https://feeds.reuters.com/reuters/technologyNews",
-        "source": "Reuters Tech",
         "category": "ciência",
     },
     {
@@ -669,7 +660,12 @@ async def main() -> None:
                 args.dry_run, supabase_url, service_key,
             )
             total += count
-            await asyncio.sleep(0.5)
+            # Pausa maior depois do Reddit: ele responde 429 quando as requisições
+            # vêm coladas, e o Reddit é ~40% das nossas fontes — perder o bloco
+            # inteiro por pressa é caro. 0,5s serve para os demais (RSS comum
+            # aguenta bem). O cron roda em background: 3s a mais por feed do
+            # Reddit não custa nada e evita o bloqueio.
+            await asyncio.sleep(3.0 if "reddit.com" in feed_cfg["url"] else 0.5)
 
         elapsed = time.monotonic() - t0
         log.info("Concluído: %d artigos em %.1fs (janela: %d dias)", total, elapsed, args.days)
