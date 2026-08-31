@@ -86,6 +86,17 @@ FEEDS: list[dict[str, str]] = [
         "source": "Agência Brasil",
         "category": "política",
     },
+    # Política BR era a nossa VANTAGEM real (o Cérebro acerta em cheio pergunta
+    # sobre aprovação do Lula) e ao mesmo tempo a área mais magra: só Agência
+    # Brasil (310) + r/brasil (721), contra 3.358 do InfoMoney. Se o pivô é o
+    # público brasileiro, esta é a fonte que precisa engordar.
+    # (G1 política foi testado e DESCARTADO: responde 200 mas sem <item> — fonte
+    # que falha em silêncio é pior que fonte ausente.)
+    {
+        "url": "https://www.poder360.com.br/feed/",
+        "source": "Poder360",
+        "category": "política",
+    },
     {
         "url": "https://www.reddit.com/r/worldnews/.rss",
         "source": "r/worldnews",
@@ -190,6 +201,38 @@ FEEDS: list[dict[str, str]] = [
     {
         "url": "https://www.reddit.com/r/MMA/.rss",
         "source": "r/MMA",
+        "category": "esportes",
+    },
+    # ── Lacunas fechadas em 30/08/2026 ──────────────────────────────────────
+    # Medição que motivou: cruzamos as FONTES com o VOLUME DE PREVISÕES e o
+    # descasamento era grande — e-sports é nossa MAIOR categoria (82 resolvidos)
+    # e tinha ZERO fontes; tênis (33) idem; beisebol aparecia nos mercados sem
+    # nenhuma cobertura. O sintoma disso era o Cérebro devolver post de r/MMA
+    # como "contexto" de um jogo de beisebol — ele buscava até achar qualquer
+    # coisa, porque não havia a coisa certa.
+    {
+        "url": "https://www.reddit.com/r/leagueoflegends/.rss",
+        "source": "r/leagueoflegends",
+        "category": "esports",
+    },
+    {
+        "url": "https://www.reddit.com/r/GlobalOffensive/.rss",
+        "source": "r/GlobalOffensive",
+        "category": "esports",
+    },
+    {
+        "url": "https://www.reddit.com/r/VALORANT/.rss",
+        "source": "r/VALORANT",
+        "category": "esports",
+    },
+    {
+        "url": "https://www.reddit.com/r/tennis/.rss",
+        "source": "r/tennis",
+        "category": "esportes",
+    },
+    {
+        "url": "https://www.reddit.com/r/baseball/.rss",
+        "source": "r/baseball",
         "category": "esportes",
     },
     {
@@ -329,6 +372,48 @@ async def _try_mymemory(client: httpx.AsyncClient, text: str) -> str | None:
         return None
 
 
+async def _try_groq(client: httpx.AsyncClient, text: str) -> str | None:
+    """
+    3º tradutor: Groq (grátis, rápido, com chave própria).
+
+    Existe porque os dois gratuitos SEM chave passaram a bloquear em massa — e o
+    efeito foi invisível: o artigo era salvo em inglês e seguia a vida. A medição
+    que revelou (30/08/2026): títulos em inglês no acervo saltaram de ~0,6% até
+    10/08 para 10,3% e depois 38,3% na semana corrente. Como o índice FTS é
+    português, cada título em inglês é um artigo que a busca por palavra deixa de
+    achar. Degradação silenciosa do Cérebro, semana após semana.
+    """
+    key = os.getenv("GROQ_API_KEY", "")
+    if not key:
+        return None
+    model = os.getenv("GROQ_MODEL", "openai/gpt-oss-120b")
+    try:
+        resp = await client.post(
+            "https://api.groq.com/openai/v1/chat/completions",
+            headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
+            json={
+                "model": model,
+                "messages": [
+                    {"role": "system", "content": "Traduza para português do Brasil. Responda APENAS com a tradução, sem aspas nem comentários."},
+                    {"role": "user", "content": text[:500]},
+                ],
+                "max_tokens": 300,
+                "temperature": 0,
+            },
+            timeout=15.0,
+        )
+        if resp.status_code != 200:
+            return None
+        content = resp.json()["choices"][0]["message"]["content"].strip()
+        # Um modelo pode "explicar" em vez de traduzir; título traduzido não vira
+        # texto 3x maior que o original.
+        if not content or len(content) > len(text) * 3:
+            return None
+        return content if not _is_translation_error(content) else None
+    except Exception:
+        return None
+
+
 _PT_WORDS = {"do", "da", "de", "no", "na", "em", "com", "que", "por", "uma", "são", "foi", "está"}
 
 
@@ -342,6 +427,10 @@ async def translate_to_pt(client: httpx.AsyncClient, text: str) -> str:
     if result:
         return result
     result = await _try_mymemory(client, text)
+    if result:
+        return result
+    # Último recurso antes de salvar em inglês (que envenena o índice PT).
+    result = await _try_groq(client, text)
     return result if result else text
 
 
@@ -441,16 +530,37 @@ async def collect_feed(
 
     log.info("Coletando %s…", source)
 
-    try:
-        resp = await client.get(feed_url, timeout=15.0, follow_redirects=True)
-        feed = feedparser.parse(resp.text)
-    except Exception as exc:
-        log.warning("Falha ao buscar %s: %s", source, exc)
+    # O Reddit responde 429 quando as requisições vêm coladas — e ANTES isso caía
+    # no mesmo "Sem entries" de um feed legitimamente vazio. Ou seja: metade das
+    # fontes podia estar sendo BLOQUEADA e o log dizia a mesma coisa que diria se
+    # não houvesse notícia nova. Falha silenciosa é o pior tipo — foi assim que a
+    # fila de resolução ficou 4 dias parada sem ninguém notar.
+    resp = None
+    for attempt in range(3):
+        try:
+            resp = await client.get(feed_url, timeout=15.0, follow_redirects=True)
+        except Exception as exc:
+            log.warning("Falha ao buscar %s: %s", source, exc)
+            return 0
+        if resp.status_code != 429:
+            break
+        wait = 5 * (attempt + 1)  # 5s, 10s — o Reddit solta rápido
+        log.info("  → %s respondeu 429 (limite); aguardando %ss…", source, wait)
+        await asyncio.sleep(wait)
+
+    if resp is not None and resp.status_code == 429:
+        log.warning("  ⚠️ %s BLOQUEADO por rate limit após 3 tentativas — sem coleta desta vez", source)
+        return 0
+    if resp is not None and resp.status_code >= 400:
+        log.warning("  ⚠️ %s respondeu HTTP %s — feed quebrado?", source, resp.status_code)
         return 0
 
+    feed = feedparser.parse(resp.text)
     entries = feed.entries[:limit]
     if not entries:
-        log.info("  → Sem entries em %s", source)
+        # Agora só chega aqui com HTTP 200: é feed realmente sem novidade OU
+        # formato inesperado — nunca mais um bloqueio disfarçado.
+        log.info("  → Sem entries em %s (HTTP 200 — feed vazio ou formato inesperado)", source)
         return 0
 
     articles: list[dict] = []
