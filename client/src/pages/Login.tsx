@@ -9,6 +9,7 @@ import { Mail, Lock, Eye, EyeOff, Chrome, ArrowLeft, AlertCircle, CheckCircle } 
 import { useAuth } from "@/contexts/AuthContext";
 import { useSEO } from "@/hooks/useSEO";
 import { track } from "@/lib/analytics";
+import { checkPassword, MIN_PASSWORD_LEN } from "@/lib/passwordSafety";
 
 type Mode = "login" | "signup" | "reset";
 
@@ -55,8 +56,12 @@ export default function Login() {
         navigate("/dashboard");
       }
     } else if (mode === "signup") {
-      if (password.length < 6) {
-        setErrorMsg("A senha deve ter pelo menos 6 caracteres.");
+      // Regras locais + checagem no HaveIBeenPwned (k-anonimato: a senha não sai
+      // do navegador). É a proteção do plano Pro do Supabase, implementada por
+      // nós — ver lib/passwordSafety.ts. Falha aberta se a API estiver fora.
+      const verdict = await checkPassword(password);
+      if (!verdict.ok) {
+        setErrorMsg(verdict.reason ?? "Escolha uma senha mais forte.");
         setSubmitting(false);
         return;
       }
@@ -155,7 +160,7 @@ export default function Login() {
                   type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder={mode === "signup" ? "Mínimo 6 caracteres" : "Sua senha"}
+                  placeholder={mode === "signup" ? `Mínimo ${MIN_PASSWORD_LEN} caracteres, com letras e números` : "Sua senha"}
                   required
                   autoComplete={mode === "login" ? "current-password" : "new-password"}
                   className={`${inputClass} pl-10 pr-10`}
