@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { topKeywords, looksEnglish, rankHits, dedupeByTitle } from "./cerebro.ts";
+import { topKeywords, looksEnglish, rankHits, dedupeByTitle, overlapsQuery } from "./cerebro.ts";
 
 describe("topKeywords", () => {
   it("prioriza substantivos próprios (entidades do mercado)", () => {
@@ -22,6 +22,42 @@ describe("topKeywords", () => {
 
   it("retorna vazio quando só há stopwords/termos curtos", () => {
     expect(topKeywords("the a of e um")).toBe("");
+  });
+
+  // Regressão (31/08): o corte por tamanho engolia siglas e times de e-sport,
+  // que são justamente os termos mais distintivos da categoria.
+  it("preserva siglas e nomes curtos (LCK, T1, BO5, BTC)", () => {
+    const kw = topKeywords("LoL: T1 vs Gen.G (BO5) - LCK Finals", 6);
+    expect(kw).toContain("LCK");
+    expect(kw).toContain("T1");
+    expect(topKeywords("Preço do BTC acima de 115 mil", 6)).toContain("BTC");
+  });
+
+  it("ainda descarta palavras curtas comuns (vs, de, do)", () => {
+    const kw = topKeywords("Flamengo vs Palmeiras no Maracanã", 6);
+    expect(kw.split(" ")).not.toContain("vs");
+  });
+});
+
+describe("overlapsQuery — impede que palavra genérica case mercados alheios", () => {
+  const ruidoNba = {
+    title: "Replays Boris Diaw lockdown defense against LeBron in the 2014 Finals",
+    summary: "NBA destaque",
+  };
+  const noticiaReal = {
+    title: "T1 avança para a final da LCK após vencer Gen.G",
+    summary: "LCK playoffs BO5",
+  };
+  // O bug real: "LoL: T1 vs Gen.G (BO5) - LCK Finals" sobrava com UM termo
+  // ("Finals") e um destaque de basquete entrava como contexto do mercado.
+  const termos = topKeywords("LoL: T1 vs Gen.G (BO5) - LCK Finals", 6).split(" ");
+
+  it("rejeita o hit que só casa a palavra genérica", () => {
+    expect(overlapsQuery(ruidoNba, termos)).toBe(false);
+  });
+
+  it("aceita o hit que casa as entidades da pergunta", () => {
+    expect(overlapsQuery(noticiaReal, termos)).toBe(true);
   });
 });
 

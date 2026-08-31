@@ -32,7 +32,17 @@ export function topKeywords(text: string, n = 4): string {
   const common: string[] = [];
   tokens.forEach((w, i) => {
     const lower = w.toLowerCase();
-    if (w.length <= 3 || STOPWORDS.has(lower) || seen.has(lower)) return;
+    // ⚠️ O corte por tamanho (<=3) descartava justamente os termos MAIS
+    // distintivos de várias categorias: em e-sports os times são T1, G2, FPX e
+    // as ligas LCK, LEC (e formatos BO3/BO5); em cripto os tickers são BTC, ETH.
+    // Flagrado em 31/08: "LoL: T1 vs Gen.G (BO5) - LCK Finals" sobrava com UM
+    // termo — "Finals" — e casava com "NBA Finals". Um mercado de e-sport
+    // recebia destaque de basquete como "contexto".
+    // Agora tokens curtos sobrevivem quando são claramente entidades: sigla em
+    // maiúsculas (LCK, BTC) ou mistura de letra e número (T1, G2, BO5).
+    const curtoMasDistintivo =
+      w.length >= 2 && (/^[A-Z0-9]+$/.test(w) || /^[A-Za-z]+\d+$/.test(w));
+    if ((w.length <= 3 && !curtoMasDistintivo) || STOPWORDS.has(lower) || seen.has(lower)) return;
     seen.add(lower);
     if (i > 0 && /^[A-ZÀ-Ú]/.test(w)) proper.push(w);
     else common.push(w);
@@ -52,6 +62,19 @@ export function looksEnglish(text: string): boolean {
 
 const normText = (s: string) => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
 
+/**
+ * Termos que valem como prova de sobreposição. Regra igual à do `topKeywords`:
+ * ≥4 letras, OU sigla/alfanumérico curto (LCK, BTC, T1, BO5) — que costuma ser o
+ * termo MAIS distintivo, não o menos. Precisa olhar o token cru (antes de
+ * `normText`), porque é a caixa alta que denuncia a sigla.
+ */
+function usefulTerms(terms: string[]): string[] {
+  const kept = terms.filter(
+    (t) => t.length >= 4 || /^[A-Z0-9]{2,}$/.test(t) || /^[A-Za-z]+\d+$/.test(t),
+  );
+  return Array.from(new Set(kept.map(normText).filter(Boolean)));
+}
+
 /** Frescor: notícia de hoje vale ~0.9; decai linearmente até 0 em 21 dias.
  *  Teto < 1 de propósito — desempata hits de mesma relevância, mas NUNCA
  *  atropela um hit com um termo a mais (que vale 1.0). Relevância > recência. */
@@ -66,7 +89,7 @@ function recencyBoost(date?: string): number {
  *  título+resumo (sínteses ganham meio ponto) + bônus de frescor. É o que
  *  salva a relevância do fallback OR e faz a notícia recente subir. Exportada p/ teste. */
 export function rankHits<T extends { title: string; summary: string; kind?: string; date?: string }>(hits: T[], terms: string[]): T[] {
-  const nterms = Array.from(new Set(terms.map(normText).filter((t) => t.length >= 4)));
+  const nterms = usefulTerms(terms);
   if (nterms.length === 0) return hits;
   const score = (h: T) => {
     const text = normText(`${h.title} ${h.summary}`);
@@ -88,7 +111,7 @@ export function overlapsQuery(
   terms: string[],
   minMatches = 2,
 ): boolean {
-  const nterms = Array.from(new Set(terms.map(normText).filter((t) => t.length >= 4)));
+  const nterms = usefulTerms(terms);
   if (nterms.length === 0) return true;                 // sem termos distintivos, não dá para filtrar
   const need = Math.min(minMatches, nterms.length);      // não exige mais do que existe
   const text = normText(`${h.title} ${h.summary}`);
