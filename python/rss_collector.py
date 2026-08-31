@@ -237,6 +237,32 @@ FEEDS: list[dict[str, str]] = [
         "category": "esportes",
     },
 
+    # ── Cultura pop e games (lacuna fechada em 31/08/2026) ───────────────────
+    # Prevemos 68 mercados de cultura/cinema em 45 dias (Oscar, prêmios, quem
+    # aparece em qual faixa) e 9 de games (GTA VI) — e o Cérebro tinha ZERO
+    # fontes disso. Sem cobertura, a busca caía na cascata e devolvia qualquer
+    # coisa; agora tem onde buscar. Todos verificados por requisição.
+    {
+        "url": "https://variety.com/feed/",
+        "source": "Variety",
+        "category": "cultura",
+    },
+    {
+        "url": "https://www.hollywoodreporter.com/feed/",
+        "source": "Hollywood Reporter",
+        "category": "cultura",
+    },
+    {
+        "url": "https://www.ign.com/rss/articles/feed",
+        "source": "IGN",
+        "category": "games",
+    },
+    {
+        "url": "https://feeds.arstechnica.com/arstechnica/gaming",
+        "source": "Ars Technica Gaming",
+        "category": "games",
+    },
+
     # ── Cripto ───────────────────────────────────────────────────────────────
     {
         "url": "https://cointelegraph.com/feed",
