@@ -59,6 +59,17 @@ describe("overlapsQuery — impede que palavra genérica case mercados alheios",
   it("aceita o hit que casa as entidades da pergunta", () => {
     expect(overlapsQuery(noticiaReal, termos)).toBe(true);
   });
+
+  // Regressão (31/08): casamento era por SUBSTRING. O mercado de Dota "Inner
+  // Circle (BO3) - EPL Masters" puxou um artigo sobre depósitos de USDC porque
+  // "epl" cabe dentro de "deployer". Termo tem que casar palavra inteira.
+  it("não casa termo escondido dentro de outra palavra", () => {
+    const cripto = {
+      title: "Hyperliquid’s next big revenue boost activates today",
+      summary: "under the deal coinbase (treasury deployer) and circle struck back in may",
+    };
+    expect(overlapsQuery(cripto, ["Inner", "Circle", "BO3", "EPL"])).toBe(false);
+  });
 });
 
 describe("looksEnglish", () => {

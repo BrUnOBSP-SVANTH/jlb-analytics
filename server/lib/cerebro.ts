@@ -8,7 +8,7 @@ import { callClaude } from "./anthropic.ts";
 import { extractJson } from "./extractJson.ts";
 import { embedText, embeddingsEnabled } from "./embeddings.ts";
 
-interface CerebroHit { title: string; summary: string; source: string; kind: "síntese" | "artigo"; date?: string; _semantic?: boolean }
+interface CerebroHit { title: string; summary: string; source: string; kind: "síntese" | "artigo"; date?: string; _semantic?: boolean; _sim?: number }
 
 const STOPWORDS = new Set([
   // PT
@@ -75,6 +75,26 @@ function usefulTerms(terms: string[]): string[] {
   return Array.from(new Set(kept.map(normText).filter(Boolean)));
 }
 
+const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+/**
+ * Quantos termos o texto contém — como PALAVRA INTEIRA, não como pedaço de outra.
+ *
+ * Era `text.includes(termo)`, e substring pegava coincidência absurda: o mercado
+ * "Dota 2: 4ikibamboni vs Inner Circle (BO3) - EPL Masters" casou um artigo sobre
+ * depósitos de USDC porque "epl" está dentro de "d(epl)oyer" e "circle" era a
+ * empresa de cripto. Dois acidentes ortográficos bastaram para furar a régua de
+ * "2+ termos" — quanto mais curto o termo, mais fácil ele se esconder dentro de
+ * outra palavra, e o conserto das siglas (LCK, T1, BO3) tornou isso mais provável,
+ * não menos. Os dois andam juntos de propósito.
+ */
+function matchCount(text: string, nterms: string[]): number {
+  return nterms.reduce(
+    (acc, t) => acc + (new RegExp(`(?<![a-z0-9])${escapeRe(t)}(?![a-z0-9])`).test(text) ? 1 : 0),
+    0,
+  );
+}
+
 /** Frescor: notícia de hoje vale ~0.9; decai linearmente até 0 em 21 dias.
  *  Teto < 1 de propósito — desempata hits de mesma relevância, mas NUNCA
  *  atropela um hit com um termo a mais (que vale 1.0). Relevância > recência. */
@@ -92,8 +112,7 @@ export function rankHits<T extends { title: string; summary: string; kind?: stri
   const nterms = usefulTerms(terms);
   if (nterms.length === 0) return hits;
   const score = (h: T) => {
-    const text = normText(`${h.title} ${h.summary}`);
-    const overlap = nterms.reduce((acc, t) => acc + (text.includes(t) ? 1 : 0), 0);
+    const overlap = matchCount(normText(`${h.title} ${h.summary}`), nterms);
     return overlap + (h.kind === "síntese" ? 0.5 : 0) + recencyBoost(h.date);
   };
   return hits.map((h) => ({ h, s: score(h) })).sort((a, b) => b.s - a.s).map(({ h }) => h);
@@ -114,8 +133,7 @@ export function overlapsQuery(
   const nterms = usefulTerms(terms);
   if (nterms.length === 0) return true;                 // sem termos distintivos, não dá para filtrar
   const need = Math.min(minMatches, nterms.length);      // não exige mais do que existe
-  const text = normText(`${h.title} ${h.summary}`);
-  return nterms.filter((t) => text.includes(t)).length >= need;
+  return matchCount(normText(`${h.title} ${h.summary}`), nterms) >= need;
 }
 
 /** Remove duplicatas por título normalizado (mesmo artigo sindicalizado em fontes diferentes). Exportada p/ teste. */
@@ -189,6 +207,11 @@ function interleave<T>(a: T[], b: T[]): T[] {
 /** Busca semântica (embeddings + pgvector): acha artigos relevantes SEM match de
  *  palavra-chave. Retorna [] se embeddings/RPC não estiverem disponíveis (migração
  *  016 ainda não aplicada, ou sem GEMINI_API_KEY) → o FTS assume sozinho. */
+/** Abaixo disto nem vale buscar: é o chão de semelhança entre dois textos quaisquer. */
+const PISO_SEMANTICO = 0.60;
+/** A partir daqui o vetor decide sozinho, sem precisar de confirmação lexical. */
+const ALTA_CONFIANCA = 0.65;
+
 async function semanticCerebro(searchText: string): Promise<CerebroHit[]> {
   if (!embeddingsEnabled() || !SUPABASE_URL || !SUPABASE_KEY) return [];
   // Cacheia o VETOR da query (1h): a mesma busca não re-embeda — economiza a cota do
@@ -204,25 +227,30 @@ async function semanticCerebro(searchText: string): Promise<CerebroHit[]> {
     const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/match_cerebro_articles`, {
       method: "POST",
       headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, "Content-Type": "application/json" },
-      // ⚠️ PISO 0.65, calibrado por MEDIÇÃO (2026-08-30), não por chute. Com o
-      // piso antigo de 0.40 o filtro era inexistente e entravam absurdos —
-      // "San Diego Padres vs. Tampa Bay Rays" trazia posts do r/MMA como
-      // "contexto", e a IA raciocinava em cima disso. As similaridades reais
-      // separam sem sobreposição:
+      // ⚠️ PISO 0.60 + DUAS FAIXAS, calibrado por MEDIÇÃO (2026-08-31), não por
+      // chute. Histórico: 0.40 não filtrava nada (beisebol trazia r/MMA); subiu
+      // para 0.65 e passou a matar sinal legítimo. Medido nos dois regimes:
       //    ruído  (MMA p/ beisebol, futebol p/ Valorant) → 0.564–0.573
-      //    sinal  (pesquisas do Lula p/ pergunta do Lula) → 0.731–0.741
-      //           (preço do BTC p/ pergunta do BTC)       → 0.744–0.764
-      // ~0.57 é só o chão de similaridade genérica entre dois textos quaisquer;
-      // 0.65 fica no vale entre os dois grupos. Contexto irrelevante é PIOR que
-      // nenhum: convida o modelo a raciocinar a partir de ruído.
-      body: JSON.stringify({ query_embedding: `[${vec.join(",")}]`, match_count: 5, min_similarity: 0.65 }),
+      //    ruído  ("Fila Amaldiçoada" p/ Valorant)       → 0.587
+      //    ruído  (LCS p/ pergunta de LCK)               → 0.593
+      //    SINAL  ("Alcaraz anuncia volta" p/ Alcaraz)   → 0.624  ← 0.65 matava
+      //    sinal  (Lula p/ pergunta do Lula)             → 0.731–0.741
+      //    sinal  (preço do BTC p/ pergunta do BTC)      → 0.744–0.764
+      // Ou seja: NÃO existe um piso único que separe os dois grupos. Perguntas
+      // de ENTIDADE ("Alcaraz vs Sinner") comprimem a similaridade — o artigo
+      // certo fala de OUTRA partida do mesmo torneio, então o vetor fica no meio
+      // do caminho. Por isso a decisão virou de duas faixas (ver ALTA_CONFIANCA):
+      // acima de 0.65 o vetor decide sozinho; entre 0.60 e 0.65 ele só entra se
+      // o texto confirmar uma entidade da pergunta. Abaixo de 0.60 nem busca.
+      body: JSON.stringify({ query_embedding: `[${vec.join(",")}]`, match_count: 6, min_similarity: PISO_SEMANTICO }),
       signal: AbortSignal.timeout(6_000),
     });
     if (!res.ok) return []; // RPC ausente (migração não aplicada) → fallback FTS
-    const rows = await res.json() as Array<{ title: string; summary: string | null; source: string; published_at: string | null }>;
+    const rows = await res.json() as Array<{ title: string; summary: string | null; source: string; published_at: string | null; similarity?: number }>;
     return rows.map((r) => ({
       title: r.title, summary: (r.summary ?? "").slice(0, 250),
       source: r.source, kind: "artigo" as const, date: r.published_at ?? undefined, _semantic: true,
+      _sim: typeof r.similarity === "number" ? r.similarity : undefined,
     }));
   } catch { return []; }
 }
@@ -282,28 +310,37 @@ export async function fetchCerebroContext(title: string, description?: string): 
     // frente; nos artigos, intercala os do FTS (por sobreposição de termos) com os
     // semânticos (por similaridade) — o semântico NÃO é rebaixado por não ter match
     // de palavra-chave, que é exatamente o ponto dele.
-    // ⛔ NADA RELEVANTE > RUÍDO. Se só chegamos aqui afrouxando a busca (fallback)
-    // E o semântico não confirmou nada, a correspondência é fraca por definição.
-    // Antes devolvíamos assim mesmo com um aviso "ignore o que não for relevante"
-    // — e o modelo raciocinava em cima do ruído do mesmo jeito (respondia sobre
-    // beisebol citando posts de MMA). Contexto irrelevante não é neutro: ele
-    // convida a inventar. Melhor devolver vazio e deixar o modelo assumir que não
-    // sabe. (Medível: had_news_context passa a ser false nesses casos.)
-    if (usedFallback && semanticHits.length === 0) return { context: "", hits: [] };
+    // ⛔ NADA RELEVANTE > RUÍDO — mas o corte tem que ser fino, não cego.
+    // Havia aqui um `if (usedFallback && semanticHits.length === 0) return vazio`.
+    // A intenção era certa (contexto irrelevante convida o modelo a inventar),
+    // mas ele desistia ANTES do filtro de sobreposição lá embaixo — e levava
+    // junto acerto legítimo. Flagrado em 31/08: "Tennis: Alcaraz vs Sinner - US
+    // Open" devolvia ZERO enquanto o Cérebro tinha "Alcaraz anuncia volta para
+    // defender título" — casava o nome próprio, e mesmo assim ia para o lixo.
+    // O corte fino (`relevant`, 2+ termos distintivos) já faz esse trabalho sem
+    // efeito colateral, e o `hits.length === 0` no fim garante o mesmo vazio.
+    void usedFallback; // mantido: alimenta o log de diagnóstico da cascata
 
     const deduped = dedupeByTitle([...hits, ...semanticHits]);
     // Sínteses NÃO entram mais incondicionalmente na frente: elas são âncora de
     // qualidade, mas uma síntese de cripto liderando uma pergunta sobre o Lula é
     // ruído bem formatado. Agora concorrem por relevância como o resto.
-    // Os hits SEMÂNTICOS (piso 0.65) provaram-se precisos; os do FTS entram por
-    // sobreposição de palavra, e uma palavra comum basta para colar qualquer coisa
-    // (a pergunta sobre o Lula trazia síntese de cripto, "El Niño navio" e
-    // "Discord Justiça Federal", cada um tocando UM termo). Por isso o FTS agora
-    // precisa casar 2+ termos distintivos; o semântico passa pelo próprio piso.
-    const relevant = (h: CerebroHit) => h._semantic || overlapsQuery(h, words);
+    // Quem entra no contexto, por origem:
+    //  · semântico ACIMA de 0.65 → entra sozinho (faixa provada precisa);
+    //  · semântico entre 0.60 e 0.65 → só com confirmação lexical, porque essa
+    //    faixa mistura o artigo certo do torneio certo (0.624) com discussão
+    //    diária genérica do mesmo subreddit (0.636 — MAIS alto que o sinal!).
+    //    O vetor sozinho não separa os dois; o nome próprio separa.
+    //  · FTS → sempre precisa de 2+ termos distintivos, porque uma palavra comum
+    //    cola qualquer coisa (a pergunta sobre o Lula trazia síntese de cripto,
+    //    "El Niño navio" e "Discord Justiça Federal", cada um tocando UM termo).
+    const relevant = (h: CerebroHit) =>
+      (h._semantic && (h._sim ?? 0) >= ALTA_CONFIANCA) || overlapsQuery(h, words);
     const synth = rankHits(deduped.filter((h) => h.kind === "síntese"), words).filter(relevant);
     const ftsArts = rankHits(deduped.filter((h) => h.kind === "artigo" && !h._semantic), words).filter(relevant);
-    const semArts = deduped.filter((h) => h.kind === "artigo" && h._semantic);
+    // .filter(relevant) TAMBÉM aqui: antes o grupo semântico entrava inteiro sem
+    // passar pela régua — era por onde a faixa 0.60–0.65 vazaria sem confirmação.
+    const semArts = deduped.filter((h) => h.kind === "artigo" && h._semantic).filter(relevant);
     hits = [...synth, ...interleave(semArts, ftsArts)].slice(0, 6);
     if (hits.length === 0) return { context: "", hits: [] };
 
