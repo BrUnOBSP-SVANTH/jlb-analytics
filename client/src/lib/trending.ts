@@ -100,14 +100,57 @@ export function normalizeCategory(raw?: string, source?: Source, subreddit?: str
   }
   if (!raw) return "other";
   const r = raw.toLowerCase();
-  if (r.includes("sport") || r.includes("soccer") || r.includes("football") || r.includes("nba") || r.includes("nfl") || r.includes("esport") || r.includes("futebol") || r.includes("baseball") || r.includes("tennis") || r.includes("mma") || r.includes("boxing")) return "sports";
-  if (r.includes("polit") || r.includes("election") || r.includes("govt") || r.includes("govern") || r.includes("president") || r.includes("congress") || r.includes("senate") || r.includes("trump") || r.includes("biden") || r.includes("world") || r.includes("geopolit")) return "politics";
-  if (r.includes("crypto") || r.includes("bitcoin") || r.includes("btc") || r.includes("eth") || r.includes("defi") || r.includes("web3") || r.includes("blockchain") || r.includes("token")) return "crypto";
-  if (r.includes("pop") || r.includes("entertain") || r.includes("award") || r.includes("music") || r.includes("movie") || r.includes("film") || r.includes("tv") || r.includes("celebrity") || r.includes("culture") || r.includes("oscars") || r.includes("grammy")) return "pop";
-  if (r.includes("business") || r.includes("economy") || r.includes("market") || r.includes("stock") || r.includes("finance") || r.includes("trade") || r.includes("gdp") || r.includes("inflation") || r.includes("rate") || r.includes("economic")) return "business";
-  if (r.includes("science") || r.includes("tech") || r.includes("ai") || r.includes("space") || r.includes("climate") || r.includes("health") || r.includes("medical") || r.includes("research") || r.includes("drug") || r.includes("fda")) return "science";
+  // A ordem importa: o primeiro grupo que casar vence.
+  if (radical(r, RADICAIS.sports)   || palavra(r, SIGLAS.sports))   return "sports";
+  if (radical(r, RADICAIS.politics) || palavra(r, SIGLAS.politics)) return "politics";
+  if (radical(r, RADICAIS.crypto)   || palavra(r, SIGLAS.crypto))   return "crypto";
+  if (radical(r, RADICAIS.pop)      || palavra(r, SIGLAS.pop))      return "pop";
+  if (radical(r, RADICAIS.business) || palavra(r, SIGLAS.business)) return "business";
+  if (radical(r, RADICAIS.science)  || palavra(r, SIGLAS.science))  return "science";
   return "other";
 }
+
+/**
+ * Radical = casa como PEDAÇO da palavra. Só para raízes longas e inequívocas
+ * ("polit" pega politics/political/politician).
+ */
+const radical = (texto: string, raizes: readonly string[]) => raizes.some((t) => texto.includes(t));
+
+/**
+ * Sigla/nome = casa como PALAVRA INTEIRA. Existe porque casar sigla por pedaço
+ * produz absurdo silencioso: a regra antiga tinha `includes("ai")` e classificava
+ * mercado sobre a UCRÂNIA como Ciência/Tech — "ukr(ai)ne". Mesma armadilha de
+ * "oil" dentro de "b(oil)ing" e "uk" dentro de "(uk)raine".
+ */
+const palavra = (texto: string, termos: readonly string[]) =>
+  termos.some((t) => new RegExp(`(?<![a-z0-9])${t}(?![a-z0-9])`).test(texto));
+
+// As listas abaixo NÃO são chute: saíram de auditar as 73 categorias cruas que
+// caíam em "Outros" com os mercados reais em 01/09/2026 — 48% do catálogo do
+// Polymarket era inclassificável, com erros gritantes ("fomc" e "Financials"
+// fora de Negócios, "Iran" e "Military Strikes" fora de Política, "MLB" fora de
+// Esportes). Ao ampliar o catálogo de 96 para 272 o problema saiu do canto e
+// virou quase metade da tela.
+const RADICAIS = {
+  sports:   ["sport", "soccer", "football", "futebol", "baseball", "tennis", "boxing", "hockey", "basket", "golf", "racing", "cricket"],
+  politics: ["polit", "election", "govt", "govern", "president", "congress", "senate", "trump", "biden", "geopolit",
+             "midterm", "military", "regime", "court", "parliament", "minister", "unrest", "sanction", "primary"],
+  crypto:   ["crypto", "bitcoin", "ethereum", "defi", "web3", "blockchain", "token", "stablecoin"],
+  pop:      ["entertain", "award", "music", "movie", "film", "celebrity", "culture", "oscar", "grammy", "emmy", "netflix", "gta"],
+  business: ["business", "econom", "market", "stock", "financ", "trade", "gdp", "inflation", "compan",
+             "acquisition", "earnings", "revenue", "powell", "fomc", "recession", "tariff", "bank"],
+  science:  ["science", "tech", "space", "climate", "health", "medical", "research", "drug", "pandemic", "vaccine", "nasa", "hurricane", "alien"],
+} as const;
+
+const SIGLAS = {
+  sports:   ["nba", "nfl", "mlb", "mls", "nhl", "ufc", "mma", "ucl", "atp", "wta", "us open", "f1"],
+  politics: ["world", "iran", "israel", "china", "russia", "ukraine", "nato", "cuba", "venezuela", "brazil",
+             "uk", "united states", "putin", "zelensky", "middle east", "gaza", "taiwan", "north korea", "romania", "resign"],
+  crypto:   ["btc", "eth", "xrp", "sol", "solana", "doge", "fdv"],
+  pop:      ["pop", "tv"],
+  business: ["fed", "cpi", "rate", "rates", "davos", "opec", "oil", "ipo"],
+  science:  ["ai", "fda", "spacex", "openai", "anthropic"],
+} as const;
 
 export type DynamicBadge = "viral" | "nova" | "em-alta" | "encerrando";
 
