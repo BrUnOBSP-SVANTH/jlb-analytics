@@ -46,25 +46,61 @@ export type CanonicalCategory =
 // Tokens curtos/ambíguos evitados de propósito (ex.: "eth"→ethiopia, "sol"→solar,
 // "war"→awards, "ai"→sem espaços). Onde inevitável, usa espaços de borda.
 const RULES: Array<[CanonicalCategory, string[]]> = [
-  ["crypto",   ["bitcoin", "ethereum", "crypto", "xrp", "solana", "cardano", "dogecoin", "altcoin", "stablecoin"]],
+  ["crypto",   ["bitcoin", "ethereum", "crypto", "xrp", "solana", "cardano", "dogecoin", "altcoin", "stablecoin", "token"]],
   ["tennis",   ["tennis", "roland garros", "wimbledon", "us open"]],
   ["esports",  ["esport", "e-sport", "league of legends", "dota", "counter-strike", "cs:go", "csgo", "valorant", "overwatch"]],
-  ["sports",   ["sport", "soccer", "football", "nfl", "nba", "mlb", "nhl", "basketball", "baseball", "hockey", "formula 1", "formula1", "ufc", "boxing", "golf", "cricket", "olymp"]],
-  ["politics", ["politic", "election", "president", "senate", "congress", "trump", "biden", "geopolit", "iran", "government", "parliament", "prime minister", "united states", "machado"]],
-  ["economy",  ["econom", "finance", "financ", "gdp", "inflation", "selic", "interest rate", "recession", "oil price", "stock", "unemployment"]],
-  ["science",  ["science", "scien", "technolog", "nasa", "spacex", "artificial intelligence", " ai ", "vaccine", "medicine"]],
+  ["sports",   ["sport", "soccer", "football", "nfl", "nba", "mlb", "nhl", "basketball", "baseball", "hockey", "formula 1", "formula1", "ufc", "boxing", "golf", "cricket", "olymp",
+                // "world cup" ANTES de "world" (política): a ordem das RULES decide, e
+                // sem isso a Copa do Mundo seria classificada como geopolítica.
+                "world cup", "copa do mundo"]],
+  // Radicais acrescentados em 01/09 a partir dos buracos MEDIDOS nos mercados
+  // reais — "Companies" (14 mercados) e "Business" (5) ficavam fora de economia,
+  // "Military Strikes" e "Minnesota Unrest" fora de política, "Tech" fora de
+  // ciência. Todos longos o bastante para casar por pedaço sem risco.
+  ["politics", ["politic", "election", "president", "senate", "congress", "trump", "biden", "geopolit", "iran", "government", "parliament", "prime minister", "united states", "machado",
+                "military", "sanction", "midterm", "unrest", "impeach", "world", "middle east"]],
+  ["economy",  ["econom", "finance", "financ", "gdp", "inflation", "selic", "interest rate", "recession", "oil price", "stock", "unemployment",
+                "business", "compan", "tariff", "acquisition", "earnings", "revenue"]],
+  ["science",  ["science", "scien", "technolog", "tech", "nasa", "spacex", "artificial intelligence", " ai ", "vaccine", "medicine", "pandemic", "openai", "anthropic"]],
   ["climate",  ["climate", "weather", "temperature", "hurricane", "enso", "el niño", "el nino", "la niña", "la nina", "co2", "emission"]],
   ["culture",  ["culture", "pop-culture", "movie", "film", "oscar", "award", "music", "grammy", "entertainment", "celebrity", "streaming", "box office"]],
 ];
+
+/**
+ * Siglas e nomes curtos, casados como PALAVRA INTEIRA.
+ *
+ * Existem porque o comentário acima diagnosticou certo mas concluiu apertado:
+ * token curto por substring realmente produz absurdo ("sol"→solar, "war"→awards),
+ * então eles foram simplesmente EVITADOS. O preço disso foi um buraco — medido em
+ * 01/09 nos mercados reais, 24% caíam em "other", com "NATO", "Oil", "Fed", "FDV"
+ * e "Tech" inclassificáveis. Casar palavra inteira remove o impedimento em vez de
+ * contorná-lo: "sol" não casa "solar", mas casa "SOL".
+ *
+ * Mesma prioridade das RULES — a primeira categoria que casar, por qualquer um dos
+ * dois critérios, vence.
+ */
+const PALAVRAS: Partial<Record<CanonicalCategory, string[]>> = {
+  crypto:   ["btc", "eth", "sol", "doge", "fdv"],
+  tennis:   ["atp", "wta"],
+  esports:  ["lol", "lck", "lec", "lcs", "vct", "cs2"],
+  sports:   ["mls", "ucl", "f1"],
+  politics: ["nato", "israel", "cuba", "ukraine", "china", "russia", "venezuela",
+             "gaza", "taiwan", "uk", "war"],
+  economy:  ["fed", "fomc", "cpi", "oil", "ipo", "davos", "opec"],
+  science:  ["ai", "fda"],
+  climate:  ["enso", "co2"],
+};
+
+const ehPalavra = (texto: string, termo: string) =>
+  new RegExp(`(?<![a-z0-9])${termo}(?![a-z0-9])`).test(texto);
 
 /** Mapeia uma categoria crua para a taxonomia canônica. `null`/desconhecida → "other". */
 export function normalizeCategory(raw: string | null | undefined): CanonicalCategory {
   if (!raw) return "other";
   const s = ` ${raw.toLowerCase().trim()} `; // espaços nas bordas p/ o " ai " casar como palavra
   for (const [canon, keys] of RULES) {
-    for (const k of keys) {
-      if (s.includes(k)) return canon;
-    }
+    if (keys.some((k) => s.includes(k))) return canon;
+    if ((PALAVRAS[canon] ?? []).some((k) => ehPalavra(s, k))) return canon;
   }
   return "other";
 }

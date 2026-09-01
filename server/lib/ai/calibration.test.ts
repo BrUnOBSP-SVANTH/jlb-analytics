@@ -132,3 +132,29 @@ describe("applyCategoryCalibration — no-op honesto quando não há viés", () 
     expect(applyCategoryCalibration(20, "Politics", map).fairValue).toBe(5); // 20-40=-20 → 5
   });
 });
+
+describe("normalizeCategory — siglas curtas por palavra inteira (01/09)", () => {
+  // Motivo: 24% dos mercados reais caíam em "other" porque siglas curtas eram
+  // EVITADAS de propósito — casá-las por substring dava absurdo. Casar palavra
+  // inteira remove o impedimento em vez de contorná-lo.
+  it("classifica as siglas que antes ficavam de fora", () => {
+    expect(normalizeCategory("NATO")).toBe("politics");
+    expect(normalizeCategory("Oil")).toBe("economy");
+    expect(normalizeCategory("Fed")).toBe("economy");
+    expect(normalizeCategory("FDV")).toBe("crypto");
+    expect(normalizeCategory("Companies")).toBe("economy");
+    expect(normalizeCategory("Tech")).toBe("science");
+    expect(normalizeCategory("Military Strikes")).toBe("politics");
+  });
+
+  it("NÃO casa a sigla escondida dentro de outra palavra", () => {
+    expect(normalizeCategory("Solar Energy")).not.toBe("crypto");   // "sol" em "solar"
+    expect(normalizeCategory("Boiling Point")).not.toBe("economy"); // "oil" em "boiling"
+    expect(normalizeCategory("Awards Season")).toBe("culture");     // "war" em "awards"
+  });
+
+  it("respeita a ordem: Copa do Mundo é esporte, não geopolítica", () => {
+    expect(normalizeCategory("World Cup")).toBe("sports");
+    expect(normalizeCategory("World")).toBe("politics");
+  });
+});

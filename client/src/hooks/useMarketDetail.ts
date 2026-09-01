@@ -62,7 +62,17 @@ export function useMarketDetail(marketId: string) {
             seriesTicker?: string; eventTicker?: string; externalUrl?: string;
             outcomes?: { label: string; prob: number }[];
           }>("kalshi");
-          const found = data.find((m) => m.ticker === rawId || m.ticker.includes(rawId));
+          // ⚠️ SÓ igualdade exata. Havia um `|| m.ticker.includes(rawId)` aqui, e o
+          // `.find` avalia o OU por ELEMENTO: bastava um ticker que CONTIVESSE o id
+          // aparecer antes do idêntico para vencer a disputa, e a tela mostrava
+          // outro mercado. Provado nos 300 tickers ao vivo em 01/09:
+          //   pedir "KXBOND-30-JAC"  devolvia "KXBOND-30-JACK" (outro candidato)
+          //   pedir "…EMAR-P5"       devolvia "…EMAR-P50" — a margem de 5% exibindo
+          //                          os dados da de 50%: outro preço, outro mercado.
+          // Sem correspondência exata o `else` abaixo busca o mercado único na API,
+          // que é a fonte autoritativa (e ainda cobre os resolvidos). Um palpite por
+          // substring não é fallback: é atalho para o dado errado.
+          const found = data.find((m) => m.ticker === rawId);
           if (found) {
             setMarket({
               id: found.ticker,

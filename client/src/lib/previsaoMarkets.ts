@@ -27,9 +27,25 @@ const BR_TERMS = [
   "haddad", "tarcisio", "tarcísio", "nubank", "itaú", "itau", "câmbio", "cambio",
 ];
 
-function isBRtext(t: string): boolean {
+/**
+ * Radicais que PRECISAM casar por pedaço, porque existem em várias flexões
+ * ("brasileir" → brasileiro/brasileira/brasileirão; "eleic" → eleição/eleições).
+ */
+const BR_RADICAIS = ["brasileir", "eleic", "eleiç"];
+
+/**
+ * Endurecido em 01/09 por prevenção, não por defeito observado: nos 572 títulos
+ * reais de hoje não havia nenhum falso positivo. Mas casar por substring já nos
+ * mordeu três vezes (Cérebro, categorias, "epl" dentro de "deployer") e aqui a
+ * armadilha está armada: "pix" cabe dentro de "Pixar" e "pixel" — e mercado de
+ * Oscar/cinema é justamente o que o Polymarket tem de sobra. Bastaria um mercado
+ * da Pixar para ele ser rotulado como relevante para o Brasil.
+ */
+export function isBRtext(t: string): boolean {
   const s = t.toLowerCase();
-  return BR_TERMS.some((k) => s.includes(k));
+  if (BR_RADICAIS.some((k) => s.includes(k))) return true;
+  return BR_TERMS.some((k) =>
+    BR_RADICAIS.includes(k) ? false : new RegExp(`(?<![a-z0-9])${k}(?![a-z0-9])`).test(s));
 }
 
 function num(v: unknown): number {
