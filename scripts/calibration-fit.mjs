@@ -116,13 +116,61 @@ async function load() {
   console.log(`\n  [leave-one-out] ${bLoo.toFixed(4)}  `
     + `(${bLoo < b0 ? "ganho" : "PIORA"} ${Math.abs((b0 - bLoo) / b0 * 100).toFixed(1)}%)`);
 
+  // ── 4. O ganho é distinguível de RUÍDO? (o teste que faltava)
+  //
+  // Por que este bloco existe: em 29/08 promovemos uma calibração por categoria
+  // com +3,1% de "ganho" no backtest e ela PIOROU 7,7% ao vivo. O erro não foi
+  // validar fora da amostra — foi tratar a DIREÇÃO do ganho como prova, sem
+  // perguntar se o número era distinguível de zero. Com n de algumas centenas e
+  // ganhos de fração de por cento, quase sempre não é.
+  //
+  // O teste certo aqui é PAREADO: o mesmo mercado é pontuado com e sem correção,
+  // então a diferença por observação elimina a variância de "que mercados
+  // calharam de cair no teste" — que é enorme e domina a comparação ingênua.
+  const difs = teP.map((p, i) => (p - teY[i]) ** 2 - (extremize(p, aTemp) - teY[i]) ** 2);
+  const mediaDif = difs.reduce((s, x) => s + x, 0) / difs.length;
+  const varDif = difs.reduce((s, x) => s + (x - mediaDif) ** 2, 0) / (difs.length - 1);
+  const erroPadrao = Math.sqrt(varDif / difs.length);
+  const t = mediaDif / erroPadrao;
+  // IC 95% por bootstrap (não assume normalidade; a distribuição de diferenças
+  // de erro quadrático é bem assimétrica).
+  const B = 4000, amostras = [];
+  for (let b = 0; b < B; b++) {
+    let s = 0;
+    for (let i = 0; i < difs.length; i++) s += difs[(Math.random() * difs.length) | 0];
+    amostras.push(s / difs.length);
+  }
+  amostras.sort((x, y) => x - y);
+  const ic = [amostras[Math.floor(0.025 * B)], amostras[Math.floor(0.975 * B)]];
+  const significante = ic[0] > 0;
+  console.log(`\n  [o ganho é ruído?] teste pareado no conjunto de teste (n=${difs.length})`);
+  console.log(`     ganho medio por mercado: ${mediaDif >= 0 ? "+" : ""}${mediaDif.toFixed(5)} de Brier   (t=${t.toFixed(2)})`);
+  console.log(`     IC 95% (bootstrap): [${ic[0].toFixed(5)}, ${ic[1].toFixed(5)}]`);
+  console.log(`     ${significante ? "✅ o intervalo NÃO cruza zero" : "⚠️  o intervalo CRUZA ZERO — o ganho não se distingue de ruído"}`);
+
+  // Quanta amostra faltaria para decidir? Converte "espere" em um NÚMERO, para a
+  // pergunta não voltar toda semana sem critério. Se o efeito medido for real e
+  // do tamanho observado, é este n que o distinguiria de zero a 95%.
+  if (!significante && mediaDif > 0) {
+    const desvio = erroPadrao * Math.sqrt(difs.length);
+    const nAlvo = Math.ceil(((1.96 * desvio) / mediaDif) ** 2);
+    console.log(`     para decidir seriam necessarias ~${nAlvo.toLocaleString("pt-BR")} resolucoes de teste `
+      + `(temos ${difs.length}).`);
+    if (nAlvo > 5000) {
+      console.log(`     ⛔ Isso e ${(nAlvo / difs.length).toFixed(0)}x a amostra atual. Um efeito tao pequeno`);
+      console.log(`        NAO e verificavel na nossa escala — perseguir isso e gastar esforco`);
+      console.log(`        num ganho que nunca sera provado. Melhor fechar a questao.`);
+    }
+  }
+
   // ── Veredito
   const okTemp = bTempAfter < bTempBefore, okLoo = bLoo < b0;
   console.log(`\n  ─────────────────────────────────────────────────────────────`);
-  if (okTemp && okLoo) {
-    console.log(`  ✅ As DUAS validações concordam: extremizar melhora fora da amostra.`);
-    console.log(`     Fator sugerido: a=${aTemp} (o do corte temporal — é como vai rodar).`);
-  } else if (okTemp || okLoo) {
+  if (okTemp && okLoo && !significante) {
+    console.log(`  ⚠️  As duas validações apontam ganho, MAS ele não é distinguível de zero.`);
+    console.log(`     Promover agora seria repetir 29/08: direção certa, tamanho indistinguível`);
+    console.log(`     de ruído. ESPERAR mais amostra — o teste refaz sozinho a cada rodada.`);
+  } else if (okTemp && okLoo) {
     console.log(`  ⚠️  Validações DISCORDAM (temporal=${okTemp ? "ganho" : "piora"}, LOO=${okLoo ? "ganho" : "piora"}).`);
     console.log(`     Sinal fraco demais para promover — seria apostar em ruído.`);
   } else {
