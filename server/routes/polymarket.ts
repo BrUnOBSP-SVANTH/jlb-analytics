@@ -79,10 +79,13 @@ router.get("/markets", async (req, res) => {
           const endMs = m.endDate ? new Date(m.endDate).getTime() : now + maxAgeMs;
           return {
             id: m.id,
-            // Prefer the market question; use event title as fallback for clarity
-            question: m.question,
-            groupItemTitle: m.groupItemTitle,
-            eventTitle: ev.title,
+            // Prefer the market question; use event title as fallback for clarity.
+            // .trim() porque o Polymarket publica com sobra: "Alaska Governor
+            // Election Winner  " vinha com dois espaços no fim, e isso vaza para o
+            // card e para o <title> da página de detalhe.
+            question: m.question?.trim(),
+            groupItemTitle: m.groupItemTitle?.trim(),
+            eventTitle: ev.title?.trim(),
             slug: m.slug,
             eventSlug: ev.slug,
             volume: toNum(m.volume) ?? toNum(ev.volume) ?? 0,

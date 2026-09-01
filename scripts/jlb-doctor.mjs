@@ -417,6 +417,93 @@ async function checkSupabase(env) {
   } catch { /* skip */ }
 }
 
+// ── 8a. Fidelidade do catálogo de mercados ───────────────────────────────────
+// Por que existe: em 31/08/2026 o site exibia 40 mercados do Kalshi que eram
+// REAIS mas MORTOS — "Musk em Marte antes de 2099", 33 dos 40 sem volume nenhum
+// em 24h, todos fechando a mais de 2 anos. A causa foi silenciosa: a API do
+// Kalshi não aceita ordenação e devolvia os primeiros do catálogo, não os mais
+// negociados. Nada quebrou, nada logou — só a vitrine ficou errada.
+// Este bloco existe para essa regressão nunca mais passar despercebida. Precisa
+// do servidor no ar, porque o que importa não é a API de fora e sim o que a
+// NOSSA rota entrega depois de filtrar e ranquear.
+async function checkMarketFidelity(env) {
+  section("Fidelidade do catálogo (Polymarket · Kalshi)");
+  if (NO_LIVE) { line("⏭️", paint("Pulado (--no-live)", c.dim)); return; }
+
+  const bases = [env.PORT ? `http://localhost:${env.PORT}` : null, "http://localhost:3001", env.APP_URL].filter(Boolean);
+  let base = null;
+  for (const b of bases) {
+    try {
+      const r = await fetch(`${b}/api/kalshi/markets?limit=1`, { signal: AbortSignal.timeout(8_000) });
+      if (r.ok) { base = b; break; }
+    } catch { /* tenta o próximo */ }
+  }
+  if (!base) {
+    line("ℹ️", paint("servidor fora do ar — suba com `pnpm dev:server` para auditar o catálogo", c.dim));
+    return;
+  }
+
+  const agora = Date.now();
+  for (const fonte of ["polymarket", "kalshi"]) {
+    let mercados = [];
+    try {
+      const r = await fetch(`${base}/api/${fonte}/markets?limit=300`, { signal: AbortSignal.timeout(30_000) });
+      if (!r.ok) {
+        line("🔴", paint(`${fonte}: rota devolveu HTTP ${r.status}`, c.red));
+        add("crit", "Mercados", `${fonte} indisponível (HTTP ${r.status}) — a tela de mercados fica vazia`);
+        continue;
+      }
+      mercados = (await r.json()).markets ?? [];
+    } catch (e) {
+      line("⚠️", paint(`${fonte}: ${String(e.message).slice(0, 50)}`, c.yellow));
+      continue;
+    }
+
+    if (mercados.length === 0) {
+      line("🔴", paint(`${fonte}: catálogo VAZIO`, c.red));
+      add("crit", "Mercados", `${fonte} não devolveu nenhum mercado`);
+      continue;
+    }
+
+    const venc = mercados.filter((m) => {
+      const t = new Date(m.endDate ?? m.closeTime ?? 0).getTime();
+      return Number.isFinite(t) && t > 0 && t < agora;
+    }).length;
+    const semVol = mercados.filter((m) => !Number(m.volume24h ?? m.volume ?? 0)).length;
+    // APARAR ANTES de procurar o buraco: sobra nas bordas é inofensiva, só o vão
+    // INTERNO denuncia interpolação vazia ("Will  become President"). Escrevi este
+    // check errado na primeira versão e ele acusou "Alaska Governor Election
+    // Winner  " — que só tinha espaço no fim. É o mesmo deslize que o teste do
+    // tituloLimpo já tinha pegado uma vez.
+    const quebrado = mercados.filter((m) => /\s{2,}/.test(String(m.question ?? m.title ?? "").trim())).length;
+    const semLink = mercados.filter((m) => !m.externalUrl).length;
+    const pctMorto = Math.round((100 * semVol) / mercados.length);
+
+    line("ℹ️", `${paint(fonte, c.bold)}: ${paint(String(mercados.length), c.bold)} mercados`);
+
+    if (venc > 0) {
+      line("🔴", paint(`  ${venc} já VENCIDOS sendo exibidos como abertos`, c.red));
+      add("crit", "Mercados", `${fonte}: ${venc} mercados vencidos na vitrine`);
+    } else line("✅", paint("  nenhum vencido", c.green));
+
+    // A assinatura do bug de 31/08 era 82% sem volume. 30% é folgado o bastante
+    // para não gritar em dia parado, e apertado o bastante para pegar a regressão.
+    if (pctMorto > 30) {
+      line("⚠️", paint(`  ${semVol} sem volume em 24h (${pctMorto}%) — catálogo pode ter voltado a mostrar mercado morto`, c.yellow));
+      add("warn", "Mercados", `${fonte}: ${pctMorto}% do catálogo sem volume — conferir a ordenação por volume da rota`);
+    } else line("✅", paint(`  ${100 - pctMorto}% com volume negociado`, c.green));
+
+    if (quebrado > 0) {
+      line("⚠️", paint(`  ${quebrado} títulos com buraco de interpolação`, c.yellow));
+      add("warn", "Mercados", `${fonte}: ${quebrado} títulos quebrados exibidos`);
+    }
+    if (semLink > 0) {
+      line("⚠️", paint(`  ${semLink} sem link externo (levariam a lugar nenhum)`, c.yellow));
+      add("warn", "Mercados", `${fonte}: ${semLink} mercados sem link de saída`);
+    }
+  }
+}
+
 // ── 8b. Segurança (self-monitoring, grátis) ──────────────────────────────────
 // O que mata segurança é REGRESSÃO: um CVE novo, uma tabela nova sem RLS, ou um
 // segredo commitado por engano. Este bloco pega os três sozinho a cada `pnpm doctor`.
@@ -532,6 +619,7 @@ function report() {
   try { env = checkEnv(); } catch (e) { add("warn", "Doctor", "checkEnv falhou: " + e.message); }
   try { await checkAnthropic(env); } catch (e) { add("warn", "Doctor", "checkAnthropic falhou: " + e.message); }
   try { await checkSupabase(env); } catch (e) { add("warn", "Doctor", "checkSupabase falhou: " + e.message); }
+  try { await checkMarketFidelity(env); } catch (e) { add("warn", "Doctor", "checkMarketFidelity falhou: " + e.message); }
   try { checkSecurity(); } catch (e) { add("warn", "Doctor", "checkSecurity falhou: " + e.message); }
   try { checkInventory(); } catch (e) { add("warn", "Doctor", "checkInventory falhou: " + e.message); }
   const code = report();
