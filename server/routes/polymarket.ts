@@ -31,10 +31,25 @@ router.get("/markets", async (req, res) => {
       Array.from({ length: qtd }, (_, i) =>
         fetchWithRetry<PolyEvent[]>(`${eventsUrl(order, 100, extra)}&offset=${i * 100}`));
 
+    // Piscinas por PRAZO. Sem elas o catálogo só tinha mercado que fecha logo por
+    // acidente — os que calhassem de estar no topo de volume. O gamma aceita
+    // end_date_min/max (é o filtro que o seed da IA já usava), e a oferta é rica:
+    // medido em 01/09, a janela de 7 dias devolve 97 eventos COM volume, incluindo
+    // "US Open ATP: Dane Sweeny vs Corentin Moutet" com 2,3 mi negociados e jogos
+    // de MLB. Nada disso chegava à tela.
+    // Duas janelas, como no Kalshi: pedir só a de 30 dias faz a semana sumir,
+    // porque o corte de 100 por página cai onde a API quiser dentro da janela.
+    const agoraIso = new Date().toISOString();
+    const ateIso = (dias: number) => new Date(Date.now() + dias * 86_400_000).toISOString();
+    const janela = (dias: number) => `&end_date_min=${agoraIso}&end_date_max=${ateIso(dias)}`;
+
     const pools = await Promise.allSettled([
       ...paginas("volume", 3),
       ...paginas("volume_24hr", 2),
       ...(closed ? [] : paginas("volume", 1, "&featured=true")),
+      // Só faz sentido para o catálogo ATIVO — em "fechados" prazo não existe.
+      ...(closed ? [] : paginas("volume_24hr", 1, janela(7))),
+      ...(closed ? [] : paginas("volume", 1, janela(30))),
     ]);
 
     // Uma página que falhe não derruba as outras — melhor catálogo menor que tela vazia.

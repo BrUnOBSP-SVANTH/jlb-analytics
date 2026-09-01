@@ -23,6 +23,7 @@ import { ComparePanel } from "@/components/mercados/ComparePanel";
 import { CompactRow } from "@/components/mercados/CompactRow";
 import { LoadingSkeleton } from "@/components/mercados/LoadingSkeleton";
 import { DivergencesSection } from "@/components/mercados/DivergencesSection";
+import { casaBusca } from "@/lib/marketSearch";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -290,8 +291,10 @@ export default function Apostas() {
   const filtered = useMemo(() => {
     let result = catFilter === "all" ? bySource : bySource.filter((i) => i.normalizedCategory === catFilter);
     if (deferredSearch.trim()) {
-      const q = deferredSearch.trim().toLowerCase();
-      result = result.filter((i) => i.title.toLowerCase().includes(q));
+      // Busca BILÍNGUE: as bolsas publicam em inglês (medido: 0% dos 600 títulos
+      // em português) e o público é brasileiro. Antes, buscar "eleição" devolvia
+      // zero sobre um catálogo com 51 mercados de "election".
+      result = result.filter((i) => casaBusca(i.title, deferredSearch, i.category));
     }
     return sortItems(result, sortBy);
   }, [bySource, catFilter, sortBy, deferredSearch]);
