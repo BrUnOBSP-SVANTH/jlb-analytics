@@ -405,7 +405,12 @@ export function buildKalshiItem(m: KalshiMarket): TrendingItem | null {
     sentiment: analyzeSentiment(m.title),
     ageHours: 0,
     category: m.category,
-    normalizedCategory: normalizeCategory(m.category, "kalshi"),
+    // Sem categoria, classifica pelo TÍTULO. Os mercados de curto prazo do Kalshi
+    // vêm da rota `/markets`, que não devolve categoria (só `/events` devolve) —
+    // sem esse recurso, todo jogo da semana cairia em "Outros" e ficaria invisível
+    // no filtro. O título costuma dizer ("...college football game?"), e ler o
+    // título é honesto; inventar categoria no servidor não seria.
+    normalizedCategory: normalizeCategory(m.category ?? m.title, "kalshi"),
     badge,
   };
 }

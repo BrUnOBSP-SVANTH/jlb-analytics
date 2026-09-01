@@ -26,6 +26,77 @@ export function tituloLimpo(t?: string): string | undefined {
   return s;
 }
 
+/** Vagas reservadas para mercado que resolve logo — ver `fetchCurtoPrazo`. */
+const COTA_CURTO_PRAZO = 60;
+const DIAS_CURTO_PRAZO = 30;
+/** Parte da cota reservada para a SEMANA. Sem esta sub-reserva o tênis do US Open
+ *  (441 mil de volume) engolia as 60 vagas e os jogos de sábado (5 mil) sumiam:
+ *  dentro do curto prazo a diferença de volume é grande do mesmo jeito. */
+const COTA_ATE_7_DIAS = 20;
+
+interface KalshiMercadoPlano {
+  ticker?: string; event_ticker?: string; title?: string; yes_sub_title?: string;
+  yes_bid_dollars?: string; yes_ask_dollars?: string; last_price_dollars?: string;
+  previous_price_dollars?: string; volume_fp?: string; volume_24h_fp?: string;
+  open_interest_fp?: string; liquidity_dollars?: string; close_time?: string; status?: string;
+}
+
+/**
+ * Segunda piscina: mercados que RESOLVEM LOGO.
+ *
+ * Por que precisa existir. Ranquear por volume consertou o catálogo morto, mas
+ * criou outro problema: os campeões de volume do Kalshi são as eleições de 2028,
+ * então a mediana de prazo do que exibíamos foi para 481 DIAS e sobrou UM único
+ * mercado fechando em 7 dias (o Polymarket tinha 30). Mercado que resolve daqui a
+ * um ano e meio não ensina nada e não alimenta track record.
+ *
+ * Por que não bastou ajustar a ordenação. A causa é mais funda: varremos as 10
+ * primeiras páginas de uma lista SEM ORDEM, e nesse recorte de 2.000 eventos só
+ * existem 11 fechando em 7 dias. Não é escassez do Kalshi — é viés da amostra.
+ *
+ * Por que uma rota diferente. `/events` IGNORA min_close_ts/max_close_ts (testado:
+ * a mediana de prazo não muda). Só `/markets` filtra por data — é a mesma via que
+ * o seed da IA já usava para achar jogo da semana, e é por isso que a IA previa
+ * "Ohio St. x Texas" (55 mil de volume) enquanto o site não exibia esse mercado.
+ */
+async function fetchCurtoPrazo(): Promise<KalshiMercadoPlano[]> {
+  const agora = Math.floor(Date.now() / 1000);
+  const vol = (m: KalshiMercadoPlano, campo: "volume_24h_fp" | "volume_fp") => parseFloat(m[campo] ?? "0") || 0;
+
+  // ⚠️ DUAS janelas, não uma. O `limit=1000` corta na ordem arbitrária da API, e
+  // medimos o efeito: pedindo 30 dias, os 1.000 devolvidos caem TODOS na faixa de
+  // 15-30 dias e a semana some. Pedindo 7 dias explicitamente aparecem 61 mercados
+  // com volume (os jogos do fim de semana) que a consulta de 30 dias nunca mostra.
+  // A janela estreita força a API a olhar onde queremos.
+  const janelas = [7, DIAS_CURTO_PRAZO];
+  const resultados = await Promise.allSettled(janelas.map((dias) =>
+    fetchWithRetry<{ markets?: KalshiMercadoPlano[] }>(
+      `https://api.elections.kalshi.com/trade-api/v2/markets?status=open&min_close_ts=${agora}`
+      + `&max_close_ts=${agora + dias * 86_400}&limit=1000`,
+      { "Accept": "application/json" },
+    )));
+
+  const porTicker = new Map<string, KalshiMercadoPlano>();
+  for (const r of resultados) {
+    if (r.status !== "fulfilled") {
+      log.warn("[Kalshi] uma janela de curto prazo falhou — seguindo com as demais");
+      continue;
+    }
+    for (const m of r.value?.markets ?? []) {
+      // Piso do seed: preço sem volume é cotação de formador de mercado, não preço
+      // que alguém pagou.
+      if (!m.ticker || vol(m, "volume_fp") <= 0) continue;
+      // Ticker agregado (negRisk) e título-lista "yes X, yes Y" não são mercado
+      // navegável — mesma regra que o seed já aplica em parseShortDatedKalshi.
+      if (/MULTIGAME|CROSSCATEGORY|MULTI/i.test(m.ticker)) continue;
+      if (/,\s*(yes|no)\s/i.test(m.title ?? "")) continue;
+      porTicker.set(m.ticker, m);
+    }
+  }
+  return Array.from(porTicker.values())
+    .sort((a, b) => vol(b, "volume_24h_fp") - vol(a, "volume_24h_fp") || vol(b, "volume_fp") - vol(a, "volume_fp"));
+}
+
 /** Volume negociado em 24h somado nos mercados do evento — a régua de "vivo". */
 function volume24hDoEvento(ev: KalshiEvent): number {
   return (ev.markets ?? []).reduce((s, m) => s + Math.round(parseFloat(m.volume_24h_fp ?? "0")), 0);
@@ -87,7 +158,12 @@ router.get("/markets", async (req, res) => {
       //
       // Custo medido: 10 páginas × 200 = 2.000 eventos em ~3,5s, e o SWR serve o
       // cache velho enquanto atualiza — só a primeira carga fria espera.
-      const events = await fetchRankedEvents(PAGINAS_KALSHI);
+      // As duas piscinas em paralelo: a varredura ranqueada (pega o alto volume,
+      // majoritariamente longo prazo) e a busca explicita por quem resolve logo.
+      const [events, curtoPrazo] = await Promise.all([
+        fetchRankedEvents(PAGINAS_KALSHI),
+        fetchCurtoPrazo(),
+      ]);
 
       // Um mercado aninhado do Kalshi → nosso formato normalizado.
       const toMarket = (m: KalshiNestedMarket, ev: KalshiEvent): KalshiMarket => {
@@ -116,7 +192,7 @@ router.get("/markets", async (req, res) => {
         };
       };
 
-      return events.flatMap((ev) => {
+      const longoPrazo = events.flatMap((ev) => {
         // Fidelidade ao mercado: só o que está realmente aberto. Kalshi marca o status como
         // "closed"/"settled"/"finalized"/"determined" quando o mercado encerra/resolve.
         const active = (ev.markets ?? []).filter((m) => !m.status || m.status === "active");
@@ -151,8 +227,50 @@ router.get("/markets", async (req, res) => {
         // que os 40 exibidos sejam os 40 mais negociados, não os vizinhos dos mais
         // negociados. Card agrupado entra com o volume somado do evento, então
         // concorre em pé de igualdade.
-        .sort((a, b) => (b.volume24h ?? 0) - (a.volume24h ?? 0) || b.volume - a.volume)
-        .slice(0, TETO_KALSHI);
+        .sort((a, b) => (b.volume24h ?? 0) - (a.volume24h ?? 0) || b.volume - a.volume);
+
+      // ── Mistura as duas piscinas, com VAGAS RESERVADAS ────────────────────
+      // Reserva em vez de bônus na pontuação: a diferença de volume é de ordens de
+      // grandeza (861 mil da eleição de 2028 contra 55 mil do jogo de sábado), então
+      // qualquer bônus somado à nota seria engolido. Reservar vagas é o único jeito
+      // de o curto prazo sobreviver ao lado de um campeão de volume — mesmo padrão
+      // que a tela já usa para não deixar uma fonte sufocar as outras.
+      const jaTem = new Set(longoPrazo.map((m) => m.ticker));
+      // Sub-reserva: primeiro os que fecham em ATÉ 7 DIAS (por volume entre eles),
+      // depois o resto da cota com os demais. Sem isso a semana nunca aparece.
+      const dentroDe = (m: KalshiMercadoPlano, dias: number) =>
+        new Date(m.close_time ?? 0).getTime() - Date.now() <= dias * 86_400_000;
+      const disponiveis = curtoPrazo.filter((m) => !jaTem.has(m.ticker!));
+      const daSemana = disponiveis.filter((m) => dentroDe(m, 7)).slice(0, COTA_ATE_7_DIAS);
+      const naSemana = new Set(daSemana.map((m) => m.ticker));
+      const curtos = [...daSemana, ...disponiveis.filter((m) => !naSemana.has(m.ticker))]
+        .slice(0, COTA_CURTO_PRAZO)
+        .map((m) => {
+          const serie = String(m.event_ticker ?? m.ticker).split("-")[0];
+          return {
+            ticker: m.ticker!,
+            eventTicker: m.event_ticker ?? m.ticker!,
+            seriesTicker: serie,
+            externalUrl: kalshiMarketUrl(serie, m.event_ticker ?? m.ticker!),
+            title: tituloLimpo(m.title) ?? tituloLimpo(m.yes_sub_title) ?? m.ticker!,
+            yesProb: kalshiYesProb(m.yes_bid_dollars, m.yes_ask_dollars, m.last_price_dollars),
+            prevYesProb: m.previous_price_dollars
+              ? parseFloat((parseFloat(m.previous_price_dollars) * 100).toFixed(1))
+              : undefined,
+            volume: Math.round(parseFloat(m.volume_fp ?? "0")),
+            volume24h: Math.round(parseFloat(m.volume_24h_fp ?? "0")),
+            openInterest: Math.round(parseFloat(m.open_interest_fp ?? "0")),
+            liquidity: parseFloat(m.liquidity_dollars ?? "0"),
+            closeTime: m.close_time,
+            // `/markets` não devolve categoria (só `/events` devolve). Fica indefinida
+            // de propósito: o cliente cai no título para classificar, que é honesto —
+            // inventar categoria aqui seria pior que não ter.
+            category: undefined,
+            status: m.status,
+          };
+        });
+
+      return [...curtos, ...longoPrazo].slice(0, TETO_KALSHI);
     });
     // Corta DEPOIS do cache, não dentro dele. A chave (`kalshi:markets`) não inclui
     // o limit, então guardar a lista já cortada fazia o primeiro chamador definir o
