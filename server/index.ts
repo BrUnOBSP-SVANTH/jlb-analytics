@@ -600,6 +600,20 @@ async function startServer() {
     log.info(`✅ Server running on http://localhost:${port}/`);
     log.info("   Routes: market | polymarket | kalshi | reddit | news | ai | stripe");
     log.info("   WebSocket: ws://localhost:3001/ws/quotes");
+
+    // Aquece o catálogo logo após subir. A varredura do Kalshi ficou em ~4s a frio
+    // (paginar 2.000 eventos para ranquear por volume) e a do Polymarket em ~1s —
+    // custo que o PRIMEIRO visitante pagaria inteiro. Depois disso o SWR sempre tem
+    // algo para servir na hora e revalida em segundo plano. Falha em silêncio de
+    // propósito: é otimização, e as rotas funcionam sem ela.
+    setTimeout(() => {
+      const porta = process.env.PORT ?? 3001;
+      for (const rota of ["polymarket", "kalshi"]) {
+        fetch(`http://127.0.0.1:${porta}/api/${rota}/markets`)
+          .then(() => log.info(`   Catálogo ${rota} aquecido ✅`))
+          .catch(() => { /* sem aquecimento: a 1ª visita paga o custo, como antes */ });
+      }
+    }, 3_000);
   });
 
   // ── Cerebro auto-collection ────────────────────────────────────────────────

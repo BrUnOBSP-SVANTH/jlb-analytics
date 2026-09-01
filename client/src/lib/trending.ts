@@ -416,7 +416,7 @@ export async function fetchPolymarketSports(): Promise<TrendingItem[]> {
       .filter((m) => toNum(m.volume) > 500)
       .map(buildPolyItem)
       .filter((x): x is TrendingItem => x !== null)
-      .slice(0, 30);
+      .slice(0, 150);
   } catch { return []; }
 }
 
@@ -442,6 +442,6 @@ export async function fetchKalshi(): Promise<TrendingItem[]> {
       .filter((m) => m.volume > 100)
       .map(buildKalshiItem)
       .filter((x): x is TrendingItem => x !== null)
-      .slice(0, 25);
+      .slice(0, 150);
   } catch { return []; }
 }

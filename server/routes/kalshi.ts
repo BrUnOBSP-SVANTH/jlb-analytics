@@ -11,6 +11,9 @@ const router = Router();
  *  em ~3,5s — fundo suficiente para os líderes de volume aparecerem. */
 const PAGINAS_KALSHI = 10;
 
+/** Tamanho do superconjunto cacheado — o corte por `limit` acontece na resposta. */
+const TETO_KALSHI = 300;
+
 /**
  * Descarta título com buraco de interpolação e normaliza o espaçamento.
  * Devolve `undefined` para o chamador cair na próxima alternativa.
@@ -64,7 +67,10 @@ async function fetchRankedEvents(maxPaginas: number): Promise<KalshiEvent[]> {
 }
 
 router.get("/markets", async (req, res) => {
-  const limit = Math.min(parseInt(String(req.query.limit ?? "40"), 10), 100);
+  // Teto 300 (era 100) e padrão 150 (era 40). O catálogo vivo do Kalshi comporta:
+  // dos ~2.000 eventos varridos, 379 têm volume em 24h. Com 40 o site mostrava uma
+  // fração mínima do que existe.
+  const limit = Math.min(parseInt(String(req.query.limit ?? "150"), 10) || 150, 300);
   try {
     // SWR: serve cache fresco na hora; se venceu, devolve o velho e atualiza em bg.
     const markets = await swr<KalshiMarket[]>("kalshi:markets", 120, async () => {
@@ -146,9 +152,13 @@ router.get("/markets", async (req, res) => {
         // negociados. Card agrupado entra com o volume somado do evento, então
         // concorre em pé de igualdade.
         .sort((a, b) => (b.volume24h ?? 0) - (a.volume24h ?? 0) || b.volume - a.volume)
-        .slice(0, limit);
+        .slice(0, TETO_KALSHI);
     });
-    res.json({ markets, source: "live" });
+    // Corta DEPOIS do cache, não dentro dele. A chave (`kalshi:markets`) não inclui
+    // o limit, então guardar a lista já cortada fazia o primeiro chamador definir o
+    // tamanho para todos: quem pedisse 60 congelava 60 para quem pedisse 200 — e o
+    // seed da IA, que lê esse mesmo cache, herdava o corte. Cacheamos o superconjunto.
+    res.json({ markets: markets.slice(0, limit), source: "live" });
   } catch (err) {
     const msg = err instanceof Error ? err.message : "unknown";
     log.error("[Kalshi] error:", msg);

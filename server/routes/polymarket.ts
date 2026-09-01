@@ -22,18 +22,23 @@ router.get("/markets", async (req, res) => {
       return `${base}&limit=${limit}&order=${order}&ascending=false&with_nested_markets=true${extra}`;
     };
 
-    // Fetch three pools in parallel: top by total volume, top by 24h volume, featured
-    const [byVolume, by24h, featured] = await Promise.allSettled([
-      fetchWithRetry<PolyEvent[]>(eventsUrl("volume", 80)),
-      fetchWithRetry<PolyEvent[]>(eventsUrl("volume_24hr", 60)),
-      closed ? Promise.resolve([] as PolyEvent[]) : fetchWithRetry<PolyEvent[]>(eventsUrl("volume", 40, "&featured=true")),
+    // ⚠️ O gamma IGNORA limit > 100: pedir 80, 300 ou 500 devolve no máximo 100
+    // eventos. Medido em 31/08. Para ir mais fundo é preciso paginar por `offset`
+    // — foi o que travava o catálogo em ~96 mercados por mais que se aumentasse o
+    // número pedido. Com 3 páginas chegamos a 300 eventos; o volume 24h médio cai
+    // de 182 mil (pág. 1) para ~16 mil (pág. 3), ou seja, ainda é mercado vivo.
+    const paginas = (order: string, qtd: number, extra = "") =>
+      Array.from({ length: qtd }, (_, i) =>
+        fetchWithRetry<PolyEvent[]>(`${eventsUrl(order, 100, extra)}&offset=${i * 100}`));
+
+    const pools = await Promise.allSettled([
+      ...paginas("volume", 3),
+      ...paginas("volume_24hr", 2),
+      ...(closed ? [] : paginas("volume", 1, "&featured=true")),
     ]);
 
-    const allEvents: PolyEvent[] = [
-      ...(byVolume.status === "fulfilled" ? byVolume.value : []),
-      ...(by24h.status === "fulfilled" ? by24h.value : []),
-      ...(featured.status === "fulfilled" ? featured.value : []),
-    ];
+    // Uma página que falhe não derruba as outras — melhor catálogo menor que tela vazia.
+    const allEvents: PolyEvent[] = pools.flatMap((p) => (p.status === "fulfilled" ? p.value : []));
 
     // Deduplicate events by slug
     const seenEventSlug = new Set<string>();
@@ -131,8 +136,11 @@ router.get("/markets", async (req, res) => {
       return true;
     });
 
-    // Enforce category diversity: max 12 markets per category
-    const MAX_PER_CAT = 12;
+    // Diversidade por categoria. Subiu de 12 para 30 junto com a paginação: o teto
+    // existe para uma categoria em alta não tomar a tela inteira, e 12 fazia sentido
+    // quando o catálogo tinha ~96 mercados. Mantido baixo, ele viraria o novo
+    // gargalo — cortaria o catálogo ampliado de volta ao tamanho antigo.
+    const MAX_PER_CAT = 30;
     const catCount = new Map<string, number>();
     const diverse = rawMarkets.filter((m) => {
       const cat = (m.category ?? "other").toLowerCase();
@@ -173,7 +181,11 @@ router.get("/markets", async (req, res) => {
 
     return sorted;
     });
-    res.json({ markets, source: "live" });
+    // Corta na RESPOSTA, não dentro do cache: a chave não inclui o limit, então
+    // guardar a lista cortada faria o primeiro chamador definir o tamanho para
+    // todos. Cacheamos o superconjunto e cada um leva o pedaço que pediu.
+    const limit = Math.min(parseInt(String(req.query.limit ?? "300"), 10) || 300, 400);
+    res.json({ markets: markets.slice(0, limit), source: "live" });
   } catch (err) {
     const msg = err instanceof Error ? err.message : "unknown";
     log.error("[Polymarket] error:", msg);

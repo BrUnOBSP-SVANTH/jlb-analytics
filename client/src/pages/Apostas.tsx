@@ -187,11 +187,16 @@ export default function Apostas() {
         fetchKalshi(),
         fetchManifold(),
       ]);
-      // Reserve slots per source so no single source crowds out the others
-      const redditItems   = (reddit.status   === "fulfilled" ? reddit.value   : []).sort((a, b) => b.score - a.score).slice(0, 40);
-      const polyItems     = (poly.status     === "fulfilled" ? poly.value     : []).sort((a, b) => b.score - a.score).slice(0, 30);
-      const kalshiItems   = (kalshi.status   === "fulfilled" ? kalshi.value   : []).sort((a, b) => b.score - a.score).slice(0, 20);
-      const manifoldItems = (manifold.status === "fulfilled" ? manifold.value : []).sort((a, b) => b.score - a.score).slice(0, 15);
+      // Cota por fonte para nenhuma sufocar as outras. As cotas subiram muito em
+      // 31/08 (poly 30→120, kalshi 20→100): elas eram o ÚLTIMO de quatro cortes
+      // empilhados — servidor, cache, trending e aqui — e o efeito somado era o
+      // site mostrar 50 mercados das duas bolsas quando existiam centenas vivos.
+      // O que aparece na tela continua paginado por PAGE_SIZE (rolagem infinita),
+      // então a lista maior não pesa na renderização: só dá mais o que rolar.
+      const redditItems   = (reddit.status   === "fulfilled" ? reddit.value   : []).sort((a, b) => b.score - a.score).slice(0, 60);
+      const polyItems     = (poly.status     === "fulfilled" ? poly.value     : []).sort((a, b) => b.score - a.score).slice(0, 120);
+      const kalshiItems   = (kalshi.status   === "fulfilled" ? kalshi.value   : []).sort((a, b) => b.score - a.score).slice(0, 100);
+      const manifoldItems = (manifold.status === "fulfilled" ? manifold.value : []).sort((a, b) => b.score - a.score).slice(0, 30);
       const all = [...redditItems, ...polyItems, ...kalshiItems, ...manifoldItems].sort((a, b) => b.score - a.score);
 
       const ok = buildAndSet(all, silent);
