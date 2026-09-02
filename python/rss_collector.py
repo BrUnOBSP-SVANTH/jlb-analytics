@@ -237,6 +237,33 @@ FEEDS: list[dict[str, str]] = [
         "category": "esportes",
     },
 
+    # ── Subreddits que a TELA DE MERCADOS consome (02/09/2026) ──────────────
+    # Vieram para cá porque a rota /api/reddit deixou de buscar no Reddit e passou
+    # a LER o que este coletor guarda. Motivo: as duas coisas buscando em paralelo
+    # disputavam a mesma cota e geravam 429 — o coletor (2 em 2h, 3s de pausa)
+    # funciona há meses; o aquecimento da rota (7 subs a cada 15 min) derrubava os
+    # dois. Um só fala com o Reddit. Bônus: aqui o texto já é traduzido.
+    {
+        "url": "https://www.reddit.com/r/sportsbook/.rss",
+        "source": "r/sportsbook",
+        "category": "esportes",
+    },
+    {
+        "url": "https://www.reddit.com/r/futebol/.rss",
+        "source": "r/futebol",
+        "category": "esportes",
+    },
+    {
+        "url": "https://www.reddit.com/r/geopolitics/.rss",
+        "source": "r/geopolitics",
+        "category": "política",
+    },
+    {
+        "url": "https://www.reddit.com/r/wallstreetbets/.rss",
+        "source": "r/wallstreetbets",
+        "category": "mercados",
+    },
+
     # ── IMPRENSA ESPECIALIZADA (31/08/2026) ─────────────────────────────────
     # Por que: as fontes de esporte acima são quase todas SUBREDDIT, e subreddit
     # é conversa, não redação. Auditando o que o r/tennis realmente guardava:
