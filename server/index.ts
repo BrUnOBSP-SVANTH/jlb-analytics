@@ -29,6 +29,7 @@ import aiRouter, { sendWeeklyDigests } from "./routes/ai.ts";
 import { scoreAiForecasts, seedAiForecasts } from "./lib/aiForecasts.ts";
 import { resolveUserPredictions } from "./lib/userPredictions.ts";
 import { runDailyEmbedBackfill } from "./lib/cerebroEmbeddings.ts";
+import { aquecerReddit } from "./routes/reddit.ts";
 import stripeRouter   from "./routes/stripe.ts";
 import manifoldRouter from "./routes/manifold.ts";
 import snapshotsRouter from "./routes/snapshots.ts";
@@ -614,6 +615,13 @@ async function startServer() {
           .catch(() => { /* sem aquecimento: a 1ª visita paga o custo, como antes */ });
       }
     }, 3_000);
+
+    // Reddit é caso à parte: a tela pede 7 subreddits EM PARALELO e o Reddit
+    // responde 429 na hora. Preenchemos o cache aqui, um por vez e espaçado, fora
+    // do caminho do usuário — a requisição dele então sempre encontra cache pronto.
+    // Repete a cada 15 min, que é o TTL do cache.
+    setTimeout(() => { void aquecerReddit().then(() => log.info("   Reddit aquecido ✅")); }, 8_000);
+    setInterval(() => { void aquecerReddit(); }, 15 * 60_000);
   });
 
   // ── Cerebro auto-collection ────────────────────────────────────────────────

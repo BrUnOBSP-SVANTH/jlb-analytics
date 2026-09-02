@@ -543,7 +543,11 @@ router.post("/reddit-context", aiCreditsMiddleware, async (req, res) => {
   if (isRateLimited(`reddit-ctx:${ip}`, 8, 60_000)) return res.status(429).json({ error: "rate_limited", message: "Muitas análises. Aguarde um momento." });
 
   interface RedditCtxRequest { title: string; subreddit?: string; score?: number; comments?: number }
-  const { title, subreddit = "", score = 0, comments = 0 } = req.body as RedditCtxRequest;
+  // ⚠️ SEM padrão 0. O feed RSS do Reddit não publica votos nem comentários (ver
+  // server/routes/reddit.ts), e "Votos: 0" no prompt faria a IA raciocinar sobre um
+  // dado FALSO — pior que a ausência, porque parece informação. Quando não sabemos,
+  // o prompt diz que não sabemos.
+  const { title, subreddit = "", score, comments } = req.body as RedditCtxRequest;
   if (!title?.trim()) return res.status(400).json({ error: "title required" });
 
   const cacheKey = `reddit-ctx:${title.slice(0, 100)}`;
@@ -559,15 +563,20 @@ router.post("/reddit-context", aiCreditsMiddleware, async (req, res) => {
     ? articles.map((a, i) => `[${i + 1}] "${a.title}" — ${a.source.name} (${a.publishedAt.slice(0, 10)})\n${a.description ?? ""}`).join("\n\n")
     : "Nenhuma notícia recente disponível.";
 
-  const isControversial = comments / Math.max(1, score) > 0.8;
-  const isViral = score > 300;
+  const temMetrica = typeof score === "number" && typeof comments === "number";
+  const isControversial = temMetrica && comments / Math.max(1, score) > 0.8;
+  const isViral = temMetrica && score > 300;
+  const linhaEngajamento = temMetrica
+    ? `Votos: ${score.toLocaleString()} | Comentários: ${comments.toLocaleString()}`
+      + `${isControversial ? " (controverso)" : ""}${isViral ? " (viral)" : ""}`
+    : "Engajamento: NÃO DISPONÍVEL nesta fonte — não afirme que o post é viral nem cite números de votos.";
   const subCtx = subreddit ? `Subreddit: r/${subreddit}` : "";
 
-  const prompt = `Explique POR QUE este post está viral no Reddit. DATA: ${new Date().toLocaleDateString("pt-BR")}
+  const prompt = `Explique por que este post ${temMetrica ? "está viral no Reddit" : "chamou atenção no Reddit"}. DATA: ${new Date().toLocaleDateString("pt-BR")}
 
 POST: "${title}"
 ${subCtx}
-Votos: ${score.toLocaleString()} | Comentários: ${comments.toLocaleString()}${isControversial ? " (controverso)" : ""}${isViral ? " (viral)" : ""}
+${linhaEngajamento}
 
 NOTÍCIAS RECENTES:
 ${newsContext}

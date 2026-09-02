@@ -294,8 +294,11 @@ export function NewsAnalysisPanel({ item }: { item: TrendingItem }) {
           body: JSON.stringify({
             title: item.title,
             subreddit: item.subreddit,
-            score: item.upvotes ?? 0,
-            comments: item.comments ?? 0,
+            // Só envia o que existe: o feed RSS não traz votos, e mandar 0 faria
+            // a IA raciocinar sobre um post "sem votos" que na verdade tem, só não
+            // sabemos quantos. Omitir é honesto; zerar é afirmar algo falso.
+            ...(item.upvotes !== undefined ? { score: item.upvotes } : {}),
+            ...(item.comments !== undefined ? { comments: item.comments } : {}),
           }),
         });
         if (await maybeAuthGate(res)) return;

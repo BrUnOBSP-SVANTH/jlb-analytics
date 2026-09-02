@@ -536,6 +536,27 @@ async function checkMarketFidelity(env) {
   } catch {
     line("⚠️", paint("manifold: não respondeu", c.yellow));
   }
+
+  // Reddit: a fonte de 60 vagas da tela principal. Morreu em silêncio quando o
+  // endpoint JSON passou a devolver 403 — a rota dava 502, o cliente engolia no
+  // catch e ninguém percebeu. Hoje vem do feed RSS, que funciona mas é MUITO
+  // sensível a rate limit; por isso o servidor aquece o cache em segundo plano e
+  // esta checagem olha uma amostra, não os 7 subreddits.
+  for (const sub of ["sportsbook", "PredictionMarkets"]) {
+    try {
+      const r = await fetch(`${base}/api/reddit/${sub}?limit=25`, { signal: AbortSignal.timeout(20_000) });
+      const j = r.ok ? await r.json() : {};
+      const n = (j.posts ?? []).length;
+      if (n > 0) line("✅", paint(`reddit r/${sub}: ${n} posts`, c.green), `via ${j.source ?? "?"}`);
+      else {
+        line("⚠️", paint(`reddit r/${sub}: vazio (HTTP ${r.status})`, c.yellow),
+          "o cache aquece em segundo plano — reconfira em alguns minutos");
+        add("warn", "Mercados", `Reddit r/${sub} sem posts — conferir o feed RSS e o rate limit`);
+      }
+    } catch {
+      line("⚠️", paint(`reddit r/${sub}: não respondeu`, c.yellow));
+    }
+  }
 }
 
 // ── 8b. Segurança (self-monitoring, grátis) ──────────────────────────────────

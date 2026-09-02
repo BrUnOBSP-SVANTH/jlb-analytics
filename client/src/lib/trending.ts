@@ -13,8 +13,11 @@ import { getMarkets } from "@/lib/marketsCache";
 export interface RedditPost {
   title: string;
   url: string;
-  score: number;
-  num_comments: number;
+  /** AUSENTES quando a fonte é o feed RSS — o Reddit não publica votos nem
+   *  comentários por lá, e preencher com zero seria afirmar algo falso.
+   *  Ver o cabeçalho de server/routes/reddit.ts. */
+  score?: number;
+  num_comments?: number;
   subreddit: string;
   created_utc: number;
   permalink: string;
@@ -224,8 +227,16 @@ export function isClosingSoon(dateStr?: string): boolean {
 
 function whyTrendingReddit(post: RedditPost): string {
   const age = hoursAgo(post.created_utc);
-  const commentRatio = post.num_comments / Math.max(1, post.score);
   const snippet = post.title.length > 70 ? post.title.slice(0, 70) + "…" : post.title;
+
+  // Sem métrica de engajamento (caso do feed RSS) não dá para dizer "viral" nem
+  // citar votos. O texto passa a falar do que SABEMOS — o assunto e a idade.
+  if (post.score === undefined || post.num_comments === undefined) {
+    return `"${snippet}" — discussão recente em r/${post.subreddit}, de ${Math.round(age)}h atrás. `
+      + `O Reddit não publica a contagem de votos neste feed, então trate como pauta a investigar, `
+      + `não como sinal de volume. Expanda para cruzar com notícias e mercados.`;
+  }
+  const commentRatio = post.num_comments / Math.max(1, post.score);
 
   if (age < 3 && post.score > 200)
     return `"${snippet}" — viral em ${Math.round(age)}h com ${post.score.toLocaleString()} votos. Crescimento exponencial sugere que o mercado ainda não precificou completamente esta informação. Expanda para ver notícias relacionadas.`;
@@ -273,9 +284,12 @@ export function whyTrendingMarket(item: {
 
 function bestBetNoteReddit(post: RedditPost): string {
   const age = hoursAgo(post.created_utc);
+  if (post.num_comments === undefined && age >= 6)
+    return "Sem a contagem de engajamento não dá para medir quanta atenção o tema teve. "
+      + "Use como ponto de partida de pesquisa e confirme no mercado, que tem preço e volume reais.";
   if (age < 6)
     return "Evento recente — as odds nas casas esportivas podem não ter ajustado ao volume de informação que a comunidade já tem. Este é o momento de maior edge potencial. Pesquise antes que o mercado precifique completamente.";
-  if (post.num_comments > 300)
+  if ((post.num_comments ?? 0) > 300)
     return "Alta discussão ativa — leia os comentários mais votados para capturar análises de apostadores experientes. Comentários com muitos upvotes geralmente contêm informação não precificada.";
   return "Evento com engajamento consolidado — as odds já refletem o consenso público. Para ter edge, procure ângulos específicos (desfalques, clima, histórico recente) que a maioria ainda não precificou.";
 }
@@ -295,10 +309,15 @@ export function bestBetNoteMarket(yesProb: number, vol: number, source: Source):
 
 export function buildRedditItem(post: RedditPost): TrendingItem {
   const age = hoursAgo(post.created_utc);
-  const rawScore = post.score + post.num_comments * 3 - age * 5;
-  const normalized = Math.min(100, Math.max(0, rawScore / 20));
+  // Sem votos, a única ordenação honesta é por RECÊNCIA. E "viral" exige medir
+  // engajamento: sem número, o selo não pode ser afirmado.
+  const temMetrica = post.score !== undefined && post.num_comments !== undefined;
+  const rawScore = temMetrica
+    ? post.score! + post.num_comments! * 3 - age * 5
+    : Math.max(0, 100 - age * 4);
+  const normalized = Math.min(100, Math.max(0, temMetrica ? rawScore / 20 : rawScore / 5));
   const badge: DynamicBadge | undefined =
-    age < 3 && post.score > 300 ? "viral" :
+    temMetrica && age < 3 && post.score! > 300 ? "viral" :
     age < 6 ? "nova" : undefined;
   return {
     id: `reddit-${post.permalink.replace(/\//g, "-").replace(/^-|-$/g, "")}`,
@@ -452,7 +471,9 @@ export async function fetchRedditSub(sub: string): Promise<TrendingItem[]> {
     if (!res.ok) return [];
     const json = await res.json() as { posts: RedditPost[] };
     return (json.posts ?? [])
-      .filter((p) => p.score > 10 && !p.title.toLowerCase().includes("[meta]"))
+      // ⚠️ Era `p.score > 10`. Com o feed RSS o score não existe, e a comparação
+      // `undefined > 10` é falsa: o filtro descartaria TODOS os posts em silêncio.
+      .filter((p) => (p.score === undefined || p.score > 10) && !p.title.toLowerCase().includes("[meta]"))
       .map(buildRedditItem);
   } catch { return []; } finally { clearTimeout(timer); }
 }
