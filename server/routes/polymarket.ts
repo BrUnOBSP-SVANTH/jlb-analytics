@@ -27,9 +27,20 @@ router.get("/markets", async (req, res) => {
     // — foi o que travava o catálogo em ~96 mercados por mais que se aumentasse o
     // número pedido. Com 3 páginas chegamos a 300 eventos; o volume 24h médio cai
     // de 182 mil (pág. 1) para ~16 mil (pág. 3), ou seja, ainda é mercado vivo.
+    // ⏱️ ORÇAMENTO DE TEMPO. Sem isto a rota espera TODAS as páginas, e em 02/09 ela
+    // travou em produção (>120s) enquanto o Kalshi respondia em 0,7s. Não era rede:
+    // são 8 páginas de 100 eventos COM mercados aninhados (~2.500 objetos cada) e o
+    // plano grátis do Render tem 0,1 CPU — o que aqui leva 4,5s lá leva minutos só
+    // de parse. Agora cada página corre contra um relógio e a que não chegar é
+    // simplesmente descartada: catálogo menor é ruim, catálogo que nunca carrega é
+    // pior. Mesma filosofia do "uma página que falhe não derruba as outras".
+    const ORCAMENTO_MS = 12_000;
+    const comOrcamento = <T,>(p: Promise<T>): Promise<T | null> =>
+      Promise.race([p, new Promise<null>((r) => setTimeout(() => r(null), ORCAMENTO_MS))]);
+
     const paginas = (order: string, qtd: number, extra = "") =>
       Array.from({ length: qtd }, (_, i) =>
-        fetchWithRetry<PolyEvent[]>(`${eventsUrl(order, 100, extra)}&offset=${i * 100}`));
+        comOrcamento(fetchWithRetry<PolyEvent[]>(`${eventsUrl(order, 100, extra)}&offset=${i * 100}`)));
 
     // Piscinas por PRAZO. Sem elas o catálogo só tinha mercado que fecha logo por
     // acidente — os que calhassem de estar no topo de volume. O gamma aceita
@@ -53,7 +64,7 @@ router.get("/markets", async (req, res) => {
     ]);
 
     // Uma página que falhe não derruba as outras — melhor catálogo menor que tela vazia.
-    const allEvents: PolyEvent[] = pools.flatMap((p) => (p.status === "fulfilled" ? p.value : []));
+    const allEvents: PolyEvent[] = pools.flatMap((p) => (p.status === "fulfilled" && p.value ? p.value : []));
 
     // Deduplicate events by slug
     const seenEventSlug = new Set<string>();
