@@ -519,6 +519,23 @@ async function checkMarketFidelity(env) {
       add("warn", "Mercados", `${fonte}: ${semLink} mercados sem link de saída`);
     }
   }
+
+  // Manifold entra separada: é dinheiro FICTÍCIO (mana), então não faz sentido
+  // cobrar dela volume em dólar. O que importa é que esteja viva — a integração
+  // morreu em silêncio quando a API tirou `sort`/`filter` do /v0/markets: a rota
+  // devolvia 502, o cliente engolia no catch, e as 30 vagas reservadas ficavam
+  // vazias sem ninguém perceber. Este check é para isso não repetir.
+  try {
+    const r = await fetch(`${base}/api/manifold/markets?limit=60`, { signal: AbortSignal.timeout(20_000) });
+    const n = r.ok ? ((await r.json()).markets ?? []).length : 0;
+    if (n > 0) line("✅", paint(`manifold: ${n} mercados`, c.green), "dinheiro fictício — rotulado como tal na tela");
+    else {
+      line("⚠️", paint(`manifold: vazia (HTTP ${r.status})`, c.yellow));
+      add("warn", "Mercados", "Manifold sem mercados — integração pode ter quebrado em silêncio");
+    }
+  } catch {
+    line("⚠️", paint("manifold: não respondeu", c.yellow));
+  }
 }
 
 // ── 8b. Segurança (self-monitoring, grátis) ──────────────────────────────────
@@ -550,8 +567,21 @@ function checkSecurity() {
       const crit = countMatches(out, /^\s*│?\s*critical/gim);
       const high = countMatches(out, /^\s*│?\s*high/gim);
       const bad = crit + high;
-      line(bad > 0 ? "🔴" : "⚠️", paint(`Vulnerabilidades em dependências: ${crit} crítica(s) · ${high} alta(s)`, bad > 0 ? c.red : c.yellow), "rode `pnpm audit` para detalhes/fix");
-      add(bad > 0 ? "crit" : "warn", "Segurança", `Deps vulneráveis (${crit} crítica, ${high} alta) — pnpm audit`);
+      // Também conta moderada/baixa: sem isso a linha dizia "0 crítica · 0 alta"
+      // JUNTO de um aviso, e o leitor não tinha como saber o que foi encontrado —
+      // parecia defeito do próprio doctor. O escopo é `--prod` de propósito: as
+      // vulnerabilidades de babel/vite são de ferramenta de build e não vão para
+      // produção, então contá-las só geraria alarme que ninguém pode agir.
+      const mod = countMatches(out, /^\s*│?\s*moderate/gim);
+      const low = countMatches(out, /^\s*│?\s*low/gim);
+      const resumo = [
+        crit > 0 && `${crit} crítica(s)`,
+        high > 0 && `${high} alta(s)`,
+        mod > 0 && `${mod} moderada(s)`,
+        low > 0 && `${low} baixa(s)`,
+      ].filter(Boolean).join(" · ") || "severidade não identificada na saída";
+      line(bad > 0 ? "🔴" : "⚠️", paint(`Vulnerabilidades em dependências de produção: ${resumo}`, bad > 0 ? c.red : c.yellow), "rode `pnpm audit --prod` para detalhes/fix");
+      add(bad > 0 ? "crit" : "warn", "Segurança", `Deps de produção vulneráveis (${resumo}) — pnpm audit --prod`);
     }
   }
 

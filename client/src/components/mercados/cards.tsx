@@ -164,7 +164,18 @@ export function SourceBadge({ source, subreddit }: { source: Source; subreddit?:
   if (source === "kalshi")
     return <span className="text-[10px] font-medium px-2 py-0.5 rounded-full border border-green-500/30 bg-green-500/10 text-green-400">Kalshi</span>;
   if (source === "manifold")
-    return <span className="text-[10px] font-medium px-2 py-0.5 rounded-full border border-purple-500/30 bg-purple-500/10 text-purple-400">Manifold</span>;
+    // "fictício" no rótulo, não só na dica: a Manifold opera com dinheiro de
+    // brincadeira (mana). O preço dela ao lado de Polymarket e Kalshi parece a
+    // mesma evidência e NÃO é — lá existe risco financeiro real por trás de cada
+    // centavo, aqui não. Quem lê de relance precisa ver a diferença.
+    return (
+      <span
+        className="text-[10px] font-medium px-2 py-0.5 rounded-full border border-purple-500/30 bg-purple-500/10 text-purple-400"
+        title="A Manifold usa dinheiro fictício (mana). O preço reflete opinião, não dinheiro em risco — diferente de Polymarket e Kalshi."
+      >
+        Manifold · fictício
+      </span>
+    );
   return <span className="text-[10px] font-medium px-2 py-0.5 rounded-full border border-neon-blue/30 bg-neon-blue/10 text-neon-blue">Polymarket</span>;
 }
 

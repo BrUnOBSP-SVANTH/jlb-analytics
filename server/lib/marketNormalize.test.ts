@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parseYesPrice, polyEventUrl, kalshiMarketUrl, kalshiYesProb, rankOutcomes } from "./marketNormalize.ts";
+import { parseYesPrice, polyEventUrl, kalshiMarketUrl, kalshiYesProb, rankOutcomes, kalshiTemPrecoReal } from "./marketNormalize.ts";
 
 describe("parseYesPrice — preço do 'Yes' (índice 0) do Polymarket", () => {
   it("extrai o primeiro preço de um outcomePrices válido", () => {
@@ -81,5 +81,33 @@ describe("kalshiYesProb — prob do 'Yes' (0.1–99.9) a partir dos preços em d
   it("clampa nas bordas (nunca 0/100 — a extremidade é do settlement)", () => {
     expect(kalshiYesProb("1", "1")).toBe(99.9);       // mid 100 → 99.9
     expect(kalshiYesProb("0", "0", "0.0001")).toBe(0.1); // ~0 → 0.1
+  });
+});
+
+describe("kalshiTemPrecoReal / spread — preço inventado não vai para a tela", () => {
+  // Medido em 02/09: 629 dos 14.339 mercados ativos do Kalshi não têm cotação e
+  // recebiam 50% do fallback, exibido como se fosse preço de mercado. Era também
+  // a causa de "Brazil Presidential Election First Round" somar 554% entre os
+  // desfechos — doze deles marcando 50% cada.
+  it("rejeita mercado sem cotação nenhuma", () => {
+    expect(kalshiTemPrecoReal(undefined, undefined, undefined)).toBe(false);
+    expect(kalshiTemPrecoReal("0", "0", "0")).toBe(false);
+  });
+
+  it("aceita mid quando o spread é estreito (mediana real é 7pp)", () => {
+    expect(kalshiTemPrecoReal("0.45", "0.52")).toBe(true);
+    expect(kalshiYesProb("0.45", "0.52")).toBeCloseTo(48.5, 1);
+  });
+
+  it("rejeita o mid de spread absurdo — 1¢/99¢ não é preço, é ausência dele", () => {
+    expect(kalshiTemPrecoReal("0.01", "0.99")).toBe(false);
+    // com um negócio real registrado, o last salva o mercado
+    expect(kalshiTemPrecoReal("0.01", "0.99", "0.20")).toBe(true);
+    expect(kalshiYesProb("0.01", "0.99", "0.20")).toBeCloseTo(20, 1);
+  });
+
+  it("nunca devolve 0% nem 100% — a extremidade fica para o settlement oficial", () => {
+    expect(kalshiYesProb("0.999", "0.999")).toBeLessThan(100);
+    expect(kalshiYesProb(undefined, undefined, "0.0001")).toBeGreaterThan(0);
   });
 });

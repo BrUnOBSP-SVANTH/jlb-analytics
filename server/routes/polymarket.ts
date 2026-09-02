@@ -197,7 +197,21 @@ router.get("/markets", async (req, res) => {
       // não expomos um mercado cujo link levaria a "página não encontrada".
       .filter((m) => !!m.externalUrl);
 
-    return sorted;
+    // Pergunta genérica repetida em eventos diferentes. Flagrado pelo doctor em
+    // 02/09: "Game 1: Both Teams Slay Baron Nashor?" aparecia 2x — eram DUAS
+    // partidas de LoL distintas (Galions x TLN Pirates e Movistar KOI x UCAM), e a
+    // pergunta do mercado é a mesma em toda partida da liga. Quem distingue é o
+    // título do evento, que já vem no dado e estava sendo ignorado. Prefixamos só
+    // quando há colisão, para não poluir o card do mercado que já é específico.
+    const eventosPorPergunta = new Map<string, Set<string>>();
+    for (const m of sorted) {
+      if (!eventosPorPergunta.has(m.question)) eventosPorPergunta.set(m.question, new Set());
+      eventosPorPergunta.get(m.question)!.add(m.eventSlug ?? m.id);
+    }
+    return sorted.map((m) =>
+      (eventosPorPergunta.get(m.question)?.size ?? 1) > 1 && m.eventTitle
+        ? { ...m, question: `${m.eventTitle} — ${m.question}` }
+        : m);
     });
     // Corta na RESPOSTA, não dentro do cache: a chave não inclui o limit, então
     // guardar a lista cortada faria o primeiro chamador definir o tamanho para

@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { swr } from "../lib/cache.ts";
 import { fetchWithRetry } from "../lib/fetcher.ts";
-import { kalshiMarketUrl, kalshiYesProb } from "../lib/marketNormalize.ts";
+import { kalshiMarketUrl, kalshiYesProb, kalshiTemPrecoReal } from "../lib/marketNormalize.ts";
 import type { KalshiEventsResponse, KalshiMarket, KalshiEvent, KalshiNestedMarket } from "../lib/types.ts";
 import { log } from "../lib/log.ts";
 
@@ -86,6 +86,8 @@ async function fetchCurtoPrazo(): Promise<KalshiMercadoPlano[]> {
       // Piso do seed: preço sem volume é cotação de formador de mercado, não preço
       // que alguém pagou.
       if (!m.ticker || vol(m, "volume_fp") <= 0) continue;
+      // Idem: preço inventado não entra no catálogo.
+      if (!kalshiTemPrecoReal(m.yes_bid_dollars, m.yes_ask_dollars, m.last_price_dollars)) continue;
       // Ticker agregado (negRisk) e título-lista "yes X, yes Y" não são mercado
       // navegável — mesma regra que o seed já aplica em parseShortDatedKalshi.
       if (/MULTIGAME|CROSSCATEGORY|MULTI/i.test(m.ticker)) continue;
@@ -215,7 +217,11 @@ router.get("/markets", async (req, res) => {
       const longoPrazo = events.flatMap((ev) => {
         // Fidelidade ao mercado: só o que está realmente aberto. Kalshi marca o status como
         // "closed"/"settled"/"finalized"/"determined" quando o mercado encerra/resolve.
-        const active = (ev.markets ?? []).filter((m) => !m.status || m.status === "active");
+        const active = (ev.markets ?? [])
+          .filter((m) => !m.status || m.status === "active")
+          // Sem cotação não vai para a tela: `kalshiYesProb` devolveria 50% e isso
+          // é número inventado exibido como preço de mercado.
+          .filter((m) => kalshiTemPrecoReal(m.yes_bid_dollars, m.yes_ask_dollars, m.last_price_dollars));
         if (active.length === 0) return [];
 
         // Multi-resultado: evento mutuamente exclusivo com >2 desfechos → 1 card agrupado,
