@@ -497,6 +497,23 @@ async function checkMarketFidelity(env) {
       line("⚠️", paint(`  ${quebrado} títulos com buraco de interpolação`, c.yellow));
       add("warn", "Mercados", `${fonte}: ${quebrado} títulos quebrados exibidos`);
     }
+
+    // Título repetido = cards que o usuário não consegue diferenciar. Flagrado em
+    // 01/09: cinco cards idênticos de "How many launches will SpaceX have in Sep
+    // 2026?" marcando 9%, 78%, 23%, 46% e 3% — o rótulo da faixa ("Above 10")
+    // existia na API e era descartado. Parece defeito nosso e é inutilizável.
+    const porTitulo = new Map();
+    for (const m of mercados) {
+      const t = String(m.question ?? m.title ?? "").trim();
+      porTitulo.set(t, (porTitulo.get(t) ?? 0) + 1);
+    }
+    const repetidos = [...porTitulo.values()].filter((n) => n > 1).length;
+    if (repetidos > 0) {
+      const exemplo = [...porTitulo.entries()].find(([, n]) => n > 1)?.[0] ?? "";
+      line("⚠️", paint(`  ${repetidos} títulos aparecem em mais de um card`, c.yellow),
+        `ex.: "${exemplo.slice(0, 44)}"`);
+      add("warn", "Mercados", `${fonte}: ${repetidos} títulos duplicados — o usuário não distingue os cards`);
+    }
     if (semLink > 0) {
       line("⚠️", paint(`  ${semLink} sem link externo (levariam a lugar nenhum)`, c.yellow));
       add("warn", "Mercados", `${fonte}: ${semLink} mercados sem link de saída`);

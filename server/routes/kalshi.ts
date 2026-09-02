@@ -165,8 +165,27 @@ router.get("/markets", async (req, res) => {
         fetchCurtoPrazo(),
       ]);
 
+      /**
+       * Título que DISTINGUE um mercado dos irmãos do mesmo evento.
+       *
+       * Escada de faixas compartilha o título: os 5 mercados de
+       * "How many launches will SpaceX have in Sep 2026?" chegavam à tela como
+       * CINCO CARDS IDÊNTICOS marcando 9%, 77%, 23%, 46% e 3% — sem nenhuma forma
+       * de o usuário saber qual é qual. Parece defeito nosso e é inutilizável.
+       * O rótulo que separa (`yes_sub_title` = "10 or more") vem na API e estava
+       * sendo descartado. Só entra quando o evento tem irmãos E o título ainda não
+       * contém o rótulo, para não poluir mercado binário comum.
+       */
+      const tituloDistinto = (m: KalshiNestedMarket, ev: KalshiEvent, irmaos: number): string => {
+        const base = tituloLimpo(m.title) ?? tituloLimpo(ev.title) ?? m.ticker;
+        const rotulo = tituloLimpo(m.yes_sub_title);
+        if (irmaos < 2 || !rotulo) return base;
+        if (base.toLowerCase().includes(rotulo.toLowerCase())) return base;
+        return `${base} — ${rotulo}`;
+      };
+
       // Um mercado aninhado do Kalshi → nosso formato normalizado.
-      const toMarket = (m: KalshiNestedMarket, ev: KalshiEvent): KalshiMarket => {
+      const toMarket = (m: KalshiNestedMarket, ev: KalshiEvent, irmaos = 1): KalshiMarket => {
         const seriesTicker = ev.series_ticker ?? ev.event_ticker;
         return {
           ticker: m.ticker,
@@ -176,8 +195,9 @@ router.get("/markets", async (req, res) => {
           // Espaço duplo denuncia interpolação vazia NA ORIGEM: o Kalshi publicou
           // "Will  become President of the United States" — sem o nome. Preferimos
           // o título do evento nesse caso; se nem ele existir, o ticker, que é feio
-          // mas verdadeiro. Nunca inventar o nome que falta.
-          title: tituloLimpo(m.title) ?? tituloLimpo(ev.title) ?? m.ticker,
+          // mas verdadeiro. Nunca inventar o nome que falta. E `tituloDistinto`
+          // ainda acrescenta o rótulo da faixa quando o evento tem irmãos.
+          title: tituloDistinto(m, ev, irmaos),
           yesProb: kalshiYesProb(m.yes_bid_dollars, m.yes_ask_dollars, m.last_price_dollars),
           prevYesProb: m.previous_price_dollars
             ? parseFloat((parseFloat(m.previous_price_dollars) * 100).toFixed(1))
@@ -201,7 +221,7 @@ router.get("/markets", async (req, res) => {
         // Multi-resultado: evento mutuamente exclusivo com >2 desfechos → 1 card agrupado,
         // cada desfecho com sua prob (yes_sub_title = rótulo). Fiel ao Kalshi, como no Polymarket.
         if (ev.mutually_exclusive && active.length > 2) {
-          const mapped = active.map((m) => toMarket(m, ev));
+          const mapped = active.map((m) => toMarket(m, ev, active.length));
           const outcomes = active
             .map((m, i) => ({ label: m.yes_sub_title ?? m.title ?? m.ticker, prob: mapped[i].yesProb / 100 }))
             .filter((o) => o.label && o.prob > 0.005)
@@ -219,7 +239,7 @@ router.get("/markets", async (req, res) => {
             }];
           }
         }
-        return active.map((m) => toMarket(m, ev));
+        return active.map((m) => toMarket(m, ev, active.length));
       })
         // Ranquear os EVENTOS não bastava: um evento se abre em vários mercados, e
         // um só com escada de faixas ("ao menos 25%", "ao menos 30%"…) tomava as
@@ -241,6 +261,14 @@ router.get("/markets", async (req, res) => {
       const dentroDe = (m: KalshiMercadoPlano, dias: number) =>
         new Date(m.close_time ?? 0).getTime() - Date.now() <= dias * 86_400_000;
       const disponiveis = curtoPrazo.filter((m) => !jaTem.has(m.ticker!));
+      // Quantos irmãos cada evento tem DENTRO desta piscina — a escada de faixas do
+      // SpaceX ("How many launches…", 5 mercados) chega por aqui, não pelo caminho
+      // dos eventos, então precisa da mesma desambiguação.
+      const irmaosPorEvento = new Map<string, number>();
+      for (const m of disponiveis) {
+        const k = m.event_ticker ?? m.ticker!;
+        irmaosPorEvento.set(k, (irmaosPorEvento.get(k) ?? 0) + 1);
+      }
       const daSemana = disponiveis.filter((m) => dentroDe(m, 7)).slice(0, COTA_ATE_7_DIAS);
       const naSemana = new Set(daSemana.map((m) => m.ticker));
       const curtos = [...daSemana, ...disponiveis.filter((m) => !naSemana.has(m.ticker))]
@@ -252,7 +280,13 @@ router.get("/markets", async (req, res) => {
             eventTicker: m.event_ticker ?? m.ticker!,
             seriesTicker: serie,
             externalUrl: kalshiMarketUrl(serie, m.event_ticker ?? m.ticker!),
-            title: tituloLimpo(m.title) ?? tituloLimpo(m.yes_sub_title) ?? m.ticker!,
+            title: (() => {
+              const base = tituloLimpo(m.title) ?? tituloLimpo(m.yes_sub_title) ?? m.ticker!;
+              const rotulo = tituloLimpo(m.yes_sub_title);
+              const irmaos = irmaosPorEvento.get(m.event_ticker ?? m.ticker!) ?? 1;
+              if (irmaos < 2 || !rotulo) return base;
+              return base.toLowerCase().includes(rotulo.toLowerCase()) ? base : `${base} — ${rotulo}`;
+            })(),
             yesProb: kalshiYesProb(m.yes_bid_dollars, m.yes_ask_dollars, m.last_price_dollars),
             prevYesProb: m.previous_price_dollars
               ? parseFloat((parseFloat(m.previous_price_dollars) * 100).toFixed(1))
@@ -270,7 +304,22 @@ router.get("/markets", async (req, res) => {
           };
         });
 
-      return [...curtos, ...longoPrazo].slice(0, TETO_KALSHI);
+      const juntos = [...curtos, ...longoPrazo].slice(0, TETO_KALSHI);
+
+      // Última desambiguação: dois EVENTOS DIFERENTES com o título idêntico.
+      // Não é escada de faixas e não é bug nosso — a API do Kalshi devolve o mesmo
+      // título para KXOSCARVIS (efeitos visuais) e KXOSCARMAH (maquiagem), ambos
+      // como "Oscar Winner: Best Makeup and Hairstyling". Corrigir o título seria
+      // ADIVINHAR a partir do ticker, e inventar dado é o que este projeto não faz.
+      // Então marcamos com a série — feio, mas verdadeiro e clicável — em vez de
+      // exibir dois cards idênticos, que parecem defeito e não deixam escolher.
+      const porTitulo = new Map<string, Set<string>>();
+      for (const m of juntos) {
+        if (!porTitulo.has(m.title)) porTitulo.set(m.title, new Set());
+        porTitulo.get(m.title)!.add(m.eventTicker);
+      }
+      return juntos.map((m) =>
+        (porTitulo.get(m.title)?.size ?? 1) > 1 ? { ...m, title: `${m.title} (${m.seriesTicker})` } : m);
     });
     // Corta DEPOIS do cache, não dentro dele. A chave (`kalshi:markets`) não inclui
     // o limit, então guardar a lista já cortada fazia o primeiro chamador definir o

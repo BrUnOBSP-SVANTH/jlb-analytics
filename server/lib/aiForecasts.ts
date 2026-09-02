@@ -674,7 +674,15 @@ JSON apenas: {"fairValue": <inteiro 5-95>, "confidence": "baixa|media|alta"}`;
 interface DivergenceItem {
   marketId: string; source: string; title: string; category: string;
   currentProb: number; aiFairValue: number; edge: number; confidence: string;
+  /** Idade da previsão em dias. O preço é AO VIVO e a estimativa pode ser de dias
+   *  atrás — sem isso o leitor não tem como saber se a diferença é discordância
+   *  nossa ou simplesmente preço que se moveu depois. */
+  forecastAgeDays: number;
 }
+
+/** Acima/abaixo disto o mercado já decidiu na prática — ver o filtro em computeDivergences. */
+const PRECO_DECIDIDO_ALTO = 97;
+const PRECO_DECIDIDO_BAIXO = 3;
 
 export async function computeDivergences(): Promise<DivergenceItem[]> {
   if (!SUPABASE_URL || !SUPABASE_KEY) return [];
@@ -685,7 +693,7 @@ export async function computeDivergences(): Promise<DivergenceItem[]> {
       { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }, signal: AbortSignal.timeout(8_000) }
     );
     if (!r.ok) return [];
-    const rows = await r.json() as Array<{ market_id: string; source: string; title: string; category: string; market_prob: number; ai_fair_value: number; confidence: string }>;
+    const rows = await r.json() as Array<{ market_id: string; source: string; title: string; category: string; market_prob: number; ai_fair_value: number; confidence: string; created_at: string }>;
     const priceMap = getLiveMarketPrices();
     const seen = new Set<string>();
     return rows
@@ -697,9 +705,18 @@ export async function computeDivergences(): Promise<DivergenceItem[]> {
           marketId: row.market_id, source: row.source, title: row.title, category: row.category,
           currentProb, aiFairValue: Math.round(row.ai_fair_value),
           edge: Math.round(row.ai_fair_value - currentProb), confidence: row.confidence,
+          forecastAgeDays: Math.max(0, Math.round((Date.now() - new Date(row.created_at).getTime()) / 86_400_000)),
           stillLive: livePrice !== undefined,
         };
       })
+      // ⛔ Preço já DECIDIDO não gera discordância publicável. Flagrado em 01/09: a
+      // seção "onde a JLB discorda do mercado" era liderada por "US Open ATP: Dane
+      // Sweeny vs Corentin Moutet" com o mercado a 100% e a IA a 34% — um "edge" de
+      // −66pp sobre uma partida que já acabou. Não é insight, é a estimativa velha
+      // comparada a um preço que convergiu; e por ser o maior número, encabeçava a
+      // lista. Alegar vantagem de 66pp sobre desfecho decidido destrói credibilidade
+      // — exatamente o oposto da fidelidade que o site promete.
+      .filter((d) => d.currentProb < PRECO_DECIDIDO_ALTO && d.currentProb > PRECO_DECIDIDO_BAIXO)
       .filter((d) => d.stillLive && Math.abs(d.edge) >= 6)
       .sort((a, b) => Math.abs(b.edge) - Math.abs(a.edge))
       .slice(0, 12)

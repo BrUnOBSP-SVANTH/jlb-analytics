@@ -39,6 +39,8 @@ export function DivergencesSection() {
           <div className="px-4 pb-4 space-y-2">
             <p className="text-[11px] text-muted-foreground mb-1">
               Mercados onde nosso fair value de IA mais difere do preço atual. Edge = nossa estimativa − preço de mercado.
+              {" "}O preço é <strong>ao vivo</strong> e a estimativa é da data indicada: parte da diferença pode ser
+              o mercado tendo se movido depois, não discordância nossa.
             </p>
             {divs.map((d) => {
               const slug = d.marketId.replace(/^(poly-|kalshi-)/, "");
@@ -52,6 +54,11 @@ export function DivergencesSection() {
                         Mercado <span className="font-mono text-foreground">{d.currentProb}%</span> ·
                         JLB <span className="font-mono text-gold">{d.aiFairValue}%</span>
                         <span className="ml-1">({d.source === "kalshi" ? "Kalshi" : "Polymarket"})</span>
+                        {d.forecastAgeDays !== undefined && (
+                          <span className="ml-1 text-muted-foreground/70">
+                            · estimativa de {d.forecastAgeDays === 0 ? "hoje" : `${d.forecastAgeDays}d atrás`}
+                          </span>
+                        )}
                       </p>
                     </div>
                     <div className={`text-center px-2.5 py-1 rounded-lg shrink-0 ${d.edge > 0 ? "bg-positive/10 text-positive" : "bg-negative/10 text-negative"}`}>

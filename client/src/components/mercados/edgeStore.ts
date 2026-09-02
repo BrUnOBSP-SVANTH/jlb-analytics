@@ -8,6 +8,8 @@ import { useState, useEffect } from "react";
 export interface Divergence {
   marketId: string; source: string; title: string; category: string;
   currentProb: number; aiFairValue: number; edge: number; confidence: string;
+  /** Idade da previsão em dias — o preço é ao vivo, a estimativa pode ser antiga. */
+  forecastAgeDays?: number;
 }
 
 // Store global de edges (fair value IA vs preço) — lido pelos cards sem prop-drilling.
