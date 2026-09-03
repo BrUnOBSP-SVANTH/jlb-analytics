@@ -1,3 +1,4 @@
+import { REGRA_LINGUAGEM } from "./linguagem.ts";
 import type { Request, Response } from "express";
 import { fetchJSON } from "../fetcher.ts";
 import { fetchBcbSerie } from "../bcb.ts";
@@ -65,6 +66,7 @@ export async function dailyBriefingHandler(req: Request, res: Response) {
     : "Dados de mercados temporariamente indisponíveis.";
 
   const prompt = `Você é um analista quantitativo sênior gerando um briefing matinal para traders brasileiros.
+${REGRA_LINGUAGEM}
 
 DATA: ${new Date().toLocaleDateString("pt-BR", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
 MACRO: Selic ${selic ?? "~10.5"}% | IPCA ${ipca ?? "~4.8"}% | USD/BRL ${usd ?? "~5.85"}

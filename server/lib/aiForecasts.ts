@@ -8,6 +8,7 @@ import { callClaude } from "./anthropic.ts";
 import { callGroq, groqEnabled } from "./groq.ts";
 import { clampFairValue } from "./ai/guardrails.ts";
 import { normalizeCategory } from "./ai/calibration.ts";
+import { REGRA_LINGUAGEM_CURTA } from "./ai/linguagem.ts";
 import { getCalibrationMemo, getCategoryDeficitWeights } from "./calibrationData.ts";
 import { extractJson } from "./extractJson.ts";
 import { getCache, setCache } from "./cache.ts";
@@ -70,10 +71,12 @@ Estime a probabilidade REAL de SIM, do zero, com seu próprio raciocínio: a bas
 rate da classe de referência, ajustada pelas evidências acima. Não há preço de
 mercado aqui — é a SUA estimativa independente que importa.
 
+${REGRA_LINGUAGEM_CURTA}
+
 JSON apenas: {"fairValue": <inteiro 5-95>, "rationale": "<raciocínio em 1 frase>"}`;
   try {
     const raw = await callGroq({
-      system: "Você é um superforecaster. Responda APENAS JSON.",
+      system: "Você é um superforecaster brasileiro. Escreve SEMPRE em português do Brasil. Responde APENAS JSON.",
       messages: [{ role: "user", content: prompt }],
       maxTokens: 250, timeoutMs: 25_000,
     });

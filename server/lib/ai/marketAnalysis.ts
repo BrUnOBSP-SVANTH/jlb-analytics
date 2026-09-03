@@ -1,3 +1,4 @@
+import { REGRA_LINGUAGEM } from "./linguagem.ts";
 import { getNewsForMarket } from "../news.ts";
 import { fetchCerebroContext, fetchMarketMomentum } from "../cerebro.ts";
 import { fetchBcbSerie } from "../bcb.ts";
@@ -63,6 +64,7 @@ export async function runMarketAnalysis(p: AnalyzeParams, onPhase: PhaseEmit = (
         : "Nenhum artigo de notícias encontrado.";
 
       const prompt = `Você é o motor de análise quantitativa da JLB Analytics — combina o rigor de um Superforecaster do Good Judgment Project com a precisão de um quant de mesa proprietária.
+${REGRA_LINGUAGEM}
 
 MERCADO: "${title}"
 PLATAFORMA: ${platformName} | PREÇO ATUAL: ${probPct}% SIM

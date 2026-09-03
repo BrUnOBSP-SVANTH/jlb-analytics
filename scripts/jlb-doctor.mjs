@@ -188,7 +188,11 @@ function checkCodeSmells() {
   const logFiles = new Set();
   for (const f of all) {
     const txt = read(f);
-    todos += countMatches(txt, /\b(TODO|FIXME|XXX|HACK)\b/g);
+    // ⚠️ Exige a FORMA de marcador (TODO:, // TODO, /* FIXME), não a palavra solta.
+    // Este projeto comenta em português, e "TODO"/"TODOS" é palavra comum ("de TODO
+    // texto", "TODOS os /api"). Com \b(TODO)\b o doctor acusava comentário legítimo
+    // como pendência -- e alarme falso ensina a ignorar o alarme.
+    todos += countMatches(txt, /(?:\/\/|\/\*|\*|^)\s*(?:TODO|FIXME|XXX|HACK)\b[:(\s]|\b(?:TODO|FIXME|XXX|HACK):/gm);
     mocks += countMatches(txt, /\b(mock|fake|placeholder|simulação|dummy)\b/gi);
     const l = countMatches(txt, /console\.log\(/g);
     if (l > 0) { logs += l; logFiles.add(rel(f)); }

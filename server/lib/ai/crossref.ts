@@ -1,3 +1,4 @@
+import { REGRA_LINGUAGEM } from "./linguagem.ts";
 import type { Request, Response } from "express";
 import { getCache, setCache, isRateLimited } from "../cache.ts";
 import { parsePolyPrices } from "../aiForecasts.ts";
@@ -59,6 +60,7 @@ export async function crossrefHandler(req: Request, res: Response) {
     .join("\n");
 
   const prompt = `Você é um analista honesto de mercados preditivos da JLB Analytics.
+${REGRA_LINGUAGEM}
 Analise o artigo abaixo e identifique até 4 mercados preditivos diretamente relacionados.
 Para cada mercado relacionado, dê sua estimativa HONESTA da probabilidade real — você PODE e DEVE discordar do preço do mercado se o artigo sugerir isso.
 Seja direto e sincero: se o mercado está superestimado ou subestimado, diga.
