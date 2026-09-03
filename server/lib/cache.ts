@@ -3,6 +3,51 @@ interface CacheEntry<T> { data: T; expiresAt: number }
 export const cache = new Map<string, CacheEntry<unknown>>();
 const rateLimitWindows = new Map<string, number[]>();
 
+/**
+ * ⚠️ OS DOIS MAPAS ACIMA CRESCIAM PARA SEMPRE.
+ *
+ * `cache` só apagava uma entrada quando alguém a LIA depois de vencida — chave
+ * escrita e nunca mais lida ficava presa até o processo reiniciar. E várias chaves
+ * vêm de texto arbitrário (`article-crossref:${título}`, `reddit-ctx:${título}`,
+ * `rag-embed:${consulta}`), então o conjunto de chaves é ilimitado por natureza.
+ *
+ * `rateLimitWindows` era pior: a chave é `ação:${ip}`, ou seja, cada visitante
+ * único deixava uma entrada permanente. Num site público isso é cada pessoa e
+ * cada robô que já passou.
+ *
+ * Não dava sintoma em desenvolvimento (processo vive minutos) e é justamente o
+ * tipo de defeito que só aparece depois de dias no ar — a produção roda 24/7 num
+ * plano com 512MB. Daí a faxina periódica e o teto de tamanho abaixo.
+ */
+const MAX_ENTRADAS = 5_000;
+const FAXINA_MS = 10 * 60_000;
+
+/** Remove o que já venceu e, se ainda estiver grande, os mais antigos. */
+export function limparCache(agora = Date.now()): { expiradas: number; despejadas: number } {
+  let expiradas = 0;
+  for (const [k, e] of Array.from(cache.entries())) {
+    if (agora > e.expiresAt) { cache.delete(k); expiradas++; }
+  }
+  // O Map do JS preserva a ordem de inserção: os primeiros são os mais antigos.
+  let despejadas = 0;
+  if (cache.size > MAX_ENTRADAS) {
+    const sobra = cache.size - MAX_ENTRADAS;
+    for (const k of Array.from(cache.keys())) {
+      cache.delete(k); despejadas++;
+      if (despejadas >= sobra) break;
+    }
+  }
+  // Janelas de rate limit sem nenhum acesso recente não precisam existir.
+  for (const [k, hits] of Array.from(rateLimitWindows.entries())) {
+    if (hits.length === 0 || agora - hits[hits.length - 1] > 60 * 60_000) rateLimitWindows.delete(k);
+  }
+  return { expiradas, despejadas };
+}
+
+// `unref()` para a faxina não segurar o processo vivo em testes/scripts.
+const faxina = setInterval(() => { limparCache(); }, FAXINA_MS);
+if (typeof faxina.unref === "function") faxina.unref();
+
 export function isRateLimited(key: string, max: number, windowMs: number): boolean {
   const now = Date.now();
   const hits = (rateLimitWindows.get(key) ?? []).filter((t) => now - t < windowMs);
@@ -10,6 +55,11 @@ export function isRateLimited(key: string, max: number, windowMs: number): boole
   hits.push(now);
   rateLimitWindows.set(key, hits);
   return false;
+}
+
+/** Só para teste e diagnóstico — quantas entradas cada mapa guarda. */
+export function tamanhoCache(): { cache: number; rateLimit: number } {
+  return { cache: cache.size, rateLimit: rateLimitWindows.size };
 }
 
 export function getCache<T>(key: string): T | null {
