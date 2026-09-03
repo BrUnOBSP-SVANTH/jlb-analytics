@@ -19,6 +19,55 @@ import {
   type BiasMap, type CanonicalCategory,
 } from "./ai/calibration.ts";
 
+/**
+ * A INVARIANTE do módulo: 1 previsão por mercado, a mais ANTIGA — mesma regra da
+ * view do track record (migration 019).
+ *
+ * Estava copiada em QUATRO funções deste arquivo, palavra por palavra. É o tipo de
+ * duplicação que não dá erro: se uma cópia divergir, os números continuam saindo,
+ * só que errados e diferentes entre si. E o custo de errar aqui já foi medido — o
+ * backtest sem dedup deu +5,4% e o correto, +3,1%: um mercado previsto em 6 dias
+ * contava 6 vezes.
+ *
+ * Desempate por `created_at` quando a data da previsão empata, para a escolha ser
+ * determinística em vez de depender da ordem que o banco devolveu.
+ */
+export function dedupPorMercado<T extends { market_id: string; forecast_date: string; created_at: string }>(
+  rows: T[],
+): T[] {
+  const maisAntiga = new Map<string, T>();
+  for (const r of rows) {
+    const atual = maisAntiga.get(r.market_id);
+    if (!atual
+      || r.forecast_date < atual.forecast_date
+      || (r.forecast_date === atual.forecast_date && r.created_at < atual.created_at)) {
+      maisAntiga.set(r.market_id, r);
+    }
+  }
+  return Array.from(maisAntiga.values());
+}
+
+/**
+ * Régua do go-live da calibração. Extraída para poder ser testada sem banco: é
+ * ela que encoda a lição de 29/08 — promover exige ganhar do CRU **e** do MERCADO,
+ * com amostra. Naquela vez promovemos com "melhora o cru" e perdemos 7,7%.
+ */
+export function vereditoCalibracao(n: number, shadow: number, cru: number, mercado: number): string {
+  if (n < 30) return `amostra pequena (${n}/30) — ainda medindo`;
+  if (shadow < cru && shadow < mercado) return "calibração VENCE cru e mercado — candidata a go-live";
+  if (shadow < cru) return "melhora o cru, mas ainda não bate o mercado";
+  return "não melhorou — NÃO promover";
+}
+
+/** Régua do experimento da divergência. Mesma ideia: testável sem banco. */
+export function vereditoBold(n: number, nDiverged: number, bold: number, prod: number, mercado: number): string {
+  if (n < 30) return `amostra pequena (${n}/30) — ainda medindo`;
+  if (nDiverged < 10) return `divergiu pouco (${nDiverged} de ${n}) — o modelo concorda com o mercado mesmo SEM a trava, o que já é uma resposta`;
+  if (bold < mercado && bold < prod) return "DIVERGIR PAGOU — bateu o mercado e a versão travada. Candidato a virar produção.";
+  if (bold < prod) return "melhor que a versão travada, mas ainda não bate o mercado";
+  return "divergir PIOROU — a trava estava certa. Não promover.";
+}
+
 // ── Auto-calibração: o viés medido nas resolvidas volta para o prompt ────────
 // Erro médio assinado (estimativa − resultado) é a medida padrão de viés de
 // calibração. Injetado nos prompts de fair value, fecha o loop: a IA corrige
@@ -72,14 +121,7 @@ export async function getCategoryBiasMap(): Promise<BiasMap> {
     // Dedup: 1 forecast por mercado (o mais ANTIGO), igual à view do track record
     // (019). Sem isso, um mercado previsto em 6 dias contaria 6× e distorceria o
     // viés — foi o que o item #3 revelou (backtest bruto +5,4% vs deduplicado +3,1%).
-    const earliest = new Map<string, typeof rows[number]>();
-    for (const r of rows) {
-      const cur = earliest.get(r.market_id);
-      if (!cur || r.forecast_date < cur.forecast_date || (r.forecast_date === cur.forecast_date && r.created_at < cur.created_at)) {
-        earliest.set(r.market_id, r);
-      }
-    }
-    const deduped = Array.from(earliest.values(), (r) => ({ fairValue: Number(r.ai_fair_value), outcome: r.outcome, category: r.category }));
+    const deduped = dedupPorMercado(rows).map((r) => ({ fairValue: Number(r.ai_fair_value), outcome: r.outcome, category: r.category }));
     const map = computeCategoryBiases(deduped);
     setCache("ai-category-bias-map", map, 6 * 3600);
     return map;
@@ -125,14 +167,7 @@ export async function getBoldExperimentStatus(): Promise<{
     const rows = await r.json() as Array<{ market_id: string; ai_fair_value: number; ai_fair_value_bold: number; market_prob: number; outcome: boolean; forecast_date: string; created_at: string }>;
 
     // Dedup por mercado (regra da view 019) — repetição infla o resultado.
-    const earliest = new Map<string, typeof rows[number]>();
-    for (const row of rows) {
-      const cur = earliest.get(row.market_id);
-      if (!cur || row.forecast_date < cur.forecast_date || (row.forecast_date === cur.forecast_date && row.created_at < cur.created_at)) {
-        earliest.set(row.market_id, row);
-      }
-    }
-    const d = Array.from(earliest.values());
+    const d = dedupPorMercado(rows);
     if (d.length === 0) return { available: true, n: 0, verdict: "nenhuma previsão ousada resolvida ainda" };
 
     const mean = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length;
@@ -147,15 +182,7 @@ export async function getBoldExperimentStatus(): Promise<{
     // Só conta como "divergiu" um afastamento maior que a trava da produção (3pp).
     const nDiverged = devs.filter((v) => v >= 3).length;
 
-    const verdict = d.length < 30
-      ? `amostra pequena (${d.length}/30) — ainda medindo`
-      : nDiverged < 10
-        ? `divergiu pouco (${nDiverged} de ${d.length}) — o modelo concorda com o mercado mesmo SEM a trava, o que já é uma resposta`
-        : boldBrier < marketBrier && boldBrier < prodBrier
-          ? "DIVERGIR PAGOU — bateu o mercado e a versão travada. Candidato a virar produção."
-          : boldBrier < prodBrier
-            ? "melhor que a versão travada, mas ainda não bate o mercado"
-            : "divergir PIOROU — a trava estava certa. Não promover.";
+    const verdict = vereditoBold(d.length, nDiverged, boldBrier, prodBrier, marketBrier);
 
     return {
       available: true, n: d.length, nDiverged,
@@ -181,14 +208,7 @@ export async function getCalibrationStatus(): Promise<{
     const rows = await r.json() as Array<{ market_id: string; ai_fair_value: number; ai_fair_value_calibrated: number; market_prob: number; outcome: boolean; forecast_date: string; created_at: string }>;
 
     // Dedup por mercado (o mais antigo) — mesma regra da view 019.
-    const earliest = new Map<string, typeof rows[number]>();
-    for (const row of rows) {
-      const cur = earliest.get(row.market_id);
-      if (!cur || row.forecast_date < cur.forecast_date || (row.forecast_date === cur.forecast_date && row.created_at < cur.created_at)) {
-        earliest.set(row.market_id, row);
-      }
-    }
-    const d = Array.from(earliest.values());
+    const d = dedupPorMercado(rows);
     if (d.length === 0) return { available: true, biasMap };
 
     const mean = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length;
@@ -208,13 +228,7 @@ export async function getCalibrationStatus(): Promise<{
         rawBrier: round(rawBrier), shadowBrier: round(shadowBrier), marketBrier: round(marketBrier),
         skillVsMarket: round(skill, 3),
         // Régua honesta do go-live: precisa ganhar do CRU e do MERCADO, com amostra.
-        verdict: d.length < 30
-          ? `amostra pequena (${d.length}/30) — ainda medindo`
-          : shadowBrier < rawBrier && shadowBrier < marketBrier
-            ? "calibração VENCE cru e mercado — candidata a go-live"
-            : shadowBrier < rawBrier
-              ? "melhora o cru, mas ainda não bate o mercado"
-              : "não melhorou — NÃO promover",
+        verdict: vereditoCalibracao(d.length, shadowBrier, rawBrier, marketBrier),
       },
     };
   } catch { return { available: false }; }
@@ -244,18 +258,11 @@ export async function getCategoryDeficitWeights(target = 30): Promise<Map<Canoni
     if (!r.ok) return weights;
     const rows = await r.json() as Array<{ market_id: string; category: string | null; forecast_date: string; created_at: string }>;
 
-    const earliest = new Map<string, typeof rows[number]>();
-    for (const row of rows) {
-      const cur = earliest.get(row.market_id);
-      if (!cur || row.forecast_date < cur.forecast_date || (row.forecast_date === cur.forecast_date && row.created_at < cur.created_at)) {
-        earliest.set(row.market_id, row);
-      }
-    }
     const counts = new Map<CanonicalCategory, number>();
-    earliest.forEach((row) => {
+    for (const row of dedupPorMercado(rows)) {
       const b = normalizeCategory(row.category);
       counts.set(b, (counts.get(b) ?? 0) + 1);
-    });
+    }
     // Toda categoria conhecida entra: as ausentes (n=0) são justamente as que mais precisam.
     for (const b of ["crypto", "politics", "sports", "tennis", "esports", "culture", "economy", "science", "climate", "other"] as CanonicalCategory[]) {
       weights.set(b, deficitWeight(counts.get(b) ?? 0, target));
