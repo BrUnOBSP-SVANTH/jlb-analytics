@@ -2,6 +2,7 @@
  * GuiaModelos — guia educacional dos modelos quantitativos (ModelGuide + MODELS +
  * ModelCard + GuiaModelos). Extraido de pages/Calculadoras.tsx.
  */
+import { Termo } from "@/components/Termo";
 import { useState } from "react";
 import {
   type LucideIcon, Calculator, Percent, Target, TrendingUp,
@@ -240,10 +241,10 @@ export function GuiaModelos() {
               <p className="text-sm font-semibold text-foreground mb-1">Como usar este guia</p>
               <p className="text-sm text-muted-foreground leading-relaxed">
                 Cada modelo resolve um problema específico. A sequência correta é:{" "}
-                <strong className="text-foreground">Overround</strong> (qual o custo do mercado?) →{" "}
-                <strong className="text-foreground">EV</strong> (vale a pena entrar?) →{" "}
-                <strong className="text-foreground">Kelly</strong> (quanto pôr?) →{" "}
-                <strong className="text-foreground">Brier Score</strong> (minhas previsões foram boas?).
+                <strong className="text-foreground"><Termo nome="overround">Overround</Termo></strong> (qual o custo do mercado?) →{" "}
+                <strong className="text-foreground"><Termo nome="ev">EV</Termo></strong> (vale a pena entrar?) →{" "}
+                <strong className="text-foreground"><Termo nome="kelly">Kelly</Termo></strong> (quanto pôr?) →{" "}
+                <strong className="text-foreground"><Termo nome="brier">Brier Score</Termo></strong> (minhas previsões foram boas?).
               </p>
               <p className="text-xs text-gold/80 font-medium mt-2">
                 No Polymarket e Kalshi, o preço de mercado já é a probabilidade — use diretamente nas fórmulas.

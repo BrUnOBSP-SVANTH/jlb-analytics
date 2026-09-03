@@ -88,17 +88,17 @@ export function ValorEsperado() {
         </div>
 
         <div className="space-y-4">
-          <ResultBox big label="Valor Esperado por posição"
+          <ResultBox big label="Valor Esperado por posição" termo="ev"
             value={`${isPositive ? "+" : ""}R$ ${evReais.toFixed(2)}`}
             color={evColor}
             hint="Se você fizesse esta posição muitas vezes, ganharia (ou perderia) isso EM MÉDIA por vez."
             sub={`por R$ ${stake} na posição`} />
           <div className="grid grid-cols-2 gap-3">
-            <ResultBox label="ROI esperado"
+            <ResultBox label="ROI esperado" termo="roi"
               value={`${isPositive ? "+" : ""}${roi.toFixed(1)}%`}
               color={evColor}
               hint="retorno médio sobre o que você põe" />
-            <ResultBox label="EV por R$ 1"
+            <ResultBox label="EV por R$ 1" termo="ev"
               value={`${isPositive ? "+" : ""}R$ ${ev.toFixed(3)}`}
               color={evColor}
               hint="pra comparar posições de tamanhos diferentes" />

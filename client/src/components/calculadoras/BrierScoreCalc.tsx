@@ -79,7 +79,7 @@ export function BrierScoreCalc() {
             value={brierScore.toFixed(3)}
             color={brierScore < 0.20 ? "text-positive" : brierScore < 0.25 ? "text-warning" : "text-negative"}
             hint="mede se, quando você diz “70%”, acontece mesmo ~70% das vezes. MENOR é melhor: 0 = perfeito, 0,25 = igual a chutar 50%." />
-          <ResultBox label="Skill Score"
+          <ResultBox label="Skill Score" termo="skill"
             value={`${(skillScore * 100).toFixed(0)}%`}
             color={isSkilled ? "text-positive" : "text-negative"}
             hint={isSkilled ? "acima de 0% = você é melhor que quem só chuta 50%" : "abaixo de 0% = pior que chutar 50%"} />

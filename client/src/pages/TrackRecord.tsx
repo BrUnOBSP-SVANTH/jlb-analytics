@@ -16,6 +16,7 @@ import { AccuracyAnalysis } from "@/components/previsao/AccuracyAnalysis";
 import { ShareCard } from "@/components/previsao/ShareCard";
 import { ProviderBreakdown } from "@/components/previsao/ProviderBreakdown";
 import MarginOfError from "@/components/MarginOfError";
+import { Termo } from "@/components/Termo";
 import {
   ShieldCheck, ClipboardList, Scale, Layers, ArrowRight, Sparkles, BookOpen,
 } from "lucide-react";
@@ -116,7 +117,7 @@ export default function TrackRecord() {
             </div>
             <p className="text-[10px] text-muted-foreground/60 mt-4 leading-relaxed">
               Métricas: <span className="text-foreground/80">taxa de acerto</span> (previu o lado certo, SIM/NÃO) e{" "}
-              <span className="text-foreground/80">Brier Score</span> (calibração fina — quão perto a probabilidade
+              <span className="text-foreground/80"><Termo nome="brier">Brier Score</Termo></span> (calibração fina — quão perto a probabilidade
               esteve do resultado; menor é melhor). Estamos migrando 100% da resolução para o settlement oficial da
               plataforma — os selos <span className="text-positive/80">oficial</span> vs.{" "}
               <span className="text-muted-foreground">inferido</span> no comparador mostram a procedência de cada uma.

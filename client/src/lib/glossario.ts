@@ -68,6 +68,15 @@ export const GLOSSARIO: Record<string, Verbete> = {
     termo: "Volume",
     simples: "Quanto dinheiro já foi negociado nesse mercado. Volume alto = muita gente com dinheiro em jogo, e o preço tende a ser mais confiável. Volume zero = ninguém negociou, e o preço ali é só uma cotação, não uma opinião.",
   },
+  bankroll: {
+    termo: "Bankroll",
+    simples: "O dinheiro que você separou só para apostar — e que você aguenta perder inteiro sem afetar sua vida. Nunca é o dinheiro do aluguel. Todo cálculo de tamanho de aposta parte dele.",
+  },
+  roi: {
+    termo: "ROI",
+    simples: "Quanto você ganha em relação ao que colocou. ROI de 10% significa que, para cada R$ 100 apostados, sobram R$ 10 de lucro em média. É uma expectativa de longo prazo, não uma promessa da próxima aposta.",
+    tecnico: "Retorno sobre o investimento: lucro ÷ valor apostado.",
+  },
   liquidez: {
     termo: "Liquidez",
     simples: "O quanto é fácil entrar e sair da posição sem mexer no preço. Pouca liquidez = você mesmo empurra o preço ao negociar.",

@@ -3,6 +3,7 @@
  * de resultado/formula/insight, intro educacional) + classes de input. Extraido
  * de pages/Calculadoras.tsx. Pre-requisito dos 4 calculadores.
  */
+import { Termo } from "@/components/Termo";
 import { type LucideIcon, Info } from "lucide-react";
 import AnimatedSection from "@/components/AnimatedSection";
 
@@ -58,12 +59,17 @@ export function CalcCard({ title, icon: Icon, children }: { title: string; icon:
   );
 }
 
-export function ResultBox({ label, value, color = "text-foreground", sub, big, hint }: {
+export function ResultBox({ label, value, color = "text-foreground", sub, big, hint, termo }: {
   label: string; value: string; color?: string; sub?: string; big?: boolean; hint?: string;
+  /** Chave do glossário. Quando informada, o rótulo ganha a explicação em
+   *  linguagem simples a um toque — ver components/Termo.tsx. Só faz sentido
+   *  onde o rótulo é jargão puro ("Skill Score"); rótulo que já se explica
+   *  ("Overround — o que a casa cobra") dispensa, e marcar tudo vira ruído. */
+  termo?: string;
 }) {
   return (
     <div className={`rounded-lg border ${big ? "p-5 bg-obsidian/60 border-border/30" : "p-4 bg-obsidian/50 border-border/20"}`}>
-      <p className="text-xs text-muted-foreground">{label}</p>
+      <p className="text-xs text-muted-foreground">{termo ? <Termo nome={termo}>{label}</Termo> : label}</p>
       <p className={`${big ? "text-4xl" : "text-xl"} font-mono font-bold mt-1 leading-none ${color}`}>{value}</p>
       {hint && <p className="text-[11px] text-muted-foreground mt-2 leading-snug">{hint}</p>}
       {sub && <p className="text-xs text-muted-foreground/60 mt-1">{sub}</p>}

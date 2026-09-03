@@ -76,7 +76,7 @@ export function KellyCalc() {
                 color="text-positive"
                 hint={`Aposte esta fração do bankroll — R$ ${halfStake.toFixed(0)}. É o padrão dos profissionais: cresce quase igual ao Kelly cheio, com muito menos risco.`} />
               <div className="grid grid-cols-2 gap-3">
-                <ResultBox label="Kelly completo"
+                <ResultBox label="Kelly completo" termo="kelly"
                   value={`${(kelly * 100).toFixed(1)}%`}
                   color="text-gold"
                   hint={`o máximo matemático (R$ ${kellyStake.toFixed(0)}) — mais volátil`} />

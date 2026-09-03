@@ -23,6 +23,7 @@ import { ConsensusCard } from "@/components/marketDetail/ConsensusCard";
 import { ForecastEvolution } from "@/components/marketDetail/ForecastEvolution";
 import { MarketHeader } from "@/components/marketDetail/MarketHeader";
 import { OutcomesBreakdown } from "@/components/marketDetail/OutcomesBreakdown";
+import { Termo } from "@/components/Termo";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -177,7 +178,7 @@ export default function MarketDetail() {
                 </div>
                 {/* Volume 24h */}
                 <div className="glass-card rounded-xl p-4 text-center">
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Volume 24h</p>
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1"><Termo nome="volume">Volume 24h</Termo></p>
                   <p className="text-2xl font-mono font-bold text-neon-blue">
                     {market.volume24h !== undefined ? formatVolume(market.volume24h) : "—"}
                   </p>
@@ -305,7 +306,7 @@ export default function MarketDetail() {
                 <Explain>
                   A IA lê <strong className="text-foreground">notícias reais</strong> e compara este evento com casos parecidos do passado para
                   estimar um <strong className="text-foreground">valor justo</strong> independente do preço do mercado. O{" "}
-                  <strong className="text-foreground">Edge</strong> é a diferença entre esse valor justo e o mercado — é ali que pode estar a vantagem.
+                  <strong className="text-foreground"><Termo nome="edge">Edge</Termo></strong> é a diferença entre esse valor justo e o mercado — é ali que pode estar a vantagem.
                   Pense nela como uma segunda opinião fundamentada, com as fontes à mostra — nunca um palpite ou recomendação de compra.
                 </Explain>
 
@@ -349,7 +350,7 @@ export default function MarketDetail() {
                           </div>
                           {aiAnalysis.edgePp != null && Math.abs(aiAnalysis.edgePp) >= 1 && (
                             <div className={`text-center px-2.5 py-1 rounded-lg ${aiAnalysis.edgePp > 0 ? "bg-positive/10 text-positive" : "bg-negative/10 text-negative"}`}>
-                              <p className="text-[9px] uppercase opacity-70">Edge</p>
+                              <p className="text-[9px] uppercase opacity-70"><Termo nome="edge">Edge</Termo></p>
                               <p className="font-mono font-bold">{aiAnalysis.edgePp > 0 ? "+" : ""}{aiAnalysis.edgePp}pp</p>
                             </div>
                           )}
