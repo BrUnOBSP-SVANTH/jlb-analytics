@@ -300,7 +300,11 @@ async function checkSupabase(env) {
     lastReason = "";
     for (let attempt = 0; attempt < 2; attempt++) {
       try {
-        const r = await fetch(`${url}/rest/v1/${table}?select=id${filter}`, {
+        // `select=*` e não `select=id`: nem toda tabela tem coluna `id` — a
+        // `user_progress` é chaveada por `user_id`, e o PostgREST respondia 400.
+        // O doctor então reportava "consulta falhou", um alarme falso com cara de
+        // problema de dados. Com `*` a contagem funciona em qualquer esquema.
+        const r = await fetch(`${url}/rest/v1/${table}?select=*${filter}`, {
           method: "HEAD",
           headers: { ...h, Prefer: "count=exact", Range: "0-0" },
           signal: AbortSignal.timeout(15_000),
@@ -316,6 +320,10 @@ async function checkSupabase(env) {
     return null;
   }
 
+  // Progresso do usuário: a tabela existe e o código sincroniza, mas a falha era
+  // SILENCIOSA (o supabase-js devolve o erro no retorno, não como exceção, então o
+  // catch nunca via). Comparar contas com progresso salvo é o sinal barato de que a
+  // sincronização parou: se houver perfis e nenhum progresso, algo está errado.
   const checks = [
     ["cerebro_articles", "&status=eq.active", "artigos ativos no Cerebro", 100],
     ["cerebro_analyses", "&status=eq.active", "sínteses IA ativas", 10],
@@ -323,9 +331,13 @@ async function checkSupabase(env) {
     ["predictions", "", "previsões de usuários", 0],
     ["ai_forecasts", "", "previsões da IA registradas", 0],
     ["duels", "", "duelos de previsão (Fase 1)", 0],
+    ["profiles", "", "contas criadas", 0],
+    ["user_progress", "", "progresso salvo na nuvem", 0],
   ];
+  const contagens = {};
   for (const [table, filter, label, min] of checks) {
     const n = await count(table, filter);
+    contagens[table] = n;
     if (n === null) {
       line("⚠️", `${label}: ${paint("indisponível", c.yellow)}`, `após 2 tentativas — ${lastReason || "sem motivo reportado"}`);
       add("warn", "Dados", `${label}: consulta falhou (${lastReason || "?"})`);
@@ -334,6 +346,21 @@ async function checkSupabase(env) {
     const icon = n >= min ? "✅" : (min > 0 ? "⚠️" : "ℹ️");
     line(icon, `${label}: ${paint(String(n), n >= min ? c.green : c.yellow)}`);
     if (min > 0 && n < min) add("warn", "Dados", `${label} baixo (${n} < ${min})`);
+  }
+
+  // Sincronização do progresso do usuário. O código grava em `user_progress` e o
+  // localStorage é só cache offline — mas a falha era INVISÍVEL: o supabase-js
+  // devolve o erro no RETORNO, não como exceção, então o `catch` nunca via. Se há
+  // contas e nenhum progresso salvo, ou a sincronização quebrou ou ninguém pontuou.
+  if (contagens.profiles > 0) {
+    const salvos = contagens.user_progress ?? 0;
+    if (salvos > 0) {
+      line("✅", `progresso na nuvem: ${paint(`${salvos} de ${contagens.profiles}`, c.green)} contas`,
+        "localStorage é só cache — a conta é a fonte de verdade");
+    } else {
+      line("ℹ️", paint(`nenhuma das ${contagens.profiles} contas tem progresso salvo`, c.dim),
+        "normal sem uso; se houver pontuação e continuar 0, a sincronização quebrou");
+    }
   }
 
   // Frescor dos snapshots — o cron falhou SILENCIOSAMENTE por 44 dias (jun-jul/2026,
