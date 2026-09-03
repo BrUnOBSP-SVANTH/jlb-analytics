@@ -1,7 +1,10 @@
 /**
  * userProgress — Sistema de Pontos JLB Analytics
  *
- * Armazenamento: localStorage (sincroniza com Supabase em versão futura).
+ * Armazenamento: a CONTA é a fonte de verdade (tabela `user_progress` no
+ * Supabase, via lib/progressSync.ts — pull no login, push com debounce). O
+ * localStorage aqui é cache offline e fonte local enquanto não há sessão.
+ * ⚠️ Visitante NÃO logado acumula só no navegador — por design: sem conta, sem nuvem.
  * Pontos desbloqueiam níveis 4 e 5 — sem pagamento.
  *
  * Regras:
