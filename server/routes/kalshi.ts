@@ -4,6 +4,7 @@ import { fetchWithRetry } from "../lib/fetcher.ts";
 import { kalshiMarketUrl, kalshiYesProb, kalshiTemPrecoReal } from "../lib/marketNormalize.ts";
 import type { KalshiEventsResponse, KalshiMarket, KalshiEvent, KalshiNestedMarket } from "../lib/types.ts";
 import { log } from "../lib/log.ts";
+import { comOrcamento, porVolume, desambiguarPorPai, limitePedido } from "../lib/marketCatalog.ts";
 
 const router = Router();
 
@@ -13,6 +14,16 @@ const PAGINAS_KALSHI = 10;
 
 /** Tamanho do superconjunto cacheado — o corte por `limit` acontece na resposta. */
 const TETO_KALSHI = 300;
+
+/**
+ * Teto de tempo para montar o catálogo. Flagrado em 02/09: com o cache frio a
+ * produção TRAVOU (>90s) enquanto o mesmo código local respondia em 0,4s — são 10
+ * páginas sequenciais mais duas janelas de 1.000 mercados, e o plano grátis do
+ * Render tem 0,1 CPU. Mesmo remédio já aplicado ao Polymarket: em vez de esperar
+ * tudo, para no prazo e ranqueia o que chegou. Catálogo menor é ruim; catálogo que
+ * nunca carrega é pior.
+ */
+const ORCAMENTO_MS = 20_000;
 
 /**
  * Descarta título com buraco de interpolação e normaliza o espaçamento.
@@ -70,11 +81,11 @@ async function fetchCurtoPrazo(): Promise<KalshiMercadoPlano[]> {
   // A janela estreita força a API a olhar onde queremos.
   const janelas = [7, DIAS_CURTO_PRAZO];
   const resultados = await Promise.allSettled(janelas.map((dias) =>
-    fetchWithRetry<{ markets?: KalshiMercadoPlano[] }>(
+    comOrcamento(fetchWithRetry<{ markets?: KalshiMercadoPlano[] }>(
       `https://api.elections.kalshi.com/trade-api/v2/markets?status=open&min_close_ts=${agora}`
       + `&max_close_ts=${agora + dias * 86_400}&limit=1000`,
       { "Accept": "application/json" },
-    )));
+    ), ORCAMENTO_MS)));
 
   const porTicker = new Map<string, KalshiMercadoPlano>();
   for (const r of resultados) {
@@ -115,11 +126,18 @@ function volumeTotalDoEvento(ev: KalshiEvent): number {
  * Tolerante a falha no meio: se a página 3 cair, ranqueia o que já veio em vez de
  * derrubar a resposta inteira — mercado desatualizado é ruim, tela vazia é pior.
  */
-async function fetchRankedEvents(maxPaginas: number): Promise<KalshiEvent[]> {
+async function fetchRankedEvents(maxPaginas: number, prazoFinal = Date.now() + ORCAMENTO_MS): Promise<KalshiEvent[]> {
   const base = "https://api.elections.kalshi.com/trade-api/v2/events";
   const acc: KalshiEvent[] = [];
   let cursor = "";
   for (let i = 0; i < maxPaginas; i++) {
+    // A paginação é sequencial (depende do cursor da página anterior), então o
+    // orçamento é do LAÇO, não de cada chamada: assim que estoura, ranqueia o que
+    // já veio em vez de continuar somando latência.
+    if (Date.now() > prazoFinal) {
+      log.warn(`[Kalshi] orçamento esgotado na página ${i + 1} — ranqueando ${acc.length} eventos`);
+      break;
+    }
     const url = `${base}?limit=200&status=open&with_nested_markets=true${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`;
     let data: KalshiEventsResponse;
     try {
@@ -143,7 +161,7 @@ router.get("/markets", async (req, res) => {
   // Teto 300 (era 100) e padrão 150 (era 40). O catálogo vivo do Kalshi comporta:
   // dos ~2.000 eventos varridos, 379 têm volume em 24h. Com 40 o site mostrava uma
   // fração mínima do que existe.
-  const limit = Math.min(parseInt(String(req.query.limit ?? "150"), 10) || 150, 300);
+  const limit = limitePedido(req.query.limit, 150, TETO_KALSHI);
   try {
     // SWR: serve cache fresco na hora; se venceu, devolve o velho e atualiza em bg.
     const markets = await swr<KalshiMarket[]>("kalshi:markets", 120, async () => {
@@ -253,7 +271,7 @@ router.get("/markets", async (req, res) => {
         // que os 40 exibidos sejam os 40 mais negociados, não os vizinhos dos mais
         // negociados. Card agrupado entra com o volume somado do evento, então
         // concorre em pé de igualdade.
-        .sort((a, b) => (b.volume24h ?? 0) - (a.volume24h ?? 0) || b.volume - a.volume);
+        .sort(porVolume);
 
       // ── Mistura as duas piscinas, com VAGAS RESERVADAS ────────────────────
       // Reserva em vez de bônus na pontuação: a diferença de volume é de ordens de
@@ -319,13 +337,11 @@ router.get("/markets", async (req, res) => {
       // ADIVINHAR a partir do ticker, e inventar dado é o que este projeto não faz.
       // Então marcamos com a série — feio, mas verdadeiro e clicável — em vez de
       // exibir dois cards idênticos, que parecem defeito e não deixam escolher.
-      const porTitulo = new Map<string, Set<string>>();
-      for (const m of juntos) {
-        if (!porTitulo.has(m.title)) porTitulo.set(m.title, new Set());
-        porTitulo.get(m.title)!.add(m.eventTicker);
-      }
-      return juntos.map((m) =>
-        (porTitulo.get(m.title)?.size ?? 1) > 1 ? { ...m, title: `${m.title} (${m.seriesTicker})` } : m);
+      return desambiguarPorPai(
+        juntos,
+        { titulo: (m) => m.title, pai: (m) => m.eventTicker, sufixo: (m) => m.seriesTicker },
+        (m, titulo) => ({ ...m, title: titulo }),
+      );
     });
     // Corta DEPOIS do cache, não dentro dele. A chave (`kalshi:markets`) não inclui
     // o limit, então guardar a lista já cortada fazia o primeiro chamador definir o

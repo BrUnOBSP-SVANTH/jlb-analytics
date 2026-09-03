@@ -4,6 +4,7 @@ import { fetchWithRetry, fetchJSON } from "../lib/fetcher.ts";
 import { parseYesPrice, polyEventUrl, rankOutcomes } from "../lib/marketNormalize.ts";
 import type { PolyEvent, PolyMarket } from "../lib/types.ts";
 import { log } from "../lib/log.ts";
+import { comOrcamento, desambiguarPorPai, limitePedido } from "../lib/marketCatalog.ts";
 
 const router = Router();
 
@@ -35,12 +36,10 @@ router.get("/markets", async (req, res) => {
     // simplesmente descartada: catálogo menor é ruim, catálogo que nunca carrega é
     // pior. Mesma filosofia do "uma página que falhe não derruba as outras".
     const ORCAMENTO_MS = 12_000;
-    const comOrcamento = <T,>(p: Promise<T>): Promise<T | null> =>
-      Promise.race([p, new Promise<null>((r) => setTimeout(() => r(null), ORCAMENTO_MS))]);
 
     const paginas = (order: string, qtd: number, extra = "") =>
       Array.from({ length: qtd }, (_, i) =>
-        comOrcamento(fetchWithRetry<PolyEvent[]>(`${eventsUrl(order, 100, extra)}&offset=${i * 100}`)));
+        comOrcamento(fetchWithRetry<PolyEvent[]>(`${eventsUrl(order, 100, extra)}&offset=${i * 100}`), ORCAMENTO_MS));
 
     // Piscinas por PRAZO. Sem elas o catálogo só tinha mercado que fecha logo por
     // acidente — os que calhassem de estar no topo de volume. O gamma aceita
@@ -214,20 +213,18 @@ router.get("/markets", async (req, res) => {
     // pergunta do mercado é a mesma em toda partida da liga. Quem distingue é o
     // título do evento, que já vem no dado e estava sendo ignorado. Prefixamos só
     // quando há colisão, para não poluir o card do mercado que já é específico.
-    const eventosPorPergunta = new Map<string, Set<string>>();
-    for (const m of sorted) {
-      if (!eventosPorPergunta.has(m.question)) eventosPorPergunta.set(m.question, new Set());
-      eventosPorPergunta.get(m.question)!.add(m.eventSlug ?? m.id);
-    }
-    return sorted.map((m) =>
-      (eventosPorPergunta.get(m.question)?.size ?? 1) > 1 && m.eventTitle
-        ? { ...m, question: `${m.eventTitle} — ${m.question}` }
-        : m);
+    // No Polymarket o distinguidor vem ANTES ("LoL: A vs B — Game 1: ..."), então
+    // o sufixo é o próprio título do evento e o rótulo entra invertido de propósito.
+    return desambiguarPorPai(
+      sorted,
+      { titulo: (m) => m.question, pai: (m) => m.eventSlug ?? m.id, sufixo: (m) => m.eventTitle },
+      (m, _t) => ({ ...m, question: `${m.eventTitle} — ${m.question}` }),
+    );
     });
     // Corta na RESPOSTA, não dentro do cache: a chave não inclui o limit, então
     // guardar a lista cortada faria o primeiro chamador definir o tamanho para
     // todos. Cacheamos o superconjunto e cada um leva o pedaço que pediu.
-    const limit = Math.min(parseInt(String(req.query.limit ?? "300"), 10) || 300, 400);
+    const limit = limitePedido(req.query.limit, 300, 400);
     res.json({ markets: markets.slice(0, limit), source: "live" });
   } catch (err) {
     const msg = err instanceof Error ? err.message : "unknown";
