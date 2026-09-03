@@ -18,6 +18,7 @@
     "doctor:quick": "node scripts/jlb-doctor.mjs --quick",
     "backtest:sports": "node scripts/backtest-sports.mjs",
     "news:impact": "node scripts/news-impact.mjs",
+    "own:estimate": "node scripts/own-estimate.mjs",
     "calibration:fit": "node scripts/calibration-fit.mjs",
     "sports:forecast": "node scripts/sports-forecast.mjs",
     "format": "prettier --write .",
