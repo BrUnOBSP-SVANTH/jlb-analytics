@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { topKeywords, looksEnglish, rankHits, dedupeByTitle, overlapsQuery } from "./cerebro.ts";
+import { topKeywords, looksEnglish, rankHits, dedupeByTitle, overlapsQuery, noticiaFresca } from "./cerebro.ts";
 
 describe("topKeywords", () => {
   it("prioriza substantivos próprios (entidades do mercado)", () => {
@@ -143,5 +143,32 @@ describe("dedupeByTitle", () => {
       { title: "Outro assunto qualquer" },
     ];
     expect(dedupeByTitle(hits)).toHaveLength(2);
+  });
+});
+
+describe("noticiaFresca — notícia velha não pode mexer em preço", () => {
+  const diasAtras = (n: number) => new Date(Date.now() - n * 86_400_000).toISOString();
+
+  // Medido em 03/09: com contexto do Cérebro, o desvio da IA previa o erro do
+  // mercado com correlação −0,35 (IC 95% não cruza zero) — a notícia empurrava
+  // para o lado ERRADO. Causa: idade mediana de 7 dias, com casos de 21 e 54.
+  it("aceita notícia dos últimos dias", () => {
+    expect(noticiaFresca(diasAtras(0))).toBe(true);
+    expect(noticiaFresca(diasAtras(2))).toBe(true);
+  });
+
+  it("rejeita a notícia que o mercado já precificou", () => {
+    expect(noticiaFresca(diasAtras(7))).toBe(false);   // a idade MEDIANA que tínhamos
+    expect(noticiaFresca(diasAtras(54))).toBe(false);  // o pior caso observado
+  });
+
+  it("sem data, não arrisca", () => {
+    // Não dá para saber se é de hoje ou do mês passado; em preço, a dúvida custa.
+    expect(noticiaFresca(undefined)).toBe(false);
+    expect(noticiaFresca("data-invalida")).toBe(false);
+  });
+
+  it("ignora data no futuro (dado sujo da fonte)", () => {
+    expect(noticiaFresca(diasAtras(-5))).toBe(false);
   });
 });

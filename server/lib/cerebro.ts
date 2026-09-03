@@ -105,6 +105,34 @@ function recencyBoost(date?: string): number {
   return 0.9 * Math.max(0, 1 - ageDays / 21);
 }
 
+/**
+ * Idade máxima da notícia que pode INFLUENCIAR PREÇO.
+ *
+ * 🔴 Medido em 03/09/2026, e o resultado inverteu a intuição do arquivo. Quando o
+ * Cérebro entregava contexto, o desvio da IA em relação ao preço previa o erro do
+ * mercado com correlação **−0,35** (IC 95% [−0,51, −0,18], não cruza zero): ou
+ * seja, a notícia empurrava a estimativa para o lado ERRADO, de forma sistemática.
+ * Sem notícia, o desvio era ruído puro (−0,00). Notícia estava PIORANDO o preço.
+ *
+ * A causa: a notícia entregue tinha idade mediana de **7 dias**, com casos de 21 e
+ * 54. Para um mercado que resolve em dias, isso é informação que o mercado já
+ * precificou há uma semana — a IA lia e se ajustava na direção do passado.
+ *
+ * O ranking priorizava "relevância > recência" de propósito (o bônus de recência é
+ * limitado a 0,9 justamente para não atropelar um termo a mais). Essa escolha é
+ * boa para EXPLICAR um mercado e ruim para PRECIFICAR: um artigo muito relevante
+ * de 54 dias ganha de um razoável de hoje. Por isso o corte é duro, não um peso —
+ * peso o ranking já tinha, e não bastou.
+ */
+const MAX_IDADE_PRECIFICACAO_DIAS = 3;
+
+/** O artigo é fresco o bastante para mexer em preço? Sem data, não arriscamos. */
+export function noticiaFresca(date: string | undefined, maxDias = MAX_IDADE_PRECIFICACAO_DIAS): boolean {
+  if (!date) return false;
+  const idade = (Date.now() - new Date(date).getTime()) / 86_400_000;
+  return Number.isFinite(idade) && idade >= 0 && idade <= maxDias;
+}
+
 /** Re-rank barato sem LLM: ordena por nº de termos da consulta presentes no
  *  título+resumo (sínteses ganham meio ponto) + bônus de frescor. É o que
  *  salva a relevância do fallback OR e faz a notícia recente subir. Exportada p/ teste. */
@@ -255,7 +283,14 @@ async function semanticCerebro(searchText: string): Promise<CerebroHit[]> {
   } catch { return []; }
 }
 
-export async function fetchCerebroContext(title: string, description?: string): Promise<{ context: string; hits: CerebroHit[] }> {
+export async function fetchCerebroContext(
+  title: string,
+  description?: string,
+  /** `true` = o contexto vai INFLUENCIAR PREÇO → só notícia fresca entra.
+   *  Padrão `false` porque as telas de análise e o chat EXPLICAM o mercado, e ali
+   *  um artigo de duas semanas ainda ajuda a entender. Ver MAX_IDADE_PRECIFICACAO_DIAS. */
+  paraPrecificar = false,
+): Promise<{ context: string; hits: CerebroHit[] }> {
   if (!SUPABASE_URL || !SUPABASE_KEY) return { context: "", hits: [] };
   const original = `${title} ${description ?? ""}`.trim();
   if (!original) return { context: "", hits: [] };
@@ -342,6 +377,10 @@ export async function fetchCerebroContext(title: string, description?: string): 
     // passar pela régua — era por onde a faixa 0.60–0.65 vazaria sem confirmação.
     const semArts = deduped.filter((h) => h.kind === "artigo" && h._semantic).filter(relevant);
     hits = [...synth, ...interleave(semArts, ftsArts)].slice(0, 6);
+    // Corte de frescor SÓ na precificação — medido: notícia velha empurrava a
+    // estimativa na direção errada (corr −0,35). Melhor não ter contexto do que
+    // ter contexto vencido, porque contexto vencido não é neutro: ele convence.
+    if (paraPrecificar) hits = hits.filter((h) => noticiaFresca(h.date));
     if (hits.length === 0) return { context: "", hits: [] };
 
     const note = "";
