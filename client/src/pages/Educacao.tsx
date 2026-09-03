@@ -10,6 +10,7 @@ import {
   Scale, TrendingDown, Target,
 } from "lucide-react";
 import { isLevelUnlocked } from "@/lib/userProgress";
+import { VERBETES } from "@/lib/glossario";
 import { useSEO } from "@/hooks/useSEO";
 import PageHeader from "@/components/PageHeader";
 
@@ -93,16 +94,6 @@ const PLATFORMS = [
   { name: "Metaculus", desc: "Focado em previsões científicas e tecnológicas. Comunidade de forecasters calibrados.", tag: "Educacional" },
 ];
 
-const GLOSSARY = [
-  { term: "Valor Esperado (EV)", def: "Média ponderada dos resultados possíveis. EV < 0 = matematicamente perdedor no longo prazo." },
-  { term: "Overround / Margem", def: "Excesso acima de 100% na soma das probabilidades implícitas das odds. É o lucro garantido da casa antes do resultado." },
-  { term: "Brier Score", def: "Métrica de calibração: (1/n) Σ(previsão − resultado)². 0 = perfeito. 0.25 = igual a chutar 50% sempre." },
-  { term: "Skill Score", def: "1 − (Brier Score / 0.25). Positivo = melhor que referência. Negativo = pior que chutar." },
-  { term: "Divergência", def: "Diferença entre a probabilidade calculada pelo modelo e a precificada pelo mercado. Sinal de investigação, não de aposta." },
-  { term: "Loss Aversion (λ)", def: "Parâmetro de aversão à perda. λ=2.25 (clínico): a dor de perder R$100 equivale ao prazer de ganhar R$225." },
-  { term: "Falácia do Jogador", def: "Crença de que eventos passados independentes afetam probabilidades futuras. A roleta não tem memória." },
-  { term: "Ensemble", def: "Combinação de múltiplos modelos ponderados pela qualidade histórica (Skill Score). Modelos ruins são excluídos." },
-];
 
 export default function Educacao() {
   useSEO("Trilha Completa de Educação", "Cinco níveis progressivos: Valor Esperado, leitura de dados, modelos quantitativos, vieses cognitivos e análise integrada de mercados preditivos.");
@@ -309,11 +300,21 @@ export default function Educacao() {
           <BookOpen className="w-5 h-5 text-primary" />
           Glossário de Termos-Chave
         </h2>
+        {/* Fonte ÚNICA (lib/glossario.ts) — a mesma que alimenta o <Termo> no resto
+            do site. Antes esta lista tinha definições próprias e TÉCNICAS ("Brier:
+            (1/n) Σ(previsão − resultado)²"), que é explicar com a mesma linguagem
+            que confundiu. Agora a explicação simples vem primeiro e a definição
+            exata fica embaixo, para quem quiser. */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {GLOSSARY.map((item) => (
-            <div key={item.term} className="p-4 rounded-xl border border-border/30 bg-secondary/5">
-              <p className="font-semibold text-sm text-foreground mb-1">{item.term}</p>
-              <p className="text-xs text-muted-foreground leading-relaxed">{item.def}</p>
+          {VERBETES.map((item) => (
+            <div key={item.termo} className="p-4 rounded-xl border border-border/30 bg-secondary/5">
+              <p className="font-semibold text-sm text-foreground mb-1">{item.termo}</p>
+              <p className="text-xs text-muted-foreground leading-relaxed">{item.simples}</p>
+              {item.tecnico && (
+                <p className="text-[11px] text-muted-foreground/70 leading-relaxed mt-2 pt-2 border-t border-border/30">
+                  <span className="font-medium">Definição técnica:</span> {item.tecnico}
+                </p>
+              )}
             </div>
           ))}
         </div>

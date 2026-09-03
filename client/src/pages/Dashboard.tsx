@@ -28,6 +28,7 @@ import ContaTabs from "@/components/ContaTabs";
 import PageHeader from "@/components/PageHeader";
 import SignupNudge from "@/components/SignupNudge";
 import WatchlistSection from "@/components/dashboard/WatchlistSection";
+import { Termo } from "@/components/Termo";
 import { useSEO } from "@/hooks/useSEO";
 
 // ── Constants ──────────────────────────────────────────────────────────────
@@ -395,7 +396,7 @@ function PredictionTracker({ userId }: { userId?: string }) {
               <p className="font-mono text-sm font-bold text-foreground">{resolved.length}</p>
             </div>
             <div className="text-center p-2 rounded-lg bg-secondary/30">
-              <p className="text-[10px] text-muted-foreground">Brier</p>
+              <p className="text-[10px] text-muted-foreground"><Termo nome="brier">Brier</Termo></p>
               <p className={`font-mono text-sm font-bold ${
                 bs === null ? "text-muted-foreground" : bs < 0.1 ? "text-positive" : bs < 0.25 ? "text-warning" : "text-negative"
               }`}>
@@ -403,7 +404,7 @@ function PredictionTracker({ userId }: { userId?: string }) {
               </p>
             </div>
             <div className="text-center p-2 rounded-lg bg-secondary/30">
-              <p className="text-[10px] text-muted-foreground">Skill</p>
+              <p className="text-[10px] text-muted-foreground"><Termo nome="skill">Skill</Termo></p>
               <p className={`font-mono text-sm font-bold ${
                 ss === null ? "text-muted-foreground" : ss > 0.2 ? "text-positive" : ss > 0 ? "text-warning" : "text-negative"
               }`}>
@@ -533,7 +534,7 @@ export default function Dashboard() {
             <div className="w-7 h-7 rounded-lg bg-neon-blue/10 flex items-center justify-center">
               <BarChart2 className="w-3.5 h-3.5 text-neon-blue" aria-hidden="true" />
             </div>
-            <p className="text-xs text-muted-foreground">Brier Score</p>
+            <p className="text-xs text-muted-foreground"><Termo nome="brier">Brier Score</Termo></p>
           </div>
           <p className={`text-2xl font-bold font-mono ${
             bs === null ? "text-muted-foreground" : bs < 0.1 ? "text-positive" : bs < 0.25 ? "text-warning" : "text-negative"
@@ -550,7 +551,7 @@ export default function Dashboard() {
             <div className="w-7 h-7 rounded-lg bg-positive/10 flex items-center justify-center">
               <TrendingUp className="w-3.5 h-3.5 text-positive" aria-hidden="true" />
             </div>
-            <p className="text-xs text-muted-foreground">Skill Score</p>
+            <p className="text-xs text-muted-foreground"><Termo nome="skill">Skill Score</Termo></p>
           </div>
           <p className={`text-2xl font-bold font-mono ${
             ss === null ? "text-muted-foreground" : ss > 0.2 ? "text-positive" : ss > 0 ? "text-warning" : "text-negative"
