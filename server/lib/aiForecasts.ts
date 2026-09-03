@@ -604,7 +604,7 @@ export async function seedAiForecasts(maxMarkets = 30): Promise<{ started: boole
         // crítica porque o Gemini (fallback) é mais lento e estourava o timeout.
         // `true` = caminho de PRECIFICAÇÃO: só notícia dos últimos dias entra. Ver
         // MAX_IDADE_PRECIFICACAO_DIAS em cerebro.ts — notícia velha piorava o preço.
-        const { context: rawCtx } = await fetchCerebroContext(t.title, undefined, true).catch(() => ({ context: "", hits: [] }));
+        const { context: rawCtx } = await fetchCerebroContext(t.title, undefined, true, t.closeMs).catch(() => ({ context: "", hits: [] }));
         const newsCtx = rawCtx ? rawCtx.slice(0, 900) : "";
         const prompt = `Mercado preditivo: "${t.title}"
 Preço atual do mercado: ${t.marketProb}% SIM

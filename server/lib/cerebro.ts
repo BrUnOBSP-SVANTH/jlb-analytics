@@ -126,6 +126,34 @@ function recencyBoost(date?: string): number {
  */
 const MAX_IDADE_PRECIFICACAO_DIAS = 3;
 
+/** Teto absoluto, mesmo para o mercado mais distante. Além disso não é "contexto
+ *  recente", é história — e história o mercado já precificou faz tempo. */
+const MAX_IDADE_TETO_DIAS = 14;
+
+/**
+ * Quantos dias de notícia este mercado aguenta, dado QUANDO ele resolve.
+ *
+ * A régua fixa de 3 dias foi calibrada sobre o que medimos, e o que medimos é
+ * quase só prazo curto: 56 dos 59 mercados com notícia resolvem em ≤3 dias
+ * (mediana de 1 dia). Sobre mercado longo não temos evidência NENHUMA — nem a
+ * favor nem contra.
+ *
+ * Então a janela acompanha o relógio do mercado, que é o critério defensável: um
+ * jogo de amanhã tem relógio em horas e notícia de 3 dias já é passado; uma
+ * eleição de 2028 anda em semanas, e notícia de 10 dias ainda é o estado atual do
+ * assunto. Aproximadamente um quarto do prazo restante, entre 3 e 14 dias.
+ *
+ * ⚠️ A parte curta é MEDIDA; a extensão para mercado longo é fundamentada, não
+ * comprovada. `had_news_context` continua gravado, então a próxima leva de
+ * resoluções vai dizer se a janela maior ajudou ou repetiu o erro.
+ */
+export function janelaDeNoticia(fechaEmMs?: number): number {
+  if (!fechaEmMs || !Number.isFinite(fechaEmMs)) return MAX_IDADE_PRECIFICACAO_DIAS;
+  const diasAteFechar = (fechaEmMs - Date.now()) / 86_400_000;
+  if (!(diasAteFechar > 0)) return MAX_IDADE_PRECIFICACAO_DIAS;
+  return Math.min(MAX_IDADE_TETO_DIAS, Math.max(MAX_IDADE_PRECIFICACAO_DIAS, diasAteFechar / 4));
+}
+
 /** O artigo é fresco o bastante para mexer em preço? Sem data, não arriscamos. */
 export function noticiaFresca(date: string | undefined, maxDias = MAX_IDADE_PRECIFICACAO_DIAS): boolean {
   if (!date) return false;
@@ -290,6 +318,9 @@ export async function fetchCerebroContext(
    *  Padrão `false` porque as telas de análise e o chat EXPLICAM o mercado, e ali
    *  um artigo de duas semanas ainda ajuda a entender. Ver MAX_IDADE_PRECIFICACAO_DIAS. */
   paraPrecificar = false,
+  /** Quando o mercado fecha (epoch ms). Só é usado na precificação, para a janela
+   *  de notícia acompanhar o relógio do mercado — ver `janelaDeNoticia`. */
+  fechaEmMs?: number,
 ): Promise<{ context: string; hits: CerebroHit[] }> {
   if (!SUPABASE_URL || !SUPABASE_KEY) return { context: "", hits: [] };
   const original = `${title} ${description ?? ""}`.trim();
@@ -380,7 +411,16 @@ export async function fetchCerebroContext(
     // Corte de frescor SÓ na precificação — medido: notícia velha empurrava a
     // estimativa na direção errada (corr −0,35). Melhor não ter contexto do que
     // ter contexto vencido, porque contexto vencido não é neutro: ele convence.
-    if (paraPrecificar) hits = hits.filter((h) => noticiaFresca(h.date));
+    if (paraPrecificar) {
+      const janela = janelaDeNoticia(fechaEmMs);
+      hits = hits
+        .filter((h) => noticiaFresca(h.date, janela))
+        // DENTRO da janela, o mais novo primeiro. O ranking geral pesa relevância
+        // acima de recência (certo para explicar), mas aqui todos já passaram no
+        // corte de relevância — entre eles, o que o mercado teve MENOS tempo de
+        // absorver é o mais valioso.
+        .sort((a, b) => new Date(b.date ?? 0).getTime() - new Date(a.date ?? 0).getTime());
+    }
     if (hits.length === 0) return { context: "", hits: [] };
 
     const note = "";

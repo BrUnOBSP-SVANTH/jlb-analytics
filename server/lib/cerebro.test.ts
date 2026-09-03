@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { topKeywords, looksEnglish, rankHits, dedupeByTitle, overlapsQuery, noticiaFresca } from "./cerebro.ts";
+import { topKeywords, looksEnglish, rankHits, dedupeByTitle, overlapsQuery, noticiaFresca, janelaDeNoticia } from "./cerebro.ts";
 
 describe("topKeywords", () => {
   it("prioriza substantivos próprios (entidades do mercado)", () => {
@@ -170,5 +170,33 @@ describe("noticiaFresca — notícia velha não pode mexer em preço", () => {
 
   it("ignora data no futuro (dado sujo da fonte)", () => {
     expect(noticiaFresca(diasAtras(-5))).toBe(false);
+  });
+});
+
+describe("janelaDeNoticia — a janela acompanha o relógio do mercado", () => {
+  const daquiA = (dias: number) => Date.now() + dias * 86_400_000;
+
+  it("mercado de amanhã fica no mínimo medido (3 dias)", () => {
+    // O relógio dele é de horas; notícia de 3 dias já é passado. É a faixa onde
+    // a medição foi feita (56 dos 59 mercados com notícia resolvem em ≤3d).
+    expect(janelaDeNoticia(daquiA(1))).toBe(3);
+    expect(janelaDeNoticia(daquiA(8))).toBe(3);
+  });
+
+  it("mercado distante aceita notícia mais antiga, proporcional ao prazo", () => {
+    // Uma eleição de 2028 anda em semanas: notícia de 10 dias ainda é o estado
+    // atual do assunto, não história.
+    expect(janelaDeNoticia(daquiA(40))).toBeCloseTo(10, 0);
+  });
+
+  it("nunca passa do teto de 14 dias, por mais longe que o mercado esteja", () => {
+    expect(janelaDeNoticia(daquiA(365))).toBe(14);
+    expect(janelaDeNoticia(daquiA(3000))).toBe(14);
+  });
+
+  it("sem data de fechamento, ou já vencido, usa o mínimo", () => {
+    expect(janelaDeNoticia(undefined)).toBe(3);
+    expect(janelaDeNoticia(daquiA(-5))).toBe(3);
+    expect(janelaDeNoticia(NaN)).toBe(3);
   });
 });
