@@ -1,3 +1,4 @@
+import { intervaloWilson, comparaComMercado } from "../lib/ai/incerteza.ts";
 import { Router, type Request, type Response, type NextFunction } from "express";
 import { getCache, setCache, isRateLimited } from "../lib/cache.ts";
 import { aiCreditsMiddleware, verifyUserId, isStaleMonth, FREE_LIMIT } from "../middleware/aiCredits.ts";
@@ -365,6 +366,12 @@ router.get("/track-record", async (_req, res) => {
       marketHitRate: marketDirectionalCount > 0 ? Math.round((marketHitCount / marketDirectionalCount) * 100) : null,
       directionalCount,
       settledCount: Number(t.settled_count ?? 0),
+      // MARGEM DE ERRO de verdade: quanto a taxa de acerto pode variar por sorte
+      // da amostra. O site chamava de "margem de erro" os 21% que sobram de 79%,
+      // que na verdade e a TAXA DE ERRO -- outra pergunta. Sem isto o leitor nao
+      // sabe se 79% e solido ou acaso de poucas resolucoes.
+      hitRateIntervalo: intervaloWilson(hitCount, directionalCount),
+      comparacaoMercado: comparaComMercado(hitCount, directionalCount, marketHitCount, marketDirectionalCount),
       byProvider,
     };
     setCache("ai-track-record", result, 600);

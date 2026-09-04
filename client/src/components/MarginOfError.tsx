@@ -18,6 +18,10 @@ interface TrackRecord {
   hitRate: number | null;
   marketHitRate: number | null;
   skillVsMarket: number | null;
+  /** Margem de erro DE VERDADE: quanto a taxa de acerto pode variar por sorte da
+   *  amostra (intervalo de Wilson). Diferente da taxa de erro. */
+  hitRateIntervalo?: { baixo: number; alto: number; margemPp: number } | null;
+  comparacaoMercado?: { veredito: "empate" | "melhor" | "pior"; explicacao: string } | null;
 }
 
 export default function MarginOfError() {
@@ -55,6 +59,9 @@ export default function MarginOfError() {
   const err = 100 - hit;               // ex.: 18
   const skill = data!.skillVsMarket;   // Brier menor = melhor; >0 bate o mercado
 
+  const margem = data!.hitRateIntervalo ?? null;
+  const comparacao = data!.comparacaoMercado ?? null;
+
   const vsMarket =
     skill === null ? "está lado a lado com o mercado"
     : skill > 0.02 ? "supera levemente o mercado"
@@ -68,7 +75,24 @@ export default function MarginOfError() {
         <p className="text-xs sm:text-[13px] text-muted-foreground leading-relaxed">
           <strong className="text-foreground">Não somos perfeitos — e mostramos isso.</strong>{" "}
           Nossa IA acerta a direção <strong className="text-foreground">~{hit}%</strong> das vezes (logo,{" "}
-          <strong className="text-negative">erra ~{err}%</strong>) e, na calibração fina, {vsMarket}.
+          <strong className="text-negative">erra ~{err}%</strong>), em {data!.resolvedCount} previsões já resolvidas.
+        </p>
+
+        {/* A margem de erro PROPRIAMENTE DITA. Antes o selo chamava de "margem de
+            erro" os {err}% que sobram do acerto — mas aquilo é a TAXA DE ERRO. A
+            margem responde outra coisa: quanto esse número pode variar só por sorte
+            da amostra. É o que diz se 79% é sólido ou acaso de poucas resoluções. */}
+        {margem && (
+          <p className="text-[11px] text-muted-foreground/80 leading-relaxed mt-1.5">
+            <strong className="text-foreground/90">Margem de erro:</strong> ±{margem.margemPp} pontos
+            (entre {margem.baixo}% e {margem.alto}%). Quanto mais previsões acumulamos, mais estreita ela fica.
+          </p>
+        )}
+
+        {/* Empate é uma AFIRMAÇÃO, não uma desculpa: quando a diferença é menor que
+            a margem, dizer "perdemos por 0,4%" seria ler ruído como resultado. */}
+        <p className="text-[11px] text-muted-foreground/80 leading-relaxed mt-1">
+          {comparacao ? comparacao.explicacao : <>Na calibração fina, {vsMarket}.</>}
         </p>
         <Link href="/track-record">
           <span className="inline-flex items-center gap-1 text-[11px] text-gold hover:underline mt-1 cursor-pointer">
