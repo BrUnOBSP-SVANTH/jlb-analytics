@@ -18,6 +18,7 @@ import { ProviderBreakdown } from "@/components/previsao/ProviderBreakdown";
 import MarginOfError from "@/components/MarginOfError";
 import { Termo } from "@/components/Termo";
 import { CurvaCalibracao } from "@/components/previsao/CurvaCalibracao";
+import { PorTema } from "@/components/previsao/PorTema";
 import {
   ShieldCheck, ClipboardList, Scale, Layers, ArrowRight, Sparkles, BookOpen,
 } from "lucide-react";
@@ -87,6 +88,11 @@ export default function TrackRecord() {
         {/* ── A prova mais direta: prometemos X, aconteceu Y (com margem por faixa) ── */}
         <AnimatedSection>
           <CurvaCalibracao />
+        </AnimatedSection>
+
+        {/* ── Onde temos evidência, por assunto, com a margem de cada um ── */}
+        <AnimatedSection>
+          <PorTema />
         </AnimatedSection>
 
         {/* ── De qual modelo veio o número (a manchete soma provedores diferentes) ── */}

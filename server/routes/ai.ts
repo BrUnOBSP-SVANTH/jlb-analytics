@@ -1,5 +1,6 @@
 import { montarCurva } from "../lib/ai/curvaCalibracao.ts";
 import { dedupPorMercado } from "../lib/calibrationData.ts";
+import { normalizeCategory } from "../lib/ai/calibration.ts";
 import { intervaloWilson, comparaComMercado } from "../lib/ai/incerteza.ts";
 import { Router, type Request, type Response, type NextFunction } from "express";
 import { getCache, setCache, isRateLimited } from "../lib/cache.ts";
@@ -313,6 +314,58 @@ router.post("/analyze/stream", aiCreditsMiddleware, async (req, res) => {
  * pessoa lê a tabela sem saber o que é Brier. Separada do /track-record para não
  * engordar aquele payload, que é buscado em várias telas.
  */
+/**
+ * Estatística POR TEMA, sobre a amostra inteira.
+ *
+ * A tela já mostrava uma quebra por tema, mas calculada no cliente a partir das
+ * 50 resoluções mais recentes — com ~10 categorias, isso dá ~5 casos cada, e
+ * cinco casos não sustentam uma porcentagem. Aqui a conta é feita no servidor
+ * sobre TODAS as resolvidas (deduplicadas pela regra da view 019), e cada tema
+ * leva a própria margem: e-sports com 191 casos merece outra confiança que
+ * economia com 25, e o número sozinho não conta isso.
+ */
+router.get("/by-category", async (_req, res) => {
+  const cached = getCache<object>("ai-by-category");
+  if (cached) return res.json(cached);
+  if (!SUPABASE_URL || !SUPABASE_KEY) return res.json({ available: false });
+  try {
+    const r = await fetch(
+      `${SUPABASE_URL}/rest/v1/ai_forecasts?resolved=eq.true&outcome=not.is.null`
+      + `&select=market_id,category,market_prob,ai_fair_value,outcome,forecast_date,created_at&limit=5000`,
+      { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }, signal: AbortSignal.timeout(8_000) },
+    );
+    if (!r.ok) return res.json({ available: false });
+    const rows = await r.json() as Array<{ market_id: string; category: string | null; market_prob: number; ai_fair_value: number; outcome: boolean; forecast_date: string; created_at: string }>;
+
+    const porTema = new Map<string, typeof rows>();
+    for (const x of dedupPorMercado(rows)) {
+      const k = normalizeCategory(x.category);
+      if (!porTema.has(k)) porTema.set(k, []);
+      porTema.get(k)!.push(x);
+    }
+
+    // Abaixo disto a porcentagem é anedota, não estatística — o tema aparece com
+    // o número de casos e SEM veredito, que já é informação útil ("ainda não sei").
+    const MIN_TEMA = 15;
+    const temas = Array.from(porTema.entries()).map(([tema, v]) => {
+      const acertos = v.filter((x) => (Number(x.ai_fair_value) >= 50) === !!x.outcome).length;
+      const acertosMercado = v.filter((x) => (Number(x.market_prob) >= 50) === !!x.outcome).length;
+      const ic = v.length >= MIN_TEMA ? intervaloWilson(acertos, v.length) : null;
+      return {
+        tema, n: v.length,
+        acerto: ic ? Math.round((acertos / v.length) * 100) : null,
+        margemPp: ic?.margemPp ?? null,
+        acertoMercado: ic ? Math.round((acertosMercado / v.length) * 100) : null,
+        comparacao: ic ? comparaComMercado(acertos, v.length, acertosMercado, v.length)?.veredito ?? null : null,
+      };
+    }).sort((a, b) => b.n - a.n);
+
+    const resultado = { available: true, temas, minAmostra: MIN_TEMA };
+    setCache("ai-by-category", resultado, 900);
+    res.json(resultado);
+  } catch { res.json({ available: false }); }
+});
+
 router.get("/calibration-curve", async (_req, res) => {
   const cached = getCache<object>("ai-calibration-curve");
   if (cached) return res.json(cached);
