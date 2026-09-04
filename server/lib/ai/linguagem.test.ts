@@ -32,6 +32,7 @@ describe("cobertura — todo prompt lido por gente carrega a regra", () => {
     "server/lib/ai/marketAnalysis.ts",
     "server/lib/ai/briefing.ts",
     "server/lib/ai/crossref.ts",
+    "server/lib/ai/chat.ts",
   ];
 
   for (const f of arquivos) {
@@ -39,6 +40,15 @@ describe("cobertura — todo prompt lido por gente carrega a regra", () => {
       expect(readFileSync(f, "utf8")).toContain("REGRA_LINGUAGEM");
     });
   }
+
+  // ⚠️ Não basta o texto estar no arquivo: se CHAT_SYSTEM deixar de ser template
+  // literal, `${REGRA_LINGUAGEM}` vira texto cru dentro da string e a regra NUNCA
+  // chega ao modelo — falha silenciosa perfeita, porque o tsc passa igual.
+  it("o system do chat é template literal, senão a regra não interpola", () => {
+    const src = readFileSync("server/lib/ai/chat.ts", "utf8");
+    expect(src).toMatch(/const CHAT_SYSTEM = `/);
+    expect(src).toContain("${REGRA_LINGUAGEM}");
+  });
 
   it("o raciocínio das previsões usa a versão curta", () => {
     expect(readFileSync("server/lib/aiForecasts.ts", "utf8")).toContain("REGRA_LINGUAGEM_CURTA");

@@ -1,3 +1,4 @@
+import { REGRA_LINGUAGEM } from "./linguagem.ts";
 import type { Request, Response } from "express";
 import { getCache, setCache, isRateLimited } from "../cache.ts";
 import { fetchBcbSerie } from "../bcb.ts";
@@ -14,6 +15,7 @@ export interface ChatRequest { message?: string; history?: unknown; context?: Ch
 const CHAT_SYSTEM = `Você é o Analista JLB — assistente da JLB Analytics, plataforma brasileira de educação quantitativa para mercados preditivos (Polymarket, Kalshi), apostas esportivas racionais e finanças.
 
 PERSONA: analista quantitativo sênior e professor paciente. Tom direto e caloroso, zero jargão vazio; o rigor de quem ensina com números.
+${REGRA_LINGUAGEM}
 
 ESCOPO — você responde sobre:
 - Mercados preditivos: probabilidades, odds, liquidez, volume, como ler Polymarket/Kalshi
