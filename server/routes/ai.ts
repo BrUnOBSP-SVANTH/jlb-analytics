@@ -1,3 +1,5 @@
+import { montarCurva } from "../lib/ai/curvaCalibracao.ts";
+import { dedupPorMercado } from "../lib/calibrationData.ts";
 import { intervaloWilson, comparaComMercado } from "../lib/ai/incerteza.ts";
 import { Router, type Request, type Response, type NextFunction } from "express";
 import { getCache, setCache, isRateLimited } from "../lib/cache.ts";
@@ -304,6 +306,43 @@ router.post("/analyze/stream", aiCreditsMiddleware, async (req, res) => {
 
 // ── AI Track Record ─────────────────────────────────────────────────────────
 // Calibração real da própria IA: Brier da IA vs Brier do mercado em previsões resolvidas.
+/**
+ * Curva de calibração PÚBLICA — "quando dizemos 70%, acontece quanto?".
+ *
+ * É a prova mais concreta que uma plataforma de previsão pode dar, e qualquer
+ * pessoa lê a tabela sem saber o que é Brier. Separada do /track-record para não
+ * engordar aquele payload, que é buscado em várias telas.
+ */
+router.get("/calibration-curve", async (_req, res) => {
+  const cached = getCache<object>("ai-calibration-curve");
+  if (cached) return res.json(cached);
+  if (!SUPABASE_URL || !SUPABASE_KEY) return res.json({ available: false });
+  try {
+    const r = await fetch(
+      `${SUPABASE_URL}/rest/v1/ai_forecasts?resolved=eq.true&outcome=not.is.null`
+      + `&select=market_id,ai_fair_value,outcome,forecast_date,created_at&limit=5000`,
+      { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }, signal: AbortSignal.timeout(8_000) },
+    );
+    if (!r.ok) return res.json({ available: false });
+    const rows = await r.json() as Array<{ market_id: string; ai_fair_value: number; outcome: boolean; forecast_date: string; created_at: string }>;
+    // Mesma dedup da view do track record: 1 previsão por mercado, a mais antiga.
+    // Sem isso, mercado previsto em 6 dias entra 6 vezes e distorce a curva.
+    const curva = montarCurva(
+      dedupPorMercado(rows).map((x) => ({ prob: Number(x.ai_fair_value), aconteceu: !!x.outcome })),
+    );
+    const comAmostra = curva.filter((f) => f.aconteceu !== null);
+    const resultado = {
+      available: true,
+      curva,
+      faixasCalibradas: comAmostra.filter((f) => f.dentroDaMargem).length,
+      faixasComAmostra: comAmostra.length,
+      total: curva.reduce((s, f) => s + f.n, 0),
+    };
+    setCache("ai-calibration-curve", resultado, 900);
+    res.json(resultado);
+  } catch { res.json({ available: false }); }
+});
+
 router.get("/track-record", async (_req, res) => {
   if (!SUPABASE_URL || !SUPABASE_KEY) return res.json({ available: false });
   const cached = getCache<object>("ai-track-record");

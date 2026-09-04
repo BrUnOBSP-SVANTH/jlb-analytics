@@ -17,6 +17,7 @@ import { ShareCard } from "@/components/previsao/ShareCard";
 import { ProviderBreakdown } from "@/components/previsao/ProviderBreakdown";
 import MarginOfError from "@/components/MarginOfError";
 import { Termo } from "@/components/Termo";
+import { CurvaCalibracao } from "@/components/previsao/CurvaCalibracao";
 import {
   ShieldCheck, ClipboardList, Scale, Layers, ArrowRight, Sparkles, BookOpen,
 } from "lucide-react";
@@ -82,6 +83,11 @@ export default function TrackRecord() {
 
         {/* ── Números verificados (card já provado) ── */}
         <AiTrackRecord />
+
+        {/* ── A prova mais direta: prometemos X, aconteceu Y (com margem por faixa) ── */}
+        <AnimatedSection>
+          <CurvaCalibracao />
+        </AnimatedSection>
 
         {/* ── De qual modelo veio o número (a manchete soma provedores diferentes) ── */}
         <AnimatedSection>
