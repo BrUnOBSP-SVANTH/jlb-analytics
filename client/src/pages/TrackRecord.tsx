@@ -19,6 +19,7 @@ import MarginOfError from "@/components/MarginOfError";
 import { Termo } from "@/components/Termo";
 import { CurvaCalibracao } from "@/components/previsao/CurvaCalibracao";
 import { PorTema } from "@/components/previsao/PorTema";
+import { Evolucao } from "@/components/previsao/Evolucao";
 import {
   ShieldCheck, ClipboardList, Scale, Layers, ArrowRight, Sparkles, BookOpen,
 } from "lucide-react";
@@ -93,6 +94,11 @@ export default function TrackRecord() {
         {/* ── Onde temos evidência, por assunto, com a margem de cada um ── */}
         <AnimatedSection>
           <PorTema />
+        </AnimatedSection>
+
+        {/* ── Estamos melhorando? (o veredito vem antes da tabela, de propósito) ── */}
+        <AnimatedSection>
+          <Evolucao />
         </AnimatedSection>
 
         {/* ── De qual modelo veio o número (a manchete soma provedores diferentes) ── */}

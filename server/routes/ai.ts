@@ -324,6 +324,70 @@ router.post("/analyze/stream", aiCreditsMiddleware, async (req, res) => {
  * leva a própria margem: e-sports com 191 casos merece outra confiança que
  * economia com 25, e o número sozinho não conta isso.
  */
+/**
+ * Evolução no tempo — estamos melhorando, piorando, ou estáveis?
+ *
+ * ⚠️ Existe para impedir a leitura ERRADA, não para exibir uma curva bonita. Com
+ * ~2 meses de histórico, qualquer sobe-e-desce entre meses cabe dentro da margem
+ * — e a tentação de ler "subiu de 77% para 80%" como progresso é exatamente o
+ * tipo de erro que custou -7,7% a este projeto em 29/08. Por isso o endpoint não
+ * devolve só os números: devolve o VEREDITO sobre haver ou não tendência, e ele
+ * é calculado comparando os intervalos, não as porcentagens.
+ */
+router.get("/evolution", async (_req, res) => {
+  const cached = getCache<object>("ai-evolution");
+  if (cached) return res.json(cached);
+  if (!SUPABASE_URL || !SUPABASE_KEY) return res.json({ available: false });
+  try {
+    const r = await fetch(
+      `${SUPABASE_URL}/rest/v1/ai_forecasts?resolved=eq.true&outcome=not.is.null&resolved_at=not.is.null`
+      + `&select=market_id,market_prob,ai_fair_value,outcome,resolved_at,forecast_date,created_at&limit=5000`,
+      { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }, signal: AbortSignal.timeout(8_000) },
+    );
+    if (!r.ok) return res.json({ available: false });
+    const rows = await r.json() as Array<{ market_id: string; market_prob: number; ai_fair_value: number; outcome: boolean; resolved_at: string; forecast_date: string; created_at: string }>;
+
+    // Agrupa por MÊS (e não por semana): as resoluções chegam em rajada quando o
+    // resolvedor roda, então semanas ficam com 1, 2, 369 casos — e uma "semana" de
+    // 2 casos não é ponto de série temporal, é ruído com data.
+    const porMes = new Map<string, typeof rows>();
+    for (const x of dedupPorMercado(rows)) {
+      const k = String(x.resolved_at).slice(0, 7);
+      if (!porMes.has(k)) porMes.set(k, []);
+      porMes.get(k)!.push(x);
+    }
+
+    const MIN_MES = 30;
+    const meses = Array.from(porMes.entries()).sort(([a], [b]) => a.localeCompare(b)).map(([mes, v]) => {
+      const acertos = v.filter((x) => (Number(x.ai_fair_value) >= 50) === !!x.outcome).length;
+      const mercado = v.filter((x) => (Number(x.market_prob) >= 50) === !!x.outcome).length;
+      const ic = v.length >= MIN_MES ? intervaloWilson(acertos, v.length) : null;
+      return {
+        mes, n: v.length,
+        acerto: ic ? Math.round((acertos / v.length) * 100) : null,
+        margemPp: ic?.margemPp ?? null,
+        baixo: ic?.baixo ?? null, alto: ic?.alto ?? null,
+        acertoMercado: ic ? Math.round((mercado / v.length) * 100) : null,
+      };
+    });
+
+    // Tendência só existe se os intervalos do primeiro e do último mês com amostra
+    // NÃO se tocarem. Comparar as porcentagens direto seria ler ruído.
+    const comAmostra = meses.filter((m) => m.acerto !== null);
+    let tendencia: "sem-dados" | "estavel" | "melhorando" | "piorando" = "sem-dados";
+    if (comAmostra.length >= 2) {
+      const p = comAmostra[0], u = comAmostra[comAmostra.length - 1];
+      tendencia = p.alto! < u.baixo! ? "melhorando"
+        : p.baixo! > u.alto! ? "piorando"
+        : "estavel";
+    }
+
+    const resultado = { available: true, meses, tendencia, minAmostra: MIN_MES, mesesComAmostra: comAmostra.length };
+    setCache("ai-evolution", resultado, 900);
+    res.json(resultado);
+  } catch { res.json({ available: false }); }
+});
+
 router.get("/by-category", async (_req, res) => {
   const cached = getCache<object>("ai-by-category");
   if (cached) return res.json(cached);
