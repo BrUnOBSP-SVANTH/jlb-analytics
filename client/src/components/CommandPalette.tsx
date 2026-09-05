@@ -5,7 +5,7 @@
  */
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useLocation } from "wouter";
-import { Search, X, FileText, LayoutDashboard, Brain, Zap, BookOpen, BarChart3, Calculator, GraduationCap, Newspaper } from "lucide-react";
+import { Search, X, FileText, LayoutDashboard, Brain, Zap, BookOpen, BarChart3, Calculator, GraduationCap, Newspaper, Wallet } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { trapTab } from "@/lib/focusTrap";
 
@@ -33,6 +33,7 @@ const PAGES: CmdPage[] = [
   { type: "page", label: "Previsão Guiada IA", href: "/previsao",    icon: Brain,          keywords: "previsão ia modelo econométrico" },
   { type: "page", label: "Briefing Diário IA", href: "/briefing",    icon: Zap,            keywords: "briefing diário análise matinal" },
   { type: "page", label: "Dashboard",          href: "/dashboard",   icon: LayoutDashboard,keywords: "dashboard calibração brier score previsões" },
+  { type: "page", label: "Banca Simulada",     href: "/portfolio",   icon: Wallet,         keywords: "banca aposta simulada dinheiro ficticio retorno perda portfolio" },
   { type: "page", label: "Simulador EV",       href: "/simulador",   icon: BarChart3,      keywords: "simulador kelly monte carlo" },
   { type: "page", label: "Calculadoras",       href: "/calculadoras",icon: Calculator,     keywords: "calculadoras ev overround brier kelly correlação" },
   { type: "page", label: "Trilha Completa",    href: "/educacao",    icon: GraduationCap,  keywords: "educação níveis aprender" },

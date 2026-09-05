@@ -93,6 +93,7 @@ export function Footer() {
             <div className="space-y-1.5">
               {[
                 { label: "Previsão IA",   href: "/previsao"    },
+                { label: "Banca Simulada", href: "/portfolio"  },
                 { label: "Simulador EV",  href: "/simulador"   },
                 { label: "Calculadoras",  href: "/calculadoras"},
                 { label: "Dashboard",     href: "/dashboard"   },

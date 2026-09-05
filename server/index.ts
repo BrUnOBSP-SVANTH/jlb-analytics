@@ -28,6 +28,7 @@ import newsRouter     from "./routes/news.ts";
 import aiRouter, { sendWeeklyDigests } from "./routes/ai.ts";
 import { scoreAiForecasts, seedAiForecasts } from "./lib/aiForecasts.ts";
 import { resolveUserPredictions } from "./lib/userPredictions.ts";
+import { resolvePaperBets } from "./lib/paperBets.ts";
 import { runDailyEmbedBackfill } from "./lib/cerebroEmbeddings.ts";
 import { limparArtigosAntigos } from "./lib/cerebroLimpeza.ts";
 import stripeRouter   from "./routes/stripe.ts";
@@ -651,6 +652,14 @@ async function startServer() {
     setTimeout(() => { void resolveUserPredictions(); }, 5 * 60_000);
     setInterval(() => { void resolveUserPredictions(); }, 6 * 60 * 60 * 1000);
     log.info("   Previsões do usuário: resolução oficial + push de retorno, a cada 6h ✅");
+
+    // Banca simulada: paga (ou zera) as apostas fictícias cujo mercado resolveu.
+    // Pelo MESMO settlement oficial — sem desfecho da plataforma, a aposta fica
+    // aberta. Sem este job a banca nunca fecharia conta, e é justamente a conta
+    // fechando que ensina.
+    setTimeout(() => { void resolvePaperBets(); }, 6 * 60_000);
+    setInterval(() => { void resolvePaperBets(); }, 6 * 60 * 60 * 1000);
+    log.info("   Banca simulada: liquidação oficial das apostas, a cada 6h ✅");
 
     // Seed de previsões da IA: 4min após o boot, depois a cada 6h. Frequência
     // subiu de 24h→6h porque o seed agora é news-aware (lê o Cerebro): rodar

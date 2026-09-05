@@ -1,32 +1,44 @@
 /**
- * PortfolioAnalysisPanel — análise do portfólio simulado por IA (só com 2+ posições).
- * Extraído de pages/Portfolio.tsx. Comportamento idêntico.
+ * PortfolioAnalysisPanel — a IA olha a carteira de apostas ABERTAS e aponta risco
+ * e concentração (só com 2+ apostas, abaixo disso não há carteira a analisar).
+ *
+ * Recebe as apostas da banca, mas envia ao servidor o MESMO formato de sempre —
+ * a rota /api/ai/portfolio-analysis não muda por causa de uma mudança de tela.
  */
 import { useState } from "react";
 import { RefreshCw, Sparkles } from "lucide-react";
 import { maybeAuthGate } from "@/lib/upgrade";
-import { calcPnl, type PortfolioPosition, type PortfolioAnalysisResult } from "@/components/portfolio/shared";
+import type { ApostaBanca } from "@/lib/banca";
+import { valorDeMercado } from "@shared/banca";
 
-export function PortfolioAnalysisPanel({ positions }: { positions: PortfolioPosition[] }) {
+interface PortfolioAnalysisResult {
+  analysis: string;
+  risks: string[];
+  suggestions: string[];
+  cached: boolean;
+}
+
+export function PortfolioAnalysisPanel({ apostas }: { apostas: ApostaBanca[] }) {
   const [result, setResult] = useState<PortfolioAnalysisResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  if (positions.length < 2) return null;
+  if (apostas.length < 2) return null;
 
   async function handleAnalyze() {
     if (result) { setResult(null); return; }
     setLoading(true);
     setError(null);
     try {
-      const payload = positions.map(p => ({
-        title: p.title,
-        source: p.source,
-        position: p.position,
-        entryProb: p.entryProb,
-        currentProb: p.currentProb,
-        betSize: p.betSize,
-        pnl: calcPnl(p),
+      const payload = apostas.map((a) => ({
+        title: a.pergunta,
+        source: a.fonte,
+        position: a.lado === "sim" ? "yes" : "no",
+        entryProb: a.precoEntrada,
+        currentProb: a.precoAtual,
+        betSize: a.valor,
+        // Lucro no papel: o que a aposta vale hoje menos o que ela custou.
+        pnl: a.precoAtual === undefined ? null : valorDeMercado(a) - a.valor,
       }));
       const res = await fetch("/api/ai/portfolio-analysis", {
         method: "POST",
@@ -49,7 +61,7 @@ export function PortfolioAnalysisPanel({ positions }: { positions: PortfolioPosi
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <Sparkles className="w-4 h-4 text-purple-400" />
-          <h3 className="text-sm font-semibold text-foreground">Análise de Portfólio com IA</h3>
+          <h3 className="text-sm font-semibold text-foreground">A IA olha sua carteira</h3>
         </div>
         <button
           onClick={handleAnalyze}
@@ -60,7 +72,7 @@ export function PortfolioAnalysisPanel({ positions }: { positions: PortfolioPosi
             ? <><RefreshCw className="w-3 h-3 animate-spin" /> Analisando...</>
             : result
             ? "Ocultar análise"
-            : <><Sparkles className="w-3 h-3" /> Analisar portfólio</>
+            : <><Sparkles className="w-3 h-3" /> Analisar minha carteira</>
           }
         </button>
       </div>

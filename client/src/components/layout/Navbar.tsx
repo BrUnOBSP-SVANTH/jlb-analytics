@@ -10,7 +10,7 @@ import {
   LineChart, GitCompare, Sun, Moon,
   LogIn, LogOut, User, GraduationCap, Newspaper, Star, Brain,
   Zap, BookOpen, ChevronRight, Flame,
-  Bell, BellRing, Sigma, Map, Search, ShieldCheck,
+  Bell, BellRing, Sigma, Map, Search, ShieldCheck, Wallet,
 } from "lucide-react";
 import { toast } from "sonner";
 import { loadProgress } from "@/lib/userProgress";
@@ -42,6 +42,7 @@ const NAV_GROUPS: NavGroup[] = [
     children: [
       { label: "Mercados Ao Vivo",      href: "/apostas",  icon: Flame,     desc: "Reddit + Polymarket + Kalshi — sinais em tempo real", badge: "AO VIVO" },
       { label: "Análise de Mercados",  href: "/noticias", icon: Newspaper, desc: "Polymarket · Kalshi · Artigos · cruzamento IA + notícias" },
+      { label: "Banca Simulada",        href: "/portfolio", icon: Wallet,   desc: "Aposte dinheiro fictício em mercados reais e veja o resultado", badge: "NOVO" },
     ],
   },
   {
