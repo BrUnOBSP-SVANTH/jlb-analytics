@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { topKeywords, looksEnglish, rankHits, dedupeByTitle, overlapsQuery, noticiaFresca, janelaDeNoticia, entidadesDoConfronto, dominioDoMercado } from "./cerebro.ts";
+import { topKeywords, looksEnglish, rankHits, dedupeByTitle, overlapsQuery, noticiaFresca, janelaDeNoticia, entidadesDoConfronto, dominioDoMercado, tsqueryDeGrupos, overlapsGrupos } from "./cerebro.ts";
 
 describe("topKeywords", () => {
   it("prioriza substantivos próprios (entidades do mercado)", () => {
@@ -259,5 +259,56 @@ describe("dominioDoMercado — a trava que impede o nome solto de virar ruído",
   it("categoria desconhecida devolve null — e aí a regra estrita continua valendo", () => {
     expect(dominioDoMercado("categoria-que-nao-existe")).toBeNull();
     expect(dominioDoMercado(undefined)).toBeNull();
+  });
+});
+
+describe("tsqueryDeGrupos — E entre conceitos, OU dentro do conceito", () => {
+  it("junta as variantes com OU e os conceitos com E", () => {
+    const q = tsqueryDeGrupos([["Election", "eleição"], ["Brazil", "brasil"]]);
+    expect(q).toContain("|");
+    expect(q).toContain("&");
+    expect(q).toMatch(/eleição/);
+  });
+
+  it("ANO não vira conceito exigido", () => {
+    // "Presidential Election Winner 2028" exigia que o artigo dissesse 2028, e
+    // reportagem sobre a eleição de 2028 quase nunca repete o ano. Era o termo
+    // que sozinho zerava a consulta.
+    const q = tsqueryDeGrupos([["Election", "eleição"], ["2028"], ["Winner", "vencedor"]]);
+    expect(q).not.toContain("2028");
+  });
+
+  it("exige NO MÁXIMO dois conceitos", () => {
+    // Medido: exigindo todos, só 14% dos mercados de maior volume achavam algo;
+    // limitando a dois, 60%. Dois já é a régua de precisão do filtro.
+    const q = tsqueryDeGrupos([["alpha"], ["bravo"], ["charlie"], ["delta"]]);
+    expect(q.split("&").length).toBe(2);
+  });
+
+  it("nunca produz expressão inválida", () => {
+    // to_tsquery quebra a consulta inteira com HTTP 400 se a sintaxe falhar.
+    expect(tsqueryDeGrupos([])).toBe("");
+    expect(tsqueryDeGrupos([[""], ["  "]])).toBe("");
+    expect(tsqueryDeGrupos([["a"], ["2026"]])).not.toMatch(/&\s*$|^\s*&/);
+  });
+
+  it("descarta pontuação que quebraria o to_tsquery", () => {
+    expect(tsqueryDeGrupos([["Gen.G"], ["T1"]])).not.toContain(".");
+  });
+});
+
+describe("overlapsGrupos — variante do mesmo conceito não conta duas vezes", () => {
+  it("casar três variantes do MESMO conceito não substitui o segundo assunto", () => {
+    // Sem isto, enriquecer "election" com "eleição/eleitoral" faria um artigo de
+    // um assunto só casar três termos e furar o filtro que protege do ruído.
+    // O artigo abaixo fala de eleição três vezes e do Brasil nenhuma.
+    const artigo = { title: "Eleição municipal movimenta a cidade", summary: "eleitoral eleições" };
+    const grupos = [["election", "eleição", "eleitoral", "eleições"], ["brazil", "brasil"]];
+    expect(overlapsGrupos(artigo, grupos)).toBe(false);
+  });
+
+  it("dois assuntos distintos passam", () => {
+    const artigo = { title: "Eleição presidencial no Brasil", summary: "" };
+    expect(overlapsGrupos(artigo, [["election", "eleição"], ["brazil", "brasil"]])).toBe(true);
   });
 });

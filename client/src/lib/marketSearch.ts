@@ -21,6 +21,8 @@
  */
 
 /** minúsculas + sem acento — "eleição", "eleicao" e "ELEIÇÃO" viram a mesma coisa. */
+import { SINONIMOS } from "@shared/vocabulario";
+
 export function normalizar(s: string): string {
   return s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
 }
@@ -29,46 +31,10 @@ export function normalizar(s: string): string {
  * PT (sem acento) → termos que aparecem de fato nos títulos em inglês.
  * Um termo pode abrir vários: quem busca "juros" quer Fed, taxa e juros.
  */
-const SINONIMOS: Record<string, string[]> = {
-  // política
-  eleicao: ["election", "electoral"], eleicoes: ["election"], eleitoral: ["election", "electoral"],
-  presidente: ["president", "presidential"], presidencial: ["presidential"],
-  senado: ["senate", "senator"], deputado: ["house", "representative"], camara: ["house"],
-  voto: ["vote", "ballot"], votacao: ["vote", "popular vote"], urna: ["ballot"],
-  governador: ["governor"], prefeito: ["mayor"], primaria: ["primary"], previa: ["primary"],
-  democrata: ["democratic", "democrat"], republicano: ["republican"],
-  secretario: ["secretary"], ministro: ["minister", "secretary"],
-  impeachment: ["impeach"], renuncia: ["resign"], guerra: ["war", "military", "strike"],
-  paz: ["peace", "ceasefire"], "cessar fogo": ["ceasefire"], sancao: ["sanction"],
-  // economia
-  juros: ["rate", "fed", "interest", "fomc"], taxa: ["rate"], fed: ["fed", "fomc"],
-  inflacao: ["inflation", "cpi"], recessao: ["recession"], desemprego: ["unemployment"],
-  dolar: ["dollar", "usd"], ouro: ["gold"], petroleo: ["oil"], bolsa: ["stock", "index"],
-  acoes: ["stock", "shares"], acao: ["stock"], imposto: ["tax"], tarifa: ["tariff"],
-  lucro: ["earnings", "profit"], empresa: ["company", "companies"],
-  // esportes
-  tenis: ["tennis", "us open", "atp", "wta"], futebol: ["soccer", "football"],
-  basquete: ["basketball", "nba"], beisebol: ["baseball", "mlb"], hoquei: ["hockey", "nhl"],
-  jogo: ["game", "match"], partida: ["game", "match"], campeao: ["champion", "winner", "title"],
-  campeonato: ["championship", "league"], copa: ["cup", "world cup"], final: ["final", "finals"],
-  temporada: ["season"], vencedor: ["winner", "champion"], vitoria: ["victory", "win"],
-  torneio: ["tournament", "open"], rodada: ["round"], medalha: ["medal"], olimpiada: ["olympic"],
-  // cripto e tech
-  cripto: ["crypto", "bitcoin", "ethereum"], moeda: ["coin", "currency"],
-  // cultura e ciência
-  filme: ["movie", "film"], cinema: ["movie", "film", "box office"], premio: ["award", "prize"],
-  musica: ["music", "song"], clima: ["climate", "weather", "temperature"], tempo: ["weather"],
-  furacao: ["hurricane"], vacina: ["vaccine"], remedio: ["drug", "medicine"],
-  espaco: ["space", "nasa", "spacex"], foguete: ["rocket", "launch"],
-  // meses (aparecem MUITO nos títulos: september 59, december 44…)
-  janeiro: ["january", "jan"], fevereiro: ["february", "feb"], marco: ["march", "mar"],
-  abril: ["april", "apr"], maio: ["may"], junho: ["june", "jun"], julho: ["july", "jul"],
-  agosto: ["august", "aug"], setembro: ["september", "sep"], outubro: ["october", "oct"],
-  novembro: ["november", "nov"], dezembro: ["december", "dec"],
-  // comparadores comuns nos títulos
-  acima: ["above", "over", "at least"], abaixo: ["below", "under"], maior: ["most", "highest"],
-  antes: ["before"], depois: ["after"], "pelo menos": ["at least"],
-};
+// O dicionário mora em shared/vocabulario.ts: o SERVIDOR usa a mesma lista para
+// achar notícia em português a partir de título em inglês. Duas cópias sairiam
+// do ar uma da outra, e a busca da tela discordaria da busca da análise.
+
 
 /**
  * Um termo digitado → ele mesmo + as traduções conhecidas.

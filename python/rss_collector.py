@@ -573,8 +573,27 @@ async def upsert_articles(
 ) -> int:
     if not articles:
         return 0
-    url = f"{supabase_url}/rest/v1/cerebro_articles"
-    headers = {**_supa_headers(service_key), "Prefer": "resolution=merge-duplicates,return=minimal"}
+    # `on_conflict=slug` é OBRIGATÓRIO aqui, e a falta dele custou caro.
+    #
+    # O cabeçalho Prefer sozinho não basta: sem dizer QUAL coluna resolve o
+    # conflito, o PostgREST só considera a chave primária — e a constraint única
+    # de `slug` estourava assim mesmo. Como a gravação é em LOTE, um único artigo
+    # repetido derrubava o lote inteiro com 409 e levava junto todos os novos.
+    #
+    # O efeito era invisível e cruelmente seletivo: fonte que publica muito
+    # (Globo Esporte, r/politics) renova o feed inteiro entre duas coletas e
+    # quase nunca repete, então gravava normalmente. Fonte especializada que
+    # publica devagar — HLTV, ESPN, Esports.gg — tem sempre artigo repetido no
+    # feed de 10 itens, então NUNCA conseguia gravar nada. Medido em 05/09:
+    # "0/10 artigos salvos de HLTV", com o feed trazendo "Spirit advance to BLAST
+    # Porto final over Falcons" — exatamente a notícia que faltou na tela.
+    #
+    # Era esta a razão de o acervo ser 5.443 de macro contra 370 de e-sports.
+    #
+    # `ignore-duplicates` e não `merge`: o artigo já está lá, reescrevê-lo a cada
+    # 2h não acrescenta nada e mexeria em linha já enriquecida à toa.
+    url = f"{supabase_url}/rest/v1/cerebro_articles?on_conflict=slug"
+    headers = {**_supa_headers(service_key), "Prefer": "resolution=ignore-duplicates,return=minimal"}
     try:
         resp = await client.post(url, headers=headers, json=articles, timeout=30.0)
         if resp.status_code in (200, 201):

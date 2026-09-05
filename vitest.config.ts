@@ -16,6 +16,10 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "client/src"),
+      // Precisa espelhar o vite.config: sem isto, todo teste de arquivo do
+      // cliente que importe de `shared/` falha ao carregar — e o erro aparece
+      // como "arquivo não existe", que manda quem lê para o lugar errado.
+      "@shared": path.resolve(__dirname, "shared"),
     },
   },
 });

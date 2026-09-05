@@ -7,8 +7,9 @@ import { getCache, setCache } from "./cache.ts";
 import { callClaude } from "./anthropic.ts";
 import { extractJson } from "./extractJson.ts";
 import { embedText, embeddingsEnabled } from "./embeddings.ts";
+import { enriquecerComPortugues, paraPortugues } from "../../shared/vocabulario.ts";
 
-interface CerebroHit { title: string; summary: string; source: string; category?: string; kind: "síntese" | "artigo"; date?: string; _semantic?: boolean; _sim?: number }
+interface CerebroHit { title: string; summary: string; source: string; category?: string; kind: "síntese" | "artigo"; date?: string; _semantic?: boolean; _sim?: number; _preciso?: boolean }
 
 const STOPWORDS = new Set([
   // PT
@@ -129,8 +130,13 @@ export function topKeywords(text: string, n = 4): string {
     // recebia destaque de basquete como "contexto".
     // Agora tokens curtos sobrevivem quando são claramente entidades: sigla em
     // maiúsculas (LCK, BTC) ou mistura de letra e número (T1, G2, BO5).
+    // Sigla em caixa alta (LCK, BTC), letra+número (T1, BO5) — e também o nome
+    // próprio de 3 letras. "Fed Decision in September?" perdia justamente "Fed",
+    // sobrava "Decision September" e casava a final da Série D por causa de
+    // "decisão". O termo que identificava o mercado era o que caía.
     const curtoMasDistintivo =
-      w.length >= 2 && (/^[A-Z0-9]+$/.test(w) || /^[A-Za-z]+\d+$/.test(w));
+      w.length >= 2 && (/^[A-Z0-9]+$/.test(w) || /^[A-Za-z]+\d+$/.test(w)
+        || (w.length === 3 && /^[A-ZÀ-Ú]/.test(w)));
     if ((w.length <= 3 && !curtoMasDistintivo) || STOPWORDS.has(lower) || seen.has(lower)) return;
     seen.add(lower);
     if (i > 0 && /^[A-ZÀ-Ú]/.test(w)) proper.push(w);
@@ -270,6 +276,63 @@ export function rankHits<T extends { title: string; summary: string; kind?: stri
  * uma pergunta sobre o Lula é ruído bem formatado, e ruído bem formatado é o mais
  * perigoso: parece fonte. Exportada p/ teste.
  */
+/**
+ * Relevância contando CONCEITO, não palavra.
+ *
+ * A armadilha que isto evita: ao enriquecer a busca com o português, "election"
+ * vira ["election", "eleicao", "eleitoral"]. Um artigo que fale de eleição casa
+ * três termos — mas é UM assunto só. A régua de "2+ termos distintivos" existe
+ * para exigir dois ASSUNTOS; contar variantes do mesmo conceito a fura por
+ * dentro, e o filtro que protege contra ruído deixaria de proteger.
+ *
+ * Aqui cada grupo é um conceito e vale no máximo 1, casando por qualquer variante.
+ */
+export function overlapsGrupos(
+  h: { title: string; summary: string },
+  grupos: string[][],
+  minMatches = 2,
+): boolean {
+  const texto = normText(`${h.title} ${h.summary}`);
+  const uteis = grupos.map((g) => usefulTerms(g)).filter((g) => g.length > 0);
+  if (uteis.length === 0) return true;
+  const casados = uteis.filter((g) => matchCount(texto, g) >= 1).length;
+  return casados >= Math.min(minMatches, uteis.length);
+}
+
+/**
+ * Monta a expressão de `to_tsquery` a partir dos grupos: E entre conceitos, OU
+ * dentro de cada um. Termos com espaço ficam de fora — `to_tsquery` exige
+ * palavra única, e uma expressão inválida derruba a consulta com HTTP 400.
+ */
+export function tsqueryDeGrupos(grupos: string[][], maxExigidos = 2): string {
+  const limpos = grupos
+    .map((g) => Array.from(new Set(
+      g.map((t) => t.trim().replace(/[^a-zA-ZÀ-ú0-9]/g, "")).filter((t) => t.length >= 2),
+    )))
+    .filter((g) => g.length > 0)
+    // ANO NÃO É CONCEITO. "Presidential Election Winner 2028" exigia que o artigo
+    // dissesse 2028 — e reportagem sobre a eleição de 2028 quase nunca repete o
+    // ano no texto. O ano era o termo que sozinho zerava a consulta.
+    .filter((g) => !g.every((t) => /^(19|20)\d\d$/.test(t)));
+
+  // NO MÁXIMO DOIS CONCEITOS EXIGIDOS. Medido em 05/09: exigindo TODOS, só 14%
+  // dos 120 mercados de maior volume achavam algo — "Iran invade 2027" pedia
+  // Irã E invadir E 2027 ao mesmo tempo. Dois conceitos já é a régua de precisão
+  // que usamos no filtro de relevância; exigir mais não protege mais, só cega.
+  // Os demais termos seguem valendo no ranqueamento, onde ajudam sem excluir.
+  const ordenados = [...limpos].sort((a, b) => b[0].length - a[0].length);
+  const exigidos = ordenados.slice(0, Math.max(1, maxExigidos));
+
+  return exigidos
+    .map((g) => (g.length === 1 ? g[0] : `(${g.join(" | ")})`))
+    .join(" & ");
+}
+
+/** Cada termo vira um grupo com ele e seus equivalentes em português. */
+export function gruposDeTermos(termos: string[]): string[][] {
+  return termos.filter(Boolean).map((t) => [t, ...paraPortugues(t)]);
+}
+
 export function overlapsQuery(
   h: { title: string; summary: string },
   terms: string[],
@@ -294,7 +357,7 @@ export function dedupeByTitle<T extends { title: string }>(hits: T[]): T[] {
 
 /** Busca full-text PT: sínteses (maior valor, mais recentes) primeiro, depois artigos recentes.
  *  op: plfts = AND de todos os termos (precisão) · wfts = websearch, aceita "or" (recall) */
-async function queryCerebro(kw: string, op: "plfts" | "wfts" = "plfts"): Promise<CerebroHit[]> {
+async function queryCerebro(kw: string, op: "plfts" | "wfts" | "fts" = "plfts"): Promise<CerebroHit[]> {
   const headers = { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` };
   const enc = encodeURIComponent(kw);
 
@@ -441,6 +504,47 @@ export async function fetchCerebroContext(
     let hits = await queryCerebro(kw);
     let usedFallback = false;
     const words = kw.split(" ");
+
+    // E ENTRE CONCEITOS, OU DENTRO DO CONCEITO. É a consulta que faltava.
+    //
+    // O caminho antigo tinha só dois extremos: um E de todos os termos crus (que
+    // erra o idioma e volta vazio) e um OU frouxo de tudo (que traz lixo — para
+    // "Brazil Presidential Election" vinha "Cartola 2026: dicas", casando só
+    // "brasil"). O filtro de relevância então descartava tudo, com razão, e a
+    // tela ficava seca. Medido em 05/09: 28,5% de cobertura nos 200 mercados de
+    // maior volume.
+    //
+    // Aqui cada conceito vira um grupo com suas variantes em português, e a
+    // consulta exige TODOS os conceitos, aceitando qualquer variante de cada um:
+    //   (eleição | eleições | eleitoral) & (presidente | presidencial) & brasil
+    // Precisão de E com o alcance de OU — sem depender de tradutor externo.
+    if (hits.length === 0) {
+      const tsq = tsqueryDeGrupos(gruposDeTermos(words));
+      if (tsq) {
+        // `_preciso`: estes hits casaram TODOS os conceitos na consulta. A marca
+        // importa na hora de filtrar — ver a nota em `relevant`.
+        hits = (await queryCerebro(tsq, "fts")).map((h) => ({ ...h, _preciso: true }));
+        usedFallback = true;
+      }
+    }
+
+    // TRADUÇÃO SEM REDE, antes de gastar os fallbacks. O título vem em inglês e o
+    // acervo é gravado em português (o coletor traduz na entrada) — então a
+    // consulta crua erra o idioma e volta vazia. Medido em 05/09: só 28,5% dos
+    // 200 mercados de maior volume achavam contexto, e entre os secos estavam os
+    // MAIORES ("Brazil Presidential Election", "Fed Decision in September?").
+    //
+    // Vem antes da tradução por API de propósito: os três tradutores gratuitos
+    // respondem 429 com frequência, e a busca não pode depender de serviço
+    // instável. O dicionário cobre o vocabulário recorrente de mercado sem rede.
+    if (hits.length === 0) {
+      const emPortugues = enriquecerComPortugues(words);
+      if (emPortugues.length > words.length) {
+        hits = await queryCerebro(emPortugues.join(" or "), "wfts");
+        usedFallback = true;
+      }
+    }
+
     if (hits.length === 0 && words.length > 1) {
       const distinctive = words.filter((w) => w.length >= 5).slice(0, 3);
       const orTerms = distinctive.length > 0 ? distinctive : words;
@@ -507,15 +611,30 @@ export async function fetchCerebroContext(
     // mercado. A área do artigo é a categoria com que ele foi coletado.
     const dominio = dominioDoMercado(categoriaMercado);
     const umNomeBasta = confronto !== null && dominio !== null;
+    // Os grupos carregam as variantes em português dos mesmos conceitos — sem
+    // isso, um hit encontrado PELA tradução seria descartado aqui por não casar
+    // o termo em inglês, e a expansão não serviria para nada.
+    const grupos = gruposDeTermos(words);
     const relevant = (h: CerebroHit) => {
+      // CONFIA NA CONSULTA PRECISA. O banco casou todos os conceitos no texto
+      // INTEIRO do artigo; o filtro aqui só enxerga o título e 250 caracteres de
+      // resumo. Reconferir num pedaço menor do que o banco leu era rejeitar
+      // acerto legítimo por falta de espaço.
+      //
+      // Medido em 05/09, e foi a descoberta que virou o jogo: para 120 mercados
+      // de maior volume, o banco devolvia algo em 100% deles e só 30% passavam
+      // no filtro — 84 mercados perdidos DEPOIS de encontrados, não por falta de
+      // acervo. É a diferença entre "não temos notícia" e "temos e jogamos fora".
+      if (h._preciso) return true;
       if (h._semantic && (h._sim ?? 0) >= ALTA_CONFIANCA) return true;
-      if (overlapsQuery(h, words)) return true;
+      if (overlapsGrupos(h, grupos)) return true;
       if (!umNomeBasta || h.kind !== "artigo") return false;
       const cat = (h.category ?? "").toLowerCase();
-      return dominio.has(cat) && matchCount(normText(`${h.title} ${h.summary}`), usefulTerms(words)) >= 1;
+      return dominio.has(cat) && overlapsGrupos(h, grupos, 1);
     };
-    const synth = rankHits(deduped.filter((h) => h.kind === "síntese"), words).filter(relevant);
-    const ftsArts = rankHits(deduped.filter((h) => h.kind === "artigo" && !h._semantic), words).filter(relevant);
+    const termosRank = enriquecerComPortugues(words);
+    const synth = rankHits(deduped.filter((h) => h.kind === "síntese"), termosRank).filter(relevant);
+    const ftsArts = rankHits(deduped.filter((h) => h.kind === "artigo" && !h._semantic), termosRank).filter(relevant);
     // .filter(relevant) TAMBÉM aqui: antes o grupo semântico entrava inteiro sem
     // passar pela régua — era por onde a faixa 0.60–0.65 vazaria sem confirmação.
     const semArts = deduped.filter((h) => h.kind === "artigo" && h._semantic).filter(relevant);

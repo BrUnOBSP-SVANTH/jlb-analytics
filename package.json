@@ -20,6 +20,7 @@
     "news:impact": "node scripts/news-impact.mjs",
     "own:estimate": "node scripts/own-estimate.mjs",
     "cerebro:limpeza": "node scripts/cerebro-limpeza.mjs",
+    "cobertura": "node --env-file=.env --experimental-transform-types scripts/cobertura-analise.mjs",
     "calibration:fit": "node scripts/calibration-fit.mjs",
     "sports:forecast": "node scripts/sports-forecast.mjs",
     "format": "prettier --write .",
