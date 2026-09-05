@@ -46,6 +46,50 @@ export interface HistoricoCategoria {
  */
 const MIN_AMOSTRA = 25;
 
+/**
+ * FAMÍLIAS. As plataformas não têm taxonomia: os mercados políticos chegam como
+ * "trump", "primary elections", "Politics", "politics", "United States",
+ * "Trump-Machado"… Medido em 05/09: separados, nenhum desses passava de 18
+ * resolvidos e TODOS ficavam abaixo do mínimo — a categoria mais visitada do
+ * site (26 dos 200 mercados de maior volume) era justamente a que não tinha
+ * histórico para mostrar. Juntos passam de 60.
+ *
+ * Agrupar não é maquiar amostra: são mercados do mesmo tipo, e a pergunta que a
+ * estatística responde ("o favorito costuma vencer nesta área?") é a mesma.
+ * A categoria específica continua tendo preferência quando ela sozinha tem
+ * amostra — é sempre mais informativa que a família.
+ */
+const FAMILIAS: Record<string, string[]> = {
+  política: ["politics", "trump", "primary elections", "united states", "president",
+             "elections", "election", "us election", "world elections", "midterms",
+             "senate", "macro geopolitics", "trump-machado", "iran", "israel", "gaza",
+             "denmark", "canada", "spain", "france", "french election", "brazil",
+             "military strikes", "middle east", "china", "geopolitics"],
+  "e-sports": ["esports", "lol", "league of legends", "cs2", "counter-strike", "dota", "valorant"],
+  esportes: ["sports", "soccer", "football", "tennis", "mlb", "nba", "nfl", "nhl",
+             "baseball", "basketball", "epl", "mls", "formula 1", "world series",
+             "nba finals", "qualification", "golf", "mma", "boxing"],
+  cripto: ["crypto", "bitcoin", "ethereum", "solana", "xrp", "token launch", "fdv",
+           "crypto legal", "crypto culture"],
+  economia: ["finance", "economics", "economy", "oil", "gold", "usd", "global rates",
+             "fomc", "ipo", "acquisitions", "tech", "ai"],
+  cultura: ["culture", "movies", "awards", "music", "gta vi", "gta 6", "avatar"],
+};
+
+/** Índice invertido: categoria crua → família. Montado uma vez. */
+const FAMILIA_DE: Record<string, string> = (() => {
+  const m: Record<string, string> = {};
+  for (const [familia, membros] of Object.entries(FAMILIAS)) {
+    for (const c of membros) m[c] = familia;
+  }
+  return m;
+})();
+
+/** A família de uma categoria crua, ou `null` quando não reconhecemos. */
+export function familiaDaCategoria(categoria?: string): string | null {
+  return FAMILIA_DE[(categoria ?? "").toLowerCase().trim()] ?? null;
+}
+
 const CACHE_KEY = "ficha:historico-categorias";
 const CACHE_S = 6 * 60 * 60; // o histórico anda devagar; 6h basta e poupa a rota
 
@@ -68,22 +112,27 @@ export async function historicoPorCategoria(): Promise<Map<string, HistoricoCate
     );
 
     const acc = new Map<string, { n: number; favAcertou: number; somaPrecoFav: number; sim: number }>();
+    const somar = (chave: string, preco: number, outcome: boolean) => {
+      const a = acc.get(chave) ?? { n: 0, favAcertou: 0, somaPrecoFav: 0, sim: 0 };
+      a.n += 1;
+      if (preco !== 50) {
+        if ((preco > 50) === outcome) a.favAcertou += 1;
+        a.somaPrecoFav += preco > 50 ? preco : 100 - preco;
+      }
+      if (outcome) a.sim += 1;
+      acc.set(chave, a);
+    };
+
     for (const l of linhas) {
       const cat = (l.category ?? "other").toLowerCase();
       const preco = Number(l.market_prob);
       if (!Number.isFinite(preco)) continue;
-      const a = acc.get(cat) ?? { n: 0, favAcertou: 0, somaPrecoFav: 0, sim: 0 };
-      a.n += 1;
-      // "Favorito" é o lado que o preço apontava. Empate exato em 50% não tem
-      // favorito, então não conta para esta métrica — contaria como erro sempre.
-      if (preco !== 50) {
-        if ((preco > 50) === l.outcome) a.favAcertou += 1;
-        a.somaPrecoFav += preco > 50 ? preco : 100 - preco;
-      }
-      if (l.outcome) a.sim += 1;
-      acc.set(cat, a);
+      somar(cat, preco, l.outcome);
+      // A mesma linha conta para a família. Não é contagem dobrada: são duas
+      // agregações distintas, e só uma delas vai para a tela de cada mercado.
+      const fam = familiaDaCategoria(cat);
+      if (fam) somar(fam, preco, l.outcome);
     }
-
     const saida: HistoricoCategoria[] = [];
     for (const [categoria, a] of Array.from(acc)) {
       if (a.n < MIN_AMOSTRA) continue;
@@ -165,7 +214,13 @@ export async function montarFicha(d: DadosFicha): Promise<string> {
 
   if (d.trajetoria) linhas.push(d.trajetoria);
 
-  const hist = (await historicoPorCategoria()).get((d.categoria ?? "").toLowerCase());
+  // A categoria exata primeiro (sempre mais informativa), a família como
+  // segunda chance. É o que dá histórico a política, que chega picada em
+  // "trump", "primary elections", "United States" e nunca junta amostra sozinha.
+  const tabela = await historicoPorCategoria();
+  const chaveExata = (d.categoria ?? "").toLowerCase().trim();
+  const familia = familiaDaCategoria(chaveExata);
+  const hist = tabela.get(chaveExata) ?? (familia ? tabela.get(familia) : undefined);
   if (hist) {
     // O par (venceu %, preço médio) é o que ensina: se o favorito ganha MAIS do
     // que o preço dizia, a categoria vinha subestimando o favorito na amostra.
@@ -176,7 +231,7 @@ export async function montarFicha(d: DadosFicha): Promise<string> {
         ? `o favorito venceu MAIS do que o preço dizia (${diferenca.toFixed(0)}pp acima), ou seja, nesta amostra a categoria vinha subestimando o favorito`
         : `o favorito venceu MENOS do que o preço dizia (${Math.abs(diferenca).toFixed(0)}pp abaixo), ou seja, nesta amostra pagava-se caro pelo favorito`;
     linhas.push(
-      `NOSSO HISTÓRICO EM ${hist.categoria.toUpperCase()}: acompanhamos ${hist.resolvidos} mercados desta categoria até a liquidação oficial. `
+      `NOSSO HISTÓRICO EM ${hist.categoria.toUpperCase()}: acompanhamos ${hist.resolvidos} mercados desta área até a liquidação oficial. `
       + `O favorito venceu ${hist.favoritoVenceuPct}% das vezes, com preço médio de ${hist.precoMedioFavorito}% — ${leitura}. `
       + `O SIM aconteceu em ${hist.simAconteceuPct}% deles. `
       + `(Amostra nossa, não projeção: descreve o passado desta categoria, não este mercado.)`,

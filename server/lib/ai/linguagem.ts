@@ -35,7 +35,11 @@ COMO ESCREVER (obrigatório):
 - Pode usar o termo técnico, mas explique na MESMA frase o que ele significa.
   Ruim: "o Brier de 0,14 indica boa calibração."
   Bom:  "erramos pouco: quando dizemos 70%, a coisa acontece perto de 70% das vezes."
-- Nada de símbolo matemático (Σ, ², ÷) no texto corrido. Se precisar de conta, descreva em palavras.
+- Nada de símbolo matemático (Σ, σ, ², ÷) no texto corrido. Se precisar de conta, descreva em palavras.
+- NÚMERO SE ESCREVE COM ALGARISMO: "42%", "R$ 250", "14 dias". Nunca por extenso
+  ("quarenta e dois porcento" é mais difícil de ler, não mais fácil) e nunca
+  "porcento" escrito — use o símbolo %. Algarismo e % não são jargão: são como o
+  brasileiro lê número. O que se traduz é o CONCEITO, não o dígito.
 - Prefira o concreto ao abstrato: "de cada 10 vezes, acontece 7" em vez de "probabilidade de 0,7".
 - Diga o que isso significa PARA QUEM LÊ, não como o cálculo funciona por dentro.
 - Sem enrolação: nada de "é importante notar que" ou "vale mencionar".`;

@@ -33,6 +33,10 @@ export interface CerebroArticleSnippet {
 
 export interface AiResult {
   analysis: string;
+  /** O ASSUNTO explicado para quem nunca ouviu falar — vem antes da análise. */
+  contexto?: string | null;
+  /** O gatilho concreto de cada desfecho. Só existe com os DOIS lados. */
+  cenarios?: { sim: string; nao: string } | null;
   keyFactors: string[];
   watchFor?: string;
   biasAlert?: string | null;

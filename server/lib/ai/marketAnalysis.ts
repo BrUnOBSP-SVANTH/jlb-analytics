@@ -72,6 +72,8 @@ export async function runMarketAnalysis(p: AnalyzeParams, onPhase: PhaseEmit = (
     let provider = "anthropic"; // provedor que respondeu — gravado no track record p/ fatiar Brier por provedor
     let fairValueClamped = false; // o guardrail moveu o fair value? → reescreve a frase p/ não contradizer o número
     let referenceClass: string | null = null;
+    let contexto: string | null = null;
+    let cenarios: { sim: string; nao: string } | null = null;
     let relevantIndices: number[] = allArticles.map((_, i) => i);
 
     if (ANTHROPIC_KEY) {
@@ -118,7 +120,31 @@ EXECUTE O PROTOCOLO (em ordem):
    - "fair": dentro de ±4pp
    - confidence: "alta" só com notícias fortes + Cerebro convergindo; "baixa" se fontes fracas/ausentes
 
-5. MONITORAMENTO + VIÉS cognitivo dominante neste mercado.
+5. CONTEXTO PARA QUEM CHEGOU AGORA — 2 a 3 frases explicando o ASSUNTO em si,
+   não o mercado: quem são os envolvidos, o que está em disputa, e onde a coisa
+   está hoje. Quem abre a página pode nunca ter ouvido falar do tema. Sem isto a
+   análise só conversa com quem já sabia — e essa pessoa não precisava de nós.
+
+6. CENÁRIOS — o que precisa ACONTECER para dar SIM, e o que precisa acontecer
+   para dar NÃO. Uma frase concreta cada, com o gatilho de verdade (uma decisão,
+   uma data, um resultado), não abstração ("se as condições melhorarem").
+
+7. MONITORAMENTO + VIÉS cognitivo dominante neste mercado.
+
+PROFUNDIDADE — o que separa a nossa análise de um chute com selo de IA:
+- CITE NÚMERO E NOME. "O favorito venceu 80,5% das vezes nos 220 mercados de
+  e-sports que acompanhamos" vale; "o histórico sugere cautela" não vale nada.
+- USE A FONTE 3, COPIANDO OS NÚMEROS DELA. O nosso histórico medido é o que
+  ninguém mais tem: quando a ficha traz a linha "NOSSO HISTÓRICO EM …", ela
+  PRECISA aparecer na análise com o tamanho da amostra. É o diferencial do site.
+  ⚠️ Quando essa linha NÃO estiver na ficha, é porque ainda não temos amostra
+  suficiente naquela área — e aí você NÃO inventa: diga em uma oração que o
+  histórico próprio ainda está sendo formado. Número de histórico que não veio
+  da ficha é fabricação, e fabricação aqui destrói o motivo de o site existir.
+- DIGA DE ONDE VEIO. Ao usar uma notícia, nomeie a fonte e a data ("HLTV, 31/08").
+  Análise sem procedência é opinião.
+- Onde não houver dado, diga o que FALTA para ter convicção. Admitir o limite com
+  precisão é análise; ficar vago é o contrário.
 
 REGRA INEGOCIÁVEL — NUNCA ENTREGUE ANÁLISE VAZIA. É PROIBIDO escrever que "não
 há notícias", "não temos dados" ou "não há informações sobre este confronto" e
@@ -131,18 +157,30 @@ sempre. Não invente fato para preencher: a ficha já é fato.
 ${INJECTION_GUARD}
 
 Os artigos são numerados a partir de [1]. JSON exato (sem markdown):
-{"relevantIndices":[1,3],"fairValue":62,"confidence":"baixa|media|alta","referenceClass":"qual classe de referência e base rate usada","analysis":"3-4 frases densas citando [N] e [CN] quando usados","keyFactors":["fator com nome próprio 1","fator 2","fator 3"],"watchFor":"evento/indicador concreto","biasAlert":"viés específico ou null","newsRelevance":"high|medium|low|none","probabilityAssessment":"fair|underpriced|overpriced|uncertain","edgeSignal":"1 frase: seu fairValue vs preço e por quê"}`;
+{"relevantIndices":[1,3],"fairValue":62,"confidence":"baixa|media|alta","referenceClass":"qual classe de referência e base rate usada","contexto":"2-3 frases sobre o ASSUNTO para quem nunca ouviu falar: quem está envolvido, o que está em jogo, onde está hoje","analysis":"6 a 9 frases, nesta ordem: o que o preço de ${probPct}% está dizendo; o que as notícias [N] mostram (com fonte e data); o que o Cerebro [CN] acrescenta; o que o NOSSO histórico medido da categoria diz, com o tamanho da amostra; onde cai a nossa estimativa e por quê","keyFactors":["cada item PRECISA ter nome próprio, número ou data","fator 2","fator 3","fator 4 (opcional)"],"cenarios":{"sim":"o gatilho concreto que faz dar SIM","nao":"o gatilho concreto que faz dar NÃO"},"watchFor":"evento/indicador concreto e datado","biasAlert":"viés específico ou null","newsRelevance":"high|medium|low|none","probabilityAssessment":"fair|underpriced|overpriced|uncertain","edgeSignal":"1 frase: seu fairValue vs preço e por quê"}`;
 
       try {
-        const raw = await callClaude({ model: "claude-haiku-4-5-20251001", maxTokens: 1000, messages: [{ role: "user", content: prompt }], timeoutMs: 22_000, onProvider: (p) => { provider = p; } });
+        // maxTokens 2200 (era 1000): o esquema passou a pedir contexto, cenários e
+        // uma análise de 6 a 9 frases. Com o teto antigo a resposta era cortada no
+        // meio e o JSON vinha inválido — a análise mais rica seria justamente a
+        // que falharia. O timeout sobe junto, pela mesma razão.
+        const raw = await callClaude({ model: "claude-haiku-4-5-20251001", maxTokens: 2200, messages: [{ role: "user", content: prompt }], timeoutMs: 32_000, onProvider: (p) => { provider = p; } });
         interface ParsedAnalysis {
           analysis?: string; keyFactors?: string[]; watchFor?: string; biasAlert?: string | null;
           relevantIndices?: number[]; newsRelevance?: string;
           probabilityAssessment?: string; edgeSignal?: string | null;
           fairValue?: number; confidence?: string; referenceClass?: string | null;
+          contexto?: string; cenarios?: { sim?: string; nao?: string };
         }
         const parsed = extractJson(raw) as ParsedAnalysis;
         analysis      = parsed.analysis ?? "";
+        contexto      = parsed.contexto ?? null;
+        // Só vale como cenário se os DOIS lados vierem: metade é pior que nada —
+        // o leitor compara o que precisa acontecer de cada lado, e um lado só
+        // sugere que aquele desfecho é o provável.
+        cenarios      = parsed.cenarios?.sim && parsed.cenarios?.nao
+          ? { sim: parsed.cenarios.sim, nao: parsed.cenarios.nao }
+          : null;
         keyFactors    = parsed.keyFactors ?? [];
         watchFor      = parsed.watchFor;
         biasAlert     = parsed.biasAlert ?? null;
@@ -172,6 +210,11 @@ Os artigos são numerados a partir de [1]. JSON exato (sem markdown):
         edgeSignal = edgeSignal ? humanizeCitations(edgeSignal, newsSources, cerebroSources) : edgeSignal;
         keyFactors = keyFactors.map((f) => humanizeCitations(f, newsSources, cerebroSources));
         if (watchFor) watchFor = humanizeCitations(watchFor, newsSources, cerebroSources);
+        if (contexto) contexto = humanizeCitations(contexto, newsSources, cerebroSources);
+        if (cenarios) cenarios = {
+          sim: humanizeCitations(cenarios.sim, newsSources, cerebroSources),
+          nao: humanizeCitations(cenarios.nao, newsSources, cerebroSources),
+        };
       } catch (e) {
         log.warn("[market-analyze] Claude analysis failed:", e instanceof Error ? e.message : e);
         analysis = `Mercado em ${probPct}% no ${platformName}. ${allArticles.length > 0 ? `${allArticles.length} artigos encontrados — análise IA temporariamente indisponível.` : "Sem notícias recentes localizadas para este mercado específico."}`;
@@ -191,7 +234,7 @@ Os artigos são numerados a partir de [1]. JSON exato (sem markdown):
     }
 
     const result = {
-      analysis, keyFactors, watchFor, biasAlert, newsRelevance,
+      analysis, contexto, cenarios, keyFactors, watchFor, biasAlert, newsRelevance,
       probabilityAssessment, edgeSignal,
       fairValue, edgePp, confidence, referenceClass,
       cerebroHits: cerebro.hits.length,

@@ -6,7 +6,7 @@ import { useParams, Link } from "wouter";
 import {
   ChevronLeft, BarChart2, TrendingUp, TrendingDown,
   Sparkles, Target, AlertTriangle, RefreshCw, Clock, BookOpen, Globe, CheckCircle,
-  ExternalLink, Newspaper,
+  ExternalLink, Newspaper, GitBranch,
 } from "lucide-react";
 import AnimatedSection from "@/components/AnimatedSection";
 import MercadosTabs from "@/components/MercadosTabs";
@@ -373,6 +373,18 @@ export default function MarketDetail() {
                       </div>
                     )}
 
+                    {/* Contexto: o assunto, para quem chegou agora. Vem ANTES da
+                        análise de propósito — quem não sabe do que se trata não
+                        aproveita nada do que vem depois. */}
+                    {aiAnalysis.contexto && (
+                      <div className="p-4 rounded-lg bg-secondary/20 border border-border/20">
+                        <p className="text-[10px] font-semibold text-foreground/60 uppercase tracking-wider mb-2 flex items-center gap-1">
+                          <BookOpen className="w-3 h-3" />Entenda o assunto
+                        </p>
+                        <p className="text-sm text-muted-foreground leading-relaxed">{aiAnalysis.contexto}</p>
+                      </div>
+                    )}
+
                     {/* Main analysis */}
                     <div className="p-4 rounded-lg bg-neon-blue/5 border border-neon-blue/15">
                       <p className="text-[10px] font-semibold text-neon-blue/80 uppercase tracking-wider mb-2 flex items-center gap-1 flex-wrap">
@@ -401,6 +413,27 @@ export default function MarketDetail() {
                             </li>
                           ))}
                         </ul>
+                      </div>
+                    )}
+
+                    {/* Cenários: o que tem que acontecer de cada lado. Lado a lado
+                        porque a comparação é o ponto — ver só um sugeriria que
+                        aquele desfecho é o provável. */}
+                    {aiAnalysis.cenarios && (
+                      <div>
+                        <p className="text-[10px] font-semibold text-foreground/60 uppercase tracking-wider mb-2 flex items-center gap-1">
+                          <GitBranch className="w-3 h-3" />O que decide
+                        </p>
+                        <div className="grid sm:grid-cols-2 gap-3">
+                          <div className="p-3 rounded-lg bg-positive/5 border border-positive/20">
+                            <p className="text-[10px] font-semibold text-positive/80 uppercase tracking-wider mb-1">Para dar SIM</p>
+                            <p className="text-sm text-muted-foreground leading-relaxed">{aiAnalysis.cenarios.sim}</p>
+                          </div>
+                          <div className="p-3 rounded-lg bg-negative/5 border border-negative/20">
+                            <p className="text-[10px] font-semibold text-negative/80 uppercase tracking-wider mb-1">Para dar NÃO</p>
+                            <p className="text-sm text-muted-foreground leading-relaxed">{aiAnalysis.cenarios.nao}</p>
+                          </div>
+                        </div>
                       </div>
                     )}
 

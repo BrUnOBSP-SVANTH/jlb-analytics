@@ -211,6 +211,8 @@ export function MarketAnalysis({ item }: { item: TrendingItem }) {
 // Shapes retornados pelos dois endpoints de análise
 interface MarketAnalysisResult {
   analysis: string;
+  contexto?: string | null;
+  cenarios?: { sim: string; nao: string } | null;
   keyFactors: string[];
   watchFor?: string;
   biasAlert?: string | null;
@@ -419,6 +421,15 @@ export function NewsAnalysisPanel({ item }: { item: TrendingItem }) {
               )}
             </div>
           )}
+          {/* O assunto, para quem chegou agora — antes da análise, porque quem
+              não sabe do que se trata não aproveita o que vem depois. */}
+          {result.contexto && (
+            <div className="p-3 rounded-lg bg-secondary/20 border border-border/20">
+              <p className="text-[10px] font-semibold text-foreground/60 uppercase tracking-wider mb-1.5">Entenda o assunto</p>
+              <p className="text-xs text-muted-foreground leading-relaxed">{result.contexto}</p>
+            </div>
+          )}
+
           {/* AI analysis */}
           <div className="p-3 rounded-lg bg-neon-blue/5 border border-neon-blue/15">
             <p className="text-[10px] font-semibold text-neon-blue/80 uppercase tracking-wider mb-1.5 flex items-center gap-1">
@@ -441,6 +452,19 @@ export function NewsAnalysisPanel({ item }: { item: TrendingItem }) {
                   </li>
                 ))}
               </ul>
+            </div>
+          )}
+
+          {result.cenarios && (
+            <div className="grid grid-cols-2 gap-2">
+              <div className="p-2.5 rounded-lg bg-positive/5 border border-positive/20">
+                <p className="text-[9px] font-semibold text-positive/80 uppercase tracking-wider mb-1">Para dar SIM</p>
+                <p className="text-xs text-muted-foreground leading-relaxed">{result.cenarios.sim}</p>
+              </div>
+              <div className="p-2.5 rounded-lg bg-negative/5 border border-negative/20">
+                <p className="text-[9px] font-semibold text-negative/80 uppercase tracking-wider mb-1">Para dar NÃO</p>
+                <p className="text-xs text-muted-foreground leading-relaxed">{result.cenarios.nao}</p>
+              </div>
             </div>
           )}
 
