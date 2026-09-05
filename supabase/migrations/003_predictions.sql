@@ -53,19 +53,23 @@ CREATE INDEX IF NOT EXISTS predictions_resolved_idx ON public.predictions(user_i
 -- ─── Row Level Security ───────────────────────────────────────────────────
 ALTER TABLE public.predictions ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "predictions_select_own" ON public.predictions;
 CREATE POLICY "predictions_select_own"
   ON public.predictions FOR SELECT
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "predictions_insert_own" ON public.predictions;
 CREATE POLICY "predictions_insert_own"
   ON public.predictions FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "predictions_update_own" ON public.predictions;
 CREATE POLICY "predictions_update_own"
   ON public.predictions FOR UPDATE
   USING (auth.uid() = user_id)
   WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "predictions_delete_own" ON public.predictions;
 CREATE POLICY "predictions_delete_own"
   ON public.predictions FOR DELETE
   USING (auth.uid() = user_id);

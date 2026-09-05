@@ -31,19 +31,23 @@ CREATE TRIGGER positions_updated_at
 -- 3. Row Level Security — each user sees only their own positions
 ALTER TABLE public.positions ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can view own positions" ON public.positions;
 CREATE POLICY "Users can view own positions"
   ON public.positions FOR SELECT
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can insert own positions" ON public.positions;
 CREATE POLICY "Users can insert own positions"
   ON public.positions FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can update own positions" ON public.positions;
 CREATE POLICY "Users can update own positions"
   ON public.positions FOR UPDATE
   USING (auth.uid() = user_id)
   WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can delete own positions" ON public.positions;
 CREATE POLICY "Users can delete own positions"
   ON public.positions FOR DELETE
   USING (auth.uid() = user_id);

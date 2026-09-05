@@ -53,6 +53,20 @@ CREATE TABLE IF NOT EXISTS public.paper_bets (
   )
 );
 
+-- Rede de segurança: se a tabela foi criada antes desta versão do arquivo, o
+-- CREATE TABLE acima é ignorado por inteiro e a constraint de coerência não
+-- entraria. Aqui ela é garantida de qualquer jeito.
+DO $$
+BEGIN
+  ALTER TABLE public.paper_bets ADD CONSTRAINT paper_bets_liquidacao_coerente CHECK (
+    (resolved = false AND outcome IS NULL AND payout IS NULL AND settled_at IS NULL)
+    OR
+    (resolved = true  AND outcome IS NOT NULL AND payout IS NOT NULL)
+  );
+EXCEPTION
+  WHEN duplicate_object THEN NULL;  -- já existe: nada a fazer
+END $$;
+
 -- Uma aposta por lado por mercado: a tela mostra a posição, não um extrato de
 -- ordens. Sem isto, "apostar de novo" viraria linhas duplicadas e o usuário
 -- perderia a noção de quanto tem exposto naquele evento.
@@ -71,16 +85,22 @@ CREATE INDEX IF NOT EXISTS paper_bets_pendentes_idx
 -- ─── Row Level Security ───────────────────────────────────────────────────
 ALTER TABLE public.paper_bets ENABLE ROW LEVEL SECURITY;
 
+-- Cada policy vem precedida de DROP IF EXISTS porque o Postgres não tem
+-- CREATE POLICY IF NOT EXISTS: rodar o arquivo duas vezes daria erro 42710 e
+-- pararia a migration no meio. Mesmo padrão de 022 e 026.
+DROP POLICY IF EXISTS "paper_bets_select_own" ON public.paper_bets;
 CREATE POLICY "paper_bets_select_own"
   ON public.paper_bets FOR SELECT
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "paper_bets_insert_own" ON public.paper_bets;
 CREATE POLICY "paper_bets_insert_own"
   ON public.paper_bets FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
 -- Apagar só a própria, e só enquanto ABERTA: desfazer aposta já resolvida seria
 -- reescrever o histórico — some justamente a perda que a pessoa não gostou.
+DROP POLICY IF EXISTS "paper_bets_delete_own_aberta" ON public.paper_bets;
 CREATE POLICY "paper_bets_delete_own_aberta"
   ON public.paper_bets FOR DELETE
   USING (auth.uid() = user_id AND resolved = false);

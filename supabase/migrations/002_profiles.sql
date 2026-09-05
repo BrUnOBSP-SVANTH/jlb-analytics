@@ -104,12 +104,14 @@ CREATE TRIGGER on_auth_user_created
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 
 -- Usuário lê apenas o próprio perfil
+DROP POLICY IF EXISTS "profiles_select_own" ON public.profiles;
 CREATE POLICY "profiles_select_own"
   ON public.profiles FOR SELECT
   USING (auth.uid() = id);
 
 -- Usuário atualiza apenas campos não-sensíveis do próprio perfil
 -- (plan, stripe_*, skill_score são atualizados só pelo backend via service_role)
+DROP POLICY IF EXISTS "profiles_update_own" ON public.profiles;
 CREATE POLICY "profiles_update_own"
   ON public.profiles FOR UPDATE
   USING (auth.uid() = id)

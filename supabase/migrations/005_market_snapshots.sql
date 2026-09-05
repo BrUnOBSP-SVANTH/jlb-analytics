@@ -32,6 +32,7 @@ CREATE INDEX IF NOT EXISTS market_snapshots_category_idx ON public.market_snapsh
 
 -- Leitura pública — dados de mercado não são sensíveis
 ALTER TABLE public.market_snapshots ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "snapshots_public_read" ON public.market_snapshots;
 CREATE POLICY "snapshots_public_read"
   ON public.market_snapshots FOR SELECT USING (true);
 
@@ -67,6 +68,7 @@ CREATE TRIGGER ai_credits_monthly_reset
   FOR EACH ROW EXECUTE FUNCTION public.reset_monthly_credits();
 
 ALTER TABLE public.ai_credits ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "credits_own" ON public.ai_credits;
 CREATE POLICY "credits_own"
   ON public.ai_credits FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 
@@ -94,6 +96,7 @@ CREATE INDEX IF NOT EXISTS ai_usage_ep_idx     ON public.ai_usage (endpoint, cre
 
 ALTER TABLE public.ai_usage ENABLE ROW LEVEL SECURITY;
 -- Usuário vê só o próprio histórico; service key acessa tudo
+DROP POLICY IF EXISTS "usage_own_read" ON public.ai_usage;
 CREATE POLICY "usage_own_read"
   ON public.ai_usage FOR SELECT USING (auth.uid() = user_id);
 

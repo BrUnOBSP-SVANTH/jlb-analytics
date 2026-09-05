@@ -72,12 +72,14 @@ CREATE INDEX IF NOT EXISTS cerebro_analysis_wiki_type_idx
 
 ALTER TABLE public.cerebro_articles ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "cerebro_articles_public_read" ON public.cerebro_articles;
 CREATE POLICY "cerebro_articles_public_read"
   ON public.cerebro_articles FOR SELECT
   USING (status = 'active');
 
 ALTER TABLE public.cerebro_analysis ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "cerebro_analysis_public_read" ON public.cerebro_analysis;
 CREATE POLICY "cerebro_analysis_public_read"
   ON public.cerebro_analysis FOR SELECT
   USING (status = 'active');
