@@ -335,6 +335,59 @@ router.post("/analyze/stream", aiCreditsMiddleware, async (req, res) => {
  * devolve só os números: devolve o VEREDITO sobre haver ou não tendência, e ele
  * é calculado comparando os intervalos, não as porcentagens.
  */
+/**
+ * Transparência da amostra — "vocês não mostram só as que acertaram?".
+ *
+ * É a objeção mais justa que um leitor pode ter a qualquer track record, e o site
+ * não a respondia: publicava a taxa de acerto das RESOLVIDAS sem dizer quantas
+ * ainda estão em aberto nem se as duas populações se parecem.
+ *
+ * Duas coisas provam que não há escolha a dedo:
+ *  1. o número de previsões em aberto fica à vista (elas serão pontuadas quando
+ *     resolverem, quer ajudem quer atrapalhem);
+ *  2. a DIFICULDADE das duas populações é comparável. Um mercado a 50% é uma
+ *     moeda; um a 95% é quase certeza. Se só os fáceis tivessem resolvido, a
+ *     distância média do 50% seria bem maior nas resolvidas — e não é.
+ */
+router.get("/sample-transparency", async (_req, res) => {
+  const cached = getCache<object>("ai-sample-transp");
+  if (cached) return res.json(cached);
+  if (!SUPABASE_URL || !SUPABASE_KEY) return res.json({ available: false });
+  try {
+    const rows = await buscarTudo<{ market_id: string; market_prob: number; resolved: boolean; outcome: boolean | null; forecast_date: string; created_at: string }>(
+      "ai_forecasts",
+      "select=market_id,market_prob,resolved,outcome,forecast_date,created_at&order=created_at.asc",
+    );
+    if (rows.length === 0) return res.json({ available: false });
+    const d = dedupPorMercado(rows);
+    const resolvidos = d.filter((x) => x.resolved && x.outcome !== null);
+    const emAberto = d.filter((x) => !x.resolved);
+    if (resolvidos.length === 0) return res.json({ available: false });
+
+    // Distância do 50% = o quanto o mercado já "sabe". Perto de 50 é moeda;
+    // perto de 0 ou 100 é quase certeza. Comparar as duas médias responde se
+    // resolveu primeiro o que era fácil.
+    const dist = (v: typeof d) => v.length ? v.reduce((s, x) => s + Math.abs(Number(x.market_prob) - 50), 0) / v.length : null;
+    const distResolvidos = dist(resolvidos);
+    const distAbertos = dist(emAberto);
+    const diferenca = distResolvidos !== null && distAbertos !== null ? Math.abs(distResolvidos - distAbertos) : null;
+
+    const resultado = {
+      available: true,
+      total: d.length,
+      resolvidos: resolvidos.length,
+      emAberto: emAberto.length,
+      dificuldadeResolvidos: distResolvidos !== null ? Number(distResolvidos.toFixed(1)) : null,
+      dificuldadeAbertos: distAbertos !== null ? Number(distAbertos.toFixed(1)) : null,
+      // Até 5pp de diferença tratamos como populações comparáveis. Acima disso, o
+      // honesto é avisar que o que já resolveu pode não representar o todo.
+      perfilComparavel: diferenca !== null ? diferenca <= 5 : null,
+    };
+    setCache("ai-sample-transp", resultado, 900);
+    res.json(resultado);
+  } catch { res.json({ available: false }); }
+});
+
 router.get("/evolution", async (_req, res) => {
   const cached = getCache<object>("ai-evolution");
   if (cached) return res.json(cached);

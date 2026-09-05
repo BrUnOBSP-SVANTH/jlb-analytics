@@ -20,6 +20,7 @@ import { Termo } from "@/components/Termo";
 import { CurvaCalibracao } from "@/components/previsao/CurvaCalibracao";
 import { PorTema } from "@/components/previsao/PorTema";
 import { Evolucao } from "@/components/previsao/Evolucao";
+import { AmostraHonesta } from "@/components/previsao/AmostraHonesta";
 import {
   ShieldCheck, ClipboardList, Scale, Layers, ArrowRight, Sparkles, BookOpen,
 } from "lucide-react";
@@ -99,6 +100,11 @@ export default function TrackRecord() {
         {/* ── Estamos melhorando? (o veredito vem antes da tabela, de propósito) ── */}
         <AnimatedSection>
           <Evolucao />
+        </AnimatedSection>
+
+        {/* ── A objeção mais justa: "vocês não mostram só as que acertaram?" ── */}
+        <AnimatedSection>
+          <AmostraHonesta />
         </AnimatedSection>
 
         {/* ── De qual modelo veio o número (a manchete soma provedores diferentes) ── */}
