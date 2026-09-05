@@ -16,6 +16,7 @@ import { getMarkets } from "@/lib/marketsCache";
 import { maybeAuthGate } from "@/lib/upgrade";
 import { useSEO } from "@/hooks/useSEO";
 import type { MarketBasic, CerebroArticleSnippet, AiResult, CommunityForecast } from "@/components/marketDetail/types";
+import { apiFetch } from "@/lib/api";
 
 export function useMarketDetail(marketId: string) {
   const source = marketId.startsWith("kalshi-") ? "kalshi"
@@ -205,7 +206,7 @@ export function useMarketDetail(marketId: string) {
     setLoadingAi(true);
     setAiError(null);
     try {
-      const res = await fetch("/api/ai/analyze", {
+      const res = await apiFetch("/api/ai/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

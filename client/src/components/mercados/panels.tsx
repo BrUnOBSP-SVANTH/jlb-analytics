@@ -12,6 +12,7 @@ import { type TrendingItem, formatVolume, formatOdds } from "@/lib/trending";
 import { awardPoints } from "@/lib/userProgress";
 import { maybeAuthGate } from "@/lib/upgrade";
 import { VolumeTrend } from "@/components/mercados/cards";
+import { apiFetch } from "@/lib/api";
 
 function calcEV(yourProb: number, marketProb: number): number {
   if (marketProb <= 0 || marketProb >= 1) return 0;
@@ -288,7 +289,7 @@ export function NewsAnalysisPanel({ item }: { item: TrendingItem }) {
     try {
       let data: AnyAnalysisResult;
       if (isReddit) {
-        const res = await fetch("/api/ai/reddit-context", {
+        const res = await apiFetch("/api/ai/reddit-context", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -306,7 +307,7 @@ export function NewsAnalysisPanel({ item }: { item: TrendingItem }) {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         data = await res.json() as RedditContextResult;
       } else {
-        const res = await fetch("/api/ai/analyze", {
+        const res = await apiFetch("/api/ai/analyze", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ title: item.title, yesProb: item.yesProb ?? 0.5, source: item.source }),

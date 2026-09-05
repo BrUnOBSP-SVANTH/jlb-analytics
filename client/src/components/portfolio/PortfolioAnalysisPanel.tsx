@@ -10,6 +10,7 @@ import { RefreshCw, Sparkles } from "lucide-react";
 import { maybeAuthGate } from "@/lib/upgrade";
 import type { ApostaBanca } from "@/lib/banca";
 import { valorDeMercado } from "@shared/banca";
+import { apiFetch } from "@/lib/api";
 
 interface PortfolioAnalysisResult {
   analysis: string;
@@ -40,7 +41,7 @@ export function PortfolioAnalysisPanel({ apostas }: { apostas: ApostaBanca[] }) 
         // Lucro no papel: o que a aposta vale hoje menos o que ela custou.
         pnl: a.precoAtual === undefined ? null : valorDeMercado(a) - a.valor,
       }));
-      const res = await fetch("/api/ai/portfolio-analysis", {
+      const res = await apiFetch("/api/ai/portfolio-analysis", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ positions: payload }),

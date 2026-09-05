@@ -10,6 +10,7 @@ import { addPrediction } from "@/lib/predictions";
 import { awardPoints } from "@/lib/userProgress";
 import { track } from "@/lib/analytics";
 import { maybeAuthGate } from "@/lib/upgrade";
+import { apiFetch } from "@/lib/api";
 
 // ── EdgeCalculator (inline) ────────────────────────────────────────────────────
 
@@ -46,7 +47,7 @@ export function EdgeCalculator({ marketProb, marketId, question }: { marketProb:
     setLoadingExplain(true);
     setExplainError(null);
     try {
-      const res = await fetch("/api/ai/explain-edge", {
+      const res = await apiFetch("/api/ai/explain-edge", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ title: question, marketProb, userProb: yourProb }),

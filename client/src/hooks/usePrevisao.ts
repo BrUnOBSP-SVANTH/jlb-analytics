@@ -19,6 +19,7 @@ import { awardPoints } from "@/lib/userProgress";
 import { useAuth } from "@/contexts/AuthContext";
 import { fetchHotMarkets, relatedMarkets, type HotMarket } from "@/lib/previsaoMarkets";
 import type { Domain, Horizon, PredictResult } from "@/components/previsao/types";
+import { apiFetch } from "@/lib/api";
 
 export function usePrevisao() {
   useSEO("Previsão Guiada por IA", `IA com método Superforecaster: base rate, decomposição de Fermi e ${MODEL_COUNT} modelos econométricos. Previsões calibradas para esportes, economia, política e mais.`);
@@ -131,7 +132,7 @@ export function usePrevisao() {
       setPhase(null);
       try {
         // Streaming SSE: mostra as fases REAIS (contexto → modelo/protocolo → resultado)
-        const res = await fetch("/api/ai/model-predict/stream", {
+        const res = await apiFetch("/api/ai/model-predict/stream", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           signal: controller.signal,

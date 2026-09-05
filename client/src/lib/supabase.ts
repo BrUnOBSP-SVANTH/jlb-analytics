@@ -19,9 +19,31 @@ if (!supabaseUrl || !supabaseAnonKey) {
   );
 }
 
+/**
+ * As opções de sessão vão EXPLÍCITAS, mesmo sendo o padrão da biblioteca hoje.
+ * A sessão do usuário é coisa séria demais para depender de um default que uma
+ * atualização pode mudar em silêncio — e o sintoma seria o pior tipo: gente
+ * deslogando sozinha, sem erro nenhum no console.
+ *
+ *   persistSession    → a sessão sobrevive a fechar a aba e o navegador.
+ *   autoRefreshToken  → renova antes de vencer; aba aberta o dia todo continua logada.
+ *   detectSessionInUrl→ conclui o login social/link de e-mail que volta pela URL.
+ *
+ * Guardamos no localStorage do navegador, não em cookie. Para uma aplicação que
+ * roda toda no cliente é o certo: o token vai no cabeçalho `Authorization` das
+ * chamadas (ver lib/api.ts), então cookie não traria segurança nem persistência
+ * a mais — traria só um caminho a mais para o mesmo dado.
+ */
 export const supabase = createClient(
   supabaseUrl || "https://placeholder.supabase.co",
-  supabaseAnonKey || "placeholder"
+  supabaseAnonKey || "placeholder",
+  {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true,
+    },
+  }
 );
 
 // ─── Database types ────────────────────────────────────────────────────────

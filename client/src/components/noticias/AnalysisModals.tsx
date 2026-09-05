@@ -12,6 +12,7 @@ import {
 import { useModalA11y } from "@/hooks/useModalA11y";
 import { type Article, timeAgoISO } from "@/lib/noticiasShared";
 import { maybeAuthGate } from "@/lib/upgrade";
+import { apiFetch } from "@/lib/api";
 
 
 // ── Article Cross-Reference types ─────────────────────────────────────────
@@ -100,7 +101,7 @@ export function ArticleDetailModal({ article, onClose }: ArticleDetailModalProps
       setError(null);
       setResult(null);
       try {
-        const res = await fetch("/api/ai/article-crossref", {
+        const res = await apiFetch("/api/ai/article-crossref", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ title: article.title, description: article.description }),
