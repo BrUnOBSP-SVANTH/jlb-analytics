@@ -8,7 +8,7 @@ import { callClaude } from "./anthropic.ts";
 import { extractJson } from "./extractJson.ts";
 import { embedText, embeddingsEnabled } from "./embeddings.ts";
 
-interface CerebroHit { title: string; summary: string; source: string; kind: "síntese" | "artigo"; date?: string; _semantic?: boolean; _sim?: number }
+interface CerebroHit { title: string; summary: string; source: string; category?: string; kind: "síntese" | "artigo"; date?: string; _semantic?: boolean; _sim?: number }
 
 const STOPWORDS = new Set([
   // PT
@@ -25,7 +25,96 @@ const STOPWORDS = new Set([
  * mercado (Irã, Fed, Trump) e o sinal mais forte de relevância.
  * Exportada para teste.
  */
+/**
+ * A que área do acervo um mercado pertence. Serve para a regra do confronto:
+ * "Spirit" só vale sozinho dentro de e-sports; fora dali é companhia aérea.
+ *
+ * Os nomes das categorias divergem dos dois lados por história — o mercado vem
+ * das plataformas em inglês ("esports", "sports"), o artigo vem do coletor em
+ * português ("esports", "esportes"). O mapa reconcilia os dois sem renomear
+ * nada, que quebraria dados já gravados.
+ */
+const DOMINIOS: Record<string, string[]> = {
+  esports: ["esports", "games"],
+  sports:  ["esportes"],
+  tennis:  ["esportes"],
+  soccer:  ["esportes"],
+  football:["esportes"],
+  crypto:  ["cripto", "crypto"],
+  bitcoin: ["cripto", "crypto"],
+  ethereum:["cripto", "crypto"],
+  solana:  ["cripto", "crypto"],
+  xrp:     ["cripto", "crypto"],
+  culture: ["cultura"],
+  movies:  ["cultura"],
+  finance: ["macro", "mercados", "economia", "mercados-globais"],
+  economics:["macro", "mercados", "economia", "mercados-globais"],
+  politics:["política", "politica"],
+};
+
+/** As categorias de artigo que contam como "mesma área" deste mercado. */
+export function dominioDoMercado(categoria?: string): Set<string> | null {
+  const chave = (categoria ?? "").toLowerCase().trim();
+  const lista = DOMINIOS[chave];
+  return lista ? new Set(lista) : null;
+}
+
+/**
+ * Mercado de confronto ("Counter-Strike: Spirit vs Team Falcons") tem uma
+ * estrutura que o extrator genérico desperdiça: o que importa é quem está de um
+ * lado e do outro do "vs" — o resto é rótulo do jogo, do torneio ou do formato.
+ *
+ * MEDIDO em 05/09: o título completo devolvia ZERO artigos, e o MESMO título sem
+ * o prefixo "Counter-Strike:" devolvia dois — o acervo tinha "Spirit soar into
+ * semi-finals over FURIA" e "MOUZ secure semi-final berth over Falcons" o tempo
+ * todo. A palavra "Strike" entrava como quarto termo, ocupava a vaga de uma
+ * entidade e afundava a busca. O usuário via "não temos notícias sobre este
+ * confronto" com a notícia guardada no nosso próprio banco.
+ *
+ * Devolve os nomes dos dois lados, ou `null` quando o título não é confronto.
+ */
+export function entidadesDoConfronto(text: string): string | null {
+  // Tira o prefixo do jogo/liga antes dos dois-pontos ("CS2:", "LoL:", "NBA:").
+  const semPrefixo = text.replace(/^[^:]{1,28}:\s*/, "");
+  // Separa o confronto (antes do travessão) do torneio (depois). O formato entre
+  // parênteses — (BO5), (MD3) — sai do confronto por não identificar ninguém.
+  const partesTravessao = semPrefixo.split(/\s+[-–—]\s+/);
+  const miolo = partesTravessao[0].replace(/\([^)]*\)/g, " ");
+  const cauda = partesTravessao.slice(1).join(" ");
+
+  const partes = miolo.split(/\s+(?:vs\.?|versus|x)\s+/i);
+  if (partes.length !== 2) return null;
+
+  // "Team Spirit" e "Spirit" são o mesmo time; a palavra genérica "Team" sozinha
+  // casa qualquer coisa, então sai. O mesmo vale para "Esports"/"Club"/"FC".
+  const GENERICOS = /^(team|esports?|club|fc|sc|gaming|the)$/i;
+  const nomes = partes
+    .flatMap((lado) => lado.trim().split(/\s+/))
+    .filter((w) => w.length >= 2 && !GENERICOS.test(w))
+    .map((w) => w.replace(/[^a-zA-ZÀ-ú0-9.]/g, ""))
+    .filter(Boolean);
+
+  // Menos de dois nomes não é confronto identificável — melhor deixar o extrator
+  // genérico tentar do que forçar uma busca com um termo só.
+  if (nomes.length < 2) return null;
+
+  // A liga entra JUNTO com os times, não no lugar deles. Ela vive na cauda,
+  // depois do travessão ("… - LCK Finals"), e é um termo dos mais distintivos
+  // que existem: artigo do torneio é assunto do confronto mesmo sem citar os
+  // dois times. Só sigla em caixa alta — "Finals" sozinho casaria NBA Finals.
+  const siglas = cauda
+    .split(/[^A-Za-z0-9]+/)
+    .filter((t) => /^[A-Z]{2,5}$/.test(t) && !/^(BO|MD)$/.test(t));
+
+  return Array.from(new Set([...nomes, ...siglas])).slice(0, 4).join(" ");
+}
+
 export function topKeywords(text: string, n = 4): string {
+  // Confronto tem regra própria: os dois lados valem mais que qualquer outro
+  // token do título.
+  const confronto = entidadesDoConfronto(text);
+  if (confronto) return confronto;
+
   const tokens = text.replace(/[^a-zA-ZÀ-ú0-9 ]/g, " ").split(/\s+/).filter(Boolean);
   const seen = new Set<string>();
   const proper: string[] = [];
@@ -211,7 +300,7 @@ async function queryCerebro(kw: string, op: "plfts" | "wfts" = "plfts"): Promise
 
   const [synthRes, artRes] = await Promise.allSettled([
     fetch(`${SUPABASE_URL}/rest/v1/cerebro_analyses?fts=${op}(portuguese).${enc}&status=eq.active&select=title,content,wiki_date&order=wiki_date.desc&limit=3`, { headers, signal: AbortSignal.timeout(6_000) }),
-    fetch(`${SUPABASE_URL}/rest/v1/cerebro_articles?fts=${op}(portuguese).${enc}&status=eq.active&select=title,summary,source,published_at&order=published_at.desc&limit=6`, { headers, signal: AbortSignal.timeout(6_000) }),
+    fetch(`${SUPABASE_URL}/rest/v1/cerebro_articles?fts=${op}(portuguese).${enc}&status=eq.active&select=title,summary,source,category,published_at&order=published_at.desc&limit=6`, { headers, signal: AbortSignal.timeout(6_000) }),
   ]);
 
   const hits: CerebroHit[] = [];
@@ -220,8 +309,8 @@ async function queryCerebro(kw: string, op: "plfts" | "wfts" = "plfts"): Promise
     for (const r of rows) hits.push({ title: r.title, summary: (r.content ?? "").slice(0, 400), source: "Cerebro IA", kind: "síntese", date: r.wiki_date ?? undefined });
   }
   if (artRes.status === "fulfilled" && artRes.value.ok) {
-    const rows = await artRes.value.json() as Array<{ title: string; summary: string | null; source: string; published_at: string | null }>;
-    for (const r of rows) hits.push({ title: r.title, summary: (r.summary ?? "").slice(0, 250), source: r.source, kind: "artigo", date: r.published_at ?? undefined });
+    const rows = await artRes.value.json() as Array<{ title: string; summary: string | null; source: string; category: string | null; published_at: string | null }>;
+    for (const r of rows) hits.push({ title: r.title, summary: (r.summary ?? "").slice(0, 250), source: r.source, category: r.category ?? undefined, kind: "artigo", date: r.published_at ?? undefined });
   }
   return hits;
 }
@@ -321,6 +410,9 @@ export async function fetchCerebroContext(
   /** Quando o mercado fecha (epoch ms). Só é usado na precificação, para a janela
    *  de notícia acompanhar o relógio do mercado — ver `janelaDeNoticia`. */
   fechaEmMs?: number,
+  /** Categoria do mercado (esports, sports, crypto...). Destrava a regra do
+   *  confronto: sem ela, não há como saber se um artigo é da mesma área. */
+  categoriaMercado?: string,
 ): Promise<{ context: string; hits: CerebroHit[] }> {
   if (!SUPABASE_URL || !SUPABASE_KEY) return { context: "", hits: [] };
   const original = `${title} ${description ?? ""}`.trim();
@@ -338,6 +430,8 @@ export async function fetchCerebroContext(
 
     const kw = topKeywords(searchText);
     if (!kw) return { context: "", hits: [] };
+    // Guardado aqui porque a régua de relevância lá embaixo depende disto.
+    const confronto = entidadesDoConfronto(searchText);
 
     // Busca semântica em PARALELO com a cascata FTS (fallback gracioso: [] sem embeddings).
     const semanticP = semanticCerebro(searchText);
@@ -400,8 +494,26 @@ export async function fetchCerebroContext(
     //  · FTS → sempre precisa de 2+ termos distintivos, porque uma palavra comum
     //    cola qualquer coisa (a pergunta sobre o Lula trazia síntese de cripto,
     //    "El Niño navio" e "Discord Justiça Federal", cada um tocando UM termo).
-    const relevant = (h: CerebroHit) =>
-      (h._semantic && (h._sim ?? 0) >= ALTA_CONFIANCA) || overlapsQuery(h, words);
+    // EXCEÇÃO DO CONFRONTO. A régua de "2+ termos distintivos" existe porque
+    // palavra comum cola qualquer coisa. Só que num confronto os termos SÃO os
+    // dois times — e o artigo mais valioso costuma falar de UM deles: "Spirit
+    // soar into semi-finals over FURIA" é notícia de primeira sobre o Spirit e
+    // não menciona o Falcons. Exigir os dois joga fora justamente a cobertura.
+    //
+    // Afrouxar sozinho seria pior: "Spirit" casa "Spirit Airlines" (temos um
+    // artigo assim, da Decrypt), e um mercado de CS2 receberia notícia de
+    // companhia aérea como contexto. Por isso o afrouxamento vem com trava de
+    // DOMÍNIO: um nome só basta, desde que o artigo seja da mesma área do
+    // mercado. A área do artigo é a categoria com que ele foi coletado.
+    const dominio = dominioDoMercado(categoriaMercado);
+    const umNomeBasta = confronto !== null && dominio !== null;
+    const relevant = (h: CerebroHit) => {
+      if (h._semantic && (h._sim ?? 0) >= ALTA_CONFIANCA) return true;
+      if (overlapsQuery(h, words)) return true;
+      if (!umNomeBasta || h.kind !== "artigo") return false;
+      const cat = (h.category ?? "").toLowerCase();
+      return dominio.has(cat) && matchCount(normText(`${h.title} ${h.summary}`), usefulTerms(words)) >= 1;
+    };
     const synth = rankHits(deduped.filter((h) => h.kind === "síntese"), words).filter(relevant);
     const ftsArts = rankHits(deduped.filter((h) => h.kind === "artigo" && !h._semantic), words).filter(relevant);
     // .filter(relevant) TAMBÉM aqui: antes o grupo semântico entrava inteiro sem

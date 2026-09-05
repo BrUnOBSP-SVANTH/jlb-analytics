@@ -212,6 +212,9 @@ export function useMarketDetail(marketId: string) {
         body: JSON.stringify({
           title: market.title, yesProb: market.yesProb, source: market.source,
           marketId: `${source}-${rawId}`, category: market.category,
+          // Alimentam a FICHA do mercado no servidor (relógio e liquidez) — é o
+          // que garante análise com substância mesmo sem notícia casada.
+          closeTime: market.endDate, volume: market.volume,
         }),
         signal: AbortSignal.timeout(50_000),
       });

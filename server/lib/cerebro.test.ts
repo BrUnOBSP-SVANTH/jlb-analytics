@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { topKeywords, looksEnglish, rankHits, dedupeByTitle, overlapsQuery, noticiaFresca, janelaDeNoticia } from "./cerebro.ts";
+import { topKeywords, looksEnglish, rankHits, dedupeByTitle, overlapsQuery, noticiaFresca, janelaDeNoticia, entidadesDoConfronto, dominioDoMercado } from "./cerebro.ts";
 
 describe("topKeywords", () => {
   it("prioriza substantivos próprios (entidades do mercado)", () => {
@@ -198,5 +198,66 @@ describe("janelaDeNoticia — a janela acompanha o relógio do mercado", () => {
     expect(janelaDeNoticia(undefined)).toBe(3);
     expect(janelaDeNoticia(daquiA(-5))).toBe(3);
     expect(janelaDeNoticia(NaN)).toBe(3);
+  });
+});
+
+describe("entidadesDoConfronto — o nome do jogo não pode roubar a vaga do time", () => {
+  // Bug real (05/09): "Counter-Strike: Spirit vs Team Falcons" devolvia ZERO
+  // artigos e a IA escrevia "não temos notícias sobre este confronto" — com as
+  // notícias no nosso próprio banco. "Strike" entrava como termo e afundava a busca.
+  it("descarta o prefixo do jogo e devolve os dois lados", () => {
+    expect(entidadesDoConfronto("Counter-Strike: Spirit vs Team Falcons")).toBe("Spirit Falcons");
+    expect(entidadesDoConfronto("CS2: Team Spirit vs Team Falcons")).toBe("Spirit Falcons");
+    expect(entidadesDoConfronto("LoL: T1 vs Gen.G")).toBe("T1 Gen.G");
+  });
+
+  it("descarta torneio depois do travessão e formato entre parênteses", () => {
+    expect(entidadesDoConfronto("Dota: Inner Circle (BO3) - EPL Masters")).toBeNull(); // sem "vs" não é confronto
+    // A liga (LCK) entra JUNTO com os times: artigo do torneio é assunto do
+    // confronto mesmo sem citar os dois. O formato (BO5) não, porque não
+    // identifica ninguém.
+    expect(entidadesDoConfronto("LoL: T1 vs Gen.G (BO5) - LCK Finals")).toBe("T1 Gen.G LCK");
+  });
+
+  it("tira palavras genéricas que casariam qualquer coisa", () => {
+    // "Team" sozinho casa qualquer título de esporte do acervo.
+    expect(entidadesDoConfronto("Team Spirit vs Team Falcons")).not.toMatch(/Team/);
+  });
+
+  it("aceita as outras formas de escrever confronto", () => {
+    expect(entidadesDoConfronto("Flamengo x Palmeiras")).toBe("Flamengo Palmeiras");
+    expect(entidadesDoConfronto("Alcaraz versus Sinner")).toBe("Alcaraz Sinner");
+  });
+
+  it("não é confronto: devolve null e deixa o extrator genérico trabalhar", () => {
+    expect(entidadesDoConfronto("Will the Fed cut rates in December?")).toBeNull();
+    expect(entidadesDoConfronto("Preço do BTC acima de 115 mil")).toBeNull();
+  });
+
+  it("topKeywords usa as entidades quando é confronto", () => {
+    expect(topKeywords("Counter-Strike: Spirit vs Team Falcons")).toBe("Spirit Falcons");
+    // E segue igual quando não é.
+    expect(topKeywords("mercado prevê que Trump vence eleição americana").split(" ")[0]).toBe("Trump");
+  });
+});
+
+describe("dominioDoMercado — a trava que impede o nome solto de virar ruído", () => {
+  // Sem a trava, "Spirit" casaria "Spirit Airlines" (temos esse artigo, da
+  // Decrypt) e um mercado de CS2 receberia notícia de companhia aérea.
+  it("e-sports só aceita artigo de e-sports/games", () => {
+    const d = dominioDoMercado("esports");
+    expect(d?.has("esports")).toBe(true);
+    expect(d?.has("cripto")).toBe(false);
+  });
+
+  it("reconcilia os nomes das duas pontas (mercado em inglês, artigo em português)", () => {
+    expect(dominioDoMercado("sports")?.has("esportes")).toBe(true);
+    expect(dominioDoMercado("bitcoin")?.has("cripto")).toBe(true);
+    expect(dominioDoMercado("politics")?.has("política")).toBe(true);
+  });
+
+  it("categoria desconhecida devolve null — e aí a regra estrita continua valendo", () => {
+    expect(dominioDoMercado("categoria-que-nao-existe")).toBeNull();
+    expect(dominioDoMercado(undefined)).toBeNull();
   });
 });

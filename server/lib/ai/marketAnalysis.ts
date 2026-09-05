@@ -3,6 +3,7 @@ import { getNewsForMarket } from "../news.ts";
 import { fetchCerebroContext, fetchMarketMomentum } from "../cerebro.ts";
 import { fetchBcbSerie } from "../bcb.ts";
 import { CATEGORY_BASE_RATES } from "../categoryRates.ts";
+import { montarFicha } from "./fichaMercado.ts";
 import { callClaude } from "../anthropic.ts";
 import { extractJson } from "../extractJson.ts";
 import { clampFairValue } from "./guardrails.ts";
@@ -12,7 +13,13 @@ import { humanizeCitations } from "../citations.ts";
 import { logAiForecast } from "../aiForecasts.ts";
 import { log } from "../log.ts";
 
-export interface AnalyzeParams { title: string; yesProb: number; source: string; description?: string; marketId?: string; category?: string }
+export interface AnalyzeParams {
+  title: string; yesProb: number; source: string;
+  description?: string; marketId?: string; category?: string;
+  /** Fechamento e volume alimentam a FICHA (relógio e liquidez). Opcionais: se a
+   *  tela não mandar, a ficha sai sem essas linhas — nunca vazia por causa disso. */
+  closeTime?: string | null; volume?: number;
+}
 export type PhaseEmit = (step: string, data?: Record<string, unknown>) => void;
 
 /**
@@ -22,7 +29,7 @@ export type PhaseEmit = (step: string, data?: Record<string, unknown>) => void;
  * um cronômetro adivinhado no cliente.
  */
 export async function runMarketAnalysis(p: AnalyzeParams, onPhase: PhaseEmit = () => {}): Promise<Record<string, unknown>> {
-  const { title, yesProb, source, description, marketId, category = "other" } = p;
+  const { title, yesProb, source, description, marketId, category = "other", closeTime, volume } = p;
   {
     const NEWS_API_KEY = process.env.NEWS_API_KEY ?? "";
     const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY ?? "";
@@ -36,13 +43,22 @@ export async function runMarketAnalysis(p: AnalyzeParams, onPhase: PhaseEmit = (
     // Notícias (NewsAPI) + Cerebro (base proprietária) + momentum (snapshots)
     const [newsResult, cerebro, momentum, ratesSettled] = await Promise.all([
       getNewsForMarket(title, NEWS_API_KEY, description, { maxTotal: 10 }),
-      fetchCerebroContext(title, description),
+      // A categoria destrava a regra do confronto no Cerebro: sem ela, um mercado
+      // "Spirit vs Falcons" não consegue provar que artigo de e-sports é do assunto.
+      fetchCerebroContext(title, description, false, undefined, category),
       fetchMarketMomentum(marketId, source),
       Promise.allSettled([fetchBcbSerie(432), fetchBcbSerie(13522)]),
     ]);
     const allArticles = newsResult.articles;
     const selicVal = ratesSettled[0].status === "fulfilled" ? ratesSettled[0].value : null;
     const ipcaVal  = ratesSettled[1].status === "fulfilled" ? ratesSettled[1].value : null;
+    // A FICHA é o piso da análise: sai de dado que sempre existe (preço, relógio,
+    // liquidez, nosso histórico da categoria). É o que impede a página de sair em
+    // branco quando notícia e Cerebro vêm vazios.
+    const ficha = await montarFicha({
+      titulo: title, precoPct: probPct, categoria: category, plataforma: platformName,
+      fechaEm: closeTime, volume, trajetoria: momentum || undefined,
+    });
     onPhase("sources_done", { articles: allArticles.length, cerebroHits: cerebro.hits.length, hasMomentum: momentum.length > 0 });
     onPhase("analyzing");
 
@@ -80,6 +96,9 @@ ${articlesBlock}
 ═══ FONTE 2: CEREBRO — BASE DE CONHECIMENTO PROPRIETÁRIA JLB ${cerebro.hits.length > 0 ? `(${cerebro.hits.length})` : "(sem correspondências)"} ═══
 ${cerebro.context || "Nenhuma síntese ou artigo curado relevante encontrado."}
 
+═══ FONTE 3: FICHA DO MERCADO — dados nossos, sempre disponíveis ═══
+${ficha}
+
 EXECUTE O PROTOCOLO (em ordem):
 
 1. FILTRO — dos artigos de notícias [N], selecione apenas os DIRETAMENTE relevantes (mesmo ator/evento/região). Rejeite coincidência de palavras-chave.
@@ -100,6 +119,14 @@ EXECUTE O PROTOCOLO (em ordem):
    - confidence: "alta" só com notícias fortes + Cerebro convergindo; "baixa" se fontes fracas/ausentes
 
 5. MONITORAMENTO + VIÉS cognitivo dominante neste mercado.
+
+REGRA INEGOCIÁVEL — NUNCA ENTREGUE ANÁLISE VAZIA. É PROIBIDO escrever que "não
+há notícias", "não temos dados" ou "não há informações sobre este confronto" e
+parar por aí. A FONTE 3 existe sempre e é sua: o que o preço paga, o relógio do
+mercado, a liquidez, a trajetória e o nosso histórico medido da categoria. Se as
+notícias vierem vazias, diga isso em UMA oração e use o resto do parágrafo para o
+que a ficha traz — o leitor tem que sair sabendo algo concreto que não sabia,
+sempre. Não invente fato para preencher: a ficha já é fato.
 
 ${INJECTION_GUARD}
 
