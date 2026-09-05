@@ -3,7 +3,7 @@ import { getNewsForMarket } from "../news.ts";
 import { fetchCerebroContext, fetchMarketMomentum } from "../cerebro.ts";
 import { fetchBcbSerie } from "../bcb.ts";
 import { CATEGORY_BASE_RATES } from "../categoryRates.ts";
-import { montarFicha } from "./fichaMercado.ts";
+import { montarFicha, analiseDeEmergencia } from "./fichaMercado.ts";
 import { callClaude } from "../anthropic.ts";
 import { extractJson } from "../extractJson.ts";
 import { clampFairValue } from "./guardrails.ts";
@@ -217,7 +217,21 @@ Os artigos são numerados a partir de [1]. JSON exato (sem markdown):
         };
       } catch (e) {
         log.warn("[market-analyze] Claude analysis failed:", e instanceof Error ? e.message : e);
-        analysis = `Mercado em ${probPct}% no ${platformName}. ${allArticles.length > 0 ? `${allArticles.length} artigos encontrados — análise IA temporariamente indisponível.` : "Sem notícias recentes localizadas para este mercado específico."}`;
+        // A REGRA DE "NUNCA ANÁLISE VAZIA" VALE TAMBÉM COM A IA FORA DO AR.
+        //
+        // Aqui ficava um texto de 93 caracteres ("Sem notícias recentes
+        // localizadas para este mercado específico") — justamente a página em
+        // branco que o produto não aceita. E não é hipótese: em 05/09 os três
+        // provedores estavam esgotados ao mesmo tempo (Anthropic sem crédito,
+        // Gemini em 429, Groq no teto diário), então TODA análise do site caía
+        // aqui. O dia em que a IA falha é o dia em que o usuário mais precisa
+        // ver que existe conteúdo por trás dela.
+        //
+        // A ficha não depende de modelo nenhum: é dado nosso, já pronto.
+        const emergencia = analiseDeEmergencia(ficha, probPct, platformName);
+        analysis = emergencia.analysis;
+        keyFactors = emergencia.keyFactors;
+        confidence = "baixa";
       }
     } else {
       analysis = "Configure ANTHROPIC_API_KEY no .env para análise por IA.";

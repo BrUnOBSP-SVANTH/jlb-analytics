@@ -240,3 +240,29 @@ export async function montarFicha(d: DadosFicha): Promise<string> {
 
   return linhas.join("\n");
 }
+
+/**
+ * O que a tela mostra quando NENHUM provedor de IA responde.
+ *
+ * Não é detalhe raro: em 05/09 os três estavam fora ao mesmo tempo (Anthropic sem
+ * crédito, Gemini em 429, Groq no teto diário), e toda análise do site caía aqui.
+ * O texto de então tinha 93 caracteres e dizia "sem notícias recentes" — a página
+ * em branco que o produto não aceita, servida justamente no pior momento.
+ *
+ * A ficha não depende de modelo nenhum. A primeira linha (o preço em dinheiro)
+ * vira o parágrafo, as demais viram os marcadores — repetir tudo nos dois lugares
+ * encheria a tela com o mesmo texto duas vezes.
+ */
+export function analiseDeEmergencia(
+  ficha: string,
+  probPct: number,
+  plataforma: string,
+): { analysis: string; keyFactors: string[] } {
+  const linhas = ficha.split("\n").map((l) => l.trim()).filter(Boolean);
+  const primeira = linhas[0] ?? `O mercado está em ${probPct}% no ${plataforma}.`;
+  return {
+    analysis: `${primeira} A leitura da IA não pôde ser gerada agora — os dados abaixo `
+      + `são do nosso banco e não dependem dela. Tente de novo em alguns minutos.`,
+    keyFactors: linhas.slice(1),
+  };
+}

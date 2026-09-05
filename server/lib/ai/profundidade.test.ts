@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { familiaDaCategoria, montarFicha } from "./fichaMercado.ts";
+import { familiaDaCategoria, montarFicha, analiseDeEmergencia } from "./fichaMercado.ts";
 import { REGRA_LINGUAGEM } from "./linguagem.ts";
 
 const AQUI = dirname(fileURLToPath(import.meta.url));
@@ -92,5 +92,41 @@ describe("famílias de categoria — o que devolveu histórico à política", ()
     const f = await montarFicha({ titulo: "X", precoPct: 42, categoria: "politics", plataforma: "Polymarket" });
     expect(f).toMatch(/42%/);
     expect(f.length).toBeGreaterThan(80);
+  });
+});
+
+describe("com a IA fora do ar, a tela ainda tem conteúdo", () => {
+  // Não é hipótese: em 05/09 os três provedores estavam esgotados ao mesmo tempo
+  // (Anthropic sem crédito, Gemini 429, Groq no teto diário) e TODA análise do
+  // site caía neste caminho — servindo 93 caracteres de "sem notícias recentes".
+  const ficha = [
+    "PREÇO E O QUE ELE PAGA: o mercado dá 42% de chance ao SIM. Quem apostar R$ 100 recebe R$ 238,10.",
+    "RELÓGIO: fecha em 400 dias — prazo longo.",
+    "NOSSO HISTÓRICO EM POLÍTICA: 80 mercados, favorito venceu 86,3%.",
+  ].join("\n");
+
+  it("usa a ficha em vez de um aviso seco", () => {
+    const r = analiseDeEmergencia(ficha, 42, "Polymarket");
+    expect(r.analysis).toMatch(/42%/);
+    expect(r.analysis.length + r.keyFactors.join("").length).toBeGreaterThan(200);
+  });
+
+  it("avisa com honestidade que a leitura da IA não saiu", () => {
+    // O usuário precisa saber o que está vendo. Omitir seria passar a ficha por
+    // análise — e a análise é justamente o que não foi gerado.
+    expect(analiseDeEmergencia(ficha, 42, "Polymarket").analysis).toMatch(/não pôde ser gerada/i);
+  });
+
+  it("não repete a ficha no parágrafo e nos marcadores", () => {
+    const r = analiseDeEmergencia(ficha, 42, "Polymarket");
+    expect(r.keyFactors.some((f) => r.analysis.includes(f))).toBe(false);
+    expect(r.keyFactors).toHaveLength(2);
+  });
+
+  it("aguenta ficha vazia sem produzir frase quebrada", () => {
+    const r = analiseDeEmergencia("", 42, "Kalshi");
+    expect(r.analysis).toMatch(/42%/);
+    expect(r.analysis).toMatch(/Kalshi/);
+    expect(r.keyFactors).toEqual([]);
   });
 });
