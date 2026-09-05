@@ -29,6 +29,7 @@ import aiRouter, { sendWeeklyDigests } from "./routes/ai.ts";
 import { scoreAiForecasts, seedAiForecasts } from "./lib/aiForecasts.ts";
 import { resolveUserPredictions } from "./lib/userPredictions.ts";
 import { runDailyEmbedBackfill } from "./lib/cerebroEmbeddings.ts";
+import { limparArtigosAntigos } from "./lib/cerebroLimpeza.ts";
 import stripeRouter   from "./routes/stripe.ts";
 import manifoldRouter from "./routes/manifold.ts";
 import snapshotsRouter from "./routes/snapshots.ts";
@@ -625,6 +626,14 @@ async function startServer() {
     setTimeout(() => { void runCerebroCollection(); }, 30_000);
     setInterval(() => { void runCerebroCollection(); }, CEREBRO_INTERVAL_MS);
     log.info("   Cerebro: coleta automática a cada 2h ✅");
+
+    // Limpeza do Cérebro: descarta notícia velha demais para servir a alguém.
+    // Sem isto o acervo crescia para sempre (~660 artigos/dia) e o plano gratuito
+    // de 500MB do Supabase enchia em menos de dois meses. Roda 1x/dia; a régua e o
+    // porquê estão em lib/cerebroLimpeza.ts.
+    setTimeout(() => { void limparArtigosAntigos({ aplicar: true }); }, 5 * 60_000);
+    setInterval(() => { void limparArtigosAntigos({ aplicar: true }); }, 24 * 60 * 60_000);
+    log.info("   Cerebro: descarte de notícia antiga, 1×/dia ✅");
 
     // Snapshots de mercado: primeira coleta 2min após o boot, depois 1× por dia
     setTimeout(() => { void runMarketSnapshots(); }, 2 * 60_000);
