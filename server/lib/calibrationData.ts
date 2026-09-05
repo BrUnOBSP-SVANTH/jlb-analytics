@@ -12,6 +12,7 @@
  * a mesma regra da view do track record (019). Sem isso, um mercado previsto em
  * 6 dias conta 6× e distorce viés, déficit e medição.
  */
+import { buscarTudo } from "./supaPaginado.ts";
 import { SUPABASE_URL, SUPABASE_KEY } from "./supabaseRest.ts";
 import { getCache, setCache } from "./cache.ts";
 import {
@@ -112,12 +113,13 @@ export async function getCategoryBiasMap(): Promise<BiasMap> {
   const cached = getCache<BiasMap>("ai-category-bias-map");
   if (cached !== null) return cached;
   try {
-    const res = await fetch(
-      `${SUPABASE_URL}/rest/v1/ai_forecasts?resolved=eq.true&outcome=not.is.null&select=market_id,ai_fair_value,outcome,category,forecast_date,created_at&order=resolved_at.desc&limit=2000`,
-      { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }, signal: AbortSignal.timeout(6_000) },
+    // ⚠️ Paginado: o PostgREST corta em 1.000 linhas EM SILÊNCIO (pedir 2000
+    // devolve 200 OK com 1000). Ver lib/supaPaginado.ts.
+    const rows = await buscarTudo<{ market_id: string; ai_fair_value: number; outcome: boolean; category: string | null; forecast_date: string; created_at: string }>(
+      "ai_forecasts",
+      "resolved=eq.true&outcome=not.is.null&select=market_id,ai_fair_value,outcome,category,forecast_date,created_at&order=resolved_at.desc",
     );
-    if (!res.ok) return {};
-    const rows = await res.json() as Array<{ market_id: string; ai_fair_value: number; outcome: boolean; category: string | null; forecast_date: string; created_at: string }>;
+    if (rows.length === 0) return {};
     // Dedup: 1 forecast por mercado (o mais ANTIGO), igual à view do track record
     // (019). Sem isso, um mercado previsto em 6 dias contaria 6× e distorceria o
     // viés — foi o que o item #3 revelou (backtest bruto +5,4% vs deduplicado +3,1%).
@@ -157,14 +159,12 @@ export async function getBoldExperimentStatus(): Promise<{
     // respondia a pergunta errada ("o jogo vai acontecer?" em vez de "A vence?"),
     // gerando desvios de ~38pp que mediam um bug, não a hipótese. As linhas v1
     // ficam no banco como registro, mas fora da medição.
-    const r = await fetch(
-      `${SUPABASE_URL}/rest/v1/ai_forecasts?resolved=eq.true&outcome=not.is.null&ai_fair_value_bold=not.is.null`
-      + `&bold_prompt_v=gte.2`
-      + `&select=market_id,ai_fair_value,ai_fair_value_bold,market_prob,outcome,forecast_date,created_at&limit=2000`,
-      { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }, signal: AbortSignal.timeout(8_000) },
+    const rows = await buscarTudo<{ market_id: string; ai_fair_value: number; ai_fair_value_bold: number; market_prob: number; outcome: boolean; forecast_date: string; created_at: string }>(
+      "ai_forecasts",
+      "resolved=eq.true&outcome=not.is.null&ai_fair_value_bold=not.is.null&bold_prompt_v=gte.2"
+      + "&select=market_id,ai_fair_value,ai_fair_value_bold,market_prob,outcome,forecast_date,created_at&order=created_at.asc",
     );
-    if (!r.ok) return { available: false };
-    const rows = await r.json() as Array<{ market_id: string; ai_fair_value: number; ai_fair_value_bold: number; market_prob: number; outcome: boolean; forecast_date: string; created_at: string }>;
+    if (rows.length === 0) return { available: false };
 
     // Dedup por mercado (regra da view 019) — repetição infla o resultado.
     const d = dedupPorMercado(rows);
@@ -200,12 +200,12 @@ export async function getCalibrationStatus(): Promise<{
   if (!SUPABASE_URL || !SUPABASE_KEY) return { available: false };
   try {
     const biasMap = await getCategoryBiasMap();
-    const r = await fetch(
-      `${SUPABASE_URL}/rest/v1/ai_forecasts?resolved=eq.true&outcome=not.is.null&ai_fair_value_calibrated=not.is.null&select=market_id,ai_fair_value,ai_fair_value_calibrated,market_prob,outcome,forecast_date,created_at&limit=2000`,
-      { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }, signal: AbortSignal.timeout(8_000) },
+    const rows = await buscarTudo<{ market_id: string; ai_fair_value: number; ai_fair_value_calibrated: number; market_prob: number; outcome: boolean; forecast_date: string; created_at: string }>(
+      "ai_forecasts",
+      "resolved=eq.true&outcome=not.is.null&ai_fair_value_calibrated=not.is.null"
+      + "&select=market_id,ai_fair_value,ai_fair_value_calibrated,market_prob,outcome,forecast_date,created_at&order=created_at.asc",
     );
-    if (!r.ok) return { available: true, biasMap };
-    const rows = await r.json() as Array<{ market_id: string; ai_fair_value: number; ai_fair_value_calibrated: number; market_prob: number; outcome: boolean; forecast_date: string; created_at: string }>;
+    if (rows.length === 0) return { available: true, biasMap };
 
     // Dedup por mercado (o mais antigo) — mesma regra da view 019.
     const d = dedupPorMercado(rows);
@@ -251,12 +251,11 @@ export async function getCategoryDeficitWeights(target = 30): Promise<Map<Canoni
   const weights = new Map<CanonicalCategory, number>();
   if (!SUPABASE_URL || !SUPABASE_KEY) return weights;
   try {
-    const r = await fetch(
-      `${SUPABASE_URL}/rest/v1/ai_forecasts?resolved=eq.true&outcome=not.is.null&select=market_id,category,forecast_date,created_at&limit=2000`,
-      { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }, signal: AbortSignal.timeout(6_000) },
+    const rows = await buscarTudo<{ market_id: string; category: string | null; forecast_date: string; created_at: string }>(
+      "ai_forecasts",
+      "resolved=eq.true&outcome=not.is.null&select=market_id,category,forecast_date,created_at&order=created_at.asc",
     );
-    if (!r.ok) return weights;
-    const rows = await r.json() as Array<{ market_id: string; category: string | null; forecast_date: string; created_at: string }>;
+    if (rows.length === 0) return weights;
 
     const counts = new Map<CanonicalCategory, number>();
     for (const row of dedupPorMercado(rows)) {

@@ -1,3 +1,4 @@
+import { buscarTudo } from "../lib/supaPaginado.ts";
 import { montarCurva } from "../lib/ai/curvaCalibracao.ts";
 import { dedupPorMercado } from "../lib/calibrationData.ts";
 import { normalizeCategory } from "../lib/ai/calibration.ts";
@@ -339,18 +340,17 @@ router.get("/evolution", async (_req, res) => {
   if (cached) return res.json(cached);
   if (!SUPABASE_URL || !SUPABASE_KEY) return res.json({ available: false });
   try {
-    const r = await fetch(
-      `${SUPABASE_URL}/rest/v1/ai_forecasts?resolved=eq.true&outcome=not.is.null&resolved_at=not.is.null`
-      + `&select=market_id,market_prob,ai_fair_value,outcome,resolved_at,forecast_date,created_at&limit=5000`,
-      { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }, signal: AbortSignal.timeout(8_000) },
+    const rows = await buscarTudo<{ market_id: string; market_prob: number; ai_fair_value: number; outcome: boolean; resolved_at: string; forecast_date: string; created_at: string }>(
+      "ai_forecasts",
+      "resolved=eq.true&outcome=not.is.null&resolved_at=not.is.null&select=market_id,market_prob,ai_fair_value,outcome,resolved_at,forecast_date,created_at&order=resolved_at.asc",
     );
-    if (!r.ok) return res.json({ available: false });
-    const rows = await r.json() as Array<{ market_id: string; market_prob: number; ai_fair_value: number; outcome: boolean; resolved_at: string; forecast_date: string; created_at: string }>;
+    if (rows.length === 0) return res.json({ available: false });
 
     // Agrupa por MÊS (e não por semana): as resoluções chegam em rajada quando o
     // resolvedor roda, então semanas ficam com 1, 2, 369 casos — e uma "semana" de
     // 2 casos não é ponto de série temporal, é ruído com data.
-    const porMes = new Map<string, typeof rows>();
+    type LinhaMes = (typeof rows)[number];
+    const porMes = new Map<string, LinhaMes[]>();
     for (const x of dedupPorMercado(rows)) {
       const k = String(x.resolved_at).slice(0, 7);
       if (!porMes.has(k)) porMes.set(k, []);
@@ -393,15 +393,14 @@ router.get("/by-category", async (_req, res) => {
   if (cached) return res.json(cached);
   if (!SUPABASE_URL || !SUPABASE_KEY) return res.json({ available: false });
   try {
-    const r = await fetch(
-      `${SUPABASE_URL}/rest/v1/ai_forecasts?resolved=eq.true&outcome=not.is.null`
-      + `&select=market_id,category,market_prob,ai_fair_value,outcome,forecast_date,created_at&limit=5000`,
-      { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }, signal: AbortSignal.timeout(8_000) },
+    const rows = await buscarTudo<{ market_id: string; category: string | null; market_prob: number; ai_fair_value: number; outcome: boolean; forecast_date: string; created_at: string }>(
+      "ai_forecasts",
+      "resolved=eq.true&outcome=not.is.null&select=market_id,category,market_prob,ai_fair_value,outcome,forecast_date,created_at&order=created_at.asc",
     );
-    if (!r.ok) return res.json({ available: false });
-    const rows = await r.json() as Array<{ market_id: string; category: string | null; market_prob: number; ai_fair_value: number; outcome: boolean; forecast_date: string; created_at: string }>;
+    if (rows.length === 0) return res.json({ available: false });
 
-    const porTema = new Map<string, typeof rows>();
+    type LinhaTema = (typeof rows)[number];
+    const porTema = new Map<string, LinhaTema[]>();
     for (const x of dedupPorMercado(rows)) {
       const k = normalizeCategory(x.category);
       if (!porTema.has(k)) porTema.set(k, []);
@@ -435,13 +434,13 @@ router.get("/calibration-curve", async (_req, res) => {
   if (cached) return res.json(cached);
   if (!SUPABASE_URL || !SUPABASE_KEY) return res.json({ available: false });
   try {
-    const r = await fetch(
-      `${SUPABASE_URL}/rest/v1/ai_forecasts?resolved=eq.true&outcome=not.is.null`
-      + `&select=market_id,ai_fair_value,outcome,forecast_date,created_at&limit=5000`,
-      { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }, signal: AbortSignal.timeout(8_000) },
+    // ⚠️ Paginado: o PostgREST corta em 1.000 linhas em SILÊNCIO (limit=5000
+    // devolve 200 OK com 1.000). Ver lib/supaPaginado.ts.
+    const rows = await buscarTudo<{ market_id: string; ai_fair_value: number; outcome: boolean; forecast_date: string; created_at: string }>(
+      "ai_forecasts",
+      "resolved=eq.true&outcome=not.is.null&select=market_id,ai_fair_value,outcome,forecast_date,created_at&order=created_at.asc",
     );
-    if (!r.ok) return res.json({ available: false });
-    const rows = await r.json() as Array<{ market_id: string; ai_fair_value: number; outcome: boolean; forecast_date: string; created_at: string }>;
+    if (rows.length === 0) return res.json({ available: false });
     // Mesma dedup da view do track record: 1 previsão por mercado, a mais antiga.
     // Sem isso, mercado previsto em 6 dias entra 6 vezes e distorce a curva.
     const curva = montarCurva(
