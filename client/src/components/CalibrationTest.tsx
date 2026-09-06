@@ -7,16 +7,53 @@
  */
 import { useState } from "react";
 import { Link } from "wouter";
-import { Brain, Check, X, ArrowRight, RotateCcw, Gauge } from "lucide-react";
+import { Check, X, ArrowRight, RotateCcw, Gauge } from "lucide-react";
+import MarcaProbabilidade from "@/components/MarcaProbabilidade";
 import { track } from "@/lib/analytics";
 
-// Afirmações com resposta inequívoca e verificável (várias contra-intuitivas).
+/**
+ * As afirmações são DO NOSSO MUNDO, e isso não é detalhe.
+ *
+ * Aqui havia trivia de almanaque: Muralha da China vista da Lua, um dia em
+ * Vênus, grãos de areia. Funcionava como teste de calibração e não tinha nada a
+ * ver com o site — era a cara de conteúdo de enchimento, que é exatamente o que
+ * o fundador apontou. Um quiz assim podia estar em qualquer página da internet.
+ *
+ * Agora cada afirmação é sobre aposta, probabilidade ou mercado — com fonte, e
+ * várias delas com números que NÓS medimos neste site. A pessoa sai do teste
+ * sabendo duas coisas em vez de uma: o quanto ela é superconfiante, e um fato
+ * do assunto que a trouxe aqui. E a página passa a falar da nossa matéria.
+ *
+ * Continuam valendo as duas regras que fazem o teste funcionar: resposta
+ * inequívoca e verificável, e várias contra-intuitivas — se a intuição acertasse
+ * tudo, ninguém descobriria que é superconfiante.
+ */
 const QUESTIONS: { claim: string; answer: boolean; note: string }[] = [
-  { claim: "A Muralha da China é visível a olho nu da Lua.", answer: false, note: "Mito — nem da órbita baixa dá pra ver a olho nu." },
-  { claim: "O Brasil faz fronteira com o Chile.", answer: false, note: "Faz com todos os países da América do Sul, exceto Chile e Equador." },
-  { claim: "Um dia em Vênus dura mais que um ano em Vênus.", answer: true, note: "Vênus gira devagar: 243 dias terrestres por rotação, 225 por órbita." },
-  { claim: "O Sol concentra mais de 99% da massa do Sistema Solar.", answer: true, note: "~99,86% — todo o resto (planetas incluídos) é o troco." },
-  { claim: "Há mais estrelas na Via Láctea do que grãos de areia em todas as praias da Terra.", answer: false, note: "A areia (~10¹⁸) supera de longe as estrelas da Via Láctea (~10¹¹)." },
+  {
+    claim: "Na maioria dos mercados de previsão, o lado favorito acaba vencendo mais vezes do que o preço dizia.",
+    answer: true,
+    note: "Verdade na nossa amostra: em 220 mercados de e-sports que acompanhamos até a liquidação, o favorito venceu 80,5% das vezes com preço médio de 74,5%. É o viés favorito-azarão, medido por nós.",
+  },
+  {
+    claim: "Acertar mais da metade das apostas garante lucro no fim.",
+    answer: false,
+    note: "Não garante. Quem acerta 60% apostando em favoritos caros perde dinheiro; quem acerta 40% no azarão pelo preço certo lucra. O que decide é o preço, não a taxa de acerto.",
+  },
+  {
+    claim: "No Polymarket, a maioria das carteiras tem prejuízo acumulado.",
+    answer: true,
+    note: "Cerca de 70% dos endereços têm perdas históricas, e 0,04% das contas capturaram mais de 70% do lucro total (CryptoSlate, 2025).",
+  },
+  {
+    claim: "Um mercado que marca 90% acerta quase sempre — errar nessa faixa é sinal de mercado quebrado.",
+    answer: false,
+    note: "Errar faz parte: se 90% acertasse sempre, o número certo seria 100%. Um mercado bem calibrado erra 1 em cada 10 vezes ali — e é isso que torna o 90% honesto.",
+  },
+  {
+    claim: "O brasileiro movimenta mais de R$ 20 bilhões por mês em apostas.",
+    answer: true,
+    note: "O Banco Central estimou cerca de R$ 30 bilhões por mês em 2025 — mais do que o país gasta com muitos serviços públicos.",
+  },
 ];
 const CONF = [50, 60, 70, 80, 90, 99];
 
@@ -103,8 +140,14 @@ export default function CalibrationTest() {
     <div className="glass-card rounded-2xl p-6 sm:p-7 max-w-2xl mx-auto">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <Brain className="w-5 h-5 text-neon-blue" />
-          <p className="text-sm font-semibold text-foreground">Você é bom em prever? Teste em 30 segundos</p>
+          {/* A marca da casa no lugar do ícone de cérebro: o mesmo desenho do
+              fundo da home, em miniatura. Ícone de biblioteca não constrói
+              identidade — está em milhares de sites. */}
+          <MarcaProbabilidade className="text-primary" size={20} />
+          {/* A chamada diz a TESE do site, não "faça um quiz". A frase antiga
+              ("Você é bom em prever?") servia para qualquer teste da internet;
+              esta só faz sentido aqui. */}
+          <p className="text-sm font-semibold text-foreground">Quase todo mundo se acha mais certo do que é. Veja o seu caso em 30 segundos.</p>
         </div>
         <div className="flex gap-1" aria-label={`Pergunta ${step + 1} de ${QUESTIONS.length}`}>
           {QUESTIONS.map((_, i) => (

@@ -13,6 +13,7 @@ import { MODEL_COUNT } from "@/lib/brand";
 import { track } from "@/lib/analytics";
 import { Link } from "wouter";
 import GraficoDeFundo from "@/components/GraficoDeFundo";
+import MarcaProbabilidade from "@/components/MarcaProbabilidade";
 import {
   TrendingUp, Brain, BarChart3, GitMerge, GraduationCap,
   ArrowRight, Zap, Target, CheckCircle, AlertTriangle, X,
@@ -350,12 +351,15 @@ export default function Home() {
         <section className="px-4 py-3 bg-neon-blue/5 border-y border-neon-blue/20" aria-label="Bem-vindo">
           <div className="max-w-5xl mx-auto flex items-center justify-between gap-4 flex-wrap">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-neon-blue/15 flex items-center justify-center shrink-0">
-                <GraduationCap className="w-4 h-4 text-neon-blue" aria-hidden="true" />
-              </div>
+              {/* Sem o ícone genérico dentro do quadradinho arredondado — o
+                  padrão que está em todo site feito às pressas. A marca da casa
+                  já diz do que se trata, e diz que é NOSSO. */}
+              <MarcaProbabilidade className="text-primary shrink-0" size={26} />
               <div>
-                <p className="text-sm font-semibold text-foreground">Novo por aqui?</p>
-                <p className="text-xs text-muted-foreground">O Nível 1 é gratuito e ensina a calcular chances reais em menos de 10 minutos.</p>
+                {/* Fala do que a pessoa vai SABER FAZER, não do estado dela.
+                    "Novo por aqui?" cabe em qualquer site; isto aqui, não. */}
+                <p className="text-sm font-semibold text-foreground">Nunca calculou uma chance na mão?</p>
+                <p className="text-xs text-muted-foreground">O Nível 1 é gratuito e ensina em menos de 10 minutos — sem fórmula decorada, com um mercado de verdade na tela.</p>
               </div>
             </div>
             <div className="flex items-center gap-2 shrink-0">

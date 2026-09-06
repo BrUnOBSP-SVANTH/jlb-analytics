@@ -131,3 +131,48 @@ describe("minigráfico dos cards", () => {
     expect(bloco).not.toMatch(/#[0-9a-f]{3,6}/i);
   });
 });
+
+describe("marca da casa e conteúdo próprio", () => {
+  const marca = readFileSync(join(SRC, "components", "MarcaProbabilidade.tsx"), "utf-8");
+  const teste = readFileSync(join(SRC, "components", "CalibrationTest.tsx"), "utf-8");
+
+  it("a marca tem os três elementos que a fazem significar algo", () => {
+    // Sem a linha da dúvida e o ponto do cruzamento, sobra um X qualquer — que
+    // é exatamente o ícone genérico que ela veio substituir. Os três juntos são
+    // o assunto do site reduzido ao mínimo.
+    expect(marca).toMatch(/strokeDasharray/);      // a régua dos 50%
+    const curvas = marca.match(/<path\s/g) ?? [];
+    expect(curvas.length).toBe(2);                  // SIM subindo, NÃO descendo
+    expect(marca).toMatch(/<circle/);               // o cruzamento
+  });
+
+  it("herda a cor de quem a envolve, como um ícone", () => {
+    // Cor fixa quebraria no tema claro e a marca não poderia ser reusada.
+    expect(marca).toMatch(/currentColor/);
+    expect(marca).not.toMatch(/#[0-9a-f]{3,6}/i);
+  });
+
+  it("o teste de calibração fala do NOSSO assunto, não de trivia de almanaque", () => {
+    // Aqui havia Muralha da China vista da Lua, um dia em Vênus e grãos de areia
+    // — um quiz que caberia em qualquer página da internet. Agora cada afirmação
+    // é sobre aposta, probabilidade ou mercado, com fonte.
+    //
+    // Olha só o ARRAY de perguntas, e não o arquivo inteiro: a primeira versão
+    // deste teste falhou por causa do comentário que explica o que foi removido.
+    // O comentário registra o porquê da mudança e tem que ficar — o teste é que
+    // estava olhando no lugar errado.
+    const perguntas = teste.slice(teste.indexOf("const QUESTIONS"), teste.indexOf("const CONF"));
+    for (const sumiu of [/Muralha da China/i, /Vênus/i, /grãos de areia/i]) {
+      expect(perguntas).not.toMatch(sumiu);
+    }
+    expect(perguntas).toMatch(/mercados de previsão|Polymarket|apostas/i);
+  });
+
+  it("cada afirmação traz a explicação com procedência", () => {
+    // A nota é o que transforma o teste em aprendizado: sem fonte, é só um
+    // palpite nosso contra o palpite da pessoa.
+    const notas = teste.match(/note:\s*"/g) ?? [];
+    expect(notas.length).toBeGreaterThanOrEqual(5);
+    expect(teste).toMatch(/CryptoSlate|Banco Central|acompanhamos \d+/);
+  });
+});
