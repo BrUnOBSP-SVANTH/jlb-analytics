@@ -26,8 +26,10 @@ function formatAge(hours: number) {
   return `${Math.round(hours / 24)}d atrás`;
 }
 
-function TrendingCardBase({ item, onCompare, inCompare }: {
+function TrendingCardBase({ item, onCompare, inCompare, indice = 0 }: {
   item: TrendingItem;
+  /** Posição na lista — escalona a entrada dos cards. Ver o uso no AnimatedSection. */
+  indice?: number;
   onCompare?: (item: TrendingItem) => void;
   inCompare?: boolean;
 }) {
@@ -102,8 +104,26 @@ function TrendingCardBase({ item, onCompare, inCompare }: {
   }
 
   return (
-    <AnimatedSection className="h-full flex flex-col">
-      <div className="glass-card card-lift rounded-xl p-5 flex-1 flex flex-col">
+    // Entrada escalonada: os cards aparecem em cascata em vez de tudo de uma vez.
+    // Teto de 0,24s (8 cards) — além disso o último da tela demoraria a existir, e
+    // esperar por enfeite é o tipo de coisa que faz o site parecer lento.
+    <AnimatedSection className="h-full flex flex-col" delay={Math.min(indice, 8) * 0.03}>
+      {/* A PROBABILIDADE DESENHA O PRÓPRIO CARD.
+          A borda superior é preenchida na largura da chance de SIM: 80% de chance,
+          80% de barra. É dado virando visual, não enfeite colado por cima — quem
+          bate o olho numa lista já lê a distribuição antes de ler qualquer número.
+          Fica embaixo do conteúdo (z-0) e some no `prefers-reduced-motion`? Não:
+          é estática, não é movimento — quem pediu menos animação continua vendo. */}
+      <div className="glass-card card-lift rounded-xl p-5 flex-1 flex flex-col relative overflow-hidden">
+        {item.yesProb !== undefined && (
+          <span
+            aria-hidden="true"
+            className={`absolute top-0 left-0 h-[2px] transition-[width] duration-700 ease-out ${
+              livePct >= 70 ? "bg-positive/70" : livePct <= 30 ? "bg-negative/70" : "bg-primary/70"
+            }`}
+            style={{ width: `${Math.max(4, Math.min(100, livePct))}%` }}
+          />
+        )}
         {/* ── Cabeçalho: pergunta + probabilidade protagonista ── */}
         <div className="flex items-start justify-between gap-3 mb-2.5">
           <div className="flex items-start gap-2 min-w-0 flex-1">

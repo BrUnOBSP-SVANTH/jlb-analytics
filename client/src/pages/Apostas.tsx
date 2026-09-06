@@ -629,8 +629,8 @@ export default function Apostas() {
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 mb-8">
             {loading
               ? Array.from({ length: 9 }).map((_, i) => <LoadingSkeleton key={i} />)
-              : filtered.slice(0, visibleCount).map((item) => (
-                  <TrendingCard key={item.id} item={item}
+              : filtered.slice(0, visibleCount).map((item, i) => (
+                  <TrendingCard key={item.id} item={item} indice={i}
                     onCompare={toggleCompare}
                     inCompare={compareMap.has(item.id)}
                   />

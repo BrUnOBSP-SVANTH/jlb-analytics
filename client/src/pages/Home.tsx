@@ -12,6 +12,7 @@ import MarginOfError from "@/components/MarginOfError";
 import { MODEL_COUNT } from "@/lib/brand";
 import { track } from "@/lib/analytics";
 import { Link } from "wouter";
+import GraficoDeFundo from "@/components/GraficoDeFundo";
 import {
   TrendingUp, Brain, BarChart3, GitMerge, GraduationCap,
   ArrowRight, Zap, Target, CheckCircle, AlertTriangle, X,
@@ -252,8 +253,13 @@ export default function Home() {
     <div>
       {/* ── Hero ── */}
       <section className="relative overflow-hidden py-20 md:py-28 px-4">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-neon-blue/5 pointer-events-none" aria-hidden="true" />
-        <div className="absolute -top-32 -right-32 w-80 h-80 bg-primary/3 rounded-full blur-3xl pointer-events-none" aria-hidden="true" />
+        {/* O fundo é o nosso assunto desenhado, não decoração emprestada: são
+            trajetórias de preço saindo da dúvida (50%) e terminando resolvidas em
+            0% ou 100% — a forma que só mercado de previsão tem. O gradiente
+            genérico e o círculo borrado que estavam aqui podiam estar em qualquer
+            site. Ver components/GraficoDeFundo.tsx. */}
+        <GraficoDeFundo />
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-background pointer-events-none" aria-hidden="true" />
 
         <div className="max-w-5xl mx-auto relative">
           <div className="text-center mb-10">

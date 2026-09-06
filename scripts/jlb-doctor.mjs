@@ -640,7 +640,14 @@ function checkSecurity() {
   // 3) Cobertura de RLS: TODA tabela criada precisa ativar Row Level Security
   const migDir = join(ROOT, "supabase", "migrations");
   if (existsSync(migDir)) {
-    const sql = walk(migDir, [".sql"]).map(read).join("\n");
+    // Tira os COMENTÁRIOS antes de procurar tabela. Sem isto, um comentário que
+    // mencione "CREATE TABLE" vira uma tabela fantasma sem RLS e o doctor grita
+    // CRÍTICO por nada — foi o que aconteceu em 06/09 com a frase "o CREATE TABLE
+    // acima é ignorado", que virou uma tabela chamada "acima". Alarme falso é caro
+    // justamente aqui: ensina a ignorar o alarme verdadeiro.
+    const sql = walk(migDir, [".sql"]).map(read).join("\n")
+      .replace(/\/\*[\s\S]*?\*\//g, " ")   // bloco /* … */
+      .replace(/--[^\n]*/g, " ");          // linha -- …
     const created = new Set([...sql.matchAll(/create table\s+(?:if not exists\s+)?(?:public\.)?([a-z_]+)/gi)].map((m) => m[1].toLowerCase()));
     const rls = new Set([...sql.matchAll(/alter table\s+(?:public\.)?([a-z_]+)\s+enable row level security/gi)].map((m) => m[1].toLowerCase()));
     const missing = [...created].filter((t) => !rls.has(t));

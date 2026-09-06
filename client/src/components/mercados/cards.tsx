@@ -3,7 +3,7 @@
  * Extraídos de Apostas.tsx para reduzir o tamanho do arquivo — puramente
  * presentacionais (badges, pills, sparkline, barra de hype, multi-outcome).
  */
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import type { DynamicBadge, Source } from "@/lib/trending";
 
 // ─── Sparkline ───────────────────────────────────────────────────────────────
@@ -182,8 +182,45 @@ export function SourceBadge({ source, subreddit }: { source: Source; subreddit?:
 
 /** Probabilidade protagonista — o número-herói do card (mercados binários).
  *  Grande e confiante: num site de mercados preditivos, a probabilidade É o produto. */
+/**
+ * Conta o número subindo até o valor real, uma vez, ao aparecer.
+ *
+ * Não é enfeite: a probabilidade É o conteúdo do card, e vê-la se formar prende
+ * o olho no dado em vez de na moldura. Dura 600ms — o suficiente para registrar,
+ * curto o bastante para não atrasar quem só quer o número.
+ *
+ * Quem pediu menos movimento recebe o valor final direto, sem contagem.
+ */
+function useContagem(alvo: number, ativo = true): number {
+  const [valor, setValor] = useState(alvo);
+  const jaContou = useRef(false);
+
+  useEffect(() => {
+    const semMovimento = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+    // Só na PRIMEIRA vez: recontar a cada atualização de preço ao vivo faria o
+    // número dançar sozinho na tela, que é o oposto de legível.
+    if (!ativo || semMovimento || jaContou.current) { setValor(alvo); return; }
+    jaContou.current = true;
+
+    const inicio = performance.now();
+    const DURACAO = 600;
+    let id = 0;
+    const passo = (agora: number) => {
+      const t = Math.min(1, (agora - inicio) / DURACAO);
+      // Desacelera no fim (ease-out cúbico): chega no número, não bate nele.
+      setValor(alvo * (1 - Math.pow(1 - t, 3)));
+      if (t < 1) id = requestAnimationFrame(passo);
+    };
+    id = requestAnimationFrame(passo);
+    return () => cancelAnimationFrame(id);
+  }, [alvo, ativo]);
+
+  return valor;
+}
+
 export function ProbHero({ prob, flash }: { prob: number; flash?: "up" | "down" | null }) {
-  const pct = Math.round(prob * 100);
+  const alvoPct = Math.round(prob * 100);
+  const pct = Math.round(useContagem(alvoPct));
   // Mid (31-69%) usa text-primary (adapta claro/escuro) em vez de text-gold fixo,
   // que ficava ~1.75:1 no card branco. positive/negative escurecem no .light.
   const base = pct >= 70 ? "text-positive" : pct <= 30 ? "text-negative" : "text-primary";
@@ -206,12 +243,13 @@ export function ProbHero({ prob, flash }: { prob: number; flash?: "up" | "down" 
  *  ~100% em todo card, logo inútil). Esta varia por mercado e É o sinal real. */
 export function ProbBar({ prob }: { prob: number }) {
   const pct = Math.round(prob * 100);
+  const largura = useContagem(pct);
   const color = pct >= 70 ? "bg-positive" : pct <= 30 ? "bg-negative" : "bg-primary";
   return (
     <div>
       <div className="h-2 rounded-full bg-secondary/40 overflow-hidden">
         {/* ancorado à esquerda (rounded-l + min-w) — em prob. baixa não vira pílula solta */}
-        <div className={`h-full rounded-l-full rounded-r-[2px] min-w-[6px] ${color} transition-all duration-500`} style={{ width: `${pct}%` }} />
+        <div className={`h-full rounded-l-full rounded-r-[2px] min-w-[6px] ${color} transition-all duration-500`} style={{ width: `${largura}%` }} />
       </div>
       {/* Só o complemento NÃO é dado novo — o número SIM já é o herói acima. */}
       <div className="flex justify-between text-[10px] mt-1">
