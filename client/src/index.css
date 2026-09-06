@@ -251,6 +251,28 @@
     .entrada-pagina { animation: none; }
   }
 
+  /* ── MINIGRÁFICO DOS CARDS ─────────────────────────────────────────────────
+     A linha se desenha da esquerda para a direita ao aparecer, como um preço
+     sendo registrado. É o gesto que faz o gráfico parecer vivo em vez de
+     estampado.
+
+     `pathLength: 1` normaliza o comprimento do traçado: sem isso cada gráfico
+     teria um dasharray diferente (o caminho de cada mercado tem tamanho próprio)
+     e a animação sairia numa velocidade diferente em cada card. */
+  @keyframes spark-desenha {
+    from { stroke-dashoffset: 1; }
+    to   { stroke-dashoffset: 0; }
+  }
+  .spark-traco {
+    path-length: 1;
+    stroke-dasharray: 1;
+    animation: spark-desenha 900ms cubic-bezier(0.33, 1, 0.68, 1) both;
+  }
+  /* Sem movimento: o gráfico aparece inteiro, do jeito que está. */
+  @media (prefers-reduced-motion: reduce) {
+    .spark-traco { animation: none; stroke-dasharray: none; }
+  }
+
   /* Seleção de texto com o dourado da marca */
   ::selection {
     background: oklch(0.78 0.12 85 / 25%);

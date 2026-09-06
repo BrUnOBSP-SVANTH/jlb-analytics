@@ -3,7 +3,7 @@
  * Extraídos de Apostas.tsx para reduzir o tamanho do arquivo — puramente
  * presentacionais (badges, pills, sparkline, barra de hype, multi-outcome).
  */
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useId } from "react";
 import type { DynamicBadge, Source } from "@/lib/trending";
 
 // ─── Sparkline ───────────────────────────────────────────────────────────────
@@ -14,6 +14,9 @@ export function ProbSparkline({ tokenIds, marketId, source }: {
   source?: string;
 }) {
   const [pts, setPts] = useState<{ t: number; p: number }[]>([]);
+  // Cada gráfico precisa do SEU degradê: id repetido faz todos os cards herdarem
+  // a cor do primeiro que o navegador encontrar — um card em queda ficaria verde.
+  const gradId = useId();
 
   useEffect(() => {
     let cancelled = false;
@@ -74,17 +77,26 @@ export function ProbSparkline({ tokenIds, marketId, source }: {
 
   if (pts.length < 4) return null;
 
-  const W = 72, H = 24;
+  // 96×34 em vez de 72×24: o gráfico antigo era pequeno demais para mostrar
+  // qualquer coisa além de "subiu" ou "desceu".
+  const W = 96, H = 34, PAD = 3;
   const probs = pts.map((h) => h.p);
   const minP = Math.min(...probs), maxP = Math.max(...probs);
   const range = maxP - minP || 0.02;
-  const points = pts
-    .map((h, i) => {
-      const x = (i / (pts.length - 1)) * W;
-      const y = H - ((h.p - minP) / range) * (H - 2) - 1;
-      return `${x.toFixed(1)},${y.toFixed(1)}`;
-    })
-    .join(" ");
+  const emX = (i: number) => (i / (pts.length - 1)) * W;
+  const emY = (p: number) => H - PAD - ((p - minP) / range) * (H - PAD * 2);
+
+  const coords = pts.map((h, i) => ({ x: emX(i), y: emY(h.p) }));
+  const linha = coords.map((c, i) => `${i === 0 ? "M" : "L"}${c.x.toFixed(1)},${c.y.toFixed(1)}`).join(" ");
+  // Área = a linha fechada até a base. É o que transforma um risco solto em
+  // gráfico: dá volume e deixa claro de que lado está o preenchimento.
+  const area = `${linha} L${W},${H} L0,${H} Z`;
+
+  // ⚠️ SEM SUAVIZAÇÃO DE CURVA, de propósito. Passar uma bezier pelos pontos
+  // fica mais bonito e INVENTA valores: a curva estoura acima do máximo e abaixo
+  // do mínimo reais entre um ponto e outro. Num site que promete fidelidade ao
+  // dado, um gráfico que mostra um preço que nunca existiu é caro demais pelo
+  // ganho estético. A beleza aqui vem do preenchimento, da base e do ponto final.
   const deltaPp = Math.round((probs[probs.length - 1] - probs[0]) * 100);
   const trend = probs[probs.length - 1] >= probs[0];
   // Tokens (adaptam claro/escuro) em vez de hex fixo; neutro quando não há tendência real.
@@ -93,11 +105,41 @@ export function ProbSparkline({ tokenIds, marketId, source }: {
     ? Math.round((pts[pts.length - 1].t - pts[0].t) / 86400)
     : 7;
   const displayDays = spanDays > 8 ? spanDays : 7;
+  const yBase = emY(probs[0]);
+  const fim = coords[coords.length - 1];
 
   return (
     <div className="flex items-center gap-1.5 mt-1.5" title={`Variação ${displayDays} dias`}>
-      <svg width={W} height={H} className="overflow-visible shrink-0">
-        <polyline points={points} fill="none" stroke={color} strokeWidth={1.5} strokeOpacity={0.75} strokeLinejoin="round" />
+      <svg width={W} height={H} className="overflow-visible shrink-0" aria-hidden="true">
+        <defs>
+          <linearGradient id={`g-${gradId}`} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={color} stopOpacity={0.32} />
+            <stop offset="100%" stopColor={color} stopOpacity={0} />
+          </linearGradient>
+        </defs>
+
+        {/* Base no valor de PARTIDA. É o "+2pp" virando imagem: dá para ver de
+            relance quanto do traçado ficou acima e quanto ficou abaixo de onde
+            o preço começou. Sem ela, a linha sobe e desce sem referência. */}
+        <line x1={0} y1={yBase} x2={W} y2={yBase}
+          stroke="var(--color-muted-foreground)" strokeOpacity={0.28}
+          strokeWidth={1} strokeDasharray="2 3" />
+
+        <path d={area} fill={`url(#g-${gradId})`} />
+        <path
+          d={linha} fill="none" stroke={color} strokeWidth={1.8}
+          strokeLinejoin="round" strokeLinecap="round"
+          // pathLength normaliza o traçado para 1 unidade: assim o mesmo
+          // dasharray serve para qualquer mercado e todos desenham na mesma
+          // velocidade, independentemente do tamanho real do caminho.
+          pathLength={1}
+          className="spark-traco"
+        />
+
+        {/* O agora: halo + ponto. Marca onde o preço está neste instante, que é
+            a única parte do gráfico sobre a qual ainda dá para apostar. */}
+        <circle cx={fim.x} cy={fim.y} r={4} fill={color} fillOpacity={0.18} />
+        <circle cx={fim.x} cy={fim.y} r={2} fill={color} />
       </svg>
       <span className={`text-[9px] font-mono ${deltaPp === 0 ? "text-muted-foreground" : trend ? "text-positive" : "text-negative"}`}>
         {deltaPp > 0 ? "+" : ""}{deltaPp}pp {displayDays}d

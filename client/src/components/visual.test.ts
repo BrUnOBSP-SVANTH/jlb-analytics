@@ -90,3 +90,44 @@ describe("fonte de display", () => {
     expect(linha).toMatch(/serif|sans-serif/);
   });
 });
+
+describe("minigráfico dos cards", () => {
+  const cards = readFileSync(join(SRC, "components", "mercados", "cards.tsx"), "utf-8");
+
+  it("NÃO suaviza a curva — beleza não pode inventar preço", () => {
+    // Passar uma bezier pelos pontos fica mais bonito e mostra valores que nunca
+    // existiram: a curva estoura acima do máximo e abaixo do mínimo reais entre
+    // dois pontos. Num site que promete fidelidade ao dado, isso é caro demais
+    // pelo ganho estético. O caminho é só M/L — retas entre pontos medidos.
+    const traçado = cards.match(/const linha = [^;]+;/s)?.[0] ?? "";
+    expect(traçado).toMatch(/"M"|"L"/);
+    expect(traçado).not.toMatch(/[CQST]\$\{|bezier|curve/i);
+  });
+
+  it("cada gráfico tem o SEU degradê", () => {
+    // Id de gradiente repetido faz todos os cards herdarem a cor do primeiro que
+    // o navegador encontrar — um mercado em queda apareceria verde. useId dá um
+    // id único por instância.
+    expect(cards).toMatch(/useId\(\)/);
+    expect(cards).toMatch(/id=\{`g-\$\{gradId\}`\}/);
+  });
+
+  it("tem a linha de base no valor de partida", () => {
+    // É o "+2pp" virando imagem: sem referência, a linha sobe e desce sem dizer
+    // em relação a quê.
+    expect(cards).toMatch(/yBase/);
+    expect(cards).toMatch(/strokeDasharray="2 3"/);
+  });
+
+  it("a linha se desenha, e para de se desenhar sem movimento", () => {
+    expect(css).toMatch(/@keyframes\s+spark-desenha/);
+    const bloco = css.slice(css.indexOf("@keyframes spark-desenha"));
+    expect(bloco).toMatch(/prefers-reduced-motion[\s\S]{0,200}\.spark-traco\s*\{\s*animation:\s*none/);
+  });
+
+  it("usa tokens de cor, não hex fixo — senão quebra no tema claro", () => {
+    const bloco = cards.slice(cards.indexOf("const color ="), cards.indexOf("const color =") + 260);
+    expect(bloco).toMatch(/var\(--color-(positive|negative|muted-foreground)\)/);
+    expect(bloco).not.toMatch(/#[0-9a-f]{3,6}/i);
+  });
+});
