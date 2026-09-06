@@ -1,75 +1,74 @@
 /**
- * GraficoDeFundo — o pano de fundo do hero, desenhado em canvas.
+ * GraficoDeFundo — o gráfico que fica atrás do título da home.
  *
- * POR QUE NÃO UMA IMAGEM DE GRÁFICO GENÉRICA. Toda página feita às pressas hoje
- * usa o mesmo gradiente e o mesmo círculo borrado — era exatamente o que estava
- * aqui. Trocar por um "gráfico bonito" qualquer resolveria pela metade: continuaria
- * decoração emprestada.
+ * PRIMEIRA TENTATIVA, E POR QUE ELA NÃO SERVIU. Comecei desenhando doze
+ * trajetórias de preço espalhadas pelo quadro. A ideia era certa (mostrar a forma
+ * do nosso assunto), a execução não: doze linhas sobrepostas não leem como
+ * gráfico, leem como linhas jogadas no fundo. O fundador apontou na hora, e tinha
+ * razão — quantidade não vira leitura, estrutura vira.
  *
- * O que se desenha aqui é O NOSSO ASSUNTO. Um mercado de previsão tem uma forma
- * própria: o preço oscila em torno da dúvida e, quando o evento acontece, ele
- * RESOLVE — vai para 100% ou para 0% e para de se mexer. Nenhum outro gráfico do
- * mundo faz isso. Então o fundo mostra várias dessas trajetórias saindo dos 50%
- * (a dúvida completa) e terminando decididas, com a linha dos 50% marcada.
- * Quem entende, reconhece; quem não entende, vê um gráfico bonito. Os dois ganham.
+ * O QUE ESTÁ AQUI AGORA é um gráfico de verdade, com duas linhas só. E o par não
+ * é escolha estética: é o fato central de um mercado binário. SIM e NÃO são
+ * COMPLEMENTARES — se o SIM vale 70%, o NÃO vale exatamente 30%, e as duas somam
+ * 100% o tempo todo. Uma sobe na medida exata em que a outra desce, e elas se
+ * cruzam nos 50%: o instante de dúvida máxima. É o site inteiro em duas curvas —
+ * a incerteza, o cruzamento, a resolução.
  *
- * Custo: um canvas de ~40 linhas, sem biblioteca, sem imagem para baixar.
+ * A curva do NÃO é literalmente `1 − SIM`, calculada e não desenhada de olho.
+ * Um gráfico que ilustra dado, num site de dados, tem que obedecer ao dado.
+ *
+ * Custo: um canvas, sem biblioteca e sem imagem para baixar.
  *
  * Acessibilidade e desempenho:
  *  · `prefers-reduced-motion` → desenha o quadro final e para. Sem exceção.
- *  · redesenha ao redimensionar, com devicePixelRatio (senão borra em tela retina).
+ *  · redesenha ao redimensionar (com devicePixelRatio) e ao trocar de tema.
  *  · `aria-hidden` e `pointer-events-none`: é papel de parede, não conteúdo.
  */
 import { useEffect, useRef } from "react";
 
-/**
- * Quantas trajetórias. Subiu de 7 para 12 depois do primeiro teste em tela cheia:
- * com 7, o desenho se concentrava nas laterais e a área ATRÁS DO TÍTULO — que é
- * justamente onde ele precisa aparecer — ficava vazia.
- */
-const CAMINHOS = 12;
-/** Passos por trajetória — resolução do desenho, não do dado. */
-const PASSOS = 90;
+/** Pontos da curva. Alto o bastante para a linha sair lisa em tela larga. */
+const PASSOS = 160;
 
 export interface Ponto { x: number; y: number }
 
 /**
- * Uma trajetória de preço de mercado de previsão: passeio aleatório em torno de
- * 50% que, na reta final, é puxado para o desfecho. A "puxada" é o que diferencia
- * isto de um gráfico de ações — mercado de previsão termina em 0 ou 100, sempre.
+ * A curva do SIM: começa DESCRENTE (~5%), vira no meio e resolve alto (~95%).
+ *
+ * A forma conta uma história, e é de propósito. Um mercado que só sobe é uma
+ * barra de progresso; o que prende é a VIRADA — o evento que quase ninguém dava
+ * como provável e que acabou acontecendo. Como o NÃO é o espelho exato, as duas
+ * curvas se cruzam no meio e desenham um X: uma subindo, a outra descendo.
+ *
+ * Os três trechos: descrença no começo, a virada quando a notícia chega, e a
+ * subida que achata perto do teto (a certeza chegando, sem mais o que descobrir).
  */
-export function trajetoria(semente: number, resolveEmSim: boolean, amplitude = 1): Ponto[] {
-  // Gerador determinístico: o mesmo desenho a cada carga, sem piscar diferente
-  // a cada visita (e sem depender de Math.random, que atrapalharia o teste).
-  let s = semente * 9973;
-  const aleatorio = () => {
-    s = (s * 1103515245 + 12345) % 2147483648;
-    return s / 2147483648;
-  };
-
+export function curvaSim(): Ponto[] {
   const pontos: Ponto[] = [];
-  let valor = 0.5;
-  // VELOCIDADE, e não só ruído. Somar ruído puro a cada passo produz zigue-zague
-  // de alta frequência — visto em tela cheia, lê como chiado de TV, não como
-  // preço. Guardar a velocidade e só empurrá-la um pouco a cada passo dá a curva
-  // suave que um mercado realmente desenha: ele tende a continuar para onde
-  // estava indo até uma notícia virar a direção.
-  let velocidade = 0;
   for (let i = 0; i <= PASSOS; i++) {
     const t = i / PASSOS;
-    // Força de resolução: quase nula no começo, dominante no fim.
-    const puxada = Math.pow(t, 3.2);
-    // A amplitude por trajetória é o que faz o conjunto ABRIR em leque em vez de
-    // andar tudo colado no meio. Sem isso, as linhas se amontoam na faixa central
-    // e sobra fundo liso onde o título fica.
-    const ruido = (aleatorio() - 0.5) * 0.055 * amplitude * (1 - puxada);
-    velocidade = velocidade * 0.82 + ruido;
-    valor += velocidade;
-    valor += ((resolveEmSim ? 1 : 0) - valor) * puxada * 0.09;
-    valor = Math.max(0.02, Math.min(0.98, valor));
-    pontos.push({ x: t, y: valor });
+
+    // Espinha da curva: sigmoide deslocada — dúvida no começo, virada no meio,
+    // certeza no fim. É o formato de quem descobre a resposta aos poucos.
+    const sigmoide = 1 / (1 + Math.exp(-9 * (t - 0.46)));
+    const base = 0.5 + (sigmoide - 0.5) * 0.92;
+
+    // Ondulação: duas frequências somadas, ambas se apagando no fim. Quando o
+    // evento se aproxima, o preço para de balançar — não há mais o que descobrir.
+    const balanco =
+      Math.sin(t * 11.5) * 0.030 * (1 - t) +
+      Math.sin(t * 27 + 1.4) * 0.013 * (1 - t);
+
+    pontos.push({ x: t, y: Math.max(0.03, Math.min(0.97, base + balanco)) });
   }
   return pontos;
+}
+
+/**
+ * A curva do NÃO. Não é desenhada: é o complemento exato do SIM, porque é isso
+ * que ela é num mercado binário. Se a do SIM mudar, esta acompanha sozinha.
+ */
+export function curvaNao(sim: Ponto[]): Ponto[] {
+  return sim.map((p) => ({ x: p.x, y: 1 - p.y }));
 }
 
 export default function GraficoDeFundo({ className = "" }: { className?: string }) {
@@ -82,10 +81,8 @@ export default function GraficoDeFundo({ className = "" }: { className?: string 
     if (!ctx) return;
 
     const semMovimento = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
-    // Amplitudes variadas: umas passeiam perto da dúvida, outras abrem cedo. É o
-    // que dá textura ao fundo em vez de um feixe uniforme.
-    const caminhos = Array.from({ length: CAMINHOS }, (_, i) =>
-      trajetoria(i + 1, i % 2 === 0, 0.55 + (i % 5) * 0.32));
+    const sim = curvaSim();
+    const nao = curvaNao(sim);
 
     let animId = 0;
     let progresso = semMovimento ? 1 : 0;
@@ -94,80 +91,103 @@ export default function GraficoDeFundo({ className = "" }: { className?: string 
       const canvas = canvasRef.current;
       if (!canvas || !ctx) return;
       const dpr = window.devicePixelRatio || 1;
-      const largura = canvas.clientWidth;
-      const altura = canvas.clientHeight;
-      if (canvas.width !== largura * dpr || canvas.height !== altura * dpr) {
-        canvas.width = largura * dpr;
-        canvas.height = altura * dpr;
+      const L = canvas.clientWidth;
+      const A = canvas.clientHeight;
+      if (canvas.width !== L * dpr || canvas.height !== A * dpr) {
+        canvas.width = L * dpr;
+        canvas.height = A * dpr;
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       }
-      ctx.clearRect(0, 0, largura, altura);
-      if (largura < 2 || altura < 2) return;
+      ctx.clearRect(0, 0, L, A);
+      if (L < 2 || A < 2) return;
 
-      // Ocupa quase todo o quadro (antes 88%): o desenho precisa alcançar a altura
-      // do título, não só a faixa do meio.
-      const emY = (v: number) => altura * (1 - v) * 0.96 + altura * 0.02;
-
-      // O MESMO traço não serve nos dois temas. Sobre preto, dourado a 15% já
-      // salta; sobre o creme do tema claro ele quase some, porque o contraste
-      // contra fundo claro é muito menor. Então o tema claro recebe um tom mais
-      // escuro e um pouco mais de opacidade — mesma discrição, presença igual.
+      // Sobre preto, dourado a 15% salta; sobre o creme do tema claro ele quase
+      // some, porque o contraste contra fundo claro é muito menor. Cada tema tem
+      // seu tom — mesma discrição, presença igual.
       const claro = document.documentElement.getAttribute("data-theme") === "light"
         || document.documentElement.classList.contains("light");
-      const ouro = (op: number) => claro
-        ? `oklch(0.55 0.13 78 / ${op + 6}%)`
-        : `oklch(0.78 0.12 85 / ${op}%)`;
-      const azul = (op: number) => claro
-        ? `oklch(0.52 0.10 240 / ${op + 5}%)`
-        : `oklch(0.72 0.09 240 / ${op}%)`;
+      const ouro  = (op: number) => claro ? `oklch(0.55 0.13 78 / ${op}%)`  : `oklch(0.80 0.13 85 / ${op}%)`;
+      const azul  = (op: number) => claro ? `oklch(0.50 0.10 240 / ${op}%)` : `oklch(0.70 0.09 240 / ${op}%)`;
+      const cinza = (op: number) => claro ? `oklch(0.45 0.02 260 / ${op}%)` : `oklch(0.75 0.02 260 / ${op}%)`;
 
-      // A linha dos 50% — a régua da dúvida. É o que dá sentido ao resto.
-      ctx.strokeStyle = ouro(14);
+      // Área útil: margem em cima e embaixo para as curvas não encostarem na borda.
+      const topo = A * 0.08;
+      const alturaUtil = A * 0.84;
+      const emY = (v: number) => topo + (1 - v) * alturaUtil;
+      const emX = (v: number) => v * L;
+
+      // ── GRADE. É o que transforma duas linhas soltas em gráfico: dá escala, e
+      // sem escala curva nenhuma significa coisa alguma. A dos 50% é tracejada e
+      // dourada porque não é só mais um nível — é a linha da dúvida.
       ctx.lineWidth = 1;
-      ctx.setLineDash([3, 7]);
-      ctx.beginPath();
-      ctx.moveTo(0, emY(0.5));
-      ctx.lineTo(largura, emY(0.5));
-      ctx.stroke();
+      for (const nivel of [0, 0.25, 0.5, 0.75, 1]) {
+        const meio = nivel === 0.5;
+        ctx.strokeStyle = meio ? ouro(16) : cinza(7);
+        ctx.setLineDash(meio ? [4, 6] : []);
+        ctx.beginPath();
+        ctx.moveTo(0, emY(nivel));
+        ctx.lineTo(L, emY(nivel));
+        ctx.stroke();
+      }
       ctx.setLineDash([]);
 
-      caminhos.forEach((pontos, i) => {
-        // Cada trajetória entra um pouco depois da anterior — dá a leitura de
-        // mercados chegando ao vivo, que é o que a página promete logo acima.
-        const atraso = i * 0.06;
-        const avanco = Math.max(0, Math.min(1, (progresso - atraso) / 0.55));
-        if (avanco <= 0) return;
-        const ate = Math.floor(avanco * PASSOS);
-
-        const resolveuAlto = pontos[PASSOS].y > 0.5;
-        // O ouro é a marca; o azul entra só como contraponto frio nas que caem.
-        // Opacidade entre 13% e ~24%: presente o bastante para se ver de longe,
-        // discreto o bastante para o título continuar sendo o que se lê primeiro.
-        ctx.strokeStyle = resolveuAlto ? ouro(13 + i) : azul(10 + i);
-        ctx.lineWidth = 1.5;
+      const ate = Math.max(1, Math.floor(progresso * PASSOS));
+      const caminho = (pts: Ponto[]) => {
         ctx.beginPath();
         for (let k = 0; k <= ate; k++) {
-          const p = pontos[k];
-          const x = p.x * largura;
-          const y = emY(p.y);
+          const x = emX(pts[k].x), y = emY(pts[k].y);
           if (k === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
         }
-        ctx.stroke();
+      };
 
-        // O ponto final só aparece quando a trajetória REALMENTE terminou —
-        // sinaliza a resolução, que é o momento que o site inteiro celebra.
-        if (avanco >= 1) {
-          const p = pontos[PASSOS];
-          ctx.fillStyle = resolveuAlto ? ouro(24) : azul(20);
+      // ── Área sob o SIM. Dá peso ao lado que vence e deixa claro qual é a curva
+      // principal — duas linhas de mesmo peso competiriam entre si.
+      const degrade = ctx.createLinearGradient(0, topo, 0, topo + alturaUtil);
+      degrade.addColorStop(0, ouro(claro ? 13 : 11));
+      degrade.addColorStop(1, ouro(0));
+      ctx.fillStyle = degrade;
+      caminho(sim);
+      ctx.lineTo(emX(sim[ate].x), emY(0));
+      ctx.lineTo(0, emY(0));
+      ctx.closePath();
+      ctx.fill();
+
+      // ── NÃO primeiro (fica atrás), SIM por cima: a hierarquia segue quem vence.
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = azul(claro ? 34 : 30);
+      caminho(nao);
+      ctx.stroke();
+
+      ctx.lineWidth = 2.4;
+      ctx.strokeStyle = ouro(claro ? 46 : 42);
+      caminho(sim);
+      ctx.stroke();
+
+      // ── O cruzamento nos 50%: o ponto em que as duas valem o mesmo. É o mais
+      // informativo do desenho, então ganha marca própria.
+      const iCruz = sim.findIndex((p, k) => k > 0.1 * PASSOS && p.y >= 0.5);
+      if (iCruz > 0 && ate >= iCruz) {
+        ctx.strokeStyle = ouro(30);
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.arc(emX(sim[iCruz].x), emY(0.5), 4.5, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+
+      // ── As pontas, quando a curva termina: é a RESOLUÇÃO — um lado passa a
+      // valer tudo, o outro nada. É o momento que o site inteiro celebra.
+      if (ate >= PASSOS) {
+        for (const [pts, cor] of [[sim, ouro(70)], [nao, azul(50)]] as const) {
+          ctx.fillStyle = cor;
           ctx.beginPath();
-          ctx.arc(p.x * largura, emY(p.y), 2.5, 0, Math.PI * 2);
+          ctx.arc(emX(pts[PASSOS].x) - 2, emY(pts[PASSOS].y), 3.2, 0, Math.PI * 2);
           ctx.fill();
         }
-      });
+      }
     }
 
     function quadro() {
-      progresso = Math.min(1, progresso + 0.006);
+      progresso = Math.min(1, progresso + 0.009);
       desenhar();
       if (progresso < 1) animId = requestAnimationFrame(quadro);
     }
@@ -179,8 +199,8 @@ export default function GraficoDeFundo({ className = "" }: { className?: string 
     window.addEventListener("resize", aoRedimensionar);
 
     // Trocar de tema tem que redesenhar. A animação termina em ~2s e para; sem
-    // isto, quem clicasse no sol/lua depois disso ficaria com o traço do tema
-    // anterior — invisível no claro, e sem erro nenhum para denunciar.
+    // isto, quem clicasse no sol/lua depois ficaria com o traço do tema anterior
+    // — quase invisível no claro, e sem erro nenhum para denunciar.
     const observador = new MutationObserver(() => desenhar());
     observador.observe(document.documentElement, { attributes: true, attributeFilter: ["class", "data-theme"] });
 

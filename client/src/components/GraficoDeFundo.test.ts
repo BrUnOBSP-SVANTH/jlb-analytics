@@ -1,54 +1,64 @@
 import { describe, it, expect } from "vitest";
-import { trajetoria } from "./GraficoDeFundo";
+import { curvaSim, curvaNao } from "./GraficoDeFundo";
 
 /**
- * O que estes testes protegem não é estética — é a IDENTIDADE do desenho.
+ * O que estes testes protegem não é estética — é a HONESTIDADE do desenho.
  *
- * O fundo do hero existe para mostrar a forma do nosso assunto: um preço que
- * oscila na dúvida e RESOLVE em 0% ou 100%. Se alguém "simplificar" a função e
- * ela virar um passeio aleatório qualquer, o desenho continua bonito e passa a
- * ser o mesmo gráfico genérico de qualquer site — que era exatamente o problema
- * que ele veio resolver. Aí a perda é silenciosa: nada quebra, só deixa de ser
- * nosso.
+ * O gráfico do hero ilustra o fato central de um mercado binário: SIM e NÃO são
+ * complementares e somam 100% sempre. Se alguém "melhorar" as curvas de olho e
+ * elas deixarem de somar 100, o site passa a ilustrar com um gráfico falso a
+ * própria coisa que ele ensina. E a falha seria silenciosa: continuaria bonito.
  */
-describe("trajetória do fundo — a forma de um mercado de previsão", () => {
-  it("começa na dúvida completa (50%)", () => {
-    for (const s of [1, 2, 7]) {
-      expect(trajetoria(s, true)[0].y).toBeCloseTo(0.5, 1);
+describe("gráfico do hero — SIM e NÃO são complementares", () => {
+  const sim = curvaSim();
+  const nao = curvaNao(sim);
+
+  it("as duas curvas somam 100% em TODOS os pontos", () => {
+    // É a regra do mercado binário. Não pode valer "quase sempre".
+    for (let i = 0; i < sim.length; i++) {
+      expect(sim[i].y + nao[i].y).toBeCloseTo(1, 10);
+      expect(sim[i].x).toBe(nao[i].x);
     }
   });
 
-  it("RESOLVE: termina perto de 100% ou de 0%, nunca no meio", () => {
-    for (const s of [1, 2, 3, 4, 5, 6, 7]) {
-      const sim = trajetoria(s, true);
-      const nao = trajetoria(s, false);
-      expect(sim[sim.length - 1].y).toBeGreaterThan(0.5);
-      expect(nao[nao.length - 1].y).toBeLessThan(0.5);
-    }
+  it("conta uma VIRADA: o SIM começa descrente e termina alto", () => {
+    // É o que dá história ao desenho. Um mercado que só sobe é barra de
+    // progresso; o que prende é o evento que ninguém dava como provável e
+    // aconteceu. E como o NÃO é o espelho, as duas desenham um X.
+    expect(sim[0].y).toBeLessThan(0.2);
+    expect(sim[sim.length - 1].y).toBeGreaterThan(0.9);
+    expect(nao[0].y).toBeGreaterThan(0.8);
+    expect(nao[nao.length - 1].y).toBeLessThan(0.1);
   });
 
-  it("é determinística — o mesmo desenho a cada carga", () => {
-    // Sem isto o fundo mudaria a cada visita, e a página perderia identidade
-    // visual (além de impossibilitar este teste).
-    expect(trajetoria(3, true)).toEqual(trajetoria(3, true));
-    expect(trajetoria(3, true)).not.toEqual(trajetoria(4, true));
+  it("as curvas se cruzam — existe um ponto onde valem o mesmo", () => {
+    // O cruzamento é o que o desenho marca com um círculo. Sem ele, o gráfico
+    // perde justamente o momento que dá sentido aos dois lados.
+    const cruzou = sim.some((p, i) => Math.abs(p.y - nao[i].y) < 0.03 && p.x > 0.1);
+    expect(cruzou).toBe(true);
+  });
+
+  it("não é uma reta — oscila enquanto a notícia não chega", () => {
+    // Uma diagonal limpa seria barra de progresso, não mercado.
+    const inicio = sim.slice(0, 60).map((p) => p.y);
+    const variou = Math.max(...inicio) - Math.min(...inicio);
+    expect(variou).toBeGreaterThan(0.03);
+  });
+
+  it("estabiliza no fim — perto do desfecho o preço para de balançar", () => {
+    // O balanço tem que sumir: mercado prestes a resolver não oscila mais.
+    const fim = sim.slice(-25).map((p) => p.y);
+    expect(Math.max(...fim) - Math.min(...fim)).toBeLessThan(0.09);
   });
 
   it("nunca sai da faixa de probabilidade", () => {
-    // y é probabilidade: fora de 0–1 o desenho vazaria do quadro.
-    for (const p of trajetoria(5, true)) {
+    for (const p of [...sim, ...nao]) {
       expect(p.y).toBeGreaterThanOrEqual(0);
       expect(p.y).toBeLessThanOrEqual(1);
-      expect(p.x).toBeGreaterThanOrEqual(0);
-      expect(p.x).toBeLessThanOrEqual(1);
     }
   });
 
-  it("oscila no caminho — não é uma reta até o desfecho", () => {
-    // Se fosse reta, seria um gráfico de progresso, não de mercado.
-    const p = trajetoria(2, true);
-    const meio = p.slice(5, 60).map((q) => q.y);
-    const variou = Math.max(...meio) - Math.min(...meio);
-    expect(variou).toBeGreaterThan(0.03);
+  it("é determinística — o mesmo gráfico a cada visita", () => {
+    expect(curvaSim()).toEqual(curvaSim());
   });
 });
