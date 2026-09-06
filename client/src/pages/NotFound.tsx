@@ -21,7 +21,7 @@ export default function NotFound() {
         </div>
       </div>
 
-      <h1 className="text-xl font-semibold text-foreground mb-2">Página não encontrada</h1>
+      <h1 className="text-xl font-semibold text-[var(--titulo)] mb-2">Página não encontrada</h1>
       <p className="text-sm text-muted-foreground text-center max-w-sm leading-relaxed mb-8">
         A página que você está procurando não existe ou foi movida.
         Veja algumas opções abaixo.

@@ -10,7 +10,7 @@ const UPDATED = "24 de junho de 2026";
 function Section({ n, title, children }: { n: string; title: string; children: React.ReactNode }) {
   return (
     <div className="space-y-2">
-      <h2 className="text-base font-display font-bold text-foreground">{n}. {title}</h2>
+      <h2 className="text-base font-display font-bold text-[var(--titulo)]">{n}. {title}</h2>
       <div className="text-sm text-muted-foreground leading-relaxed space-y-2">{children}</div>
     </div>
   );

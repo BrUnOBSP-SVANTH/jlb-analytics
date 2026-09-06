@@ -29,7 +29,7 @@ export function MarketHeader({ market }: { market: MarketBasic }) {
             Ver no {market.source === "kalshi" ? "Kalshi" : "Polymarket"}
           </a>
         </div>
-        <h1 className="text-2xl font-bold text-foreground leading-snug">{market.title}</h1>
+        <h1 className="text-2xl font-bold text-[var(--titulo)] leading-snug">{market.title}</h1>
         <p className="text-xs text-muted-foreground/70 leading-relaxed">
           Esta tela reúne tudo sobre este mercado — o preço atual, o histórico, o consenso das fontes e as ferramentas
           para você decidir com lógica, não no achismo. Abaixo, cada seção explica o que mostra e como usar.

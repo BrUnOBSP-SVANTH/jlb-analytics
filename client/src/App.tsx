@@ -10,6 +10,7 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { AuthProvider } from "./contexts/AuthContext";
 import Layout from "./components/Layout";
+import EntradaDePagina from "./components/EntradaDePagina";
 import Home from "./pages/Home";
 import { lazy, Suspense, useLayoutEffect } from "react";
 import { usePWA } from "./hooks/usePWA";
@@ -89,6 +90,9 @@ function Router() {
       </Route>
       <Route>
         <Layout>
+          {/* Toda página do site sobe e aparece ao abrir — inclusive as que ainda
+              não existem. Ver components/EntradaDePagina.tsx. */}
+          <EntradaDePagina>
           <Suspense fallback={<PageLoader />}>
             <Switch>
               <Route path="/"             component={Home} />
@@ -128,6 +132,7 @@ function Router() {
               <Route                      component={NotFound} />
             </Switch>
           </Suspense>
+          </EntradaDePagina>
         </Layout>
       </Route>
     </Switch>

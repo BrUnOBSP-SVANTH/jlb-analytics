@@ -63,7 +63,12 @@
   --color-on-accent: oklch(0.17 0.012 280);
 
   --font-sans: 'Inter Tight Variable', system-ui, sans-serif;
-  --font-display: 'Outfit Variable', system-ui, sans-serif;
+  /* FRAUNCES no lugar de Outfit. Outfit e uma das faces que todo site gerado
+     por IA usa hoje — bonita e sem assinatura nenhuma. Fraunces e uma serif
+     editorial de contraste alto, com eixo `wonk` que da personalidade aos
+     titulos: conversa com a seriedade de dado financeiro sem ficar dura.
+     Outfit fica na lista como reserva, e nao como escolha. */
+  --font-display: 'Fraunces Variable', 'Outfit Variable', Georgia, serif;
   --font-serif: 'Playfair Display Variable', Georgia, serif;
   --font-mono: 'JetBrains Mono Variable', ui-monospace, monospace;
 }
@@ -81,6 +86,9 @@
   --popover: oklch(0.215 0.016 276);
   --popover-foreground: oklch(0.94 0.006 250);
   --primary: oklch(0.78 0.125 83);
+  /* Cor dos títulos. No escuro é o dourado claro da marca (contraste alto sobre
+     o quase-preto); no tema claro, ver o bloco do tema claro adiante. */
+  --titulo: oklch(0.82 0.12 85);
   --primary-foreground: oklch(0.16 0.012 280);
   --secondary: oklch(0.235 0.016 276);
   --secondary-foreground: oklch(0.82 0.01 250);
@@ -127,6 +135,9 @@
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.21 0.016 275);
   --primary: oklch(0.6 0.13 78);
+  /* Tema claro: o dourado precisa ESCURECER para manter contraste sobre o creme.
+     O mesmo tom do escuro sumiria no fundo — erro clássico de tema claro. */
+  --titulo: oklch(0.52 0.12 76);
   --primary-foreground: oklch(0.99 0.003 90);
   --secondary: oklch(0.955 0.007 88);
   --secondary-foreground: oklch(0.3 0.02 270);
@@ -191,7 +202,53 @@
   }
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-display);
-    letter-spacing: -0.02em; /* tracking apertado nos títulos — assinatura editorial */
+    letter-spacing: -0.015em; /* tracking apertado nos títulos — assinatura editorial */
+  }
+
+  /* ── TÍTULOS EM DOURADO ────────────────────────────────────────────────────
+     O dourado da marca passa a marcar a HIERARQUIA, não só os detalhes.
+
+     Por que só h1 e h2, e não todo texto: contraste. O dourado sobre fundo
+     escuro funciona bem em corpo grande (título), mas em texto corrido de 14px
+     ele cansa a leitura e derruba o contraste abaixo do aceitável. Cor de marca
+     serve para GUIAR o olho; se tudo é dourado, nada é. Então h1/h2 recebem a
+     cor e o texto continua neutro — que é o que faz o dourado significar algo.
+
+     A especificidade dupla é necessária, não preguiça: 104 dos 108 títulos do
+     site têm `text-foreground` escrito na classe, e uma regra de elemento
+     (0,0,1) perde para uma classe (0,1,0). Repetir o seletor com a classe
+     empata em especificidade e vence pela ordem. A alternativa seria editar 104
+     arquivos e deixar a decisão espalhada — pior de mudar e pior de reverter. */
+  h1, h2,
+  h1.text-foreground, h2.text-foreground {
+    color: var(--titulo);
+  }
+
+  /* Quem quiser um título fora do padrão pede explicitamente. */
+  h1.titulo-neutro, h2.titulo-neutro,
+  h1.titulo-neutro.text-foreground, h2.titulo-neutro.text-foreground {
+    color: var(--foreground);
+  }
+
+  /* ── ENTRADA DE PÁGINA ─────────────────────────────────────────────────────
+     Toda página sobe e aparece ao abrir e a cada troca de rota.
+
+     Por keyframes, e não por transição de estado: transição depende de o
+     navegador ter PINTADO o estado inicial, e entre dois quadros ele agrupa as
+     mudanças e pula esse passo — medi e a opacidade ficava em 1 o tempo inteiro.
+     Keyframe toca sempre que o elemento nasce, sem depender de nada disso.
+
+     10px, e não 40: 10 lê como "subiu", 40 lê como "pulou". */
+  @keyframes entrada-pagina {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .entrada-pagina {
+    animation: entrada-pagina 360ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
+  }
+  /* Quem pediu menos movimento recebe a página pronta. Sem exceção. */
+  @media (prefers-reduced-motion: reduce) {
+    .entrada-pagina { animation: none; }
   }
 
   /* Seleção de texto com o dourado da marca */

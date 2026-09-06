@@ -116,7 +116,7 @@ export default function Educacao() {
             <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-primary mb-3">
               <Scale className="w-3.5 h-3.5" /> Comece por aqui
             </span>
-            <h2 className="text-2xl sm:text-3xl font-bold text-foreground text-balance mb-3">
+            <h2 className="text-2xl sm:text-3xl font-bold text-[var(--titulo)] text-balance mb-3">
               Aposta <span className="text-negative">≠</span> Investimento
             </h2>
             <p className="text-sm text-muted-foreground max-w-2xl leading-relaxed">
@@ -183,7 +183,7 @@ export default function Educacao() {
 
       {/* Mapa de progressão */}
       <section>
-        <h2 className="text-lg font-bold text-foreground mb-6 flex items-center gap-2">
+        <h2 className="text-lg font-bold text-[var(--titulo)] mb-6 flex items-center gap-2">
           <GraduationCap className="w-5 h-5 text-primary" />
           Mapa de Progressão
         </h2>
@@ -259,7 +259,7 @@ export default function Educacao() {
 
       {/* O que são mercados preditivos */}
       <section>
-        <h2 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
+        <h2 className="text-lg font-bold text-[var(--titulo)] mb-4 flex items-center gap-2">
           <GitMerge className="w-5 h-5 text-primary" />
           O que são Mercados Preditivos
         </h2>
@@ -296,7 +296,7 @@ export default function Educacao() {
 
       {/* Glossário */}
       <section>
-        <h2 className="text-lg font-bold text-foreground mb-6 flex items-center gap-2">
+        <h2 className="text-lg font-bold text-[var(--titulo)] mb-6 flex items-center gap-2">
           <BookOpen className="w-5 h-5 text-primary" />
           Glossário de Termos-Chave
         </h2>

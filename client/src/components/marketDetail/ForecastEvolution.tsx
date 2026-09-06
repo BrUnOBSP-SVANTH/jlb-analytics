@@ -37,7 +37,7 @@ export function ForecastEvolution({ marketId, source }: { marketId: string; sour
       <div className="glass-card rounded-xl p-5 border border-neon-blue/15">
         <div className="flex items-center gap-2 mb-3">
           <TrendingUp className="w-4 h-4 text-neon-blue" />
-          <h2 className="text-sm font-semibold text-foreground">Evolução da estimativa da IA</h2>
+          <h2 className="text-sm font-semibold text-[var(--titulo)]">Evolução da estimativa da IA</h2>
           <span className="ml-auto text-[10px] text-muted-foreground/60">{history.length} pontos · {days}d</span>
         </div>
         <p className="text-xs text-muted-foreground mb-3">

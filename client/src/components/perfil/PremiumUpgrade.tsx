@@ -68,7 +68,7 @@ export function PremiumUpgrade({ userId, userEmail }: { userId: string; userEmai
       <div className="glass-card rounded-2xl p-6 border border-gold/20 bg-gradient-to-br from-gold/5 to-transparent space-y-4">
         <div className="flex items-center gap-2">
           <Star className="w-4 h-4 text-gold" />
-          <h2 className="font-semibold text-foreground">JLB Premium</h2>
+          <h2 className="font-semibold text-[var(--titulo)]">JLB Premium</h2>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           {benefits.map((b) => (

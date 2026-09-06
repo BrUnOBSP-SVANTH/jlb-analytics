@@ -125,7 +125,7 @@ export default function Imprensa() {
         {/* O feed, ao vivo */}
         <section>
           <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
-            <h2 className="text-lg font-bold text-foreground flex items-center gap-2"><Newspaper className="w-5 h-5 text-primary" /> O feed, ao vivo</h2>
+            <h2 className="text-lg font-bold text-[var(--titulo)] flex items-center gap-2"><Newspaper className="w-5 h-5 text-primary" /> O feed, ao vivo</h2>
             <span className="text-[11px] text-muted-foreground">ordenado pelos maiores movimentos da semana</span>
           </div>
 
@@ -167,7 +167,7 @@ export default function Imprensa() {
 
         {/* Credibilidade + CTA de licenciamento */}
         <section className="glass-card rounded-2xl p-6 border border-gold/20 bg-gradient-to-br from-gold/5 to-transparent">
-          <h2 className="font-display font-bold text-foreground text-lg mb-2">Por que uma redação confiaria nesses números?</h2>
+          <h2 className="font-display font-bold text-[var(--titulo)] text-lg mb-2">Por que uma redação confiaria nesses números?</h2>
           <p className="text-sm text-muted-foreground mb-4 max-w-2xl">
             Porque o acerto é <strong className="text-foreground">público e auditável</strong>. Cada previsão é registrada,
             comparada ao resultado <strong className="text-foreground">oficial</strong> da plataforma e agregada numa taxa de

@@ -63,7 +63,7 @@ function GuestView() {
         <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
           <LogIn className="w-6 h-6 text-primary" aria-hidden="true" />
         </div>
-        <h2 className="text-xl font-bold text-foreground">Entre para ver seu progresso</h2>
+        <h2 className="text-xl font-bold text-[var(--titulo)]">Entre para ver seu progresso</h2>
         <p className="text-sm text-muted-foreground leading-relaxed">
           Brier Score, Skill Score, calibração e histórico de previsões ficam salvos na sua conta.
         </p>

@@ -70,7 +70,7 @@ export function NovaApostaModal({
       <AnimatedSection>
         <div className="w-full max-w-lg glass-card rounded-2xl p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
           <div className="flex items-center justify-between">
-            <h2 className="text-base font-semibold text-foreground flex items-center gap-2">
+            <h2 className="text-base font-semibold text-[var(--titulo)] flex items-center gap-2">
               <Plus className="w-4 h-4 text-primary" /> Nova aposta simulada
             </h2>
             <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition-colors text-sm" aria-label="Fechar">✕</button>

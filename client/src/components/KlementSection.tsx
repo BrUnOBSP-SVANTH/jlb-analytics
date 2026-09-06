@@ -382,7 +382,7 @@ export default function KlementSection({ onClose }: { onClose: () => void }) {
       <div className="flex items-center gap-4 p-4 rounded-xl border border-gold/25 bg-gold/5">
         <Trophy className="w-7 h-7 text-gold shrink-0" />
         <div className="flex-1">
-          <h2 className="text-base font-bold text-foreground">Copa do Mundo 2026 — Modelo Klement <span className="text-xs font-normal text-negative/80">· retrospectiva</span></h2>
+          <h2 className="text-base font-bold text-[var(--titulo)]">Copa do Mundo 2026 — Modelo Klement <span className="text-xs font-normal text-negative/80">· retrospectiva</span></h2>
           <p className="text-xs text-muted-foreground mt-0.5">
             Hoffmann, Ging &amp; Ramasamy (2002) + ranking FIFA · 3 de 4 Copas — errou 2026 (Holanda) · Monte Carlo {N_SIMULATIONS.toLocaleString("pt-BR")} iterações
           </p>

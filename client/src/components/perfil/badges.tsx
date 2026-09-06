@@ -246,7 +246,7 @@ export function BadgesSection({ ctx }: { ctx: BadgeContext }) {
     <div className="glass-card rounded-2xl p-6 space-y-5">
       <div className="flex items-center gap-2">
         <Shield className="w-4 h-4 text-gold" aria-hidden="true" />
-        <h2 className="font-semibold text-foreground">Conquistas</h2>
+        <h2 className="font-semibold text-[var(--titulo)]">Conquistas</h2>
         <span className="ml-auto text-xs font-mono text-muted-foreground">
           {earned.length}/{results.length}
         </span>

@@ -106,7 +106,7 @@ export default function ResetPassword() {
               <CheckCircle className="w-6 h-6 text-positive" />
             </div>
           </div>
-          <h2 className="text-lg font-semibold text-foreground mb-2">Senha redefinida!</h2>
+          <h2 className="text-lg font-semibold text-[var(--titulo)] mb-2">Senha redefinida!</h2>
           <p className="text-sm text-muted-foreground mb-6">
             Sua senha foi atualizada com sucesso.
           </p>
@@ -130,7 +130,7 @@ export default function ResetPassword() {
           <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-neon-blue to-primary flex items-center justify-center mb-3">
             <TrendingUp className="w-6 h-6 text-white" aria-hidden="true" />
           </div>
-          <h1 className="text-xl font-display font-bold text-foreground">JLB Analytics</h1>
+          <h1 className="text-xl font-display font-bold text-[var(--titulo)]">JLB Analytics</h1>
           <p className="text-sm text-muted-foreground mt-1">Defina sua nova senha</p>
         </div>
 

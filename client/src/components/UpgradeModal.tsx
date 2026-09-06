@@ -102,7 +102,7 @@ export default function UpgradeModal() {
           <div className="w-9 h-9 rounded-xl bg-gold/15 flex items-center justify-center shrink-0">
             <Star className="w-4 h-4 text-gold" />
           </div>
-          <h2 className="font-bold text-foreground text-lg leading-tight">{title}</h2>
+          <h2 className="font-bold text-[var(--titulo)] text-lg leading-tight">{title}</h2>
         </div>
         <p className="text-sm text-muted-foreground mb-5">{subtitle}</p>
 

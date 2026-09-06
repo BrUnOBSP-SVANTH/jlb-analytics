@@ -65,7 +65,7 @@ export function ProfilePublicSettings({ userId }: { userId: string }) {
       <div className="glass-card rounded-2xl p-6 space-y-5">
         <div className="flex items-center gap-2">
           <Globe className="w-4 h-4 text-neon-blue" />
-          <h2 className="font-semibold text-foreground">Perfil Público · Leaderboard</h2>
+          <h2 className="font-semibold text-[var(--titulo)]">Perfil Público · Leaderboard</h2>
         </div>
 
         <p className="text-xs text-muted-foreground">

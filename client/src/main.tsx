@@ -6,6 +6,7 @@ import { initErrorTracking } from "./lib/errorTracking";
 // externo do Google Fonts e sem vazar visitas para terceiros.
 import "@fontsource-variable/inter-tight";
 import "@fontsource-variable/outfit";
+import "@fontsource-variable/fraunces";
 import "@fontsource-variable/playfair-display";
 import "@fontsource-variable/jetbrains-mono";
 

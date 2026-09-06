@@ -266,7 +266,7 @@ export default function Duelos() {
           <div className="w-14 h-14 rounded-full bg-gold/10 border border-gold/25 flex items-center justify-center mx-auto mb-5">
             <Swords className="w-6 h-6 text-gold" aria-hidden="true" />
           </div>
-          <h2 className="text-xl font-display font-bold text-foreground mb-2">Entre para duelar</h2>
+          <h2 className="text-xl font-display font-bold text-[var(--titulo)] mb-2">Entre para duelar</h2>
           <p className="text-sm text-muted-foreground mb-6 leading-relaxed">
             Seus duelos, previsões seladas e vitórias ficam na sua conta.
             Crie uma conta gratuita para desafiar outros forecasters.

@@ -67,7 +67,7 @@ export function ConsensusCard({ market, community, ai, trackRecord }: {
       <div className="glass-card rounded-xl p-5 border border-gold/25 bg-gold/3">
         <div className="flex items-center gap-2 mb-4">
           <GitMerge className="w-4 h-4 text-gold" />
-          <h2 className="text-sm font-semibold text-foreground">Consenso JLB</h2>
+          <h2 className="text-sm font-semibold text-[var(--titulo)]">Consenso JLB</h2>
           <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-gold/15 border border-gold/30 text-gold">{result.nSources} {result.nSources === 1 ? "fonte" : "fontes"}</span>
           <span className="ml-auto text-[10px] text-muted-foreground/60">agregação logit extremizada</span>
         </div>

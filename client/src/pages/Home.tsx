@@ -267,7 +267,7 @@ export default function Home() {
               <span className="w-1.5 h-1.5 rounded-full bg-neon-blue animate-pulse" aria-hidden="true" />
               Polymarket · Kalshi · Reddit — ao vivo
             </div>
-            <h1 className="text-4xl md:text-6xl font-display font-bold text-foreground leading-tight mb-5">
+            <h1 className="text-4xl md:text-6xl font-display font-bold text-[var(--titulo)] leading-tight mb-5">
               Preveja melhor.{" "}
               <span className="text-primary">Decida com método.</span>
             </h1>
@@ -493,7 +493,7 @@ export default function Home() {
       <section className="py-16 px-4">
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-12">
-            <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-3">Como funciona</h2>
+            <h2 className="text-2xl md:text-3xl font-bold text-[var(--titulo)] mb-3">Como funciona</h2>
             <p className="text-muted-foreground text-sm max-w-lg mx-auto">
               Três passos simples para prever com método — mesmo sem experiência prévia.
             </p>
@@ -523,7 +523,7 @@ export default function Home() {
       <section className="py-16 px-4 bg-secondary/5 border-t border-border/20">
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-10">
-            <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-3">5 Níveis de Conhecimento</h2>
+            <h2 className="text-2xl md:text-3xl font-bold text-[var(--titulo)] mb-3">5 Níveis de Conhecimento</h2>
             <p className="text-sm text-muted-foreground max-w-lg mx-auto">
               Do básico ao avançado, no seu ritmo.
               Níveis 1–3 são gratuitos. Níveis 4–5 desbloqueiam conforme você usa.
@@ -575,7 +575,7 @@ export default function Home() {
                   <span className="w-1 h-1 rounded-full bg-muted-foreground/30" aria-hidden="true" />
                   <span className="text-xs text-muted-foreground">{MODEL_COUNT} modelos econométricos</span>
                 </div>
-                <h2 className="text-xl md:text-2xl font-bold text-foreground mb-2">Previsão Guiada por IA</h2>
+                <h2 className="text-xl md:text-2xl font-bold text-[var(--titulo)] mb-2">Previsão Guiada por IA</h2>
                 <p className="text-sm text-muted-foreground leading-relaxed max-w-xl">
                   A mesma metodologia dos Superforecasters do Good Judgment Project: base rate histórico,
                   decomposição de Fermi, ajuste de visão interna e calibração. A IA escolhe o modelo certo,
@@ -671,7 +671,7 @@ export default function Home() {
       {/* ── Final CTA ── */}
       <section className="py-20 px-4">
         <div className="max-w-xl mx-auto text-center">
-          <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-4">
+          <h2 className="text-2xl md:text-3xl font-bold text-[var(--titulo)] mb-4">
             Faça sua primeira previsão hoje
           </h2>
           <p className="text-muted-foreground text-sm mb-8 leading-relaxed">

@@ -86,7 +86,7 @@ export default function Sobre() {
             <div className="flex items-start gap-4">
               <Target className="w-8 h-8 text-gold shrink-0 mt-1" aria-hidden="true" />
               <div>
-                <h2 className="text-xl font-display font-bold text-foreground mb-4">Missão</h2>
+                <h2 className="text-xl font-display font-bold text-[var(--titulo)] mb-4">Missão</h2>
                 <p className="text-muted-foreground leading-relaxed">
                   A JLB Analytics nasceu de uma premissa simples: a maioria das pessoas participa de mercados preditivos
                   — apostas esportivas, Polymarket, Kalshi — sem nunca ter calculado o Valor Esperado de uma única posição.
@@ -109,7 +109,7 @@ export default function Sobre() {
 
         {/* Platform metrics */}
         <AnimatedSection>
-          <h2 className="text-xl font-display font-bold text-foreground mb-6">Plataforma em números</h2>
+          <h2 className="text-xl font-display font-bold text-[var(--titulo)] mb-6">Plataforma em números</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {metrics.map((m) => (
               <div key={m.label} className="glass-card rounded-xl p-5 text-center">
@@ -127,7 +127,7 @@ export default function Sobre() {
 
         {/* Market context */}
         <AnimatedSection>
-          <h2 className="text-xl font-display font-bold text-foreground mb-2">Por que agora</h2>
+          <h2 className="text-xl font-display font-bold text-[var(--titulo)] mb-2">Por que agora</h2>
           <p className="text-sm text-muted-foreground mb-6">
             O mercado preditivo brasileiro está sendo construído agora — junto com a regulamentação.
             A janela para capturar usuários antes da commoditização é estreita.
@@ -147,7 +147,7 @@ export default function Sobre() {
 
         {/* What we offer */}
         <AnimatedSection>
-          <h2 className="text-xl font-display font-bold text-foreground mb-6">O que a plataforma entrega</h2>
+          <h2 className="text-xl font-display font-bold text-[var(--titulo)] mb-6">O que a plataforma entrega</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {OFFERINGS.map((item, i) => {
               const Icon = item.icon;
@@ -166,7 +166,7 @@ export default function Sobre() {
 
         {/* Business model */}
         <AnimatedSection>
-          <h2 className="text-xl font-display font-bold text-foreground mb-6">Modelo de negócio</h2>
+          <h2 className="text-xl font-display font-bold text-[var(--titulo)] mb-6">Modelo de negócio</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="glass-card rounded-xl p-5 border border-positive/20">
               <div className="flex items-center gap-2 mb-3">
@@ -209,7 +209,7 @@ export default function Sobre() {
 
         {/* Roadmap */}
         <AnimatedSection>
-          <h2 className="text-xl font-display font-bold text-foreground mb-6">Roadmap</h2>
+          <h2 className="text-xl font-display font-bold text-[var(--titulo)] mb-6">Roadmap</h2>
           <div className="space-y-4">
             {ROADMAP.map((phase) => (
               <div key={phase.phase} className={`glass-card rounded-xl p-5 border ${
@@ -247,7 +247,7 @@ export default function Sobre() {
 
         {/* Principles */}
         <AnimatedSection>
-          <h2 className="text-xl font-display font-bold text-foreground mb-6">Princípios de design</h2>
+          <h2 className="text-xl font-display font-bold text-[var(--titulo)] mb-6">Princípios de design</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {PRINCIPLES.map((p) => (
               <div key={p.title} className={`p-5 rounded-xl border ${p.border} ${p.bg}`}>

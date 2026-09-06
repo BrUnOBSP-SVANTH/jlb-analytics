@@ -107,7 +107,7 @@ export default function Login() {
               <circle cx="25" cy="8.5" r="2.2" fill="currentColor" />
             </svg>
           </div>
-          <h1 className="text-xl font-display font-bold text-foreground">JLB Analytics</h1>
+          <h1 className="text-xl font-display font-bold text-[var(--titulo)]">JLB Analytics</h1>
           <p className="text-sm text-muted-foreground mt-1">
             {mode === "login" && "Entre na sua conta"}
             {mode === "signup" && "Crie sua conta gratuita"}

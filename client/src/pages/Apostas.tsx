@@ -354,7 +354,7 @@ export default function Apostas() {
                 <span className="w-2 h-2 rounded-full bg-positive animate-pulse" aria-hidden="true" />
                 <span className="text-[11px] font-mono text-positive/80 uppercase tracking-widest">Ao vivo</span>
               </div>
-              <h1 className="text-2xl font-display font-bold text-foreground">Mercados em Hype</h1>
+              <h1 className="text-2xl font-display font-bold text-[var(--titulo)]">Mercados em Hype</h1>
               <p className="text-sm text-muted-foreground mt-1">
                 Reddit · Polymarket · Kalshi — atualização automática a cada 3 minutos
               </p>

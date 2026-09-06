@@ -339,7 +339,7 @@ export default function Briefing() {
                 <Zap className="w-5 h-5 text-neon-blue" />
               </div>
               <div className="flex-1">
-                <h2 className="text-lg font-bold text-foreground leading-snug">{briefing.headline}</h2>
+                <h2 className="text-lg font-bold text-[var(--titulo)] leading-snug">{briefing.headline}</h2>
                 {briefing.cached && (
                   <span className="inline-flex items-center gap-1 mt-1 text-[10px] text-muted-foreground/60">
                     <Clock className="w-3 h-3" /> Cache — atualizado hoje

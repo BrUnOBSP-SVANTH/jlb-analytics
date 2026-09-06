@@ -229,7 +229,7 @@ export default function MarketDetail() {
               <div className="glass-card rounded-xl p-6 space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                    <h2 className="text-sm font-semibold text-[var(--titulo)] flex items-center gap-2">
                       <BarChart2 className="w-4 h-4 text-neon-blue" />
                       Histórico de Probabilidade (90 dias)
                     </h2>
@@ -300,7 +300,7 @@ export default function MarketDetail() {
               <div className="glass-card rounded-xl p-6 space-y-4">
                 <div className="flex items-center gap-2">
                   <Sparkles className="w-4 h-4 text-purple-400" />
-                  <h2 className="text-sm font-semibold text-foreground">Análise por IA</h2>
+                  <h2 className="text-sm font-semibold text-[var(--titulo)]">Análise por IA</h2>
                 </div>
 
                 <Explain>

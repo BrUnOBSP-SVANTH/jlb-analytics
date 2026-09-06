@@ -75,7 +75,7 @@ function GuestPrompt() {
       <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
         <LogIn className="w-6 h-6 text-primary" />
       </div>
-      <h2 className="text-xl font-bold text-foreground">Entre para ver seu perfil</h2>
+      <h2 className="text-xl font-bold text-[var(--titulo)]">Entre para ver seu perfil</h2>
       <p className="text-sm text-muted-foreground leading-relaxed">
         Seu histórico de previsões, pontos acumulados e progresso nos níveis ficam
         salvos aqui. Crie uma conta gratuita para não perder o avanço.
@@ -214,7 +214,7 @@ export default function Perfil() {
             <div className="glass-card rounded-2xl p-6 space-y-4">
               <div className="flex items-center gap-2">
                 <Trophy className="w-4 h-4 text-gold" />
-                <h2 className="font-semibold text-foreground">Progresso de Desbloqueio</h2>
+                <h2 className="font-semibold text-[var(--titulo)]">Progresso de Desbloqueio</h2>
               </div>
               <p className="text-xs text-muted-foreground">
                 Acumule pontos usando calculadoras, fazendo previsões e explorando os níveis.
@@ -234,7 +234,7 @@ export default function Perfil() {
           <div className="glass-card rounded-2xl p-6 space-y-4">
             <div className="flex items-center gap-2">
               <BookOpen className="w-4 h-4 text-primary" />
-              <h2 className="font-semibold text-foreground">Mapa de Progresso</h2>
+              <h2 className="font-semibold text-[var(--titulo)]">Mapa de Progresso</h2>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-5 gap-3">
               {LEVELS.map((lvl) => {
@@ -311,7 +311,7 @@ export default function Perfil() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Target className="w-4 h-4 text-primary" />
-                <h2 className="font-semibold text-foreground">Histórico de Previsões</h2>
+                <h2 className="font-semibold text-[var(--titulo)]">Histórico de Previsões</h2>
               </div>
               <Link href="/dashboard">
                 <span className="text-xs text-primary hover:underline flex items-center gap-1">
@@ -391,7 +391,7 @@ export default function Perfil() {
           <div className="glass-card rounded-2xl p-6 space-y-4">
             <div className="flex items-center gap-2">
               <Zap className="w-4 h-4 text-gold" />
-              <h2 className="font-semibold text-foreground">Atividade Recente</h2>
+              <h2 className="font-semibold text-[var(--titulo)]">Atividade Recente</h2>
               <span className="ml-auto text-xs text-muted-foreground">
                 {progress.totalPoints} pts acumulados
               </span>
@@ -432,7 +432,7 @@ export default function Perfil() {
           <div className="glass-card rounded-2xl p-6 space-y-4">
             <div className="flex items-center gap-2">
               <Star className="w-4 h-4 text-gold" />
-              <h2 className="font-semibold text-foreground">Como ganhar pontos</h2>
+              <h2 className="font-semibold text-[var(--titulo)]">Como ganhar pontos</h2>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
               {[

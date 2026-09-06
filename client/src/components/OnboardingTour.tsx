@@ -105,7 +105,7 @@ export default function OnboardingTour() {
         </div>
 
         {/* Title */}
-        <h2 className="text-xl font-bold text-center mb-2 text-foreground">{current.title}</h2>
+        <h2 className="text-xl font-bold text-center mb-2 text-[var(--titulo)]">{current.title}</h2>
 
         {/* Description */}
         <p className="text-sm text-center text-foreground/80 mb-2">{current.description}</p>
