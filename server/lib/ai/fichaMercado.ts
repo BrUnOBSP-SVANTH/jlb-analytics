@@ -64,7 +64,10 @@ const FAMILIAS: Record<string, string[]> = {
              "elections", "election", "us election", "world elections", "midterms",
              "senate", "macro geopolitics", "trump-machado", "iran", "israel", "gaza",
              "denmark", "canada", "spain", "france", "french election", "brazil",
-             "military strikes", "middle east", "china", "geopolitics"],
+             "military strikes", "middle east", "china", "geopolitics", "world",
+             "world affairs", "ukraine", "russia", "venezuela", "epstein",
+             "california midterm", "alaska midterm", "senate races", "shah",
+             "reza pahlavi", "cuba", "mexico cartel war", "pandemics"],
   "e-sports": ["esports", "lol", "league of legends", "cs2", "counter-strike", "dota", "valorant"],
   esportes: ["sports", "soccer", "football", "tennis", "mlb", "nba", "nfl", "nhl",
              "baseball", "basketball", "epl", "mls", "formula 1", "world series",
@@ -72,8 +75,12 @@ const FAMILIAS: Record<string, string[]> = {
   cripto: ["crypto", "bitcoin", "ethereum", "solana", "xrp", "token launch", "fdv",
            "crypto legal", "crypto culture"],
   economia: ["finance", "economics", "economy", "oil", "gold", "usd", "global rates",
-             "fomc", "ipo", "acquisitions", "tech", "ai"],
-  cultura: ["culture", "movies", "awards", "music", "gta vi", "gta 6", "avatar"],
+             "fomc", "ipo", "acquisitions", "tech", "ai", "business", "inflation",
+             "rates", "stocks", "earnings", "davos", "financials", "companies",
+             "markets", "commodities"],
+  cultura: ["culture", "movies", "awards", "music", "gta vi", "gta 6", "avatar",
+            "oscars", "best picture", "pop", "celebrities", "tv", "books",
+            "entertainment", "film", "cinema", "gaming", "games"],
 };
 
 /** Índice invertido: categoria crua → família. Montado uma vez. */

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { clampFairValue, quantFairValue, capConfidence, CONFIDENCE_CEILING } from "./guardrails.ts";
+import { clampFairValue, quantFairValue, capConfidence, CONFIDENCE_CEILING, semHistoricoInventado } from "./guardrails.ts";
 
 describe("clampFairValue — dentro do permitido, passa igual", () => {
   it("não mexe quando a estimativa está a ≤15pp do mercado", () => {
@@ -114,5 +114,61 @@ describe("capConfidence — impõe os tetos de calibração por domínio/horizon
   it("combo sem regra explícita cai no teto geral", () => {
     expect(capConfidence("energy", "medium", 99)).toBe(CONFIDENCE_CEILING);
     expect(capConfidence("crypto", "long", 99)).toBe(CONFIDENCE_CEILING); // cripto só tem regra p/ short
+  });
+});
+
+describe("semHistoricoInventado — dado NOSSO fabricado é o erro mais caro", () => {
+  // Auditoria de 06/09: o prompt proibia e a IA escreveu mesmo assim "nosso
+  // histórico aponta base rate de 50%" num mercado sem amostra. Instrução em
+  // texto é pedido; isto aqui é garantia.
+  const comAlegacao = "O preço está em 42%. O nosso histórico medido mostra 80 mercados com favorito vencendo. "
+    + "A notícia da BBC de 28/08 aponta indecisos. O prazo é longo e a liquidez é alta neste evento.";
+
+  it("não toca no texto quando o histórico EXISTE de verdade", () => {
+    expect(semHistoricoInventado(comAlegacao, true)).toBe(comAlegacao);
+  });
+
+  it("corta só a frase que alega, preservando o resto", () => {
+    const limpo = semHistoricoInventado(comAlegacao, false);
+    expect(limpo).not.toMatch(/nosso histórico medido/i);
+    expect(limpo).toMatch(/BBC/);          // o que estava certo continua
+    expect(limpo).toMatch(/42%/);
+  });
+
+  it("pega as várias formas de alegar", () => {
+    for (const frase of [
+      "Acompanhamos 120 mercados desta categoria até o fim.",
+      "Nossa base proprietária indica tendência de alta.",
+      "O histórico proprietário da JLB aponta 70% de acerto.",
+    ]) {
+      const texto = `${frase} O preço de mercado está em 30% e a liquidez é baixa neste evento específico.`;
+      expect(semHistoricoInventado(texto, false)).not.toMatch(/\d+ mercados|propriet/i);
+    }
+  });
+
+  it("quando a alegação era o texto inteiro, diz a verdade em vez de devolver caco", () => {
+    const r = semHistoricoInventado("Nosso histórico medido mostra 80 mercados.", false);
+    expect(r).toMatch(/não temos amostra própria/i);
+    expect(r.length).toBeGreaterThan(60);
+  });
+
+  it("NÃO quebra dentro de número decimal", () => {
+    // O separador ingênuo (dividir em todo ponto) cortava "89.6%" ao meio e
+    // produzia "O preço está em 30%.6% de acerto" — texto sem sentido entregue
+    // ao usuário sem erro nenhum no console. Decimal é o formato dos NOSSOS
+    // próprios números, então o caso é a regra, não a exceção.
+    const t = "O preço está em 30%. O nosso histórico em 106 mercados mostra 89.6% de acerto. "
+      + "A liquidez é baixa e o prazo é longo neste evento específico.";
+    const r = semHistoricoInventado(t, false);
+    expect(r).not.toMatch(/%\.\d/);        // nada de "30%.6%"
+    expect(r).not.toMatch(/89\.6/);         // a alegação saiu inteira
+    expect(r).toMatch(/O preço está em 30%\./);
+    expect(r).toMatch(/liquidez é baixa/);
+  });
+
+  it("texto sem alegação nenhuma passa intacto", () => {
+    const normal = "O preço está em 42% e a liquidez é alta. A BBC noticiou em 28/08.";
+    expect(semHistoricoInventado(normal, false)).toBe(normal);
+    expect(semHistoricoInventado("", false)).toBe("");
   });
 });

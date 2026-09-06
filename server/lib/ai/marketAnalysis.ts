@@ -6,7 +6,7 @@ import { CATEGORY_BASE_RATES } from "../categoryRates.ts";
 import { montarFicha, analiseDeEmergencia } from "./fichaMercado.ts";
 import { callClaude } from "../anthropic.ts";
 import { extractJson } from "../extractJson.ts";
-import { clampFairValue } from "./guardrails.ts";
+import { clampFairValue, semHistoricoInventado } from "./guardrails.ts";
 import { recordClamp } from "./metrics.ts";
 import { INJECTION_GUARD } from "./promptSafety.ts";
 import { humanizeCitations } from "../citations.ts";
@@ -100,6 +100,7 @@ ${cerebro.context || "Nenhuma síntese ou artigo curado relevante encontrado."}
 
 ═══ FONTE 3: FICHA DO MERCADO — dados nossos, sempre disponíveis ═══
 ${ficha}
+${/NOSSO HISTÓRICO EM/.test(ficha) ? "" : "⚠️ ATENÇÃO: NÃO temos histórico próprio medido para esta área ainda (amostra insuficiente). NÃO cite nenhum número nosso de acompanhamento — não existe. Se quiser mencionar, diga que o histórico próprio ainda está sendo formado."}
 
 EXECUTE O PROTOCOLO (em ordem):
 
@@ -211,6 +212,24 @@ Os artigos são numerados a partir de [1]. JSON exato (sem markdown):
         keyFactors = keyFactors.map((f) => humanizeCitations(f, newsSources, cerebroSources));
         if (watchFor) watchFor = humanizeCitations(watchFor, newsSources, cerebroSources);
         if (contexto) contexto = humanizeCitations(contexto, newsSources, cerebroSources);
+        // TRAVA CONTRA FABRICAÇÃO. O prompt já proíbe e mesmo assim aconteceu
+        // (auditoria de 06/09). Instrução é pedido; guardrail é garantia.
+        const fichaTemHistorico = /NOSSO HISTÓRICO EM/.test(ficha);
+        // TODOS os campos que vão para a tela, sem exceção. A primeira versão
+        // cobria só análise, contexto e fatores — e a alegação vazou por
+        // `edgeSignal`/`watchFor`, que a auditoria seguinte flagrou. Guardrail com
+        // buraco é pior que nenhum: dá a sensação de estar protegido.
+        analysis = semHistoricoInventado(analysis, fichaTemHistorico);
+        if (contexto) contexto = semHistoricoInventado(contexto, fichaTemHistorico);
+        if (edgeSignal) edgeSignal = semHistoricoInventado(edgeSignal, fichaTemHistorico);
+        if (watchFor) watchFor = semHistoricoInventado(watchFor, fichaTemHistorico);
+        if (referenceClass) referenceClass = semHistoricoInventado(referenceClass, fichaTemHistorico);
+        keyFactors = keyFactors.filter((f) => semHistoricoInventado(f, fichaTemHistorico) === f);
+        if (cenarios) cenarios = {
+          sim: semHistoricoInventado(cenarios.sim, fichaTemHistorico),
+          nao: semHistoricoInventado(cenarios.nao, fichaTemHistorico),
+        };
+
         if (cenarios) cenarios = {
           sim: humanizeCitations(cenarios.sim, newsSources, cerebroSources),
           nao: humanizeCitations(cenarios.nao, newsSources, cerebroSources),

@@ -83,3 +83,46 @@ export function capConfidence(domain: string, horizon: "short" | "medium" | "lon
   const cap = CONFIDENCE_CAPS[domain]?.[horizon] ?? CONFIDENCE_CEILING;
   return Math.max(0, Math.min(cap, value));
 }
+
+/**
+ * Frases que alegam histórico PRÓPRIO da JLB. São o que o modelo escreve quando
+ * quer soar respaldado: "nosso histórico mostra", "acompanhamos 80 mercados",
+ * "nossa base proprietária indica".
+ */
+const ALEGA_HISTORICO_PROPRIO =
+  /(nosso|nossa|jlb)[^.!?]{0,40}(hist[óo]rico|base (de dados|propriet[áa]ria)|amostra)|acompanhamos\s+\d+\s+mercados|hist[óo]rico\s+(medido|propriet[áa]rio)/i;
+
+/**
+ * Remove alegação de histórico próprio quando ele NÃO EXISTE para aquele mercado.
+ *
+ * POR QUE EM CÓDIGO, E NÃO SÓ NO PROMPT. O prompt já proíbe. Mesmo assim, na
+ * auditoria de 06/09 a IA escreveu "nosso histórico aponta base rate de 50%" num
+ * mercado de categoria sem amostra — misturou a base rate genérica com o volume.
+ * Instrução em texto é pedido; guardrail é garantia. E aqui o erro é o mais caro
+ * de todos: número PRÓPRIO inventado destrói exatamente a razão de o site existir.
+ * Um exagero de linguagem se perdoa; um dado nosso fabricado, não.
+ *
+ * Cirúrgico de propósito: corta a FRASE que alega, não o parágrafo. O resto da
+ * análise costuma estar certo, e jogá-lo fora seria trocar um erro por outro.
+ */
+export function semHistoricoInventado(texto: string, fichaTemHistorico: boolean): string {
+  if (fichaTemHistorico || !texto) return texto;
+  if (!ALEGA_HISTORICO_PROPRIO.test(texto)) return texto;
+
+  // Corta só onde a frase REALMENTE termina: ponto seguido de espaço e letra
+  // maiúscula. Dividir em todo ponto quebrava dentro de número decimal — e o
+  // número decimal é justamente o formato dos nossos próprios dados. Flagrado ao
+  // testar: "…mostra 89.6% de acerto." virava "O preço está em 30%.6% de acerto",
+  // um texto sem sentido servido ao usuário sem erro nenhum no console.
+  const frases = texto.split(/(?<=[.!?])\s+(?=[A-ZÀ-Ú])/);
+  const limpas = frases.filter((f) => !ALEGA_HISTORICO_PROPRIO.test(f));
+
+  // Se sobrou pouco, a alegação era o corpo do texto — melhor dizer a verdade
+  // curta do que devolver um fragmento sem sentido.
+  const restante = limpas.join(" ").trim();
+  if (restante.length < 80) {
+    return "Ainda não temos amostra própria suficiente nesta área para publicar um histórico — "
+      + "os números acima vêm do mercado e das notícias, não de medição nossa.";
+  }
+  return `${restante} (Ainda não temos histórico próprio publicável nesta área.)`;
+}
