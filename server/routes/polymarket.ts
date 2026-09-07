@@ -152,6 +152,24 @@ router.get("/markets", async (req, res) => {
             volume: toNum(ev.volume) ?? lead.volume,
             outcomes: JSON.stringify(ranked.map((o) => o.label)),
             outcomePrices: JSON.stringify(ranked.map((o) => o.prob.toFixed(4))),
+            // O TOKEN DE CADA DESFECHO, e não só o do líder.
+            //
+            // Ao juntar os mercados aninhados num card só, tudo que não fosse do
+            // líder era descartado — inclusive o identificador que permite buscar
+            // o histórico de preço de cada candidato. Resultado: a tela de
+            // detalhe conseguia listar "Lula 38%, Bolsonaro 44%" mas não tinha
+            // como mostrar COMO cada um chegou lá, que é o gráfico que o
+            // Polymarket mostra e o que dá leitura a uma eleição.
+            //
+            // Guardado como lista paralela a `outcomes`: mesma ordem, mesmo
+            // índice. Quem não tiver token entra como string vazia, para os
+            // índices não escorregarem.
+            outcomeTokens: JSON.stringify(ranked.map((o) => {
+              try {
+                const ids = JSON.parse(String(o.ref.clobTokenIds ?? "[]")) as string[];
+                return ids[0] ?? "";
+              } catch { return ""; }
+            })),
           }];
         }
       }

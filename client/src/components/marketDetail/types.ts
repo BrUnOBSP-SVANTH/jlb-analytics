@@ -18,6 +18,9 @@ export interface MarketBasic {
   active?: boolean;
   status?: string;    // Kalshi: "active" | "closed" | "settled" | "finalized" | …
   parsedOutcomes?: { label: string; prob: number }[]; // mercados multi-resultado (negRisk)
+  /** Identificador de cada desfecho, na MESMA ordem de `parsedOutcomes`. É o que
+   *  permite buscar o histórico de preço de cada candidato separadamente. */
+  outcomeTokens?: string[];
   resolvedOutcome?: string; // desfecho vencedor quando o mercado já resolveu (SIM/NÃO/rótulo)
 }
 

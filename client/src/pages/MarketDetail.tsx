@@ -23,6 +23,7 @@ import { ConsensusCard } from "@/components/marketDetail/ConsensusCard";
 import { ForecastEvolution } from "@/components/marketDetail/ForecastEvolution";
 import { MarketHeader } from "@/components/marketDetail/MarketHeader";
 import { OutcomesBreakdown } from "@/components/marketDetail/OutcomesBreakdown";
+import { HistoricoDesfechos } from "@/components/marketDetail/HistoricoDesfechos";
 import { Termo } from "@/components/Termo";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
@@ -141,6 +142,10 @@ export default function MarketDetail() {
                 </div>
               </AnimatedSection>
             )}
+
+            {/* O histórico de cada desfecho vem ANTES da lista: o gráfico conta a
+                história e a lista dá o número exato de agora. */}
+            <HistoricoDesfechos market={market} />
 
             <OutcomesBreakdown market={market} />
 

@@ -17,6 +17,7 @@ import { maybeAuthGate } from "@/lib/upgrade";
 import { useSEO } from "@/hooks/useSEO";
 import type { MarketBasic, CerebroArticleSnippet, AiResult, CommunityForecast } from "@/components/marketDetail/types";
 import { apiFetch } from "@/lib/api";
+import { montarDesfechos } from "@/lib/desfechos";
 
 export function useMarketDetail(marketId: string) {
   const source = marketId.startsWith("kalshi-") ? "kalshi"
@@ -110,7 +111,7 @@ export function useMarketDetail(marketId: string) {
             externalUrl?: string; yesProb?: number;
             volume?: number | string; liquidity?: number | string;
             volume24h?: number | string; weekPriceChange?: number | string;
-            outcomePrices?: string; outcomes?: string; category?: string; clobTokenIds?: string; endDate?: string;
+            outcomePrices?: string; outcomes?: string; outcomeTokens?: string; category?: string; clobTokenIds?: string; endDate?: string;
             closed?: boolean; active?: boolean;
           }>("polymarket");
           const found = data.find((m) => m.id === rawId || m.slug === rawId);
@@ -127,17 +128,13 @@ export function useMarketDetail(marketId: string) {
                 : found.question;
             // Multi-resultado (negRisk): o servidor manda outcomes/outcomePrices já
             // agregados. >2 rótulos ⇒ mostramos o breakdown de desfechos, não SIM/NÃO.
-            let parsedOutcomes: { label: string; prob: number }[] | undefined;
-            try {
-              const labels = JSON.parse(found.outcomes ?? "[]") as string[];
-              const prices = (JSON.parse(found.outcomePrices ?? "[]") as string[]).map(Number);
-              if (labels.length > 2 && prices.length >= labels.length) {
-                parsedOutcomes = labels
-                  .map((label, i) => ({ label, prob: prices[i] ?? 0 }))
-                  .filter((o) => o.prob > 0.005)
-                  .sort((a, b) => b.prob - a.prob);
-              }
-            } catch { /* segue binário */ }
+            // A montagem mora em lib/desfechos.ts, testada: o identificador
+            // PRECISA viajar junto com o rótulo pelo filtro e pela ordenação,
+            // senão a tela mostra o histórico de um candidato sob o nome de
+            // outro — um erro que desenha bonito e mente.
+            const desfechos = montarDesfechos(found.outcomes, found.outcomePrices, found.outcomeTokens);
+            const parsedOutcomes = desfechos?.map(({ label, prob }) => ({ label, prob }));
+            const outcomeTokens = desfechos?.map((o) => o.token);
             setMarket({
               id: found.id,
               title: displayTitle,
@@ -153,6 +150,7 @@ export function useMarketDetail(marketId: string) {
               closed: found.closed,
               active: found.active,
               parsedOutcomes,
+              outcomeTokens,
             });
           } else {
             // Idem Kalshi: mercado provavelmente resolvido → busca o mercado único.
