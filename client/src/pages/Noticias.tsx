@@ -305,8 +305,8 @@ export default function Noticias() {
         {!loading && tab === "markets" && markets.length > 0 && (
           <AnimatedSection>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {markets.map((m) => (
-                <MarketCard key={m.id} market={m} savedIds={savedIds} onSaved={handleSaved} highlight={topFeaturedIds.has(m.id)} />
+              {markets.map((m, i) => (
+                <MarketCard key={m.id} market={m} indice={i} savedIds={savedIds} onSaved={handleSaved} highlight={topFeaturedIds.has(m.id)} />
               ))}
             </div>
             <p className="text-xs text-muted-foreground text-center mt-6">

@@ -176,3 +176,32 @@ describe("marca da casa e conteúdo próprio", () => {
     expect(teste).toMatch(/CryptoSlate|Banco Central|acompanhamos \d+/);
   });
 });
+
+describe("as duas telas de card não podem divergir", () => {
+  // A mesma pergunta aparece em "Mercados Ao Vivo" e em "Análise de Mercados".
+  // Quando só uma recebe melhoria, o site fica com cara de remendo — foi o que
+  // aconteceu: a borda proporcional, a entrada escalonada e o minigráfico
+  // existiam só numa delas.
+  const telas = [
+    ["mercados/TrendingCard.tsx", "Mercados Ao Vivo"],
+    ["noticias/MarketCard.tsx", "Análise de Mercados"],
+  ] as const;
+
+  for (const [arquivo, nome] of telas) {
+    const src = readFileSync(join(SRC, "components", ...arquivo.split("/")), "utf-8");
+
+    it(`${nome}: a probabilidade desenha a borda do card`, () => {
+      expect(src).toMatch(/absolute top-0 left-0 h-\[2px\]/);
+      expect(src).toMatch(/bg-positive\/70|bg-negative\/70|bg-primary\/70/);
+    });
+
+    it(`${nome}: a entrada é escalonada pela posição na lista`, () => {
+      expect(src).toMatch(/indice/);
+      expect(src).toMatch(/delay=\{Math\.min\(indice, 8\) \* 0\.03\}/);
+    });
+
+    it(`${nome}: mostra o histórico de preço`, () => {
+      expect(src).toMatch(/ProbSparkline/);
+    });
+  }
+});

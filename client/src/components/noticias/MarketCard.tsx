@@ -7,7 +7,8 @@ import { Link } from "wouter";
 import { Languages, ChevronUp, BookmarkPlus, Check, X as XIcon, ExternalLink, Zap, ArrowRight } from "lucide-react";
 import { type PolyMarket, parseOutcomePrices, daysLeft, formatVolume } from "@/lib/noticiasShared";
 import { CategoryBadge } from "@/components/noticias/cards";
-import { ProbHero, ProbBar } from "@/components/mercados/cards";
+import { ProbHero, ProbBar, ProbSparkline } from "@/components/mercados/cards";
+import AnimatedSection from "@/components/AnimatedSection";
 import { addPrediction, edge, kellyFraction, type StoredPrediction } from "@/lib/predictions";
 import { awardPoints } from "@/lib/userProgress";
 import { track } from "@/lib/analytics";
@@ -98,9 +99,11 @@ interface MarketCardProps {
   onSaved: (p: StoredPrediction) => void;
   /** Badge "★ Destaque" — restrito aos poucos de maior volume; em todo card não destaca nada */
   highlight?: boolean;
+  /** Posição na lista — escalona a entrada, como na aba Mercados Ao Vivo. */
+  indice?: number;
 }
 
-export function MarketCard({ market, savedIds, onSaved, highlight = false }: MarketCardProps) {
+export function MarketCard({ market, savedIds, onSaved, highlight = false, indice = 0 }: MarketCardProps) {
   const [tracking, setTracking] = useState(false);
   const [justSaved, setJustSaved] = useState(false);
   const [translation, setTranslation] = useState<string | null>(null);
@@ -127,10 +130,28 @@ export function MarketCard({ market, savedIds, onSaved, highlight = false }: Mar
     setTimeout(() => setJustSaved(false), 2000);
   }
 
+  const pctSim = prices ? Math.round(prices.yes) : null;
+
   return (
-    <div className={`glass-card card-lift rounded-xl p-4 flex flex-col gap-3 ${
+    // Entrada escalonada e borda proporcional: o mesmo tratamento da aba
+    // Mercados Ao Vivo. Duas telas mostrando o mesmo tipo de card com
+    // comportamentos diferentes é o que faz um site parecer remendado.
+    <AnimatedSection className="h-full" delay={Math.min(indice, 8) * 0.03}>
+    <div className={`glass-card card-lift rounded-xl p-4 flex flex-col gap-3 h-full relative overflow-hidden ${
       isSaved || justSaved ? "border-gold/30 bg-gold/3" : ""
     }`}>
+      {/* A PROBABILIDADE DESENHA O CARD: a borda de cima tem a largura da chance
+          de SIM. Lendo a lista de relance, a distribuição aparece antes de
+          qualquer número. */}
+      {pctSim !== null && (
+        <span
+          aria-hidden="true"
+          className={`absolute top-0 left-0 h-[2px] transition-[width] duration-700 ease-out ${
+            pctSim >= 70 ? "bg-positive/70" : pctSim <= 30 ? "bg-negative/70" : "bg-primary/70"
+          }`}
+          style={{ width: `${Math.max(4, Math.min(100, pctSim))}%` }}
+        />
+      )}
       {/* Badges: categoria + destaque + tempo */}
       <div className="flex flex-wrap items-center gap-1">
         {highlight && (
@@ -177,7 +198,15 @@ export function MarketCard({ market, savedIds, onSaved, highlight = false }: Mar
 
       {/* Barra SIM/NÃO — a mesma linguagem visual do card de Apostas */}
       {prices ? (
-        <ProbBar prob={prices.yes / 100} />
+        <div>
+          <ProbBar prob={prices.yes / 100} />
+          {/* O histórico de 7 dias, igual ao da aba Mercados Ao Vivo. Faltava
+              aqui: a mesma pergunta aparecia nas duas telas, mas só numa delas
+              dava para ver COMO o preço chegou onde chegou. */}
+          {market.clobTokenIds && (
+            <ProbSparkline tokenIds={market.clobTokenIds} marketId={`poly-${market.id}`} source="polymarket" />
+          )}
+        </div>
       ) : (
         <p className="text-xs text-muted-foreground">Sem dados de preço</p>
       )}
@@ -244,5 +273,6 @@ export function MarketCard({ market, savedIds, onSaved, highlight = false }: Mar
         </Link>
       )}
     </div>
+    </AnimatedSection>
   );
 }
