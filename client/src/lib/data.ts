@@ -11,20 +11,35 @@ export const CHART_COLORS = {
   quaternary: "oklch(0.72 0.18 240)",
   negative: "oklch(0.65 0.2 25)",
   muted: "oklch(0.6 0.02 260)",
-  tooltipBg: "oklch(0.18 0.015 260)",
-  tooltipBorder: "oklch(0.25 0.015 260)",
-  tooltipText: "oklch(0.92 0.005 250)",
+  // ⚠️ Estas três eram cores ESCURAS FIXAS, e por isso o balão do gráfico
+  // aparecia como uma caixa preta com texto claro flutuando sobre o creme do
+  // tema claro — em todas as 5 telas que têm gráfico. Agora saem dos tokens do
+  // tema, que já mudam sozinhos. Ficam aqui só por compatibilidade com quem
+  // importa CHART_COLORS diretamente.
+  tooltipBg: "var(--card)",
+  tooltipBorder: "var(--border)",
+  tooltipText: "var(--foreground)",
 } as const;
 
+/**
+ * Estilo do balão que aparece ao passar o mouse no gráfico.
+ *
+ * Sai dos tokens do tema, e não de cor fixa: um balão preto sobre fundo creme
+ * não é "um detalhe do tema claro" — é a impressão de que a página quebrou. O
+ * `boxShadow` entra porque, num fundo claro, borda de 1px sozinha não separa o
+ * balão do gráfico atrás dele.
+ */
 export const CHART_TOOLTIP_STYLE = {
-  background: CHART_COLORS.tooltipBg,
-  border: `1px solid ${CHART_COLORS.tooltipBorder}`,
+  background: "var(--card)",
+  border: "1px solid var(--border)",
   borderRadius: "8px",
-  color: CHART_COLORS.tooltipText,
+  color: "var(--foreground)",
+  boxShadow: "0 8px 24px -12px oklch(0 0 0 / 35%)",
 } as const;
 
+/** Rótulos dos eixos. Token, pelo mesmo motivo do balão. */
 export const CHART_TICK_STYLE = {
-  fill: CHART_COLORS.muted,
+  fill: "var(--muted-foreground)",
   fontSize: 12,
 } as const;
 

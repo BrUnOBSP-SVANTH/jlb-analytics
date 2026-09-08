@@ -229,3 +229,44 @@ describe("esqueleto de carregamento", () => {
     expect(esq).not.toMatch(/w-8 h-8 rounded-full/);
   });
 });
+
+describe("gráficos no tema claro", () => {
+  const data = readFileSync(join(SRC, "lib", "data.ts"), "utf-8");
+
+  it("o balão do gráfico usa token, não cor escura fixa", () => {
+    // Era `oklch(0.18 …)` de fundo com texto claro — uma caixa PRETA flutuando
+    // sobre o creme do tema claro, nas 5 telas que têm gráfico. Não é "um
+    // detalhe do tema claro": é a impressão de que a página quebrou.
+    const bloco = data.slice(data.indexOf("CHART_TOOLTIP_STYLE"), data.indexOf("CHART_TICK_STYLE"));
+    expect(bloco).toMatch(/var\(--card\)/);
+    expect(bloco).toMatch(/var\(--foreground\)/);
+    expect(bloco).not.toMatch(/oklch\(0\.[0-2]/);
+  });
+
+  it("os rótulos dos eixos também", () => {
+    const bloco = data.slice(data.indexOf("CHART_TICK_STYLE"), data.indexOf("CHART_TICK_STYLE") + 220);
+    expect(bloco).toMatch(/var\(--muted-foreground\)/);
+  });
+});
+
+describe("botão flutuante do assistente", () => {
+  const w = readFileSync(join(SRC, "components", "chat", "ChatWidget.tsx"), "utf-8");
+
+  it("some ao descer e volta ao subir", () => {
+    // No celular ele cobre o canto do "Analisar mercado" de qualquer card que
+    // esteja embaixo — e quem desce a lista está lendo cards, não querendo o
+    // chat. Encolher não resolveria: o problema é ele estar lá na hora errada.
+    expect(w).toMatch(/scroll/);
+    expect(w).toMatch(/translate-y-20|opacity-0/);
+  });
+
+  it("escondido, também para de receber toque", () => {
+    // Botão invisível que ainda recebe toque é pior que botão visível no caminho.
+    expect(w).toMatch(/pointer-events-none/);
+  });
+
+  it("com o painel aberto ele NÃO some", () => {
+    // Esconder aí seria esconder o "fechar".
+    expect(w).toMatch(/if \(open\) \{ setVisivel\(true\); return; \}/);
+  });
+});
