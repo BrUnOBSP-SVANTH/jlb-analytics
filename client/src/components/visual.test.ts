@@ -205,3 +205,27 @@ describe("as duas telas de card não podem divergir", () => {
     });
   }
 });
+
+describe("esqueleto de carregamento", () => {
+  const esq = readFileSync(join(SRC, "components", "mercados", "LoadingSkeleton.tsx"), "utf-8");
+
+  it("reserva o espaço da barra de probabilidade do topo", () => {
+    // O esqueleto não existe para dizer "carregando" — existe para RESERVAR o
+    // espaço exato do conteúdo. Quando ele descreve um card que não existe mais,
+    // a página dá um solavanco quando o dado chega, e ninguém associa isso ao
+    // esqueleto: parece lentidão.
+    expect(esq).toMatch(/absolute top-0 left-0 h-\[2px\]/);
+  });
+
+  it("reserva o espaço do minigráfico", () => {
+    // Medido: sem este bloco o esqueleto ficava 76px mais curto que o card real.
+    // Com ele, 16px — dentro da variação natural entre cards.
+    expect(esq).toMatch(/h-\[34px\]/);
+  });
+
+  it("o número grande tem a altura do número real, não a de um ícone", () => {
+    // Era um círculo de 32px onde o card mostra 44px de número.
+    expect(esq).toMatch(/h-11/);
+    expect(esq).not.toMatch(/w-8 h-8 rounded-full/);
+  });
+});

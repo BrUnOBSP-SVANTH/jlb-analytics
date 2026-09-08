@@ -268,7 +268,12 @@ export default function Home() {
               <span className="w-1.5 h-1.5 rounded-full bg-neon-blue animate-pulse" aria-hidden="true" />
               Polymarket · Kalshi · Reddit — ao vivo
             </div>
-            <h1 className="text-4xl md:text-6xl font-display font-bold text-[var(--titulo)] leading-tight mb-5">
+            <h1 // EXCEÇÃO AO DOURADO DOS TÍTULOS, e proposital. Este título tem DOIS tons de
+            // propósito: a primeira frase neutra e a segunda dourada, para a ênfase cair
+            // em "Decida com método". Quando o dourado passou a valer para todo h1, os
+            // dois lados ficaram da mesma cor e a ênfase morreu — medi as duas cores e
+            // elas estavam a 0,04 de distância. Aqui o dourado mora no span.
+            className="text-4xl md:text-6xl font-display font-bold text-foreground leading-tight mb-5">
               Preveja melhor.{" "}
               <span className="text-primary">Decida com método.</span>
             </h1>
@@ -292,7 +297,12 @@ export default function Home() {
             <Link href="/track-record" onClick={() => track("cta_click", { id: "home_hero_trackrecord" })}>
               <span className="inline-flex items-center gap-1.5 mt-4 text-xs text-muted-foreground hover:text-positive transition-colors cursor-pointer">
                 <CheckCircle className="w-3.5 h-3.5 text-positive/70" aria-hidden="true" />
-                Veja nosso <span className="text-foreground/80 underline underline-offset-2 decoration-positive/30">track record verificado</span> — IA vs. mercado, sem cherry-picking
+                {/* A explicação depois do travessão some no celular. Em 390px a
+                    linha quebrava em TRÊS, partindo o texto sublinhado no meio —
+                    um link cortado ao meio parece defeito, e o que importa aqui
+                    (a promessa de track record verificado) sobrevive sozinho. */}
+                Veja nosso <span className="text-foreground/80 underline underline-offset-2 decoration-positive/30">track record verificado</span>
+                <span className="hidden sm:inline"> — IA vs. mercado, sem cherry-picking</span>
                 <ArrowRight className="w-3 h-3" aria-hidden="true" />
               </span>
             </Link>

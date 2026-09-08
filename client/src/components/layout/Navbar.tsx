@@ -462,7 +462,7 @@ export function Navbar() {
 
         {/* ── Quick strip (desktop only) ── */}
         <div className="hidden lg:block border-t border-border/20 bg-background/70">
-          <div className="container flex items-center gap-1 h-8 overflow-x-auto scrollbar-none">
+          <div className="container flex items-center gap-1 h-8 overflow-x-auto scrollbar-none rolagem-lateral">
             {QUICK_LINKS.map((l) => (
               <Link key={l.href} href={l.href} onMouseEnter={() => prefetchRoute(l.href)}>
                 <span className={`shrink-0 text-[11px] font-medium px-3 py-1 rounded-md transition-colors whitespace-nowrap ${

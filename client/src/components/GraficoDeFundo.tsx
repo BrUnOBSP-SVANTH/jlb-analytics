@@ -110,9 +110,19 @@ export default function GraficoDeFundo({ className = "" }: { className?: string 
       const azul  = (op: number) => claro ? `oklch(0.50 0.10 240 / ${op}%)` : `oklch(0.70 0.09 240 / ${op}%)`;
       const cinza = (op: number) => claro ? `oklch(0.45 0.02 260 / ${op}%)` : `oklch(0.75 0.02 260 / ${op}%)`;
 
-      // Área útil: margem em cima e embaixo para as curvas não encostarem na borda.
-      const topo = A * 0.08;
-      const alturaUtil = A * 0.84;
+      // NO CELULAR O GRÁFICO PRECISA SER OUTRO. Medido em 390px: com a mesma
+      // faixa de 0–100% numa tela estreita e alta, as duas curvas ficam quase
+      // VERTICAIS e se cruzam bem atrás do título — vira um X gigante brigando
+      // com o texto, o oposto de pano de fundo. O desenho certo para tela larga
+      // é o desenho errado para tela estreita.
+      //
+      // A saída não é esconder: é ACHATAR. Em tela estreita as curvas usam só a
+      // faixa do meio, então cruzam suave e passam por trás do título sem
+      // disputar com ele. A leitura do gráfico (uma sobe, outra desce, cruzam)
+      // continua inteira.
+      const estreito = L < 640;
+      const topo = estreito ? A * 0.26 : A * 0.08;
+      const alturaUtil = estreito ? A * 0.48 : A * 0.84;
       const emY = (v: number) => topo + (1 - v) * alturaUtil;
       const emX = (v: number) => v * L;
 
@@ -153,13 +163,13 @@ export default function GraficoDeFundo({ className = "" }: { className?: string 
       ctx.fill();
 
       // ── NÃO primeiro (fica atrás), SIM por cima: a hierarquia segue quem vence.
-      ctx.lineWidth = 2;
-      ctx.strokeStyle = azul(claro ? 34 : 30);
+      ctx.lineWidth = estreito ? 1.6 : 2;
+      ctx.strokeStyle = azul((claro ? 34 : 30) - (estreito ? 10 : 0));
       caminho(nao);
       ctx.stroke();
 
-      ctx.lineWidth = 2.4;
-      ctx.strokeStyle = ouro(claro ? 46 : 42);
+      ctx.lineWidth = estreito ? 1.9 : 2.4;
+      ctx.strokeStyle = ouro((claro ? 46 : 42) - (estreito ? 12 : 0));
       caminho(sim);
       ctx.stroke();
 

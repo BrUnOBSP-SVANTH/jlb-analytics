@@ -158,7 +158,7 @@ export default function Previsao() {
                     </div>
                   )}
                 </div>
-                <div className="flex gap-1.5 overflow-x-auto scrollbar-none pb-1">
+                <div className="flex gap-1.5 overflow-x-auto scrollbar-none rolagem-lateral pb-1">
                   {hotMarkets.length === 0 ? (
                     selectedDomain.questions.map((q) => (
                       <button key={q} type="button" onClick={() => setQuestion(q)}

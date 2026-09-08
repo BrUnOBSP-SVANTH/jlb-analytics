@@ -273,6 +273,28 @@
     .spark-traco { animation: none; stroke-dasharray: none; }
   }
 
+  /* ── ROLAGEM LATERAL COM AVISO ────────────────────────────────────────────
+     No celular as abas e os filtros não cabem na largura e rolam de lado — mas
+     nada dizia isso. Medido em 390px: a aba "Banca Simulada" aparecia cortada
+     como "Banca Simula…", e o filtro "Manifold" como "Manif…". Parece defeito
+     de layout, não conteúdo que continua; quem olha conclui que quebrou e não
+     tenta arrastar.
+
+     A máscara apaga os últimos pixels de cada ponta APENAS quando há conteúdo
+     fora: o degradê revela que a lista continua. Só a ponta com conteúdo escondido
+     desaparece, porque `mask` acompanha o scroll do elemento.
+
+     `scrollbar-none` continua escondendo a barra: no celular ela não aparece
+     mesmo, e no desktop ela ocuparia altura à toa numa faixa de 44px. */
+  .rolagem-lateral {
+    -webkit-mask-image: linear-gradient(to right, transparent 0, #000 14px, #000 calc(100% - 22px), transparent 100%);
+    mask-image: linear-gradient(to right, transparent 0, #000 14px, #000 calc(100% - 22px), transparent 100%);
+  }
+  /* Em tela larga tudo cabe: a máscara só cortaria conteúdo à toa. */
+  @media (min-width: 768px) {
+    .rolagem-lateral { -webkit-mask-image: none; mask-image: none; }
+  }
+
   /* Seleção de texto com o dourado da marca */
   ::selection {
     background: oklch(0.78 0.12 85 / 25%);

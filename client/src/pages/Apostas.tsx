@@ -392,7 +392,7 @@ export default function Apostas() {
         <AnimatedSection>
           <div className="mb-5 space-y-3">
             {/* Row 1: source + category tabs */}
-            <div className="flex items-center gap-2 overflow-x-auto scrollbar-none pb-1">
+            <div className="flex items-center gap-2 overflow-x-auto scrollbar-none rolagem-lateral pb-1">
               {/* Source pills */}
               {(["all", "reddit", "polymarket", "kalshi", "manifold"] as Filter[]).map((src) => {
                 const LABELS: Record<Filter, string> = { all: "Todos", reddit: "Reddit", polymarket: "Polymarket", kalshi: "Kalshi", manifold: "Manifold" };
