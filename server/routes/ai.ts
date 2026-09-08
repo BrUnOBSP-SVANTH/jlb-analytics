@@ -168,7 +168,10 @@ JSON exato, sem markdown:
     const raw = await callClaude({ model: "claude-haiku-4-5-20251001", maxTokens: 500, messages: [{ role: "user", content: prompt }], timeoutMs: 15_000 });
     const parsed = extractJson(raw) as Record<string, string>;
     const result = { ...parsed, edge, cached: false };
-    setCache(cacheKey, result, 1800);
+    // 3h, e não 30min: quem invalida agora é o PREÇO (ver ANALYZE_CACHE_KEY),
+    // então o prazo só existe para a análise não envelhecer num mercado que
+    // ficou parado o dia inteiro.
+    setCache(cacheKey, result, 10800);
     res.json(result);
   } catch (err) {
     log.error("[explain-edge] error:", err);
@@ -256,7 +259,10 @@ router.post("/analyze", aiCreditsMiddleware, async (req, res) => {
     if (cached) { res.locals.aiCacheHit = true; return res.json({ ...cached, cached: true }); }
 
     const result = await runMarketAnalysis(body);
-    setCache(cacheKey, result, 1800);
+    // 3h, e não 30min: quem invalida agora é o PREÇO (ver ANALYZE_CACHE_KEY),
+    // então o prazo só existe para a análise não envelhecer num mercado que
+    // ficou parado o dia inteiro.
+    setCache(cacheKey, result, 10800);
     res.json(result);
   } catch (err) {
     log.error("[market-analyze] error:", err);
@@ -295,7 +301,10 @@ router.post("/analyze/stream", aiCreditsMiddleware, async (req, res) => {
 
   try {
     const result = await runMarketAnalysis(body, (step, data) => send("phase", { step, ...data }));
-    setCache(cacheKey, result, 1800);
+    // 3h, e não 30min: quem invalida agora é o PREÇO (ver ANALYZE_CACHE_KEY),
+    // então o prazo só existe para a análise não envelhecer num mercado que
+    // ficou parado o dia inteiro.
+    setCache(cacheKey, result, 10800);
     send("result", result);
     send("done", {});
     res.end();

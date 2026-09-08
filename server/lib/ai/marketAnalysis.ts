@@ -295,4 +295,37 @@ Os artigos são numerados a partir de [1]. JSON exato (sem markdown):
   }
 }
 
-export const ANALYZE_CACHE_KEY = (p: AnalyzeParams) => `market-analyze:v3:${p.source ?? ""}:${p.title.slice(0, 80)}`;
+/**
+ * Faixa de preço da chave de cache. 4pp: menor que isso a análise diria a mesma
+ * coisa com outro número, e maior começaria a citar um preço que já saiu de moda.
+ */
+const FAIXA_PP = 4;
+
+/**
+ * A chave do cache inclui a FAIXA DE PREÇO, e é isso que permite o prazo longo.
+ *
+ * O PROBLEMA. O prazo era fixo em 30 minutos, o que trata igual dois casos
+ * opostos: o mercado parado, que refaria a mesma análise 48 vezes por dia à toa,
+ * e o mercado que acabou de andar 10pp, que continuaria mostrando a leitura
+ * velha até o relógio virar. Custava caro E ficava desatualizado.
+ *
+ * A SAÍDA é deixar o PREÇO invalidar, não o relógio. Enquanto o mercado fica na
+ * mesma faixa de 4pp, a análise vale e é reaproveitada; quando ele sai da faixa,
+ * a chave muda sozinha e uma análise nova é gerada — que é exatamente quando ela
+ * PRECISA mudar. E notícia grande move preço, então isso também cobre o caso de
+ * a notícia virar o jogo.
+ *
+ * Por que isso importa aqui e não é micro-otimização: o site roda em cota
+ * gratuita de IA. Medido: ~2.900 tokens por análise contra 200.000/dia do teto,
+ * ou seja ~69 análises no dia inteiro. Cada chamada poupada é um usuário a mais
+ * que recebe a análise completa em vez do modo reduzido.
+ *
+ * Efeito colateral conhecido e aceito: preço oscilando bem em cima da divisa
+ * entre duas faixas gera uma chamada extra de vez em quando. Barato perto do que
+ * se ganha, e some sozinho quando o preço se decide.
+ */
+export const ANALYZE_CACHE_KEY = (p: AnalyzeParams) => {
+  const pct = Math.round((p.yesProb ?? 0.5) * 100);
+  const faixa = Math.floor(pct / FAIXA_PP);
+  return `market-analyze:v4:${p.source ?? ""}:${p.title.slice(0, 80)}:${faixa}`;
+};
