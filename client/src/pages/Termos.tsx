@@ -111,7 +111,7 @@ export default function Termos() {
             </Section>
 
             <Section n="11" title="Contato">
-              <p>Dúvidas sobre estes Termos: <a href="mailto:contato@jlbassetanalytics.com" className="text-gold hover:underline">contato@jlbassetanalytics.com</a>.</p>
+              <p>Dúvidas sobre estes Termos: <a href="mailto:contato.jlbanalytics@gmail.com" className="text-gold hover:underline">contato.jlbanalytics@gmail.com</a>.</p>
             </Section>
           </div>
         </AnimatedSection>

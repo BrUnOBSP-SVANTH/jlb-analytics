@@ -27,7 +27,7 @@ export default function Privacidade() {
           <p className="text-xs text-muted-foreground/60 mb-8">Última atualização: {UPDATED}</p>
           <div className="space-y-8">
             <Section n="1" title="Quem somos (controlador)">
-              <p>A JLB Analytics é a controladora dos dados pessoais tratados nesta plataforma. Contato do encarregado (DPO): <a href="mailto:privacidade@jlbassetanalytics.com" className="text-gold hover:underline">privacidade@jlbassetanalytics.com</a>.</p>
+              <p>A JLB Analytics é a controladora dos dados pessoais tratados nesta plataforma. Contato do encarregado (DPO): <a href="mailto:contato.jlbanalytics@gmail.com" className="text-gold hover:underline">contato.jlbanalytics@gmail.com</a>.</p>
             </Section>
 
             <Section n="2" title="Dados que coletamos">
@@ -64,11 +64,45 @@ export default function Privacidade() {
             </Section>
 
             <Section n="7" title="Seus direitos (art. 18 da LGPD)">
-              <p>Você pode solicitar: confirmação e acesso aos dados, correção, anonimização ou eliminação, portabilidade, informação sobre compartilhamento e revogação de consentimento. Exercite-os por <a href="mailto:privacidade@jlbassetanalytics.com" className="text-gold hover:underline">privacidade@jlbassetanalytics.com</a>.</p>
+              <p>Você pode solicitar: confirmação e acesso aos dados, correção, anonimização ou eliminação, portabilidade, informação sobre compartilhamento e revogação de consentimento. Exercite-os por <a href="mailto:contato.jlbanalytics@gmail.com" className="text-gold hover:underline">contato.jlbanalytics@gmail.com</a>.</p>
             </Section>
 
-            <Section n="8" title="Cookies e armazenamento local">
-              <p>Usamos localStorage para preferências (tema, progresso, previsões) e cookies/identificadores para autenticação e analytics agregado. Você pode limpar esses dados nas configurações do navegador.</p>
+            <Section n="8" title="Cookies e armazenamento no seu aparelho">
+              <p><strong className="text-foreground">Começando pelo que NÃO fazemos:</strong> não usamos cookie de
+                publicidade, rastreador de terceiro, pixel de rede social nem qualquer ferramenta que siga você para
+                fora deste site. Não vendemos, alugamos nem compartilhamos seus dados com anunciantes.</p>
+
+              <p>O que guardamos fica no <strong className="text-foreground">armazenamento local do seu navegador</strong>,
+                e em dois grupos:</p>
+
+              <p className="text-foreground/90 font-medium pt-1">1. Essencial — sem isso o site não funciona</p>
+              <ul className="list-disc pl-5 space-y-1">
+                <li><strong className="text-foreground/80">Sua sessão de login.</strong> Guardada pelo Supabase, é o que
+                  mantém você conectado entre uma página e outra. Sem ela, seria preciso entrar a cada clique.</li>
+                <li><strong className="text-foreground/80">Tema claro ou escuro</strong> (<code className="text-[11px]">jlb-theme</code>).</li>
+                <li><strong className="text-foreground/80">O aceite dos Termos</strong> (<code className="text-[11px]">jlb_aceite_pendente</code>),
+                  só até ele ser gravado na sua conta.</li>
+                <li><strong className="text-foreground/80">O que você criou:</strong> previsões registradas, alertas de
+                  mercado, filtros e modo de visualização, e se o tour de boas-vindas já foi visto. É seu dado,
+                  guardado no seu aparelho.</li>
+              </ul>
+
+              <p className="text-foreground/90 font-medium pt-1">2. Medição de uso — opcional, e você escolhe</p>
+              <ul className="list-disc pl-5 space-y-1">
+                <li><strong className="text-foreground/80">Um identificador aleatório</strong> (<code className="text-[11px]">jlb_anon_id</code>):
+                  um número sorteado, sem nome, e-mail, IP ou qualquer coisa que aponte para você. Serve para contarmos
+                  quantas <em>pessoas distintas</em> usaram cada tela, em vez de quantos cliques houve. Vai para o
+                  nosso próprio servidor, e para mais ninguém.</li>
+              </ul>
+
+              <p className="pt-1"><strong className="text-foreground">A escolha é real e reversível.</strong> Ao entrar
+                pela primeira vez, um aviso pergunta se você aceita a medição. Se recusar, nada é enviado e o
+                identificador é <strong className="text-foreground/80">apagado</strong> — não é só deixar de coletar
+                daqui em diante. Para mudar de ideia depois, basta limpar os dados deste site no seu navegador: o aviso
+                aparece de novo.</p>
+
+              <p><strong className="text-foreground">Enquanto você não responde, não medimos.</strong> O padrão de quem
+                ainda não escolheu é o essencial.</p>
             </Section>
 
             <Section n="9" title="Alterações">

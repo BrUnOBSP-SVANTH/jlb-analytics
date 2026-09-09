@@ -6,6 +6,7 @@
 import { ReactNode, useEffect } from "react";
 import { useLocation } from "wouter";
 import CommandPalette from "./CommandPalette";
+import AvisoDeCookies from "./AvisoDeCookies";
 import { track } from "@/lib/analytics";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
@@ -26,6 +27,9 @@ export default function Layout({ children }: { children: ReactNode }) {
         Pular para o conteúdo
       </a>
       <CommandPalette />
+      {/* A escolha sobre medição. Não bloqueia a tela: o site funciona inteiro
+          sem responder — e enquanto não responder, não medimos. */}
+      <AvisoDeCookies />
       <Navbar />
       <main id="main-content" tabIndex={-1} className="flex-1 focus:outline-none">{children}</main>
       <Footer />
