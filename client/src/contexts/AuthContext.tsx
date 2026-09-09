@@ -18,6 +18,7 @@ import React, {
 import { type User, type Session } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
 import { awardPoints } from "@/lib/userProgress";
+import { resolverAceitePendente } from "@/lib/aceite";
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 
@@ -58,6 +59,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setLoading(false);
       if (event === "SIGNED_IN") {
         awardPoints("first_login", "Primeiro acesso à plataforma", "first_login");
+        // O aceite marcado no cadastro só pode ser GRAVADO agora: antes da
+        // sessão existir, a RLS recusa a escrita — e recusaria em silêncio,
+        // deixando justamente o usuário sem o registro que o aceite existe para
+        // garantir. Falhar aqui não trava nada: a marca fica e tenta de novo.
+        void resolverAceitePendente();
       }
     });
 

@@ -4,12 +4,13 @@
  */
 
 import { useState } from "react";
-import { useLocation } from "wouter";
+import { useLocation, Link } from "wouter";
 import { Mail, Lock, Eye, EyeOff, Chrome, ArrowLeft, AlertCircle, CheckCircle } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSEO } from "@/hooks/useSEO";
 import { track } from "@/lib/analytics";
 import { checkPassword, MIN_PASSWORD_LEN } from "@/lib/passwordSafety";
+import { marcarAceitePendente } from "@/lib/aceite";
 
 type Mode = "login" | "signup" | "reset";
 
@@ -20,6 +21,8 @@ export default function Login() {
   useSEO("Entrar", "Acesse sua conta para sincronizar previsões, calibração e progresso.");
   const [, navigate] = useLocation();
   const { signIn, signUp, signInWithGoogle, resetPassword } = useAuth();
+  // O aceite é exigido só no cadastro: quem já tem conta aceitou quando criou.
+  const [aceitou, setAceitou] = useState(false);
 
   const [mode, setMode] = useState<Mode>("login");
   const [email, setEmail] = useState("");
@@ -65,10 +68,20 @@ export default function Login() {
         setSubmitting(false);
         return;
       }
+      // Barreira no cliente E no envio: o botão já fica desabilitado, mas quem
+      // burlar o HTML não passa daqui.
+      if (!aceitou) {
+        setErrorMsg("Para criar a conta, é preciso aceitar os Termos de Uso e a Política de Privacidade.");
+        setSubmitting(false);
+        return;
+      }
       const { error } = await signUp(email, password);
       if (error) {
         setErrorMsg(translateError(error));
       } else {
+        // O aceite é gravado quando a SESSÃO aparecer — no cadastro por e-mail
+        // ela só existe depois da confirmação. Ver lib/aceite.ts.
+        marcarAceitePendente();
         track("signup");
         setSuccessMsg("Conta criada! Verifique seu e-mail para confirmar o cadastro.");
       }
@@ -85,6 +98,18 @@ export default function Login() {
   }
 
   async function handleGoogle() {
+    // O CADASTRO PELO GOOGLE PASSA PELA MESMA PORTA. Sem isto o aceite seria
+    // contornável com um clique: bastava trocar para "criar conta" e entrar pelo
+    // Google, e a pessoa teria conta sem nunca ter visto os termos.
+    if (mode === "signup") {
+      if (!aceitou) {
+        setErrorMsg("Para criar a conta, é preciso aceitar os Termos de Uso e a Política de Privacidade.");
+        return;
+      }
+      // Marcado ANTES de sair da página: o Google redireciona o navegador, e o
+      // código depois desta linha pode nunca rodar.
+      marcarAceitePendente();
+    }
     setSubmitting(true);
     setErrorMsg(null);
     const { error } = await signInWithGoogle();
@@ -121,7 +146,7 @@ export default function Login() {
             <>
               <button
                 onClick={handleGoogle}
-                disabled={submitting}
+                disabled={submitting || (mode === "signup" && !aceitou)}
                 className="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-lg border border-border/50 bg-secondary/30 text-sm font-medium text-foreground hover:bg-secondary/50 transition-colors disabled:opacity-50"
                 aria-label="Entrar com Google"
               >
@@ -193,9 +218,36 @@ export default function Login() {
               </div>
             )}
 
+            {/* ACEITE DOS TERMOS — só no cadastro.
+                O texto diz o que está sendo aceito em vez de "li e concordo":
+                quem clica em "li e concordo" não leu, e as três coisas listadas
+                aqui são justamente as que geram briga depois (achar que análise
+                é garantia, achar que a IA não erra, achar que vendemos método). */}
+            {mode === "signup" && (
+              <label className="flex items-start gap-2.5 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={aceitou}
+                  onChange={(e) => setAceitou(e.target.checked)}
+                  required
+                  className="mt-0.5 w-4 h-4 shrink-0 accent-primary cursor-pointer"
+                />
+                <span className="text-[11px] text-muted-foreground leading-relaxed">
+                  Li e aceito os{" "}
+                  <Link href="/termos"><span className="text-gold hover:underline">Termos de Uso</span></Link>{" "}
+                  e a{" "}
+                  <Link href="/privacidade"><span className="text-gold hover:underline">Política de Privacidade</span></Link>.
+                  Entendo que a JLB é uma plataforma de <strong className="text-foreground/80">educação e análise</strong>,
+                  que <strong className="text-foreground/80">nossas análises erram</strong> e não garantem ganho,
+                  e que <strong className="text-foreground/80">não oferecemos método de lucro nem forma de burlar
+                  sistema algum</strong>.
+                </span>
+              </label>
+            )}
+
             <button
               type="submit"
-              disabled={submitting || !email}
+              disabled={submitting || !email || (mode === "signup" && !aceitou)}
               className="w-full py-3 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
             >
               {submitting ? "Aguarde..." : mode === "login" ? "Entrar" : mode === "signup" ? "Criar conta" : "Enviar e-mail"}
