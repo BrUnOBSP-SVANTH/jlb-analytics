@@ -20,6 +20,7 @@ import { log } from "../lib/log.ts";
 import { buildDigest, sendWeeklyDigests } from "../lib/ai/digest.ts";
 import { runChat, chatGuards, type ChatRequest } from "../lib/ai/chat.ts";
 import { runMarketAnalysis, ANALYZE_CACHE_KEY, type AnalyzeParams } from "../lib/ai/marketAnalysis.ts";
+import { serieDoUsuario } from "../lib/calibracaoUsuario.ts";
 import { runModelPredict, PREDICT_CACHE_KEY, type PredictParams } from "../lib/ai/modelPredict.ts";
 import { dailyBriefingHandler } from "../lib/ai/briefing.ts";
 import { portfolioHandler } from "../lib/ai/portfolio.ts";
@@ -42,6 +43,32 @@ const ipLimit = (name: string, max: number, windowMs: number) =>
   };
 
 // ── Credits status (read-only) ────────────────────────────────────────────────
+
+/**
+ * Histórico de calibração do usuário — reconstruído das previsões da CONTA.
+ *
+ * Vive aqui (e não numa rota nova) porque é a mesma família do track record e
+ * usa a mesma verificação de identidade. Só devolve a série de QUEM PEDE: sem
+ * token válido não há usuário, e sem usuário não há série.
+ */
+router.get("/user-calibration-history", async (req, res) => {
+  try {
+    const authHeader = String(req.headers.authorization ?? "");
+    // Sem login não há o que devolver — e devolver vazio (em vez de 401) deixa a
+    // tela cair no histórico local sem precisar tratar erro.
+    if (!authHeader) return res.json({ history: [], source: "anon" });
+
+    const userId = await verifyUserId(authHeader);
+    if (!userId) return res.json({ history: [], source: "anon" });
+
+    const history = await serieDoUsuario(userId);
+    res.json({ history, source: "conta" });
+  } catch (err) {
+    log.warn("[user-calibration] falhou:", err instanceof Error ? err.message : err);
+    // Falhar aqui não pode quebrar o Dashboard: a tela usa o histórico local.
+    res.json({ history: [], source: "erro" });
+  }
+});
 
 router.get("/credits", async (req, res) => {
   const SUPABASE_URL = process.env.SUPABASE_URL ?? process.env.VITE_SUPABASE_URL ?? "";

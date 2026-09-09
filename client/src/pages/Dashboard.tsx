@@ -20,7 +20,9 @@ import {
   saveCalibrationSnapshot, loadCalibrationHistory,
   detectResolutions,
   type StoredPrediction, type ResolutionSuggestion, type ResolutionSource,
+  type CalibrationSnapshot,
 } from "@/lib/predictions";
+import { apiFetch } from "@/lib/api";
 import { awardPoints, loadProgress } from "@/lib/userProgress";
 import { pullProgress } from "@/lib/progressSync";
 import { pullFromSupabase, pushToSupabase, syncOne, deleteOne } from "@/lib/predictionsSync";
@@ -497,6 +499,33 @@ function DashboardSkeleton() {
 // ── Main ───────────────────────────────────────────────────────────────────
 
 export default function Dashboard() {
+  /**
+   * A série vem da CONTA, e o histórico local é só o plano B.
+   *
+   * O local era a única fonte até aqui, e por isso a série sumia ao trocar de
+   * aparelho ou limpar o navegador — sem chance de reconstrução, porque cada
+   * ponto era um retrato que ninguém mais guardava. O servidor recalcula a
+   * série inteira a partir das previsões que já vivem na conta, inclusive
+   * retroativamente.
+   *
+   * O local continua servindo a quem não está logado e cobrindo a rede fora do
+   * ar: melhor mostrar a série antiga do aparelho do que um gráfico vazio.
+   */
+  const [historicoCalibracao, setHistoricoCalibracao] = useState(loadCalibrationHistory);
+
+  useEffect(() => {
+    let vivo = true;
+    apiFetch("/api/ai/user-calibration-history")
+      .then((r) => (r.ok ? r.json() as Promise<{ history?: CalibrationSnapshot[] }> : null))
+      .then((d) => {
+        // Só troca se a conta tiver algo: uma série vazia do servidor não pode
+        // apagar da tela a que o aparelho já tinha.
+        if (vivo && d?.history && d.history.length > 0) setHistoricoCalibracao(d.history);
+      })
+      .catch(() => { /* fica com o local */ });
+    return () => { vivo = false; };
+  }, []);
+
   useSEO("Meu Dashboard", "Suas previsões, calibração vs. mercado, Brier Score e evolução como forecaster.");
   const { user, loading: authLoading } = useAuth();
 
@@ -603,7 +632,7 @@ export default function Dashboard() {
       </div>
 
       {/* Calibration trend — full width, only appears after 2+ snapshots */}
-      <CalibrationTrend history={loadCalibrationHistory()} />
+      <CalibrationTrend history={historicoCalibracao} />
 
       {/* Watchlist — full width, hidden when empty */}
       <WatchlistSection />
