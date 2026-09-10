@@ -4,6 +4,9 @@
  * e QuickActions (próximas ações). Comportamento idêntico.
  */
 import { Link } from "wouter";
+import { Termo } from "@/components/Termo";
+import { num, plural } from "@shared/formato";
+import { MIN_AMOSTRA } from "@shared/referencias";
 import { MODEL_COUNT } from "@/lib/brand";
 import {
   GraduationCap, BarChart3, TrendingUp, Brain, GitMerge, Lock,
@@ -122,7 +125,8 @@ export function BehavioralMetrics({ userLevel }: { userLevel: number }) {
           <div>
             <p className="text-sm text-foreground font-medium">Disponível no Nível 4</p>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Brier Score, Overconfidence Index e Loss Aversion desbloqueiam com o Nível 4.
+              <Termo nome="brier">Brier Score</Termo>, índice de excesso de confiança e aversão à perda
+              aparecem a partir do Nível 4.
             </p>
           </div>
         </div>
@@ -135,10 +139,44 @@ export function BehavioralMetrics({ userLevel }: { userLevel: number }) {
     );
   }
 
+  /**
+   * DSH-05: sem previsão resolvida, esta tela era uma PAREDE DE TRAVESSÕES —
+   * quatro cards de métrica com "—" e uma barra de progresso em zero. O usuário
+   * novo não vê um dashboard vazio, vê um dashboard quebrado; e nada ali diz o
+   * que fazer para preenchê-lo.
+   *
+   * Um estado inicial que EXPLICA custa o mesmo e ensina alguma coisa.
+   */
+  if (resolved.length === 0) {
+    return (
+      <div className="glass-card rounded-xl p-6 space-y-3">
+        <h3 className="font-semibold text-foreground flex items-center gap-2">
+          <Brain className="w-4 h-4 text-purple-400" aria-hidden="true" />
+          Métricas Comportamentais
+        </h3>
+        <p className="text-sm text-muted-foreground leading-relaxed">
+          Elas medem <strong className="text-foreground">como você erra</strong>, não quanto. Se você diz
+          80% e a coisa acontece 60% das vezes, o problema não é sorte: é excesso de confiança, e ele
+          aparece aqui antes de você perceber sozinho.
+        </p>
+        <p className="text-sm text-muted-foreground leading-relaxed">
+          Para isso é preciso ter previsões que já <strong className="text-foreground">resolveram</strong> —
+          registrar é rápido, esperar o mercado fechar é o que leva tempo.
+          {allPreds.length > 0 && <> Você tem {plural(allPreds.length, "previsão registrada", "previsões registradas")} esperando resultado.</>}
+        </p>
+        <Link href="/mercados"
+          className="inline-flex items-center gap-2 text-xs text-primary hover:underline">
+          {allPreds.length > 0 ? "Registrar mais uma" : "Registrar a primeira previsão"}{" "}
+          <ArrowRight className="w-3 h-3" aria-hidden="true" />
+        </Link>
+      </div>
+    );
+  }
+
   return (
     <div className="glass-card rounded-xl p-6 space-y-5">
       <h3 className="font-semibold text-foreground flex items-center gap-2">
-        <Brain className="w-4 h-4 text-purple-400" />
+        <Brain className="w-4 h-4 text-purple-400" aria-hidden="true" />
         Métricas Comportamentais
       </h3>
       <div className="p-4 rounded-xl border border-primary/20 bg-primary/5">
@@ -180,26 +218,36 @@ export function BehavioralMetrics({ userLevel }: { userLevel: number }) {
             </p>
           )}
           <p className="text-xs text-muted-foreground">
-            {overconfidence === null ? "min. 3 previsões resolvidas" : Math.abs(overconfidence) < 0.05 ? "bem calibrado" : overconfidence > 0 ? "tende a superestimar" : "tende a subestimar"}
+            {overconfidence === null ? "a partir de 3 previsões resolvidas" : Math.abs(overconfidence) < 0.05 ? "bem calibrado" : overconfidence > 0 ? "tende a superestimar" : "tende a subestimar"}
           </p>
         </div>
-        <div className="p-3 rounded-lg bg-secondary/30 border border-border/30">
-          <p className="text-xs text-muted-foreground">Loss Aversion (λ)</p>
-          <p className="text-xl font-bold font-mono mt-0.5 text-foreground">{lossAversion.toFixed(2)}</p>
-          <p className="text-xs text-muted-foreground">ref. Kahneman — sem dados monetários</p>
+        {/* DSH-04: este 2,25 NÃO é seu — é a constante da literatura. Estava num
+            card idêntico aos das suas métricas, com a mesma cor e o mesmo peso, e
+            a auditoria leu como se fosse uma medição sua. O aviso existia em
+            letra miúda; o problema era o card parecer igual aos outros.
+            Agora ele se anuncia como referência antes do número. */}
+        <div className="p-3 rounded-lg bg-transparent border border-dashed border-border/50">
+          <p className="text-xs text-muted-foreground">
+            Referência da literatura · <Termo nome="aversao a perda">aversão à perda</Termo> (λ)
+          </p>
+          <p className="text-xl font-bold font-mono mt-0.5 text-muted-foreground">{num(lossAversion, 2)}</p>
+          <p className="text-xs text-muted-foreground">
+            valor de Kahneman e Tversky — não medimos o seu, porque isso exigiria histórico de dinheiro real
+          </p>
         </div>
         <div className="p-3 rounded-lg bg-secondary/30 border border-border/30">
           <p className="text-xs text-muted-foreground">Previsões registradas</p>
           <p className="text-xl font-bold font-mono mt-0.5 text-foreground">{sessions}</p>
-          <p className="text-xs text-muted-foreground">mín. 30 para estabilidade</p>
+          <p className="text-xs text-muted-foreground">a partir de {MIN_AMOSTRA} os números estabilizam</p>
         </div>
       </div>
       <div className="flex items-start gap-2 p-3 rounded-lg bg-warning/5 border border-warning/20">
         <AlertCircle className="w-3.5 h-3.5 text-warning shrink-0 mt-0.5" />
         <p className="text-xs text-muted-foreground">
           Métricas calculadas a partir das suas previsões reais registradas.
-          Mínimo de 20 previsões resolvidas para resultados estatisticamente estáveis.
-          {overconfidence === null && resolved.length < 3 && " Comece registrando previsões em Mercados Ativos."}
+          A partir de {MIN_AMOSTRA} resolvidas os números ficam estatisticamente estáveis — é a mesma
+          régua que usamos no nosso próprio track record.
+          {overconfidence === null && resolved.length < 3 && " Comece registrando previsões em Mercados Ao Vivo."}
         </p>
       </div>
     </div>

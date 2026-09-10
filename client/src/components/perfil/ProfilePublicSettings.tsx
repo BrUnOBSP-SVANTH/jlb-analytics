@@ -105,7 +105,7 @@ export function ProfilePublicSettings({ userId }: { userId: string }) {
                 className="flex-1 px-3 py-2 bg-secondary/30 border border-border/40 rounded-r-lg text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
               />
             </div>
-            <p className="text-[11px] text-muted-foreground mt-1">3-20 chars, minúsculas, números e _</p>
+            <p className="text-[11px] text-muted-foreground mt-1">De 3 a 20 caracteres: letras minúsculas, números e sublinhado.</p>
           </div>
           <div>
             <label className="text-xs text-muted-foreground uppercase tracking-wider">Nome de exibição</label>

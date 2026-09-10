@@ -89,6 +89,10 @@ export const GLOSSARIO: Record<string, Verbete> = {
     termo: "Divergência",
     simples: "Um mercado em que a nossa leitura difere bastante do preço. É um convite a pesquisar aquele caso, não uma recomendação.",
   },
+  "aversao a perda": {
+    termo: "Aversão à perda",
+    simples: "A tendência de sentir uma perda como algo bem mais pesado que um ganho do mesmo tamanho. Kahneman e Tversky mediram cerca de 2,25 vezes — perder R$ 100 dói o que ganhar R$ 225 alegra. É o viés que faz gente segurar uma posição ruim esperando 'empatar'.",
+  },
   elo: {
     termo: "Elo",
     simples: "Um sistema de pontuação de força de times, o mesmo do xadrez: quem vence de um adversário forte sobe mais do que quem vence de um fraco.",

@@ -112,7 +112,7 @@ export default function MarketDetail() {
                           : <Clock className="w-3.5 h-3.5 shrink-0" />}
                         {ended
                           ? (market.resolvedOutcome ? `Resolvido — resultado: ${market.resolvedOutcome}` : "Mercado encerrado")
-                          : `Encerra em: ${cd.label}`}
+                          : `Encerra em ${cd.label}`}
                       </div>
                     );
                   })()}
@@ -181,14 +181,17 @@ export default function MarketDetail() {
                   </p>
                   <p className="text-[11px] text-muted-foreground mt-1">Negociado</p>
                 </div>
-                {/* Volume 24h */}
-                <div className="glass-card rounded-xl p-4 text-center">
-                  <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-1"><Termo nome="volume">Volume 24h</Termo></p>
-                  <p className="text-2xl font-mono font-bold text-neon-blue">
-                    {market.volume24h !== undefined ? formatVolume(market.volume24h) : "—"}
-                  </p>
-                  <p className="text-[11px] text-muted-foreground mt-1">Últimas 24 horas</p>
-                </div>
+                {/* DET-09: "Volume 24h — / Últimas 24 horas" ocupava um card
+                    inteiro SEM DADO. Métrica vazia não é transparência: é um
+                    buraco que o leitor tenta interpretar. Quando a fonte não
+                    informa, o card não existe. */}
+                {market.volume24h !== undefined && (
+                  <div className="glass-card rounded-xl p-4 text-center">
+                    <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-1"><Termo nome="volume">Volume 24h</Termo></p>
+                    <p className="text-2xl font-mono font-bold text-neon-blue">{formatVolume(market.volume24h)}</p>
+                    <p className="text-[11px] text-muted-foreground mt-1">nas últimas 24 horas</p>
+                  </div>
+                )}
                 {/* Variação 7d */}
                 <div className="glass-card rounded-xl p-4 text-center">
                   <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-1">Variação 7d</p>

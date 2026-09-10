@@ -6,6 +6,7 @@
  */
 
 import { useState, useEffect } from "react";
+import { supabase } from "@/lib/supabase";
 import { Link } from "wouter";
 import PageHeader from "@/components/PageHeader";
 import ContaTabs from "@/components/ContaTabs";
@@ -116,6 +117,9 @@ export default function Perfil() {
   const userId = user?.id;
   const [progress, setProgress] = useState(() => loadProgress());
   const [predictions, setPredictions] = useState(() => loadPredictions());
+  // O nome que a pessoa escolheu — a tabela `profiles` já guardava, e a tela
+  // não lia (PRF-01).
+  const [perfilPublico, setPerfilPublico] = useState<{ display_name: string | null; username: string | null } | null>(null);
 
   // Puxa do Supabase no mount (logado) — sem isso, num dispositivo novo o Perfil
   // aparecia vazio mesmo com histórico na nuvem (o Dashboard já fazia isso).
@@ -127,6 +131,8 @@ export default function Perfil() {
     void pullProgress(userId).then((ok) => {
       if (ok) setProgress(loadProgress());
     });
+    void supabase.from("profiles").select("display_name, username").eq("id", userId).maybeSingle()
+      .then(({ data }: { data: { display_name: string | null; username: string | null } | null }) => { if (data) setPerfilPublico(data); });
   }, [userId]);
 
   if (!user) return <GuestPrompt />;
@@ -152,6 +158,19 @@ export default function Perfil() {
 
   // Joined date from Supabase user metadata
   const joinedAt = user.created_at ? fmtDate(user.created_at) : "—";
+
+  /**
+   * O nome que aparece na tela (PRF-01).
+   *
+   * O e-mail inteiro era o título do perfil — endereço completo à mostra numa
+   * tela que a pessoa pode abrir com alguém do lado, ou compartilhar. Ordem de
+   * preferência: o nome que ela escolheu, o @ do perfil público, e só depois a
+   * parte antes do @ do e-mail. O endereço completo nunca.
+   */
+  const nomeExibido = perfilPublico?.display_name?.trim()
+    || (perfilPublico?.username ? `@${perfilPublico.username}` : "")
+    || (user.email ?? "").split("@")[0]
+    || "Você";
 
   // Badge context
   const bs = meanBrierScore(predictions);
@@ -181,11 +200,16 @@ export default function Perfil() {
           <div className="glass-card rounded-2xl p-6 flex flex-col sm:flex-row items-center sm:items-start gap-6">
             <div className="w-20 h-20 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
               <span className="text-2xl font-bold text-primary font-mono">
-                {initials(user.email ?? "JL")}
+                {initials(nomeExibido)}
               </span>
             </div>
             <div className="flex-1 text-center sm:text-left space-y-1">
-              <p className="text-lg font-bold text-foreground">{user.email}</p>
+              {/* PRF-01: o e-mail era usado como nome de exibição — endereço
+                  inteiro à mostra numa tela que a pessoa pode abrir com alguém
+                  do lado. O campo `display_name` já existia no banco e não era
+                  lido aqui. Sem ele, a parte antes do @ ainda é melhor que o
+                  endereço completo. */}
+              <p className="text-lg font-bold text-foreground">{nomeExibido}</p>
               <p className="text-sm text-muted-foreground flex items-center gap-1.5 justify-center sm:justify-start">
                 <Calendar className="w-3.5 h-3.5" />
                 Membro desde {joinedAt}
@@ -245,7 +269,9 @@ export default function Perfil() {
           <div className="glass-card rounded-2xl p-6 space-y-4">
             <div className="flex items-center gap-2">
               <BookOpen className="w-4 h-4 text-primary" />
-              <h2 className="font-semibold text-[var(--titulo)]">Mapa de Progresso</h2>
+              {/* PRF-08: "Mapa de Progresso" aqui e "Mapa de Progressão" no
+                  Dashboard e na Trilha. Mesmo componente, mesmo nome. */}
+              <h2 className="font-semibold text-[var(--titulo)]">Mapa de Progressão</h2>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-5 gap-3">
               {LEVELS.map((lvl) => {

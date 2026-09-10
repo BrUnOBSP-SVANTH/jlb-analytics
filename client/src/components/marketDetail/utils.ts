@@ -1,22 +1,28 @@
 /**
  * Helpers puros da tela de detalhe de mercado. Extraido de pages/MarketDetail.tsx.
  */
+import { dolar, tempoRestante } from "@shared/formato";
+/**
+ * Quanto falta, SEM a palavra "restantes" dentro (DET-09).
+ *
+ * A tela escrevia `Encerra em: ${label}` e o label já vinha com "restantes"
+ * dentro — o resultado impresso era "Encerra em: 6d 3h restantes", que diz a
+ * mesma coisa duas vezes. Quem chama decide como emoldurar; o valor é só o valor.
+ */
 export function formatCountdown(dateStr: string): { label: string; urgent: boolean; ended: boolean } {
-  const end = new Date(dateStr).getTime();
-  const now = Date.now();
-  const diff = end - now;
-  if (diff <= 0) return { label: "Encerrado", urgent: false, ended: true };
+  const diff = new Date(dateStr).getTime() - Date.now();
+  if (diff <= 0) return { label: "encerrado", urgent: false, ended: true };
   const days = Math.floor(diff / 86_400_000);
-  const hours = Math.floor((diff % 86_400_000) / 3_600_000);
-  if (days > 30) return { label: `${Math.floor(days / 30)}m restantes`, urgent: false, ended: false };
-  if (days > 0) return { label: `${days}d ${hours}h restantes`, urgent: days <= 3, ended: false };
-  return { label: `${hours}h restantes`, urgent: true, ended: false };
+  return {
+    label: tempoRestante(diff),
+    urgent: days <= 3,
+    ended: false,
+  };
 }
 
+/** Volume em dólar, em português (MKT-09) — o mesmo formatador do resto do site. */
 export function formatVolume(v: number): string {
-  if (v >= 1_000_000) return `$${(v / 1_000_000).toFixed(1)}M`;
-  if (v >= 1_000) return `$${(v / 1_000).toFixed(0)}K`;
-  return `$${v.toFixed(0)}`;
+  return dolar(v);
 }
 
 export function calcEV(yourProb: number, marketProb: number): number {

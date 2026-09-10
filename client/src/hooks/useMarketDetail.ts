@@ -18,6 +18,7 @@ import { useSEO } from "@/hooks/useSEO";
 import type { MarketBasic, CerebroArticleSnippet, AiResult, CommunityForecast } from "@/components/marketDetail/types";
 import { apiFetch } from "@/lib/api";
 import { montarDesfechos } from "@/lib/desfechos";
+import { termosDistintivos, filtrarRelacionados } from "@/lib/relevancia";
 
 export function useMarketDetail(marketId: string) {
   const source = marketId.startsWith("kalshi-") ? "kalshi"
@@ -239,24 +240,32 @@ export function useMarketDetail(marketId: string) {
 
   useEffect(() => {
     if (!market?.title) return;
-    // Extract 2-3 keywords from market title for FTS search
-    const keywords = market.title
-      .replace(/[^a-zA-ZÀ-ú0-9 ]/g, " ")
-      .split(/\s+/)
-      .filter((w) => w.length > 3)
-      .slice(0, 3)
-      .join(" & ");
-    if (!keywords) return;
+
+    /**
+     * DET-08: num mercado sobre a decisão do Fed, o chip trazia "Bitcoin's $80K
+     * Comeback Has a September Deadline". A busca usava as TRÊS PRIMEIRAS
+     * palavras com mais de três letras do título — para "Fed Decision in
+     * September?" isso dá "Decision & September", e qualquer artigo de setembro
+     * casa.
+     *
+     * Agora os termos são os DISTINTIVOS (lib/relevancia.ts), e o resultado é
+     * conferido depois de voltar: o full-text search casa por radical e traz
+     * vizinhos. Sem match, o chip não aparece — notícia irrelevante ao lado de
+     * um mercado custa mais credibilidade do que a ausência dela.
+     */
+    const termos = termosDistintivos(market.title);
+    if (termos.length === 0) { setCerebroArticles([]); return; }
 
     void supabase
       .from("cerebro_articles")
       .select("id, title, source, category, url, published_at, summary")
-      .textSearch("fts", keywords, { config: "portuguese" })
+      .textSearch("fts", termos.join(" | "), { config: "portuguese" })
       .eq("status", "active")
       .order("published_at", { ascending: false })
-      .limit(3)
+      .limit(8)
       .then(({ data }) => {
-        if (data && data.length > 0) setCerebroArticles(data as CerebroArticleSnippet[]);
+        const bons = filtrarRelacionados((data ?? []) as CerebroArticleSnippet[], market.title);
+        setCerebroArticles(bons.slice(0, 3));
       });
   }, [market?.title]);
 

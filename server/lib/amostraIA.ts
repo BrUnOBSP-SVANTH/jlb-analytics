@@ -37,6 +37,7 @@ import { buscarTudo } from "./supaPaginado.ts";
 import { dedupPorMercado } from "./calibrationData.ts";
 import { getCache, setCache } from "./cache.ts";
 import { intervaloWilson, comparaComMercado } from "./ai/incerteza.ts";
+import { MIN_AMOSTRA as MINIMO } from "../../shared/referencias.ts";
 
 /**
  * O corte de amostra do site inteiro — por tema, por mês e por faixa.
@@ -48,7 +49,7 @@ import { intervaloWilson, comparaComMercado } from "./ai/incerteza.ts";
  * e 30 em outro. Regra publicada que o próprio site não cumpre é pior do que
  * regra nenhuma.
  */
-export const MIN_AMOSTRA = 20;
+export { MIN_AMOSTRA } from "../../shared/referencias.ts";
 
 export interface LinhaIA {
   market_id: string;
@@ -289,7 +290,7 @@ export interface Fatia {
 export function fatiar(
   linhas: LinhaIA[],
   chave: (l: LinhaIA) => string,
-  minimo = MIN_AMOSTRA,
+  minimo = MINIMO,
 ): Fatia[] {
   const grupos = new Map<string, LinhaIA[]>();
   for (const l of linhas) {

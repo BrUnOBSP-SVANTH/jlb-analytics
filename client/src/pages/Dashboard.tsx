@@ -382,7 +382,7 @@ function PredictionTracker({ userId }: { userId?: string }) {
           <p className="text-sm text-muted-foreground">Nenhuma previsão registrada ainda.</p>
           <Link href="/noticias">
             <span className="inline-flex items-center gap-1.5 text-xs text-gold hover:underline">
-              Ir para Mercados Ativos <ArrowRight className="w-3 h-3" />
+              Ir para Mercados Ao Vivo <ArrowRight className="w-3 h-3" aria-hidden="true" />
             </span>
           </Link>
         </div>

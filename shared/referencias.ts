@@ -62,3 +62,13 @@ export const FAIXAS_BRIER: { ate: number; rotulo: string }[] = [
 export function lerBrier(brier: number): string {
   return FAIXAS_BRIER.find((f) => brier < f.ate)?.rotulo ?? FAIXAS_BRIER[FAIXAS_BRIER.length - 1].rotulo;
 }
+
+/**
+ * A amostra mínima para um número virar afirmação — a mesma régua no site todo.
+ *
+ * Mora aqui porque o servidor já a aplica (`server/lib/amostraIA.ts` a
+ * reexporta) e as telas precisam ESCREVER o número no texto que explica a régua.
+ * Ter a constante em dois lugares foi como a página acabou prometendo "a partir
+ * de 20 resolvidas" enquanto os endpoints cortavam em 15 e em 30 (TRK-03).
+ */
+export const MIN_AMOSTRA = 20;
