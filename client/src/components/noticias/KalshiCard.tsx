@@ -7,6 +7,7 @@ import { Languages, BookmarkPlus, Check, ExternalLink, Zap, ArrowRight } from "l
 import { traduzir, pareceEmPortugues } from "@/lib/traducao";
 import { type KalshiMarket, daysLeft, formatVolume } from "@/lib/noticiasShared";
 import { CategoryBadge } from "@/components/noticias/cards";
+import { TituloDeMercado } from "@/components/mercados/cards";
 import { addPrediction } from "@/lib/predictions";
 import { awardPoints } from "@/lib/userProgress";
 import { track } from "@/lib/analytics";
@@ -75,15 +76,13 @@ export function KalshiCard({ market }: { market: KalshiMarket }) {
 
       {/* Title */}
       <div>
-        <Link href={`/mercados/kalshi-${market.ticker}`}>
-          <p className="text-sm font-medium text-foreground leading-snug line-clamp-3 hover:text-gold transition-colors cursor-pointer">{market.title}</p>
-        </Link>
-        {translation && <p className="text-xs text-[var(--gold-legivel)] mt-1 leading-snug italic">{translation}</p>}
-        {translating && !translation && (
-          <p className="mt-1.5 flex items-center gap-1 text-[11px] text-muted-foreground">
-            <Languages className="w-3 h-3" aria-hidden="true" /> Traduzindo…
-          </p>
-        )}
+        {/* TRV-06: mesmo bloco de título e tradução das outras duas telas. */}
+        <TituloDeMercado
+          titulo={market.title}
+          traducao={translation}
+          traduzindo={translating}
+          href={`/mercados/kalshi-${market.ticker}`}
+        />
       </div>
 
       {/* Prob bars */}

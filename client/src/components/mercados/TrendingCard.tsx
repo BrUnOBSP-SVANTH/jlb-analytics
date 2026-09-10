@@ -16,7 +16,7 @@ import { useLivePrice } from "@/lib/livePrices";
 import { traduzir, pareceEmPortugues } from "@/lib/traducao";
 import { type TrendingItem, CATEGORY_LABELS, formatVolume } from "@/lib/trending";
 import {
-  ProbSparkline, MarketBadge, SentimentBadge, SourceBadge, ProbHero, ProbBar, MultiOutcomePills,
+  ProbSparkline, MarketBadge, SentimentBadge, SourceBadge, ProbHero, ProbBar, MultiOutcomePills, TituloDeMercado,
 } from "@/components/mercados/cards";
 import { NewsAnalysisPanel } from "@/components/mercados/panels";
 import { useEdge } from "@/components/mercados/edgeStore";
@@ -130,27 +130,15 @@ function TrendingCardBase({ item, onCompare, inCompare, indice = 0 }: {
             <div className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${
               item.score >= 70 ? "bg-positive animate-pulse" : item.score >= 40 ? "bg-gold" : "bg-primary/50"
             }`} />
-            <div className="min-w-0">
-              {/* Título clicável nos mercados (abre a tela de detalhe) — padrão Polymarket */}
-              {isMarket ? (
-                <Link href={`/mercados/${item.id}`}>
-                  <p className="text-sm font-medium text-foreground leading-snug hover:text-gold transition-colors cursor-pointer">{item.title}</p>
-                </Link>
-              ) : (
-                <p className="text-sm font-medium text-foreground leading-snug">{item.title}</p>
-              )}
-              {translating && !translation && isMarket && (
-                <p className="text-[11px] text-muted-foreground mt-1 flex items-center gap-1">
-                  <Languages className="w-3 h-3" /> Traduzindo...
-                </p>
-              )}
-              {/* Só quando existe tradução DE VERDADE — e em `text-gold-forte`,
-                  que é o dourado com contraste no tema claro. O tom anterior
-                  media 1,71:1 sobre o fundo creme (TRV-07). */}
-              {translation && (
-                <p className="text-xs text-[var(--gold-legivel)] mt-1 leading-snug italic">{translation}</p>
-              )}
-            </div>
+            {/* TRV-06: o mesmo bloco de título e tradução das outras duas
+                telas — antes cada uma tinha o seu, com número de linhas e tom
+                de dourado diferentes. */}
+            <TituloDeMercado
+              titulo={item.title}
+              traducao={translation}
+              traduzindo={translating && isMarket}
+              href={isMarket ? `/mercados/${item.id}` : undefined}
+            />
           </div>
           {/* Número-herói (mercados binários) */}
           {item.yesProb !== undefined && !item.parsedOutcomes && (

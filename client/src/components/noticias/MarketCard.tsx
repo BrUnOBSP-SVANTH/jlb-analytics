@@ -7,7 +7,7 @@ import { Link } from "wouter";
 import { Languages, ChevronUp, BookmarkPlus, Check, X as XIcon, ExternalLink, Zap, ArrowRight } from "lucide-react";
 import { type PolyMarket, parseOutcomePrices, daysLeft, formatVolume } from "@/lib/noticiasShared";
 import { CategoryBadge } from "@/components/noticias/cards";
-import { ProbHero, ProbBar, ProbSparkline } from "@/components/mercados/cards";
+import { ProbHero, ProbBar, ProbSparkline, TituloDeMercado } from "@/components/mercados/cards";
 import AnimatedSection from "@/components/AnimatedSection";
 import { addPrediction, edge, kellyFraction, type StoredPrediction } from "@/lib/predictions";
 import { awardPoints } from "@/lib/userProgress";
@@ -185,15 +185,13 @@ export function MarketCard({ market, savedIds, onSaved, highlight = false, indic
       {/* Pergunta + probabilidade protagonista (mesmo padrão da tela de Apostas) */}
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
-          {/* Título clicável → tela de detalhe (coeso com a tela de Apostas) */}
-          <Link href={`/mercados/poly-${market.id}`}>
-            <p className="text-sm font-medium text-foreground leading-snug line-clamp-3 hover:text-gold transition-colors cursor-pointer">
-              {market.question}
-            </p>
-          </Link>
-          {translation && (
-            <p className="text-xs text-[var(--gold-legivel)] mt-1 leading-snug italic">{translation}</p>
-          )}
+          {/* TRV-06: mesmo bloco de título e tradução das outras duas telas. */}
+          <TituloDeMercado
+            titulo={market.question}
+            traducao={translation}
+            traduzindo={translating}
+            href={`/mercados/poly-${market.id}`}
+          />
           {translating && !translation && (
             <p className="mt-1.5 flex items-center gap-1 text-[11px] text-muted-foreground">
               <Languages className="w-3 h-3" aria-hidden="true" /> Traduzindo…

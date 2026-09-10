@@ -4,6 +4,8 @@
  * presentacionais (badges, pills, sparkline, barra de hype, multi-outcome).
  */
 import { useState, useEffect, useRef, useId } from "react";
+import { Link } from "wouter";
+import { Languages } from "lucide-react";
 import type { DynamicBadge, Source } from "@/lib/trending";
 import { historicoDoToken, type PontoPreco } from "@/lib/historicoPreco";
 import { num } from "@shared/formato";
@@ -351,6 +353,55 @@ export function MultiOutcomePills({ outcomes }: { outcomes: { label: string; pro
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+/**
+ * TituloDeMercado — o título e a sua tradução, escritos uma vez só.
+ *
+ * TRV-06: a auditoria encontrou um mesmo mercado do Polymarket com três
+ * desenhos diferentes — na home, em /mercados (duas variantes) e em /noticias —
+ * "com campos e hierarquias distintas". Os PRIMITIVOS já eram compartilhados
+ * (`ProbHero`, `ProbBar`, `ProbSparkline`, `SourceBadge`); o que divergia era a
+ * composição, e o bloco mais visível dela é este: o título e a linha da
+ * tradução.
+ *
+ * Divergiam em três coisas que o leitor percebe: quantas linhas o título ocupa
+ * antes de cortar, se a tradução aparece em itálico ou não, e em qual tom de
+ * dourado — e um dos tons media 1,71:1 no tema claro (TRV-07).
+ *
+ * A regra que fica junto com o componente, e que é o achado crítico MKT-01:
+ * a segunda linha só existe quando há tradução DE VERDADE. Passar o original
+ * como "tradução" fazia todo card do site mostrar o título duas vezes.
+ */
+export function TituloDeMercado({ titulo, traducao, href, traduzindo = false, linhas = 3 }: {
+  titulo: string;
+  /** `null` quando não há tradução útil — e aí a segunda linha não existe. */
+  traducao?: string | null;
+  /** Sem `href`, o título não é clicável (post de discussão, por exemplo). */
+  href?: string;
+  traduzindo?: boolean;
+  linhas?: 2 | 3;
+}) {
+  const classe = `text-sm font-medium text-foreground leading-snug ${
+    linhas === 2 ? "line-clamp-2" : "line-clamp-3"
+  }`;
+
+  return (
+    <div className="min-w-0">
+      {href
+        ? <Link href={href}><p className={`${classe} hover:text-gold transition-colors cursor-pointer`}>{titulo}</p></Link>
+        : <p className={classe}>{titulo}</p>}
+
+      {traducao && traducao !== titulo && (
+        <p className="text-xs text-[var(--gold-legivel)] mt-1 leading-snug italic">{traducao}</p>
+      )}
+      {traduzindo && !traducao && (
+        <p className="text-[11px] text-muted-foreground mt-1 flex items-center gap-1">
+          <Languages className="w-3 h-3" aria-hidden="true" /> Traduzindo…
+        </p>
+      )}
     </div>
   );
 }
