@@ -5,6 +5,7 @@
  */
 import { useState, useEffect, useRef, useId } from "react";
 import type { DynamicBadge, Source } from "@/lib/trending";
+import { historicoDoToken, type PontoPreco } from "@/lib/historicoPreco";
 
 // ─── Sparkline ───────────────────────────────────────────────────────────────
 
@@ -54,19 +55,15 @@ export function ProbSparkline({ tokenIds, marketId, source }: {
         const tokenId = arr[0];
         if (!tokenId) { trySupabase(); return () => { cancelled = true; }; }
         const sevenDaysAgo = Math.floor(Date.now() / 1000) - 7 * 86400;
-        fetch(`/api/polymarket/clob-history?tokenId=${encodeURIComponent(tokenId)}`)
-          .then((r) => r.ok ? r.json() as Promise<{ history: { t: number; p: number }[] }> : null)
-          .then((data) => {
-            if (cancelled) return;
-            if (!data?.history) { trySupabase(); return; }
-            const recent = data.history.filter((h) => h.t >= sevenDaysAgo);
-            if (recent.length >= 4) {
-              setPts(recent);
-            } else {
-              trySupabase();
-            }
-          })
-          .catch(() => { trySupabase(); });
+        // `historicoDoToken` agrupa os pedidos de todos os minigráficos visíveis
+        // numa requisição só (lib/historicoPreco.ts). Antes eram 11 chamadas de
+        // até 3,5 s por carregamento, uma por card.
+        void historicoDoToken(tokenId).then((history: PontoPreco[]) => {
+          if (cancelled) return;
+          const recent = history.filter((h) => h.t >= sevenDaysAgo);
+          if (recent.length >= 4) setPts(recent);
+          else trySupabase();
+        });
       } catch { trySupabase(); }
     } else {
       trySupabase();

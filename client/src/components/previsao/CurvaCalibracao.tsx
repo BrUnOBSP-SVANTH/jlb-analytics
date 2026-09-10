@@ -12,6 +12,7 @@
 import { useEffect, useState } from "react";
 import { Target } from "lucide-react";
 import { Termo } from "@/components/Termo";
+import { buscarJson } from "@/lib/api";
 
 interface Faixa {
   faixa: string; n: number; prometido: number;
@@ -28,8 +29,7 @@ export function CurvaCalibracao() {
 
   useEffect(() => {
     let vivo = true;
-    fetch("/api/ai/calibration-curve")
-      .then((r) => r.json())
+    buscarJson<Resposta>("/api/ai/calibration-curve")
       .then((j: Resposta) => { if (vivo) setD(j); })
       .catch(() => { if (vivo) setD({ available: false }); });
     return () => { vivo = false; };

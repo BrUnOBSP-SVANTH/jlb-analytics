@@ -13,6 +13,7 @@
  */
 import { useEffect, useState } from "react";
 import { Layers } from "lucide-react";
+import { buscarJson } from "@/lib/api";
 
 interface Tema {
   tema: string; n: number;
@@ -43,8 +44,9 @@ export function PorTema() {
 
   useEffect(() => {
     let vivo = true;
-    fetch("/api/ai/by-category")
-      .then((r) => r.json())
+    buscarJson<{
+      available: boolean; temas?: Tema[]; semAmostra?: SemAmostra[]; minAmostra?: number;
+    }>("/api/ai/by-category")
       .then((j) => { if (vivo) setD(j); })
       .catch(() => { if (vivo) setD({ available: false }); });
     return () => { vivo = false; };

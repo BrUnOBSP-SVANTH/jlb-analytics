@@ -12,6 +12,7 @@
  */
 import { useEffect, useState } from "react";
 import { TrendingUp } from "lucide-react";
+import { buscarJson } from "@/lib/api";
 
 interface Mes {
   mes: string; n: number;
@@ -42,8 +43,10 @@ export function Evolucao() {
 
   useEffect(() => {
     let vivo = true;
-    fetch("/api/ai/evolution")
-      .then((r) => r.json())
+    buscarJson<{
+      available: boolean; meses?: Mes[]; tendencia?: Tendencia; minAmostra?: number;
+      resolvidas?: number; semData?: number;
+    }>("/api/ai/evolution")
       .then((j) => { if (vivo) setD(j); })
       .catch(() => { if (vivo) setD({ available: false }); });
     return () => { vivo = false; };

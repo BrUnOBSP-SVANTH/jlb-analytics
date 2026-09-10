@@ -282,6 +282,53 @@ router.get("/clob-history", async (req, res) => {
   }
 });
 
+/**
+ * Histórico de preço EM LOTE (TRV-01).
+ *
+ * A auditoria contou 52 chamadas de API por carregamento de página, com
+ * `clob-history` entre as piores: 11 chamadas de até 3,5 s, uma por minigráfico
+ * de card. Cada card pedia a sua sem saber dos vizinhos, e o resultado é uma
+ * lista que fica sem gráfico nenhum enquanto a fila anda.
+ *
+ * Uma chamada com N tokens resolve a tela inteira. As buscas saem em paralelo
+ * aqui dentro e cada uma continua caindo no mesmo cache de 5 minutos — o que
+ * muda é o número de idas e voltas do navegador, que é o que o usuário sente.
+ *
+ * Token que falhar volta como lista vazia em vez de derrubar o lote: um
+ * minigráfico ausente é aceitável, doze ausentes por causa de um não são.
+ */
+router.post("/clob-history/lote", async (req, res) => {
+  const bruto = (req.body as { tokenIds?: unknown })?.tokenIds;
+  if (!Array.isArray(bruto)) return res.status(400).json({ error: "tokenIds required" });
+
+  // Teto de 30: é mais que a lista visível, e acima disso a chamada demora mais
+  // que as individuais que ela veio substituir.
+  const tokens = Array.from(new Set(
+    bruto.map((t) => String(t ?? "").replace(/[^a-zA-Z0-9]/g, "")).filter(Boolean),
+  )).slice(0, 30);
+
+  const historicos: Record<string, ClobEntry[]> = {};
+
+  await Promise.all(tokens.map(async (tokenId) => {
+    const cacheKey = `clob:${tokenId}`;
+    const cached = getCache<ClobEntry[]>(cacheKey);
+    if (cached) { historicos[tokenId] = cached; return; }
+    try {
+      const url = `https://clob.polymarket.com/prices-history?market=${tokenId}&interval=all&fidelity=60`;
+      const data = await fetchJSON<ClobResponse>(url);
+      if (!Array.isArray(data.history)) throw new Error("Invalid CLOB response");
+      setCache(cacheKey, data.history, 300);
+      historicos[tokenId] = data.history;
+    } catch {
+      // Silencioso de propósito: um token sem histórico é comum (mercado novo),
+      // e logar 30 avisos por carregamento afogaria o log de verdade.
+      historicos[tokenId] = [];
+    }
+  }));
+
+  res.json({ historicos });
+});
+
 // ── Mercado único (inclui resolvidos) — fallback da tela de detalhe ────────────
 // A lista "ao vivo" filtra encerrados; ao abrir um mercado já resolvido, buscamos
 // ele aqui para mostrá-lo como "Resolvido" com o desfecho — em vez de "não encontrado".

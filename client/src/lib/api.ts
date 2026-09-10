@@ -47,3 +47,63 @@ export async function apiFetch(url: string, init: RequestInit = {}): Promise<Res
   }
   return fetch(url, { ...init, headers });
 }
+
+/**
+ * buscarJson — GET com deduplicação de requisição EM VOO e cache curto.
+ *
+ * O QUE ISTO CONSERTA (TRV-01). A auditoria contou 52 chamadas de API por
+ * carregamento de página. Boa parte não era excesso de dado: era o MESMO dado
+ * pedido várias vezes, porque cada componente busca o que precisa sem saber dos
+ * vizinhos. Na página do Track Record, quatro blocos diferentes pedem
+ * `/api/ai/track-record` — e os quatro montam ao mesmo tempo, então nem o cache
+ * do navegador ajuda: as quatro requisições saem juntas.
+ *
+ * A regra aqui é simples e resolve a classe inteira: se já existe uma chamada
+ * PARA A MESMA URL em andamento, o segundo pedinte recebe a mesma promessa em
+ * vez de abrir outra conexão. E o resultado fica guardado por um tempo curto,
+ * para o componente que monta logo depois não recomeçar tudo.
+ *
+ * Não substitui `apiFetch` (que resolve identidade) nem cache de servidor (que
+ * resolve custo). Resolve outra coisa: a mesma tela pedindo a mesma coisa N
+ * vezes no mesmo segundo.
+ */
+const emVoo = new Map<string, Promise<unknown>>();
+const guardado = new Map<string, { valor: unknown; ate: number }>();
+
+/** Curto de propósito: é para colapsar a montagem da tela, não para servir dado velho. */
+const TTL_PADRAO_MS = 30_000;
+
+export async function buscarJson<T>(url: string, ttlMs = TTL_PADRAO_MS): Promise<T> {
+  const agora = Date.now();
+
+  const cache = guardado.get(url);
+  if (cache && cache.ate > agora) return cache.valor as T;
+
+  const andando = emVoo.get(url);
+  if (andando) return andando as Promise<T>;
+
+  const promessa = (async () => {
+    try {
+      const r = await apiFetch(url);
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      const dados = await r.json() as T;
+      guardado.set(url, { valor: dados, ate: Date.now() + ttlMs });
+      return dados;
+    } finally {
+      // Sai do mapa de "em voo" mesmo em erro — senão uma falha de rede
+      // envenenaria a URL para o resto da sessão.
+      emVoo.delete(url);
+    }
+  })();
+
+  emVoo.set(url, promessa);
+  return promessa;
+}
+
+/** Esquece o que está guardado (ex.: depois de uma ação que muda o dado). */
+export function esquecerCache(prefixo?: string): void {
+  if (!prefixo) { guardado.clear(); return; }
+  guardado.forEach((_v, chave) => {
+    if (chave.startsWith(prefixo)) guardado.delete(chave);
+  });
+}

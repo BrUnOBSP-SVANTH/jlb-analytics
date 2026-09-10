@@ -11,6 +11,7 @@ import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Share2, Download } from "lucide-react";
 import AnimatedSection from "@/components/AnimatedSection";
+import { buscarJson } from "@/lib/api";
 
 interface TrackRecordData {
   available: boolean;
@@ -132,8 +133,7 @@ export function ShareCard() {
   const [data, setData] = useState<TrackRecordData | null>(null);
 
   useEffect(() => {
-    fetch("/api/ai/track-record")
-      .then((r) => r.ok ? r.json() as Promise<TrackRecordData> : null)
+    buscarJson<TrackRecordData>("/api/ai/track-record")
       .then((d) => { if (d?.available) setData(d); })
       .catch(() => {});
   }, []);

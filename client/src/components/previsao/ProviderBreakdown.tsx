@@ -9,6 +9,7 @@
  */
 import { useEffect, useState } from "react";
 import { Layers } from "lucide-react";
+import { buscarJson } from "@/lib/api";
 
 interface ProviderRow {
   provider: string;
@@ -46,8 +47,7 @@ export function ProviderBreakdown() {
 
   useEffect(() => {
     let alive = true;
-    fetch("/api/ai/track-record")
-      .then((r) => r.ok ? r.json() as Promise<{ byProvider?: ProviderRow[]; minAmostra?: number }> : null)
+    buscarJson<{ byProvider?: ProviderRow[]; minAmostra?: number }>("/api/ai/track-record")
       .then((d) => {
         if (!alive || !d?.byProvider) return;
         setRows(d.byProvider);

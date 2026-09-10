@@ -6,6 +6,7 @@
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import { dolar } from "@shared/formato";
+import { buscarJson } from "@/lib/api";
 import { getMarkets, getAllMarkets } from "@/lib/marketsCache";
 import { useSEO } from "@/hooks/useSEO";
 import CalibrationTest from "@/components/CalibrationTest";
@@ -200,7 +201,9 @@ export default function Home() {
           supabase.from("cerebro_articles").select("id", { count: "exact", head: true }).eq("status", "active"),
           getAllMarkets(),  // cache compartilhado — conta real, sem fetch redundante
           // predictions tem RLS por usuário (count anônimo = 0) — o track record da IA é público via API
-          fetch("/api/ai/track-record").then((r) => r.ok ? r.json() as Promise<{ totalCount?: number }> : null),
+          // Mesmo endpoint que o selo de margem de erro pede na mesma tela —
+          // `buscarJson` deduplica a requisição em voo (TRV-01).
+          buscarJson<{ totalCount?: number }>("/api/ai/track-record"),
         ]);
         const articles = artRes.status === "fulfilled" ? (artRes.value.count ?? 0) : 0;
         const marketCount = mkts.status === "fulfilled" ? (mkts.value.polymarket.length + mkts.value.kalshi.length) : 0;

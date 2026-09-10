@@ -12,6 +12,7 @@
  */
 import { useEffect, useState } from "react";
 import { ClipboardList } from "lucide-react";
+import { buscarJson } from "@/lib/api";
 
 interface Dados {
   available: boolean;
@@ -25,8 +26,7 @@ export function AmostraHonesta() {
 
   useEffect(() => {
     let vivo = true;
-    fetch("/api/ai/sample-transparency")
-      .then((r) => r.json())
+    buscarJson<Dados>("/api/ai/sample-transparency")
       .then((j) => { if (vivo) setD(j); })
       .catch(() => { if (vivo) setD({ available: false }); });
     return () => { vivo = false; };

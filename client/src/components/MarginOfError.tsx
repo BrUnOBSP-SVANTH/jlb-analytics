@@ -12,6 +12,7 @@ import { useEffect, useState } from "react";
 import { Link } from "wouter";
 import { Scale, ArrowRight } from "lucide-react";
 import { pct } from "@shared/formato";
+import { buscarJson } from "@/lib/api";
 
 interface TrackRecord {
   available?: boolean;
@@ -32,8 +33,7 @@ export default function MarginOfError() {
 
   useEffect(() => {
     let alive = true;
-    fetch("/api/ai/track-record")
-      .then((r) => r.json())
+    buscarJson<TrackRecord>("/api/ai/track-record")
       .then((d: TrackRecord) => { if (alive) setData(d); })
       .catch(() => { if (alive) setFailed(true); });
     return () => { alive = false; };
