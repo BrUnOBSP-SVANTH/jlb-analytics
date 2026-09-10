@@ -15,7 +15,7 @@ import { PostCard, ArticleCard, ArticleCardSkeleton, ARTICLE_TOPICS } from "@/co
 import { MarketCard } from "@/components/noticias/MarketCard";
 import { KalshiCard } from "@/components/noticias/KalshiCard";
 import { fetchPolymarketDirect, fetchKalshiMarkets, fetchRedditPosts, SUBREDDITS } from "@/lib/noticiasData";
-import { type Article, type PolyMarket, type KalshiMarket, type RedditPost } from "@/lib/noticiasShared";
+import { type Article, type PolyMarket, type KalshiMarket, type RedditPost, daysLeft } from "@/lib/noticiasShared";
 import { ArticleDetailModal } from "@/components/noticias/AnalysisModals";
 import { loadPredictions, type StoredPrediction } from "@/lib/predictions";
 import { useSEO } from "@/hooks/useSEO";
@@ -34,7 +34,11 @@ interface ArticlesResponse {
 type Tab = "markets" | "kalshi" | "news" | "articles";
 
 export default function Noticias() {
-  useSEO("Notícias dos Mercados", "Notícias que movem os mercados preditivos, cruzadas com probabilidades ao vivo e análise de IA.");
+  // ANL-01: esta tela tinha QUATRO nomes — a URL dizia /noticias, a aba dizia
+  // "Análise de Mercados", a barra secundária dizia "Análise" e o H1 dizia
+  // "Mercados Preditivos". Agora é um nome só, e o subtítulo diz o que a
+  // distingue de /mercados em vez de deixar o usuário adivinhar.
+  useSEO("Análise de Mercados", "Mercados do Polymarket e da Kalshi cruzados com notícias e artigos: o CONTEXTO por trás do preço, não a lista de preços.");
   const [tab, setTab] = useState<Tab>("markets");
   const [markets, setMarkets] = useState<PolyMarket[]>([]);
   const [loadingMarkets, setLoadingMarkets] = useState(false);
@@ -63,11 +67,23 @@ export default function Noticias() {
   const feedbackRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
 
-  // O flag "featured" da Gamma API vem em ~80% dos eventos — badge em todo card
-  // não destaca nada. Estrela só nos 3 featured de maior volume.
+  /**
+   * O flag "featured" da Gamma API vem em ~80% dos eventos — badge em todo card
+   * não destaca nada. Estrela só nos 3 de maior volume.
+   *
+   * ANL-06: e com HORIZONTE no critério. A auditoria fotografou "★ DESTAQUE ·
+   * 790d restantes" ao lado de mercados com 1 dia — e um mercado que resolve
+   * daqui a dois anos não é "em destaque agora", é uma aposta de longo prazo.
+   * Destacar os dois com o mesmo selo esvazia o selo.
+   */
+  const HORIZONTE_MAX_DIAS = 180;
   const topFeaturedIds = useMemo(() => new Set(
     markets
-      .filter((m) => m.featured)
+      .filter((m) => {
+        if (!m.featured) return false;
+        const dias = daysLeft(m.endDate);
+        return dias === null || dias <= HORIZONTE_MAX_DIAS;
+      })
       .sort((a, b) => (b.volume ?? 0) - (a.volume ?? 0))
       .slice(0, 3)
       .map((m) => m.id)
@@ -176,9 +192,9 @@ export default function Noticias() {
     <div>
       <MercadosTabs />
       <PageHeader
-        title="Mercados Preditivos"
-        subtitle="Polymarket · Kalshi · Reddit · Artigos — registre suas estimativas e acompanhe o Brier Score."
-        badge="Dados de Contexto"
+        title="Análise de Mercados"
+        subtitle="O contexto por trás do preço: os mesmos mercados, cruzados com notícias, discussões e os artigos do Cérebro. Para ver só a lista de preços ao vivo, vá em Mercados Ao Vivo."
+        badge="Contexto"
       />
 
       <div className="container py-10 space-y-8">

@@ -1,9 +1,10 @@
 /**
  * KalshiCard — card de mercado Kalshi da pagina Noticias. Extraido de pages/Noticias.tsx.
  */
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "wouter";
 import { Languages, BookmarkPlus, Check, ExternalLink, Zap, ArrowRight } from "lucide-react";
+import { traduzir, pareceEmPortugues } from "@/lib/traducao";
 import { type KalshiMarket, daysLeft, formatVolume } from "@/lib/noticiasShared";
 import { CategoryBadge } from "@/components/noticias/cards";
 import { addPrediction } from "@/lib/predictions";
@@ -17,17 +18,25 @@ export function KalshiCard({ market }: { market: KalshiMarket }) {
   const [userProb, setUserProb] = useState(market.yesProb);
   const [saved, setSaved] = useState(false);
 
-  async function handleTranslate() {
-    if (translation) { setTranslation(null); return; }
+  // ANL-04 / TRV-17: aqui a tradução era SOB DEMANDA, um clique por card,
+  // enquanto em /mercados era automática — duas experiências para o mesmo
+  // problema. E o usuário brasileiro não deveria clicar em "traduzir" num
+  // produto brasileiro. `traduzir` agrupa os pedidos de todos os cards visíveis
+  // numa requisição só (lib/traducao.ts).
+  useEffect(() => {
+    if (pareceEmPortugues(market.title)) return;
+    let cancelado = false;
     setTranslating(true);
-    try {
-      const res = await fetch(`/api/translate?text=${encodeURIComponent(market.title)}`);
-      const data = await res.json() as { translation?: string };
-      setTranslation(data.translation ?? null);
-    } catch { /* ignore */ } finally {
+    void traduzir(market.title).then((t: string | null) => {
+      if (cancelado) return;
+      // `null` = não há tradução útil (falhou, ou saiu idêntica ao original).
+      // Nesse caso a segunda linha simplesmente não existe — era ela que fazia
+      // todo card mostrar o título duas vezes (MKT-01).
+      setTranslation(t);
       setTranslating(false);
-    }
-  }
+    });
+    return () => { cancelado = true; };
+  }, [market.title]);
 
   function handleSaveKalshi() {
     addPrediction({
@@ -68,15 +77,12 @@ export function KalshiCard({ market }: { market: KalshiMarket }) {
         <Link href={`/mercados/kalshi-${market.ticker}`}>
           <p className="text-sm font-medium text-foreground leading-snug line-clamp-3 hover:text-gold transition-colors cursor-pointer">{market.title}</p>
         </Link>
-        {translation && <p className="text-xs text-gold/80 mt-1 leading-snug italic">{translation}</p>}
-        <button
-          onClick={handleTranslate}
-          disabled={translating}
-          className="mt-1.5 flex items-center gap-1 text-[11px] text-muted-foreground hover:text-gold transition-colors disabled:opacity-50"
-        >
-          <Languages className="w-3 h-3" />
-          {translating ? "Traduzindo..." : translation ? "Ocultar tradução" : "Traduzir"}
-        </button>
+        {translation && <p className="text-xs text-[var(--gold-legivel)] mt-1 leading-snug italic">{translation}</p>}
+        {translating && !translation && (
+          <p className="mt-1.5 flex items-center gap-1 text-[11px] text-muted-foreground">
+            <Languages className="w-3 h-3" aria-hidden="true" /> Traduzindo…
+          </p>
+        )}
       </div>
 
       {/* Prob bars */}

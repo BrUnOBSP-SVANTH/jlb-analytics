@@ -2,7 +2,7 @@
  * MarketCard — card de mercado Polymarket + TrackForm (form de registrar previsao,
  * privado ao modulo). Extraido de pages/Noticias.tsx.
  */
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "wouter";
 import { Languages, ChevronUp, BookmarkPlus, Check, X as XIcon, ExternalLink, Zap, ArrowRight } from "lucide-react";
 import { type PolyMarket, parseOutcomePrices, daysLeft, formatVolume } from "@/lib/noticiasShared";
@@ -12,6 +12,7 @@ import AnimatedSection from "@/components/AnimatedSection";
 import { addPrediction, edge, kellyFraction, type StoredPrediction } from "@/lib/predictions";
 import { awardPoints } from "@/lib/userProgress";
 import { track } from "@/lib/analytics";
+import { traduzir, pareceEmPortugues } from "@/lib/traducao";
 
 interface TrackFormProps {
   market: PolyMarket;
@@ -111,17 +112,25 @@ export function MarketCard({ market, savedIds, onSaved, highlight = false, indic
   const prices = parseOutcomePrices(market.outcomePrices);
   const isSaved = savedIds.has(market.id);
 
-  async function handleTranslate() {
-    if (translation) { setTranslation(null); return; }
+  // ANL-04 / TRV-17: aqui a tradução era SOB DEMANDA, um clique por card,
+  // enquanto em /mercados era automática — duas experiências para o mesmo
+  // problema. E o usuário brasileiro não deveria clicar em "traduzir" num
+  // produto brasileiro. `traduzir` agrupa os pedidos de todos os cards visíveis
+  // numa requisição só (lib/traducao.ts).
+  useEffect(() => {
+    if (pareceEmPortugues(market.question)) return;
+    let cancelado = false;
     setTranslating(true);
-    try {
-      const res = await fetch(`/api/translate?text=${encodeURIComponent(market.question)}`);
-      const data = await res.json() as { translation?: string };
-      setTranslation(data.translation ?? null);
-    } catch { /* ignore */ } finally {
+    void traduzir(market.question).then((t: string | null) => {
+      if (cancelado) return;
+      // `null` = não há tradução útil (falhou, ou saiu idêntica ao original).
+      // Nesse caso a segunda linha simplesmente não existe — era ela que fazia
+      // todo card mostrar o título duas vezes (MKT-01).
+      setTranslation(t);
       setTranslating(false);
-    }
-  }
+    });
+    return () => { cancelado = true; };
+  }, [market.question]);
 
   function handleSaved(p: StoredPrediction) {
     setTracking(false);
@@ -182,16 +191,13 @@ export function MarketCard({ market, savedIds, onSaved, highlight = false, indic
             </p>
           </Link>
           {translation && (
-            <p className="text-xs text-gold/80 mt-1 leading-snug italic">{translation}</p>
+            <p className="text-xs text-[var(--gold-legivel)] mt-1 leading-snug italic">{translation}</p>
           )}
-          <button
-            onClick={handleTranslate}
-            disabled={translating}
-            className="mt-1.5 flex items-center gap-1 text-[11px] text-muted-foreground hover:text-gold transition-colors disabled:opacity-50"
-          >
-            <Languages className="w-3 h-3" />
-            {translating ? "Traduzindo..." : translation ? "Ocultar tradução" : "Traduzir"}
-          </button>
+          {translating && !translation && (
+            <p className="mt-1.5 flex items-center gap-1 text-[11px] text-muted-foreground">
+              <Languages className="w-3 h-3" aria-hidden="true" /> Traduzindo…
+            </p>
+          )}
         </div>
         {prices && <ProbHero prob={prices.yes / 100} />}
       </div>

@@ -33,25 +33,43 @@ describe("normalizeCategory — classifica a categoria crua das bolsas", () => {
   // Regressão: a regra antiga usava includes("ai") e mandava mercado sobre a
   // UCRÂNIA para Ciência/Tech — "ukr(ai)ne". Sigla tem que casar palavra inteira.
   it("não casa sigla escondida dentro de outra palavra", () => {
-    expect(normalizeCategory("Ukraine")).toBe("politics");
-    expect(normalizeCategory("Boiling Point")).not.toBe("business"); // "oil" em "b(oil)ing"
+    expect(normalizeCategory("Ukraine")).toBe("geopolitics");
+    expect(normalizeCategory("Boiling Point")).not.toBe("macro"); // "oil" em "b(oil)ing"
   });
 
   it("classifica as categorias que mais caíam em Outros", () => {
     expect(normalizeCategory("Companies")).toBe("business");
     expect(normalizeCategory("Financials")).toBe("business");
-    expect(normalizeCategory("fomc")).toBe("business");
-    expect(normalizeCategory("Iran")).toBe("politics");
-    expect(normalizeCategory("Military Strikes")).toBe("politics");
     expect(normalizeCategory("MLB")).toBe("sports");
     expect(normalizeCategory("UFC")).toBe("sports");
   });
 
+  // MKT-13: a decisão do Fed e o Estreito de Ormuz apareciam os DOIS como
+  // "Negócios", e não existia categoria de macro/juros — que é a especialidade
+  // do produto. Um grupo que engole balanço de empresa, taxa de juros e conflito
+  // no Oriente Médio não ajuda ninguém a achar nada.
+  it("macro e juros têm categoria própria — é a especialidade da casa", () => {
+    expect(normalizeCategory("fomc")).toBe("macro");
+    expect(normalizeCategory("Fed")).toBe("macro");
+    expect(normalizeCategory("Inflation")).toBe("macro");
+    expect(normalizeCategory("Selic")).toBe("macro");
+    expect(normalizeCategory("Recession")).toBe("macro");
+  });
+
+  it("geopolítica não é eleição, e vem antes na régua", () => {
+    // "Politics" genérico vai para eleições (é o que a bolsa etiqueta assim na
+    // esmagadora maioria dos casos), mas Irã e ataque militar, não.
+    expect(normalizeCategory("Iran")).toBe("geopolitics");
+    expect(normalizeCategory("Military Strikes")).toBe("geopolitics");
+    expect(normalizeCategory("Geopolitics")).toBe("geopolitics");
+    expect(normalizeCategory("Politics")).toBe("elections");
+    expect(normalizeCategory("Midterms")).toBe("elections");
+  });
+
   it("mantém o que já funcionava", () => {
-    expect(normalizeCategory("Politics")).toBe("politics");
     expect(normalizeCategory("Sports")).toBe("sports");
     expect(normalizeCategory("Crypto")).toBe("crypto");
-    expect(normalizeCategory("Oscars")).toBe("pop");
+    expect(normalizeCategory("Oscars")).toBe("culture");
   });
 
   it("devolve Outros quando não há sinal, em vez de inventar grupo", () => {

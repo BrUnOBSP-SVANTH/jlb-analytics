@@ -80,16 +80,37 @@ export interface KalshiMarket {
 }
 
 export type Source = "reddit" | "polymarket" | "kalshi" | "manifold";
-export type CategoryFilter = "all" | "sports" | "politics" | "crypto" | "pop" | "business" | "science" | "other";
+/**
+ * As categorias, redesenhadas a partir do que o público brasileiro procura
+ * (MKT-13, ANL-05).
+ *
+ * O QUE A AUDITORIA VIU. A decisão do Fed e o Estreito de Ormuz apareciam os
+ * dois como "Negócios", e não existia categoria de macro/juros — que é
+ * justamente a especialidade do produto. Um grupo chamado "Negócios" que engole
+ * ao mesmo tempo balanço de empresa, taxa de juros e conflito no Oriente Médio
+ * não ajuda ninguém a achar nada.
+ *
+ * Três separações que fazem diferença de verdade para quem lê daqui:
+ *   · MACRO (Selic, Fed, inflação, câmbio) sai de "Negócios" e ganha nome —
+ *     é o assunto que a JLB ensina;
+ *   · ELEIÇÕES sai de "Política", porque é o recorte que as pessoas buscam
+ *     por nome ("eleição 2026"), não o guarda-chuva;
+ *   · GEOPOLÍTICA sai de "Política" também: Ormuz e Irã não são eleição.
+ */
+export type CategoryFilter =
+  | "all" | "macro" | "elections" | "geopolitics" | "sports"
+  | "crypto" | "tech" | "business" | "culture" | "other";
 
 export const CATEGORY_LABELS: Record<CategoryFilter, string> = {
   all: "Todas",
+  macro: "Macro e Juros",
+  elections: "Eleições e Política",
+  geopolitics: "Geopolítica",
   sports: "Esportes",
-  politics: "Política",
   crypto: "Cripto",
-  pop: "Cultura Pop",
-  business: "Negócios",
-  science: "Ciência/Tech",
+  tech: "Tecnologia",
+  business: "Empresas",
+  culture: "Cultura",
   other: "Outros",
 };
 
@@ -97,20 +118,28 @@ export const CATEGORY_LABELS: Record<CategoryFilter, string> = {
 export function normalizeCategory(raw?: string, source?: Source, subreddit?: string): CategoryFilter {
   if (source === "reddit") {
     if (subreddit === "sportsbook" || subreddit === "futebol" || subreddit === "soccer") return "sports";
-    if (subreddit === "geopolitics") return "politics";
+    if (subreddit === "geopolitics") return "geopolitics";
     if (subreddit === "wallstreetbets" || subreddit === "investing") return "business";
-    if (subreddit === "PredictionMarkets") return "other";
     return "other";
   }
   if (!raw) return "other";
   const r = raw.toLowerCase();
-  // A ordem importa: o primeiro grupo que casar vence.
-  if (radical(r, RADICAIS.sports)   || palavra(r, SIGLAS.sports))   return "sports";
-  if (radical(r, RADICAIS.politics) || palavra(r, SIGLAS.politics)) return "politics";
-  if (radical(r, RADICAIS.crypto)   || palavra(r, SIGLAS.crypto))   return "crypto";
-  if (radical(r, RADICAIS.pop)      || palavra(r, SIGLAS.pop))      return "pop";
-  if (radical(r, RADICAIS.business) || palavra(r, SIGLAS.business)) return "business";
-  if (radical(r, RADICAIS.science)  || palavra(r, SIGLAS.science))  return "science";
+
+  // A ORDEM IMPORTA: o primeiro grupo que casar vence, e é isso que resolve as
+  // ambiguidades. Macro vem antes de Empresas porque "Fed", "juros" e "inflação"
+  // caíam em Negócios; Geopolítica e Eleições vêm antes do resto de Política
+  // porque "Iran" e "Military Strikes" caíam no mesmo balde que "midterm".
+  if (radical(r, RADICAIS.macro)       || palavra(r, SIGLAS.macro))       return "macro";
+  // Geopolítica ANTES de eleições: "Military Strikes" e "Iran" são política,
+  // mas não são eleição — e o radical genérico `polit` (que mora em eleições,
+  // para a categoria crua "Politics" ter casa) casaria os dois.
+  if (radical(r, RADICAIS.geopolitics) || palavra(r, SIGLAS.geopolitics)) return "geopolitics";
+  if (radical(r, RADICAIS.elections)   || palavra(r, SIGLAS.elections))   return "elections";
+  if (radical(r, RADICAIS.sports)      || palavra(r, SIGLAS.sports))      return "sports";
+  if (radical(r, RADICAIS.crypto)      || palavra(r, SIGLAS.crypto))      return "crypto";
+  if (radical(r, RADICAIS.tech)        || palavra(r, SIGLAS.tech))        return "tech";
+  if (radical(r, RADICAIS.business)    || palavra(r, SIGLAS.business))    return "business";
+  if (radical(r, RADICAIS.culture)     || palavra(r, SIGLAS.culture))     return "culture";
   return "other";
 }
 
@@ -136,24 +165,41 @@ const palavra = (texto: string, termos: readonly string[]) =>
 // Esportes). Ao ampliar o catálogo de 96 para 272 o problema saiu do canto e
 // virou quase metade da tela.
 const RADICAIS = {
-  sports:   ["sport", "soccer", "football", "futebol", "baseball", "tennis", "boxing", "hockey", "basket", "golf", "racing", "cricket"],
-  politics: ["polit", "election", "govt", "govern", "president", "congress", "senate", "trump", "biden", "geopolit",
-             "midterm", "military", "regime", "court", "parliament", "minister", "unrest", "sanction", "primary"],
-  crypto:   ["crypto", "bitcoin", "ethereum", "defi", "web3", "blockchain", "token", "stablecoin"],
-  pop:      ["entertain", "award", "music", "movie", "film", "celebrity", "culture", "oscar", "grammy", "emmy", "netflix", "gta"],
-  business: ["business", "econom", "market", "stock", "financ", "trade", "gdp", "inflation", "compan",
-             "acquisition", "earnings", "revenue", "powell", "fomc", "recession", "tariff", "bank"],
-  science:  ["science", "tech", "space", "climate", "health", "medical", "research", "drug", "pandemic", "vaccine", "nasa", "hurricane", "alien"],
+  // A especialidade da casa, e a que não tinha nome: juros, inflação, câmbio,
+  // atividade. Vem PRIMEIRO na ordem por isso.
+  macro:       ["inflation", "inflaç", "juros", "selic", "econom", "gdp", "pib", "recession", "recess",
+                "fomc", "powell", "interest rate", "cpi", "unemployment", "tariff", "câmbio", "cambio",
+                "monetary", "central bank", "banco central", "copom"],
+  // `polit`, `govern` e companhia moram aqui porque a categoria crua das bolsas
+  // costuma ser só "Politics", e a esmagadora maioria desses mercados é
+  // eleitoral. O que é geopolítico já foi capturado na linha anterior.
+  elections:   ["election", "eleiç", "eleic", "midterm", "primary", "primár", "ballot", "candidate",
+                "candidat", "nominee", "poll", "governor", "senate race", "presidential",
+                "polit", "govern", "govt", "congress", "senate", "parliament", "minister", "court"],
+  geopolitics: ["geopolit", "military", "militar", "war", "guerra", "regime", "sanction", "sanç",
+                "unrest", "strike", "invasion", "nato", "treaty", "ceasefire", "hostage", "conflict"],
+  sports:      ["sport", "soccer", "football", "futebol", "baseball", "tennis", "boxing", "hockey",
+                "basket", "golf", "racing", "cricket", "brasileir", "libertadores"],
+  crypto:      ["crypto", "bitcoin", "ethereum", "defi", "web3", "blockchain", "token", "stablecoin"],
+  tech:        ["tech", "space", "artificial intelligence", "software", "chip", "semicondut",
+                "science", "climate", "clima", "health", "medical", "research", "drug", "pandemic",
+                "vaccine", "nasa", "hurricane"],
+  business:    ["business", "stock", "financ", "compan", "empresa", "acquisition", "earnings",
+                "revenue", "ipo", "merger", "bank", "market cap"],
+  culture:     ["entertain", "award", "music", "movie", "film", "celebrity", "culture", "cultura",
+                "oscar", "grammy", "emmy", "netflix", "gta"],
 } as const;
 
 const SIGLAS = {
-  sports:   ["nba", "nfl", "mlb", "mls", "nhl", "ufc", "mma", "ucl", "atp", "wta", "us open", "f1"],
-  politics: ["world", "iran", "israel", "china", "russia", "ukraine", "nato", "cuba", "venezuela", "brazil",
-             "uk", "united states", "putin", "zelensky", "middle east", "gaza", "taiwan", "north korea", "romania", "resign"],
-  crypto:   ["btc", "eth", "xrp", "sol", "solana", "doge", "fdv"],
-  pop:      ["pop", "tv"],
-  business: ["fed", "cpi", "rate", "rates", "davos", "opec", "oil", "ipo"],
-  science:  ["ai", "fda", "spacex", "openai", "anthropic"],
+  macro:       ["fed", "cpi", "rate", "rates", "davos", "opec", "oil", "bcb", "ipca", "igp"],
+  elections:   ["lula", "bolsonaro", "biden", "trump", "harris", "vance", "tse"],
+  geopolitics: ["world", "iran", "israel", "china", "russia", "ukraine", "nato", "cuba", "venezuela",
+                "putin", "zelensky", "middle east", "gaza", "taiwan", "north korea", "hamas", "resign"],
+  sports:      ["nba", "nfl", "mlb", "mls", "nhl", "ufc", "mma", "ucl", "atp", "wta", "us open", "f1", "cbf"],
+  crypto:      ["btc", "eth", "xrp", "sol", "solana", "doge", "fdv"],
+  tech:        ["ai", "fda", "spacex", "openai", "anthropic", "nvidia", "apple"],
+  business:    ["ipo", "s&p", "nasdaq"],
+  culture:     ["pop", "tv"],
 } as const;
 
 export type DynamicBadge = "viral" | "nova" | "em-alta" | "encerrando";

@@ -113,7 +113,11 @@ router.get("/markets", async (req, res) => {
             // (MKT-11, ANL-02) vinham de cada tela limpar do seu jeito.
             question: normalizarTitulo(m.question ?? ""),
             groupItemTitle: m.groupItemTitle?.trim(),
-            eventTitle: ev.title?.trim(),
+            // `eventTitle` também passa pela normalização: é ELE que a tela
+            // mostra quando difere da pergunta (ver `displayTitle` em
+            // lib/trending.ts), e foi por aqui que o `___` continuou aparecendo
+            // no card mesmo com a pergunta já limpa.
+            eventTitle: normalizarTitulo(ev.title ?? ""),
             slug: m.slug,
             eventSlug: ev.slug,
             volume: toNum(m.volume) ?? toNum(ev.volume) ?? 0,
@@ -151,7 +155,7 @@ router.get("/markets", async (req, res) => {
           return [{
             ...lead,
             question: normalizarTitulo(ev.title ?? lead.question ?? ""),
-            eventTitle: ev.title,
+            eventTitle: normalizarTitulo(ev.title ?? ""),
             volume: toNum(ev.volume) ?? lead.volume,
             outcomes: JSON.stringify(ranked.map((o) => o.label)),
             outcomePrices: JSON.stringify(ranked.map((o) => o.prob.toFixed(4))),
