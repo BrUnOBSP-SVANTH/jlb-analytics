@@ -28,9 +28,9 @@ function DataFreshness() {
   if (!data || (!data.lastArticleAt && !data.lastSnapshotAt)) return null;
   return (
     <p className="text-[10px] text-muted-foreground text-center tabular-nums">
-      {data.lastArticleAt && <>Cerebro atualizado {timeAgo(data.lastArticleAt)}</>}
+      {data.lastArticleAt && <>Cérebro atualizado {timeAgo(data.lastArticleAt)}</>}
       {data.lastArticleAt && data.lastSnapshotAt && <span className="mx-1.5 text-border/40">·</span>}
-      {data.lastSnapshotAt && <>snapshot de mercados {timeAgo(data.lastSnapshotAt)}</>}
+      {data.lastSnapshotAt && <>preços de mercado {timeAgo(data.lastSnapshotAt)}</>}
     </p>
   );
 }

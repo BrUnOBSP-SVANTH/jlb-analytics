@@ -300,12 +300,12 @@ export default function Previsao() {
               <div className="p-4 rounded-xl border border-primary/15 bg-primary/3 space-y-2.5">
                 <div className="flex items-center gap-2 text-xs text-foreground">
                   <Loader2 className="w-3.5 h-3.5 animate-spin text-primary" />
-                  <span className="font-medium">{(phase === "analyzing" || phase === "context_done") ? "Selecionando o modelo e rodando o protocolo…" : "Cruzando notícias, macro e Cerebro…"}</span>
+                  <span className="font-medium">{(phase === "analyzing" || phase === "context_done") ? "Selecionando o modelo e rodando o protocolo…" : "Cruzando notícias, macro e Cérebro…"}</span>
                   <span className="ml-auto font-mono text-[11px] text-muted-foreground tabular-nums">{elapsed}s</span>
                 </div>
                 {/* Passos guiados pela FASE REAL do servidor (stream SSE) */}
                 <div className="flex flex-col gap-1 pl-5">
-                  <span className={`text-[11px] transition-colors ${(phase === null || phase === "context") ? "text-gold" : "text-muted-foreground/40"}`}>{(phase === null || phase === "context") ? "›" : "✓"} Cruza notícias recentes, macro (BCB) e Cerebro</span>
+                  <span className={`text-[11px] transition-colors ${(phase === null || phase === "context") ? "text-gold" : "text-muted-foreground/40"}`}>{(phase === null || phase === "context") ? "›" : "✓"} Cruza notícias recentes, macro (BCB) e Cérebro</span>
                   <span className={`text-[11px] transition-colors ${(phase === "context_done" || phase === "analyzing") ? "text-gold" : "text-muted-foreground/30"}`}>{(phase === "context_done" || phase === "analyzing") ? "›" : "·"} Seleciona o modelo econométrico e roda o protocolo Superforecaster</span>
                   <span className={`text-[11px] transition-colors ${(phase === "context_done" || phase === "analyzing") ? "text-muted-foreground/50" : "text-muted-foreground/30"}`}>· Calcula os 3 horizontes + impacto no patrimônio</span>
                 </div>
@@ -317,12 +317,12 @@ export default function Previsao() {
               </div>
             )}
 
-            {/* Indicador Cerebro */}
+            {/* Indicador Cérebro */}
             {cerebroHits > 0 && !loading && (
               <div className="flex items-center gap-2 p-3 rounded-lg border border-gold/20 bg-gold/3">
                 <Brain className="w-3.5 h-3.5 text-gold shrink-0" />
                 <p className="text-xs text-muted-foreground">
-                  <span className="text-gold font-medium">Cerebro</span> encontrou{" "}
+                  <span className="text-gold font-medium">Cérebro</span> encontrou{" "}
                   <span className="font-mono text-foreground">{cerebroHits}</span>{" "}
                   {cerebroHits === 1 ? "fonte relevante" : "fontes relevantes"} — usadas como contexto na análise.
                 </p>

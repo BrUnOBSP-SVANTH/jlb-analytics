@@ -3,6 +3,7 @@
  * ModelCard + GuiaModelos). Extraido de pages/Calculadoras.tsx.
  */
 import { Termo } from "@/components/Termo";
+import { BRIER_SUPERFORECASTER } from "@shared/referencias";
 import { useState } from "react";
 import {
   type LucideIcon, Calculator, Percent, Target, TrendingUp,
@@ -69,7 +70,7 @@ const MODELS: ModelGuide[] = [
     accuracy: "~100% (matemático)",
     accuracyColor: "text-positive border-positive/30 bg-positive/10",
     limitacao: "Overround baixo não significa que o mercado está precificado corretamente — só que a margem da casa é pequena. Você ainda precisa estimar melhor que o consenso.",
-    polymarketUso: "Polymarket e Kalshi têm overround de ~1-3% (taxa de protocolo). Casas esportivas tradicionais têm 5-10%. A diferença entre a odd da Betano e a probabilidade do Polymarket frequentemente revela valor.",
+    polymarketUso: "Polymarket e Kalshi têm overround de ~1-3% (taxa de protocolo). Casas esportivas tradicionais cobram bem mais — de 5% a 10%. Comparar a probabilidade implícita das duas fontes mostra o tamanho da margem que cada uma embute.",
     steps: [
       "1. Colete as odds de todos os resultados possíveis (ex: 1.90 / 1.90)",
       "2. Calcule 1/odd para cada resultado",
@@ -95,7 +96,7 @@ const MODELS: ModelGuide[] = [
       "Para identificar áreas onde você sistemicamente erra (viés de confiança)",
     ],
     howItWorks: "Para cada previsão, calcula (sua_prob − resultado)². Médio ao longo de muitas previsões. Um forecaster que diz 70% em algo que acontece 70% das vezes tem BS próximo de 0.21 — melhor que quem diz 90% e erra frequentemente.",
-    accuracy: "Benchmark: Superforecasters do GJP têm BS ≈ 0.14",
+    accuracy: `Benchmark: superforecasters do GJP ficam em torno de ${BRIER_SUPERFORECASTER.toFixed(2)}`,
     accuracyColor: "text-neon-blue border-neon-blue/30 bg-neon-blue/10",
     limitacao: "Requer muitas previsões para ser estatisticamente significativo (mínimo 30). Com poucas previsões, o BS pode variar por sorte.",
     polymarketUso: "O Polymarket publica o preço histórico de cada mercado antes do resultado. Você pode comparar: se o mercado tinha 70% e você tinha 80% em um evento que aconteceu, quem teve menor BS estava mais calibrado.",
@@ -106,11 +107,12 @@ const MODELS: ModelGuide[] = [
       "4. Acumule 20+ previsões e tire a média",
       "5. Compare seu BS com o BS do Polymarket no mesmo período",
     ],
+    // A MESMA escala da calculadora de Brier — as duas listas divergiam.
     benchmarks: [
-      ["< 0.10", "Forecaster experiente — calibração excelente"],
-      ["0.10–0.15", "Bom — melhor que a maioria das pessoas"],
-      ["0.15–0.20", "Mediano — espaço para melhorar a calibração"],
-      ["0.20–0.25", "Fraco — previsões sistematicamente imprecisas"],
+      ["< 0.10", "No nível dos superforecasters"],
+      ["0.10–0.15", "Forecaster experiente — calibração muito boa"],
+      ["0.15–0.20", "Bom — acima da maioria das pessoas"],
+      ["0.20–0.25", "Razoável — ainda melhor que chutar"],
       ["> 0.25", "Pior que chutar 50% sempre — revisar metodologia"],
     ],
   },

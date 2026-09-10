@@ -21,6 +21,9 @@ interface Tema {
   comparacao: "empate" | "melhor" | "pior" | null;
 }
 
+/** Temas que ainda não chegaram na amostra mínima — número de casos, sem veredito. */
+interface SemAmostra { tema: string; n: number }
+
 const NOMES: Record<string, string> = {
   esports: "E-sports", sports: "Esportes", tennis: "Tênis", crypto: "Cripto",
   politics: "Política", economy: "Economia", culture: "Cultura", science: "Ciência",
@@ -34,7 +37,9 @@ const LEITURA: Record<string, { texto: string; cor: string }> = {
 };
 
 export function PorTema() {
-  const [d, setD] = useState<{ available: boolean; temas?: Tema[]; minAmostra?: number } | null>(null);
+  const [d, setD] = useState<{
+    available: boolean; temas?: Tema[]; semAmostra?: SemAmostra[]; minAmostra?: number;
+  } | null>(null);
 
   useEffect(() => {
     let vivo = true;
@@ -46,8 +51,12 @@ export function PorTema() {
   }, []);
 
   if (!d?.available || !d.temas?.length) return null;
-  const comVeredito = d.temas.filter((t) => t.acerto !== null);
-  const semAmostra = d.temas.filter((t) => t.acerto === null);
+  // A separação passou a ser feita no servidor, com a régua única de
+  // `MIN_AMOSTRA` — antes cada endpoint tinha o seu corte (15 aqui, 30 ali) e
+  // a tabela listava tema com 1, 2 e 3 casos logo abaixo do texto que promete
+  // "a partir de 20 resolvidas".
+  const comVeredito = d.temas;
+  const semAmostra = d.semAmostra ?? [];
   if (comVeredito.length === 0) return null;
 
   return (

@@ -29,6 +29,7 @@ import {
   type ApostaBanca, type MercadoBanca,
 } from "@/lib/banca";
 import { resumirBanca, reais, SALDO_INICIAL, type Lado } from "@shared/banca";
+import { plural } from "@shared/formato";
 import { NovaApostaModal } from "@/components/portfolio/NovaApostaModal";
 import { ApostaCard } from "@/components/portfolio/ApostaCard";
 import { PortfolioAnalysisPanel } from "@/components/portfolio/PortfolioAnalysisPanel";
@@ -154,7 +155,7 @@ export default function Portfolio() {
               <div className="text-xs text-muted-foreground leading-relaxed space-y-2">
                 <p>
                   <strong className="text-foreground">
-                    Você tem {antigas.length} posição(ões) do portfólio antigo neste navegador.
+                    Você tem {plural(antigas.length, "posição", "posições")} do portfólio antigo neste navegador.
                   </strong>{" "}
                   Elas ficavam salvas só aqui e usavam um preço de entrada escolhido à mão, em dólar.
                   Não dá para transformá-las em apostas da banca sem inventar o preço real daquele

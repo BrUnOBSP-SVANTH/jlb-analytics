@@ -5,6 +5,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/lib/supabase";
+import { dolar } from "@shared/formato";
 import { getMarkets, getAllMarkets } from "@/lib/marketsCache";
 import { useSEO } from "@/hooks/useSEO";
 import CalibrationTest from "@/components/CalibrationTest";
@@ -101,9 +102,11 @@ function LiveMarketCard({ market }: { market: LiveMarket }) {
       </p>
       <div className="flex items-end justify-between pt-1">
         <span className={`text-2xl font-bold font-mono ${probColor}`}>{pct}%</span>
+        {/* Dividia por mil UMA vez e parava: US$ 1,27 bilhão saía como
+            "$1273912k" nos cards em destaque (HOME-01). */}
         {market.volume > 0 && (
-          <span className="text-[10px] text-muted-foreground">
-            ${(market.volume / 1_000).toFixed(0)}k
+          <span className="text-xs text-muted-foreground" title="Volume negociado no mercado">
+            {dolar(market.volume)}
           </span>
         )}
       </div>
@@ -652,7 +655,7 @@ export default function Home() {
               const tiles = [
                 stats.articles > 0 && {
                   value: <>{stats.articles.toLocaleString("pt-BR")}</>,
-                  dot: "bg-gold", label: "artigos no Cerebro", sub: "atualizado diariamente",
+                  dot: "bg-gold", label: "artigos no Cérebro", sub: "atualizado diariamente",
                 },
                 stats.markets > 0 && {
                   value: <>{stats.markets}<span className="text-2xl text-muted-foreground/60">+</span></>,

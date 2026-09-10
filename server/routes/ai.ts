@@ -1,6 +1,7 @@
 import { buscarTudo } from "../lib/supaPaginado.ts";
 import { montarCurva } from "../lib/ai/curvaCalibracao.ts";
 import { dedupPorMercado } from "../lib/calibrationData.ts";
+import { carregarAmostra, resumir, fatiar, MIN_AMOSTRA } from "../lib/amostraIA.ts";
 import { normalizeCategory } from "../lib/ai/calibration.ts";
 import { intervaloWilson, comparaComMercado } from "../lib/ai/incerteza.ts";
 import { Router, type Request, type Response, type NextFunction } from "express";
@@ -386,18 +387,15 @@ router.post("/analyze/stream", aiCreditsMiddleware, async (req, res) => {
  *     distância média do 50% seria bem maior nas resolvidas — e não é.
  */
 router.get("/sample-transparency", async (_req, res) => {
-  const cached = getCache<object>("ai-sample-transp");
+  const cached = getCache<object>("ai-sample-transp-v2");
   if (cached) return res.json(cached);
   if (!SUPABASE_URL || !SUPABASE_KEY) return res.json({ available: false });
   try {
-    const rows = await buscarTudo<{ market_id: string; market_prob: number; resolved: boolean; outcome: boolean | null; forecast_date: string; created_at: string }>(
-      "ai_forecasts",
-      "select=market_id,market_prob,resolved,outcome,forecast_date,created_at&order=created_at.asc",
-    );
-    if (rows.length === 0) return res.json({ available: false });
-    const d = dedupPorMercado(rows);
-    const resolvidos = d.filter((x) => x.resolved && x.outcome !== null);
-    const emAberto = d.filter((x) => !x.resolved);
+    const amostra = await carregarAmostra();
+    if (!amostra) return res.json({ available: false });
+    const d = amostra.todas;
+    const resolvidos = amostra.resolvidas;
+    const emAberto = amostra.emAberto;
     if (resolvidos.length === 0) return res.json({ available: false });
 
     // Distância do 50% = o quanto o mercado já "sabe". Perto de 50 é moeda;
@@ -418,47 +416,44 @@ router.get("/sample-transparency", async (_req, res) => {
       // Até 5pp de diferença tratamos como populações comparáveis. Acima disso, o
       // honesto é avisar que o que já resolveu pode não representar o todo.
       perfilComparavel: diferenca !== null ? diferenca <= 5 : null,
+      // Fechou sem resultado utilizável — declarado aqui em vez de somado no
+      // total, que era uma das cinco contagens divergentes da auditoria.
+      semDesfecho: amostra.semDesfecho.length,
     };
-    setCache("ai-sample-transp", resultado, 900);
+    setCache("ai-sample-transp-v2", resultado, 900);
     res.json(resultado);
   } catch { res.json({ available: false }); }
 });
 
 router.get("/evolution", async (_req, res) => {
-  const cached = getCache<object>("ai-evolution");
+  const cached = getCache<object>("ai-evolution-v2");
   if (cached) return res.json(cached);
   if (!SUPABASE_URL || !SUPABASE_KEY) return res.json({ available: false });
   try {
-    const rows = await buscarTudo<{ market_id: string; market_prob: number; ai_fair_value: number; outcome: boolean; resolved_at: string; forecast_date: string; created_at: string }>(
-      "ai_forecasts",
-      "resolved=eq.true&outcome=not.is.null&resolved_at=not.is.null&select=market_id,market_prob,ai_fair_value,outcome,resolved_at,forecast_date,created_at&order=resolved_at.asc",
-    );
-    if (rows.length === 0) return res.json({ available: false });
+    const amostra = await carregarAmostra();
+    if (!amostra) return res.json({ available: false });
+
+    // Este é o único bloco que precisa de mais do que "resolvida": precisa de
+    // QUANDO. Antes o filtro extra (`resolved_at IS NOT NULL`) ficava escondido
+    // na query e produzia um total menor que o dos blocos vizinhos, sem
+    // explicação — era um dos cinco números divergentes. Agora a diferença é
+    // declarada em `semData` e a tela pode dizer.
+    const comData = amostra.resolvidas.filter((x) => !!x.resolved_at);
+    if (comData.length === 0) return res.json({ available: false });
 
     // Agrupa por MÊS (e não por semana): as resoluções chegam em rajada quando o
     // resolvedor roda, então semanas ficam com 1, 2, 369 casos — e uma "semana" de
     // 2 casos não é ponto de série temporal, é ruído com data.
-    type LinhaMes = (typeof rows)[number];
-    const porMes = new Map<string, LinhaMes[]>();
-    for (const x of dedupPorMercado(rows)) {
-      const k = String(x.resolved_at).slice(0, 7);
-      if (!porMes.has(k)) porMes.set(k, []);
-      porMes.get(k)!.push(x);
-    }
-
-    const MIN_MES = 30;
-    const meses = Array.from(porMes.entries()).sort(([a], [b]) => a.localeCompare(b)).map(([mes, v]) => {
-      const acertos = v.filter((x) => (Number(x.ai_fair_value) >= 50) === !!x.outcome).length;
-      const mercado = v.filter((x) => (Number(x.market_prob) >= 50) === !!x.outcome).length;
-      const ic = v.length >= MIN_MES ? intervaloWilson(acertos, v.length) : null;
-      return {
-        mes, n: v.length,
-        acerto: ic ? Math.round((acertos / v.length) * 100) : null,
-        margemPp: ic?.margemPp ?? null,
-        baixo: ic?.baixo ?? null, alto: ic?.alto ?? null,
-        acertoMercado: ic ? Math.round((mercado / v.length) * 100) : null,
-      };
-    });
+    const meses = fatiar(comData, (x) => String(x.resolved_at).slice(0, 7))
+      .sort((a, b) => a.nome.localeCompare(b.nome))
+      .map((f) => ({
+        mes: f.nome, n: f.n,
+        acerto: f.taxaAcerto,
+        margemPp: f.margemPp,
+        baixo: f.taxaAcerto !== null && f.margemPp !== null ? f.taxaAcerto - f.margemPp : null,
+        alto:  f.taxaAcerto !== null && f.margemPp !== null ? f.taxaAcerto + f.margemPp : null,
+        acertoMercado: f.taxaAcertoMercado,
+      }));
 
     // Tendência só existe se os intervalos do primeiro e do último mês com amostra
     // NÃO se tocarem. Comparar as porcentagens direto seria ler ruído.
@@ -471,69 +466,73 @@ router.get("/evolution", async (_req, res) => {
         : "estavel";
     }
 
-    const resultado = { available: true, meses, tendencia, minAmostra: MIN_MES, mesesComAmostra: comAmostra.length };
-    setCache("ai-evolution", resultado, 900);
+    const resultado = {
+      available: true, meses, tendencia,
+      minAmostra: MIN_AMOSTRA,
+      mesesComAmostra: comAmostra.length,
+      resolvidas: amostra.resolvidas.length,
+      semData: amostra.resolvidas.length - comData.length,
+    };
+    setCache("ai-evolution-v2", resultado, 900);
     res.json(resultado);
   } catch { res.json({ available: false }); }
 });
 
+/**
+ * Acerto por TEMA. O achado TRK-03 da auditoria estava aqui: a página escreve
+ * "só exibimos os números a partir de 20 resolvidas" e esta rota usava 15 — com
+ * a tabela logo abaixo do texto listando temas com 1, 2, 3 e 4 casos, porque o
+ * corte só apagava a porcentagem e deixava a linha.
+ *
+ * Agora o corte é `MIN_AMOSTRA`, o mesmo do resto do site, e a tela recebe o
+ * `estado` de cada tema para separar o que tem veredito do que ainda não tem.
+ */
 router.get("/by-category", async (_req, res) => {
-  const cached = getCache<object>("ai-by-category");
+  const cached = getCache<object>("ai-by-category-v2");
   if (cached) return res.json(cached);
   if (!SUPABASE_URL || !SUPABASE_KEY) return res.json({ available: false });
   try {
-    const rows = await buscarTudo<{ market_id: string; category: string | null; market_prob: number; ai_fair_value: number; outcome: boolean; forecast_date: string; created_at: string }>(
-      "ai_forecasts",
-      "resolved=eq.true&outcome=not.is.null&select=market_id,category,market_prob,ai_fair_value,outcome,forecast_date,created_at&order=created_at.asc",
-    );
-    if (rows.length === 0) return res.json({ available: false });
+    const amostra = await carregarAmostra();
+    if (!amostra) return res.json({ available: false });
 
-    type LinhaTema = (typeof rows)[number];
-    const porTema = new Map<string, LinhaTema[]>();
-    for (const x of dedupPorMercado(rows)) {
-      const k = normalizeCategory(x.category);
-      if (!porTema.has(k)) porTema.set(k, []);
-      porTema.get(k)!.push(x);
-    }
+    const temas = fatiar(amostra.resolvidas, (x) => normalizeCategory(x.category)).map((f) => ({
+      tema: f.nome, n: f.n,
+      acerto: f.taxaAcerto,
+      margemPp: f.margemPp,
+      acertoMercado: f.taxaAcertoMercado,
+      comparacao: f.comparacao,
+      // A mesma pergunta do bloco de manchete, por tema: divergimos e acertamos?
+      // A tabela da tela de análise calculava isto por conta própria, com uma
+      // taxonomia de 20 categorias contra as 10 daqui (TRK-04).
+      acertoAoDivergir: f.taxaAoDivergir,
+      divergimos: f.divergimos,
+      estado: f.estado,
+    }));
 
-    // Abaixo disto a porcentagem é anedota, não estatística — o tema aparece com
-    // o número de casos e SEM veredito, que já é informação útil ("ainda não sei").
-    const MIN_TEMA = 15;
-    const temas = Array.from(porTema.entries()).map(([tema, v]) => {
-      const acertos = v.filter((x) => (Number(x.ai_fair_value) >= 50) === !!x.outcome).length;
-      const acertosMercado = v.filter((x) => (Number(x.market_prob) >= 50) === !!x.outcome).length;
-      const ic = v.length >= MIN_TEMA ? intervaloWilson(acertos, v.length) : null;
-      return {
-        tema, n: v.length,
-        acerto: ic ? Math.round((acertos / v.length) * 100) : null,
-        margemPp: ic?.margemPp ?? null,
-        acertoMercado: ic ? Math.round((acertosMercado / v.length) * 100) : null,
-        comparacao: ic ? comparaComMercado(acertos, v.length, acertosMercado, v.length)?.veredito ?? null : null,
-      };
-    }).sort((a, b) => b.n - a.n);
-
-    const resultado = { available: true, temas, minAmostra: MIN_TEMA };
-    setCache("ai-by-category", resultado, 900);
+    const resultado = {
+      available: true,
+      temas: temas.filter((t) => t.estado === "veredito"),
+      // Os que ainda não chegaram na amostra aparecem à parte, com o número de
+      // casos e sem porcentagem. "Ainda não sei" é informação; 100% sobre 2
+      // casos é ruído com cara de prova.
+      semAmostra: temas.filter((t) => t.estado === "insuficiente").map((t) => ({ tema: t.tema, n: t.n })),
+      minAmostra: MIN_AMOSTRA,
+      resolvidas: amostra.resolvidas.length,
+    };
+    setCache("ai-by-category-v2", resultado, 900);
     res.json(resultado);
   } catch { res.json({ available: false }); }
 });
 
 router.get("/calibration-curve", async (_req, res) => {
-  const cached = getCache<object>("ai-calibration-curve");
+  const cached = getCache<object>("ai-calibration-curve-v2");
   if (cached) return res.json(cached);
   if (!SUPABASE_URL || !SUPABASE_KEY) return res.json({ available: false });
   try {
-    // ⚠️ Paginado: o PostgREST corta em 1.000 linhas em SILÊNCIO (limit=5000
-    // devolve 200 OK com 1.000). Ver lib/supaPaginado.ts.
-    const rows = await buscarTudo<{ market_id: string; ai_fair_value: number; outcome: boolean; forecast_date: string; created_at: string }>(
-      "ai_forecasts",
-      "resolved=eq.true&outcome=not.is.null&select=market_id,ai_fair_value,outcome,forecast_date,created_at&order=created_at.asc",
-    );
-    if (rows.length === 0) return res.json({ available: false });
-    // Mesma dedup da view do track record: 1 previsão por mercado, a mais antiga.
-    // Sem isso, mercado previsto em 6 dias entra 6 vezes e distorce a curva.
+    const amostra = await carregarAmostra();
+    if (!amostra) return res.json({ available: false });
     const curva = montarCurva(
-      dedupPorMercado(rows).map((x) => ({ prob: Number(x.ai_fair_value), aconteceu: !!x.outcome })),
+      amostra.resolvidas.map((x) => ({ prob: Number(x.ai_fair_value), aconteceu: !!x.outcome })),
     );
     const comAmostra = curva.filter((f) => f.aconteceu !== null);
     const resultado = {
@@ -541,84 +540,100 @@ router.get("/calibration-curve", async (_req, res) => {
       curva,
       faixasCalibradas: comAmostra.filter((f) => f.dentroDaMargem).length,
       faixasComAmostra: comAmostra.length,
-      total: curva.reduce((s, f) => s + f.n, 0),
+      // O total é o denominador do site, não a soma dos baldes: se algum dia uma
+      // faixa deixar de caber na curva, o número aqui denunciaria a diferença em
+      // vez de escondê-la — foi assim que nasceram os cinco totais da auditoria.
+      total: amostra.resolvidas.length,
+      minAmostra: MIN_AMOSTRA,
     };
-    setCache("ai-calibration-curve", resultado, 900);
+    setCache("ai-calibration-curve-v2", resultado, 900);
     res.json(resultado);
   } catch { res.json({ available: false }); }
 });
 
+/**
+ * A manchete do Track Record — e, desde a auditoria de 09/09/2026, a ÚNICA
+ * origem dos números que aparecem em `/track-record`, na home e no Dashboard.
+ *
+ * O que mudou: antes este endpoint lia a view `ai_track_record` e cada bloco
+ * vizinho da tela lia outra coisa, com outro filtro. Cinco totais diferentes de
+ * "previsões resolvidas" na mesma página. Agora tudo desce de `carregarAmostra()`
+ * — uma leitura, um denominador. Ver `lib/amostraIA.ts` para o porquê da regra.
+ */
 router.get("/track-record", async (_req, res) => {
   if (!SUPABASE_URL || !SUPABASE_KEY) return res.json({ available: false });
-  const cached = getCache<object>("ai-track-record");
+  const cached = getCache<object>("ai-track-record-v2");
   if (cached) { res.locals.aiCacheHit = true; return res.json({ ...cached, cached: true }); }
   try {
-    const r = await fetch(`${SUPABASE_URL}/rest/v1/ai_track_record?select=*`, {
-      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` },
-      signal: AbortSignal.timeout(8_000),
-    });
-    if (!r.ok) return res.json({ available: false });
-    const rows = await r.json() as Array<Record<string, number | null>>;
-    const t = rows[0] ?? {};
-    const resolvedCount = Number(t.resolved_count ?? 0);
+    const amostra = await carregarAmostra();
+    if (!amostra) return res.json({ available: false });
+    const t = resumir(amostra);
 
-    // Fatiamento POR PROVEDOR (migration 023). O número principal é a soma de
-    // modelos diferentes — hoje quase tudo é o fallback Gemini, com 0 do Claude.
-    // Sem separar, três níveis de qualidade viram um número só que ninguém
-    // consegue auditar. Mesma regra de dedup, então as partes somam o todo.
-    const byProvider = await fetch(`${SUPABASE_URL}/rest/v1/ai_track_record_by_model?select=*&order=resolved_count.desc`, {
-      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` },
-      signal: AbortSignal.timeout(8_000),
-    })
-      .then((pr) => pr.ok ? pr.json() as Promise<Array<Record<string, number | string | null>>> : [])
-      .then((provRows) => provRows
-        .filter((p) => Number(p.resolved_count ?? 0) > 0)
-        .map((p) => {
-          const dir = Number(p.directional_count ?? 0);
-          const aiB = p.ai_brier !== null ? Number(p.ai_brier) : null;
-          const mktB = p.market_brier !== null ? Number(p.market_brier) : null;
-          return {
-            provider: String(p.model ?? "desconhecido"),
-            resolvedCount: Number(p.resolved_count ?? 0),
-            aiBrier: aiB,
-            marketBrier: mktB,
-            hitRate: dir > 0 ? Math.round((Number(p.hit_count ?? 0) / dir) * 100) : null,
-            skillVsMarket: (aiB !== null && mktB !== null && mktB > 0)
-              ? Number((1 - aiB / mktB).toFixed(3)) : null,
-            settledCount: Number(p.settled_count ?? 0),
-          };
-        }))
-      .catch(() => []);
-    // Taxa de acerto DIRECIONAL (colunas da migration 018; ausentes antes dela → 0 → null).
-    const directionalCount = Number(t.directional_count ?? 0);
-    const hitCount = Number(t.hit_count ?? 0);
-    const marketDirectionalCount = Number(t.market_directional_count ?? 0);
-    const marketHitCount = Number(t.market_hit_count ?? 0);
+    // Fatiamento POR PROVEDOR. O número principal é a soma de modelos
+    // diferentes — hoje quase tudo é o fallback Gemini, com 0 do Claude. Sem
+    // separar, três níveis de qualidade viram um número só que ninguém consegue
+    // auditar. Sai da MESMA amostra, então as partes somam o todo — o que não
+    // acontecia quando vinha da view `ai_track_record_by_model`.
+    const byProvider = fatiar(amostra.resolvidas, (x) => x.model ?? "desconhecido", 1)
+      .map((f) => ({
+        provider: f.nome,
+        resolvedCount: f.n,
+        hitRate: f.taxaAcerto,
+        marketHitRate: f.taxaAcertoMercado,
+        aiBrier: f.aiBrier,
+        marketBrier: f.marketBrier,
+        skillVsMarket: f.skillVsMarket,
+        settledCount: f.oficiais,
+        // Amostra pequena por provedor é a regra, não a exceção (o Claude tem 0).
+        // O rótulo vai junto para a tela não precisar adivinhar.
+        amostraSuficiente: f.estado === "veredito",
+      }));
+
     const result = {
       available: true,
-      resolvedCount,
-      totalCount: Number(t.total_count ?? 0),
-      aiBrier: t.ai_brier !== null ? Number(t.ai_brier) : null,
-      marketBrier: t.market_brier !== null ? Number(t.market_brier) : null,
-      beatMarketCount: Number(t.beat_market_count ?? 0),
-      beatMarketPct: resolvedCount > 0 ? Math.round((Number(t.beat_market_count ?? 0) / resolvedCount) * 100) : null,
-      avgAbsEdge: t.avg_abs_edge !== null ? Number(t.avg_abs_edge) : null,
-      skillVsMarket: (t.ai_brier !== null && t.market_brier !== null && Number(t.market_brier) > 0)
-        ? Number((1 - Number(t.ai_brier) / Number(t.market_brier)).toFixed(3)) : null,
-      // "Taxa de acerto do nosso site": acertos direcionais / previsões com lado.
-      hitRate: directionalCount > 0 ? Math.round((hitCount / directionalCount) * 100) : null,
-      marketHitRate: marketDirectionalCount > 0 ? Math.round((marketHitCount / marketDirectionalCount) * 100) : null,
-      directionalCount,
-      settledCount: Number(t.settled_count ?? 0),
+
+      // ── O denominador. Todos os blocos da página dividem por ele. ──
+      resolvedCount: t.resolvidas,
+      totalCount: t.total,
+      openCount: t.emAberto,
+      // Fechou sem resultado utilizável. Quase sempre 0; quando não for, a tela
+      // diz — em vez de embutir no total e desencontrar a conta.
+      semDesfechoCount: t.semDesfecho,
+
+      aiBrier: t.aiBrier,
+      marketBrier: t.marketBrier,
+      skillVsMarket: t.skillVsMarket,
+
+      // "Bateu o mercado" pelo BRIER, caso a caso.
+      beatMarketCount: t.bateuMercado,
+      beatMarketPct: t.bateuMercadoPct,
+
+      // "Bateu o mercado" AO DIVERGIR: das vezes em que discordamos do preço,
+      // quantas acertamos. É o teste difícil, e o que a tela de análise já
+      // mostrava — só que sobre 50 linhas, o que gerava 43% ao lado de 12%.
+      edgeRate: t.taxaAoDivergir,
+      edgeCount: t.divergimos,
+      edgeHits: t.acertosAoDivergir,
+
+      // "Bateu o mercado" pelo LADO. É outra pergunta, com o mesmo denominador
+      // de base — a auditoria pegou as duas dividindo por conjuntos diferentes.
+      hitRate: t.taxaAcerto,
+      marketHitRate: t.taxaAcertoMercado,
+      directionalCount: t.comLado,
+      marketDirectionalCount: t.comLadoMercado,
+
+      avgAbsEdge: t.edgeMedioPp,
+      settledCount: t.oficiais,
+      minAmostra: MIN_AMOSTRA,
+
       // MARGEM DE ERRO de verdade: quanto a taxa de acerto pode variar por sorte
-      // da amostra. O site chamava de "margem de erro" os 21% que sobram de 79%,
-      // que na verdade e a TAXA DE ERRO -- outra pergunta. Sem isto o leitor nao
-      // sabe se 79% e solido ou acaso de poucas resolucoes.
-      hitRateIntervalo: intervaloWilson(hitCount, directionalCount),
-      comparacaoMercado: comparaComMercado(hitCount, directionalCount, marketHitCount, marketDirectionalCount),
+      // da amostra. O site já chamou de "margem de erro" os 21% que sobram de
+      // 79%, que é a TAXA DE ERRO — outra pergunta.
+      hitRateIntervalo: t.intervalo,
+      comparacaoMercado: t.comparacaoMercado,
       byProvider,
     };
-    setCache("ai-track-record", result, 600);
+    setCache("ai-track-record-v2", result, 600);
     res.json(result);
   } catch {
     res.json({ available: false });

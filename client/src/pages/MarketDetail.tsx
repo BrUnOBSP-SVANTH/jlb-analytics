@@ -89,7 +89,7 @@ export default function MarketDetail() {
           <>
             <MarketHeader market={market} />
 
-            {/* Resolution countdown + Cerebro articles row */}
+            {/* Resolution countdown + Cérebro articles row */}
             {(market.endDate || isResolved || cerebroArticles.length > 0) && (
               <AnimatedSection delay={0.08}>
                 <div className="flex flex-wrap gap-3">
@@ -117,12 +117,12 @@ export default function MarketDetail() {
                     );
                   })()}
 
-                  {/* Cerebro articles chips */}
+                  {/* Cérebro articles chips */}
                   {cerebroArticles.length > 0 && (
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="flex items-center gap-1 text-[10px] text-muted-foreground/60 font-semibold uppercase tracking-wider">
                         <BookOpen className="w-3 h-3" />
-                        Cerebro
+                        Cérebro
                       </span>
                       {cerebroArticles.map((a) => (
                         <a
@@ -395,12 +395,12 @@ export default function MarketDetail() {
                       <p className="text-[10px] font-semibold text-neon-blue/80 uppercase tracking-wider mb-2 flex items-center gap-1 flex-wrap">
                         <Sparkles className="w-3 h-3" />Análise de IA
                         {(aiAnalysis.cerebroHits ?? 0) > 0 && (
-                          <span className="px-1.5 py-0.5 rounded bg-neon-blue/10 border border-neon-blue/30 normal-case">🧠 Cerebro ×{aiAnalysis.cerebroHits}</span>
+                          <span className="px-1.5 py-0.5 rounded bg-neon-blue/10 border border-neon-blue/30 normal-case">🧠 Cérebro ×{aiAnalysis.cerebroHits}</span>
                         )}
                         {aiAnalysis.hasMomentum && (
                           <span className="px-1.5 py-0.5 rounded bg-secondary/40 border border-border/30 text-muted-foreground normal-case">📈 momentum</span>
                         )}
-                        {aiAnalysis.cached && <span className="ml-1 opacity-50">(cache)</span>}
+                        {aiAnalysis.cached && <span className="ml-1 opacity-60" title="Esta análise já tinha sido gerada hoje">de hoje</span>}
                       </p>
                       <p className="text-sm text-muted-foreground leading-relaxed">{aiAnalysis.analysis}</p>
                     </div>

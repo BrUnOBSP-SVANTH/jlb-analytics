@@ -1,7 +1,7 @@
 /**
  * CommandPalette — JLB Analytics
  * Busca global ativada com Cmd+K (Mac) ou Ctrl+K (Windows/Linux).
- * Busca em: páginas, artigos do Cerebro (Supabase full-text).
+ * Busca em: páginas, artigos do Cérebro (Supabase full-text).
  */
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useLocation } from "wouter";
@@ -94,7 +94,7 @@ export default function CommandPalette() {
       }).slice(0, 5)
     : PAGES.slice(0, 6), [query]);
 
-  // Busca artigos no Cerebro (debounced)
+  // Busca artigos no Cérebro (debounced)
   const searchArticles = useCallback(async (q: string) => {
     if (!q.trim() || q.length < 2) { setArticles([]); return; }
     setLoadingArticles(true);
@@ -226,12 +226,12 @@ export default function CommandPalette() {
                   </div>
                 )}
 
-                {/* Artigos do Cerebro */}
+                {/* Artigos do Cérebro */}
                 {query.length >= 2 && (
                   <div>
                     <p className="px-4 py-1.5 text-[10px] font-semibold text-muted-foreground/50 uppercase tracking-wider flex items-center gap-2">
                       <Brain className="w-3 h-3" />
-                      Cerebro
+                      Cérebro
                       {loadingArticles && <span className="w-2.5 h-2.5 rounded-full border border-gold border-t-transparent animate-spin" />}
                     </p>
                     {articles.length === 0 && !loadingArticles && query.length >= 2 && (
@@ -279,7 +279,7 @@ export default function CommandPalette() {
                 <span className="flex items-center gap-1"><kbd className="border border-border/30 rounded px-1">↑↓</kbd> navegar</span>
                 <span className="flex items-center gap-1"><kbd className="border border-border/30 rounded px-1">↵</kbd> abrir</span>
                 <span className="flex items-center gap-1"><kbd className="border border-border/30 rounded px-1">esc</kbd> fechar</span>
-                <span className="ml-auto">JLB Cerebro · {articles.length > 0 ? `${articles.length} artigos` : "busca ativa"}</span>
+                <span className="ml-auto">JLB Cérebro · {articles.length > 0 ? `${articles.length} artigos` : "busca ativa"}</span>
               </div>
             </div>
           </div>

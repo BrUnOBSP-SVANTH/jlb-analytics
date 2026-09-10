@@ -363,7 +363,7 @@ export function NewsAnalysisPanel({ item }: { item: TrendingItem }) {
           <div className="p-3 rounded-lg bg-neon-blue/5 border border-neon-blue/15">
             <p className="text-[10px] font-semibold text-neon-blue/80 uppercase tracking-wider mb-1.5 flex items-center gap-1">
               <Flame className="w-3 h-3" />Por que está viral — análise contextual
-              {result.cached && <span className="ml-1 opacity-50">(cache)</span>}
+              {result.cached && <span className="ml-1 opacity-60" title="Esta análise já tinha sido gerada hoje">de hoje</span>}
             </p>
             <p className="text-xs text-muted-foreground leading-relaxed">{result.whyTrending}</p>
           </div>
@@ -434,7 +434,7 @@ export function NewsAnalysisPanel({ item }: { item: TrendingItem }) {
           <div className="p-3 rounded-lg bg-neon-blue/5 border border-neon-blue/15">
             <p className="text-[10px] font-semibold text-neon-blue/80 uppercase tracking-wider mb-1.5 flex items-center gap-1">
               <Sparkles className="w-3 h-3" />Análise de IA
-              {result.cached && <span className="ml-1 opacity-50">(cache)</span>}
+              {result.cached && <span className="ml-1 opacity-60" title="Esta análise já tinha sido gerada hoje">de hoje</span>}
             </p>
             <p className="text-xs text-muted-foreground leading-relaxed">{result.analysis}</p>
           </div>

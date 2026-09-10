@@ -122,7 +122,7 @@ function Router() {
               {/* Redirects backward compat */}
               {["/mercado","/mercados"].map(p => <Route key={p} path={p}>{() => { window.location.replace("/apostas"); return null; }}</Route>)}
               {["/minha-conta"].map(p => <Route key={p} path={p}>{() => { window.location.replace("/dashboard"); return null; }}</Route>)}
-              {/* Backtester e a TELA do Cerebro foram retirados do site (mantido o motor do Cerebro nos bastidores). Redireciona links antigos. */}
+              {/* Backtester e a TELA do Cérebro foram retirados do site (mantido o motor do Cérebro nos bastidores). Redireciona links antigos. */}
               {["/laboratorio","/backtester"].map(p => <Route key={p} path={p}>{() => { window.location.replace("/calculadoras"); return null; }}</Route>)}
               {["/cerebro"].map(p => <Route key={p} path={p}>{() => { window.location.replace("/previsao"); return null; }}</Route>)}
               {["/analise"].map(p => <Route key={p} path={p}>{() => { window.location.replace("/previsao"); return null; }}</Route>)}

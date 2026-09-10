@@ -177,7 +177,7 @@ export default function Noticias() {
       <MercadosTabs />
       <PageHeader
         title="Mercados Preditivos"
-        subtitle="Polymarket · Kalshi · Reddit · Artigos — registe as suas estimativas e acompanhe o Brier Score."
+        subtitle="Polymarket · Kalshi · Reddit · Artigos — registre suas estimativas e acompanhe o Brier Score."
         badge="Dados de Contexto"
       />
 

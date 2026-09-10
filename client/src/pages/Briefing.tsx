@@ -342,7 +342,7 @@ export default function Briefing() {
                 <h2 className="text-lg font-bold text-[var(--titulo)] leading-snug">{briefing.headline}</h2>
                 {briefing.cached && (
                   <span className="inline-flex items-center gap-1 mt-1 text-[10px] text-muted-foreground/60">
-                    <Clock className="w-3 h-3" /> Cache — atualizado hoje
+                    <Clock className="w-3 h-3" aria-hidden="true" /> Publicado hoje
                   </span>
                 )}
               </div>

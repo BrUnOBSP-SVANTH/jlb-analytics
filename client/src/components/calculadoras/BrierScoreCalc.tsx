@@ -4,6 +4,8 @@
 import { useState, useMemo } from "react";
 import { Target } from "lucide-react";
 import { CalcCard, FormulaBox, ResultBox, InsightBox, inputClass } from "@/components/calculadoras/CalcPrimitives";
+import { BRIER_SUPERFORECASTER, BRIER_DO_CHUTE, FONTE_SUPERFORECASTER } from "@shared/referencias";
+import { plural } from "@shared/formato";
 
 interface Prediction { prob: number; outcome: 0 | 1 }
 
@@ -27,14 +29,13 @@ export function BrierScoreCalc() {
     return preds.reduce((s, p) => s + Math.pow(p.prob / 100 - p.outcome, 2), 0) / preds.length;
   }, [preds]);
 
-  const skillScore = 1 - brierScore / 0.25;
+  const skillScore = 1 - brierScore / BRIER_DO_CHUTE;
   const isSkilled = skillScore > 0;
 
-  const classification = brierScore < 0.05 ? { label: "Excepcional", color: "text-neon-blue" }
-    : brierScore < 0.10 ? { label: "Muito bom", color: "text-positive" }
-    : brierScore < 0.15 ? { label: "Bom", color: "text-primary" }
-    : brierScore < 0.20 ? { label: "Mediano", color: "text-warning" }
-    : brierScore < 0.25 ? { label: "Fraco", color: "text-orange-500" }
+  const classification = brierScore < BRIER_SUPERFORECASTER ? { label: "Excepcional", color: "text-neon-blue" }
+    : brierScore < 0.15 ? { label: "Muito bom", color: "text-positive" }
+    : brierScore < 0.20 ? { label: "Bom", color: "text-primary" }
+    : brierScore < BRIER_DO_CHUTE ? { label: "Mediano", color: "text-warning" }
     : { label: "Pior que chutar 50%", color: "text-negative" };
 
   return (
@@ -86,15 +87,18 @@ export function BrierScoreCalc() {
 
           <div className={`p-4 rounded-xl border ${isSkilled ? "bg-positive/10 border-positive/30" : "bg-negative/10 border-negative/30"}`}>
             <p className={`text-sm font-semibold ${classification.color}`}>{classification.label}</p>
-            <p className="text-xs text-muted-foreground mt-1">Com {preds.length} previsões · Skill Score = 1 − BS / 0,25</p>
+            <p className="text-xs text-muted-foreground mt-1">Com {plural(preds.length, "previsão", "previsões")} · Skill Score = 1 − BS / 0,25</p>
           </div>
 
           <div className="p-3 rounded-lg bg-obsidian/50 border border-border/20 space-y-1">
             <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Benchmarks reais</p>
+            {/* Uma tabela só, vinda de shared/referencias.ts. Esta lista dizia
+                "< 0.05 — Superforecasters", enquanto outra tela dizia 0.10 e uma
+                terceira, 0.14. O 0,05 não aparece em nenhuma publicação do GJP. */}
             {[
-              ["< 0.05", "Superforecasters (Good Judgment Project)"],
-              ["< 0.10", "Forecasters experientes"],
-              ["< 0.15", "Bom usuário de mercado preditivo"],
+              [`< ${BRIER_SUPERFORECASTER.toFixed(2)}`, `Superforecasters — ${FONTE_SUPERFORECASTER}`],
+              ["< 0.15", "Forecaster experiente"],
+              ["< 0.20", "Bom usuário de mercado preditivo"],
               ["= 0.25", "Chutar 50% sempre"],
               ["> 0.25", "Pior que aleatório"],
             ].map(([v, l]) => (

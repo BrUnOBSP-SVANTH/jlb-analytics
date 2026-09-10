@@ -47,7 +47,7 @@ const STEPS = [
     iconColor: "text-gold",
     title: "Busca Global (⌘K)",
     description: "Pressione Cmd+K (ou Ctrl+K) para buscar em qualquer lugar.",
-    detail: "Navega por páginas, busca nos 3.700+ artigos do Cerebro e encontra qualquer mercado.",
+    detail: "Navega por páginas, busca nos 3.700+ artigos do Cérebro e encontra qualquer mercado.",
   },
 ];
 

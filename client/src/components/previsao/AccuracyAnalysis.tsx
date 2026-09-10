@@ -1,190 +1,212 @@
 /**
- * AccuracyAnalysis — a FERRAMENTA de análise pro usuário: onde a IA tem (ou NÃO tem)
- * vantagem, por tema. Computa no cliente, a partir de /api/ai/resolved, as métricas
- * HONESTAS que a view ainda não expõe:
- *   • dedup por MERCADO (o mesmo mercado previsto vários dias conta 1×);
- *   • acerto vs MERCADO (edge real — divergir do mercado PAGOU?), não "vs 50";
- *   • skill de Brier (a IA bate o mercado na calibração?).
- * Gate de amostra pequena — nunca vira alegação com pouco dado (mostra a direção).
+ * AccuracyAnalysis — onde a IA tem (ou não tem) vantagem, por tema.
+ *
+ * O QUE MUDOU (auditoria de 09/09/2026 — TRK-01 a TRK-04, TRK-09).
+ * Este bloco calculava tudo no navegador a partir das 50 resoluções mais
+ * recentes, com uma taxonomia própria de 20 categorias. O resultado é que na
+ * MESMA página ele dizia "batemos o mercado: 43%" enquanto o card de manchete,
+ * dez centímetros acima, dizia 12%. Nenhum dos dois estava errado: eram
+ * perguntas diferentes (divergência × Brier) sobre amostras diferentes (50
+ * linhas × todas as resolvidas) — só que nada na tela dizia isso, e a conclusão
+ * natural de quem lê é que um dos dois é maquiagem.
+ *
+ * A tabela por tema, com ~5 casos por categoria, ainda violava a regra que a
+ * própria página publica em letras grandes: "só exibimos os números a partir de
+ * 20 resolvidas".
+ *
+ * Agora as duas medidas vêm do servidor, da mesma amostra e do mesmo
+ * denominador (`server/lib/amostraIA.ts`), e cada card diz qual pergunta
+ * responde.
  */
 import { useState, useEffect } from "react";
 import AnimatedSection from "@/components/AnimatedSection";
+import { pct, plural } from "@shared/formato";
 import { TrendingUp, TrendingDown, Minus, Info, BarChart3, Check, Target } from "lucide-react";
 
-interface ResolvedItem {
-  marketId: string; source: string; title: string; category: string | null;
-  aiProb: number; marketProb: number; outcome: boolean; official: boolean;
+interface TrackRecord {
+  available: boolean;
+  resolvedCount: number;
+  settledCount: number;
+  minAmostra: number;
+  hitRate: number | null;
+  marketHitRate: number | null;
+  edgeRate: number | null;
+  edgeCount: number;
+  aiBrier: number | null;
+  marketBrier: number | null;
+  skillVsMarket: number | null;
 }
 
-const CAT_PT: Record<string, string> = {
-  politics: "Política", crypto: "Cripto", bitcoin: "Bitcoin", ethereum: "Ethereum",
-  sports: "Esportes", esports: "E-sports", nfl: "NFL", nba: "NBA", economy: "Economia",
-  finance: "Finanças", science: "Ciência", climate: "Clima", tech: "Tecnologia",
-  ai: "IA", iran: "Geopolítica", culture: "Cultura", movies: "Cinema", oil: "Commodities",
-  trump: "Política EUA", other: "Outros",
-};
-function label(cat: string | null): string {
-  const k = (cat ?? "other").toLowerCase().trim();
-  return CAT_PT[k] ?? (cat ? cat.charAt(0).toUpperCase() + cat.slice(1) : "Outros");
+interface TemaLinha {
+  tema: string; n: number;
+  acerto: number | null;
+  acertoMercado: number | null;
+  acertoAoDivergir: number | null;
+  divergimos: number;
 }
-const brier = (prob: number, outcome: boolean) => Math.pow(prob / 100 - (outcome ? 1 : 0), 2);
+
+interface PorCategoria {
+  available: boolean;
+  temas?: TemaLinha[];
+  semAmostra?: { tema: string; n: number }[];
+  minAmostra?: number;
+}
+
+// A MESMA lista de `PorTema.tsx`. Duas tabelas na mesma tela com taxonomias
+// diferentes ("Geopolítica" aqui, "Outros" ali) foi o achado TRK-04.
+const NOMES: Record<string, string> = {
+  esports: "E-sports", sports: "Esportes", tennis: "Tênis", crypto: "Cripto",
+  politics: "Política", economy: "Economia", culture: "Cultura", science: "Ciência",
+  climate: "Clima", other: "Outros",
+};
+const nomeTema = (t: string) => NOMES[t] ?? t;
+
+/**
+ * O skill saía como "−0%" quando a diferença era um arredondamento (TRK-09).
+ * "−0%" não é número: é uma diferença tão pequena que o sinal é ruído. Abaixo do
+ * limiar a resposta honesta é "empatamos", escrita com todas as letras.
+ */
+function SkillBadge({ value }: { value: number | null }) {
+  if (value === null) return <span className="text-muted-foreground">—</span>;
+  if (Math.abs(value) < 0.005) {
+    return <span className="inline-flex items-center gap-1 text-muted-foreground"><Minus className="w-3.5 h-3.5" aria-hidden="true" />empate</span>;
+  }
+  const bom = value > 0;
+  const Icon = bom ? TrendingUp : TrendingDown;
+  return (
+    <span className={`inline-flex items-center gap-1 font-semibold ${bom ? "text-positive" : "text-negative"}`}>
+      <Icon className="w-3.5 h-3.5" aria-hidden="true" />{bom ? "+" : "−"}{Math.abs(value * 100).toFixed(0)}%
+    </span>
+  );
+}
 
 export function AccuracyAnalysis() {
-  const [items, setItems] = useState<ResolvedItem[] | null>(null);
-  const [error, setError] = useState(false);
-  const [officialOnly, setOfficialOnly] = useState(false);
+  const [tr, setTr] = useState<TrackRecord | null>(null);
+  const [cat, setCat] = useState<PorCategoria | null>(null);
+  const [erro, setErro] = useState(false);
 
   useEffect(() => {
-    fetch("/api/ai/resolved?limit=50")
-      .then((r) => (r.ok ? r.json() as Promise<{ available: boolean; items: ResolvedItem[] }> : Promise.reject(new Error("resolved"))))
-      .then((d) => setItems(d.available ? d.items : []))
-      .catch(() => setError(true));
+    let vivo = true;
+    Promise.all([
+      fetch("/api/ai/track-record").then((r) => r.json() as Promise<TrackRecord>),
+      fetch("/api/ai/by-category").then((r) => r.json() as Promise<PorCategoria>),
+    ])
+      .then(([a, b]) => { if (vivo) { setTr(a); setCat(b); } })
+      .catch(() => { if (vivo) setErro(true); });
+    return () => { vivo = false; };
   }, []);
 
-  if (error) return null;
-  if (!items) return <div className="panel p-6"><div className="h-40 rounded-xl bg-muted/20 animate-pulse" /></div>;
+  if (erro) return null;
+  if (!tr || !cat) return <div className="panel p-6"><div className="h-40 rounded-xl bg-muted/20 animate-pulse" /></div>;
+  if (!tr.available) return null;
 
-  // dedup por mercado (1ª ocorrência = mais recente, pois o endpoint ordena por resolved_at desc)
-  const seen = new Set<string>();
-  const dedup = items.filter((it) => (seen.has(it.marketId) ? false : (seen.add(it.marketId), true)));
-  const pool = officialOnly ? dedup.filter((it) => it.official) : dedup;
-  const N = pool.length;
-  if (dedup.length === 0) return null;
-
-  let edgeHits = 0, edgeN = 0, aiB = 0, mB = 0;
-  let dirHits = 0, dirN = 0, mktDirHits = 0, mktDirN = 0; // "acerto de direção" (vs 50)
-  const byCat = new Map<string, { n: number; official: number; edgeHits: number; edgeN: number; aiB: number; mB: number }>();
-  for (const it of pool) {
-    const a = brier(it.aiProb, it.outcome), m = brier(it.marketProb, it.outcome);
-    aiB += a; mB += m;
-    // Direção (vs 50): previu o lado certo (SIM se >50, NÃO se <50)?
-    if (it.aiProb !== 50) { dirN++; if ((it.aiProb > 50) === it.outcome) dirHits++; }
-    if (it.marketProb !== 50) { mktDirN++; if ((it.marketProb > 50) === it.outcome) mktDirHits++; }
-    const diverged = it.aiProb !== it.marketProb;
-    const won = (it.aiProb > it.marketProb) === it.outcome;
-    if (diverged) { edgeN++; if (won) edgeHits++; }
-    const c = label(it.category);
-    const g = byCat.get(c) ?? { n: 0, official: 0, edgeHits: 0, edgeN: 0, aiB: 0, mB: 0 };
-    g.n++; if (it.official) g.official++; g.aiB += a; g.mB += m;
-    if (diverged) { g.edgeN++; if (won) g.edgeHits++; }
-    byCat.set(c, g);
-  }
-  const officialCount = pool.filter((it) => it.official).length;
-  const edgeRate = edgeN ? Math.round((edgeHits / edgeN) * 100) : null;
-  const dirRate = dirN ? Math.round((dirHits / dirN) * 100) : null;
-  const mktDirRate = mktDirN ? Math.round((mktDirHits / mktDirN) * 100) : null;
-  const skill = N > 0 && mB > 0 ? 1 - (aiB / N) / (mB / N) : null; // >0 = IA melhor que o mercado
-  const small = N < 20;
-  const cats = Array.from(byCat.entries()).sort((a, b) => b[1].n - a[1].n);
-
-  const SkillBadge = ({ value }: { value: number | null }) => {
-    if (value === null) return <span className="text-muted-foreground">—</span>;
-    const good = value > 0;
-    const Icon = Math.abs(value) < 0.001 ? Minus : good ? TrendingUp : TrendingDown;
-    return (
-      <span className={`inline-flex items-center gap-1 font-semibold ${good ? "text-positive" : "text-negative"}`}>
-        <Icon className="w-3.5 h-3.5" />{good ? "+" : ""}{(value * 100).toFixed(0)}%
-      </span>
-    );
-  };
+  const N = tr.resolvedCount;
+  const minimo = tr.minAmostra ?? 20;
+  const amostraPequena = N < minimo;
+  const temas = cat.temas ?? [];
 
   return (
     <AnimatedSection>
       <div className="panel p-6 space-y-5">
-        <div className="flex items-center justify-between gap-3 flex-wrap">
-          <div className="flex items-center gap-2">
-            <BarChart3 className="w-4 h-4 text-neon-blue shrink-0" />
-            <p className="text-sm font-semibold text-foreground">Análise de acurácia — onde confiar (ou não) na IA</p>
-          </div>
-          <button
-            onClick={() => setOfficialOnly((v) => !v)}
-            className={`text-[11px] px-2.5 py-1 rounded-lg border transition-colors ${officialOnly ? "border-positive/40 text-positive bg-positive/5" : "border-border/40 text-muted-foreground hover:text-foreground"}`}
-          >
-            {officialOnly ? "✓ só resultado oficial" : "só resultado oficial"}
-          </button>
+        <div className="flex items-center gap-2">
+          <BarChart3 className="w-4 h-4 text-neon-blue shrink-0" aria-hidden="true" />
+          <p className="text-sm font-semibold text-foreground">Análise de acurácia — onde confiar (ou não) na IA</p>
         </div>
 
-        {small && (
-          <div className="flex items-start gap-2 text-[11px] text-muted-foreground bg-secondary/20 border border-border/20 rounded-lg p-2.5">
-            <Info className="w-3.5 h-3.5 text-neon-blue shrink-0 mt-0.5" />
-            <span>Amostra pequena ({N} mercado{N === 1 ? "" : "s"}{officialCount ? `, ${officialCount} oficial${officialCount === 1 ? "" : "is"}` : ""}). Isto mostra a <strong className="text-foreground/80">direção</strong>, não um veredito — a prova amadurece conforme mais mercados liquidam pelo oficial.</span>
+        {amostraPequena && (
+          <div className="flex items-start gap-2 text-xs text-muted-foreground bg-secondary/20 border border-border/20 rounded-lg p-2.5">
+            <Info className="w-3.5 h-3.5 text-neon-blue shrink-0 mt-0.5" aria-hidden="true" />
+            <span>
+              Amostra pequena ({plural(N, "mercado", "mercados")}). Isto mostra a{" "}
+              <strong className="text-foreground/80">direção</strong>, não um veredito — a prova amadurece
+              conforme mais mercados liquidam pelo resultado oficial.
+            </span>
           </div>
         )}
 
-        {/* AS DUAS MEDIDAS — explicadas para qualquer pessoa */}
+        {/* AS DUAS MEDIDAS — mesma amostra, perguntas diferentes, ditas em voz alta */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {/* Medida 1 — Acertar a direção (nossa força) */}
           <div className="rounded-xl border border-positive/25 bg-positive/[0.04] p-4">
             <div className="flex items-center justify-between gap-2 mb-1.5">
-              <p className="text-[11px] uppercase tracking-wide text-positive font-semibold inline-flex items-center gap-1.5">
-                <Check className="w-3.5 h-3.5" /> Acertamos a direção
+              <p className="text-xs uppercase tracking-wide text-positive font-semibold inline-flex items-center gap-1.5">
+                <Check className="w-3.5 h-3.5" aria-hidden="true" /> Acertamos a direção
               </p>
-              <p className="text-2xl font-bold text-foreground tabular-nums">{dirRate !== null ? `${dirRate}%` : "—"}</p>
+              <p className="text-2xl font-bold text-foreground tabular-nums">{pct(tr.hitRate)}</p>
             </div>
-            <p className="text-[11px] text-muted-foreground leading-relaxed">
+            <p className="text-xs text-muted-foreground leading-relaxed">
               A IA sabe qual lado é o <strong className="text-foreground/80">mais provável</strong> — vai acontecer ou não?
-              Acerta {dirRate ?? "—"}%, {mktDirRate !== null ? `no mesmo nível do mercado (${mktDirRate}%)` : "no nível do mercado"}.
-              <span className="text-foreground/70"> É a parte “fácil”: quase nenhum mercado é 50/50, então saber o lado óbvio já acerta muito.</span>
+              {tr.marketHitRate !== null && <> O mercado acerta {pct(tr.marketHitRate)} nas mesmas perguntas.</>}
+              <span className="text-foreground/70"> É a parte fácil: quase nenhum mercado é 50/50, então saber o lado óbvio já acerta muito.</span>
             </p>
           </div>
-          {/* Medida 2 — Bater o mercado (o teste difícil, e honesto) */}
+
           <div className="rounded-xl border border-gold/30 bg-gold/[0.05] p-4">
             <div className="flex items-center justify-between gap-2 mb-1.5">
-              <p className="text-[11px] uppercase tracking-wide text-gold font-semibold inline-flex items-center gap-1.5">
-                <Target className="w-3.5 h-3.5" /> Batemos o mercado
+              <p className="text-xs uppercase tracking-wide text-gold font-semibold inline-flex items-center gap-1.5">
+                <Target className="w-3.5 h-3.5" aria-hidden="true" /> Batemos o mercado
               </p>
-              <p className="text-2xl font-bold text-foreground tabular-nums">{edgeRate !== null ? `${edgeRate}%` : "—"}</p>
+              <p className="text-2xl font-bold text-foreground tabular-nums">{pct(tr.edgeRate)}</p>
             </div>
-            <p className="text-[11px] text-muted-foreground leading-relaxed">
-              Quando a IA <strong className="text-foreground/80">discorda do preço</strong> e arrisca dizer que o mercado errou, ela acerta? Só {edgeRate ?? "—"}% ({edgeN} casos).
-              <span className="text-foreground/70"> É o teste mais difícil que existe — vencer a sabedoria da multidão. Aqui ainda perdemos, e mostramos mesmo assim.</span>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Quando a IA <strong className="text-foreground/80">discorda do preço</strong> e arrisca dizer que o mercado
+              errou, ela acerta? Em {plural(tr.edgeCount, "caso de divergência", "casos de divergência")}.
+              <span className="text-foreground/70"> É o teste mais difícil que existe — vencer a sabedoria da multidão.</span>
             </p>
           </div>
         </div>
 
-        {/* Resumo honesto + secundárias */}
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
-          <span><strong className="text-foreground tabular-nums">{N}</strong> mercados ({officialCount} oficial)</span>
-          <span className="text-border/50">·</span>
-          <span className="inline-flex items-center gap-1">Skill (calibração) vs mercado: <SkillBadge value={skill} /></span>
-          <span className="text-border/50">·</span>
-          <span className="italic">acompanhamos o mercado, mas ainda não o superamos — e não escondemos isso.</span>
+        {/* O denominador, escrito uma vez, valendo para os dois cards acima */}
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+          <span>
+            <strong className="text-foreground tabular-nums">{N}</strong> mercados resolvidos
+            {tr.settledCount > 0 && <>, {tr.settledCount} pelo resultado oficial</>}
+          </span>
+          <span className="text-border/50" aria-hidden="true">·</span>
+          <span className="inline-flex items-center gap-1">Calibração vs mercado: <SkillBadge value={tr.skillVsMarket} /></span>
         </div>
 
-        {/* Por tema */}
-        <div>
-          <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide mb-2">Por tema</p>
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs">
-              <thead>
-                <tr className="text-[10px] uppercase tracking-wide text-muted-foreground/70 text-left">
-                  <th className="py-1.5 pr-2 font-medium">Tema</th>
-                  <th className="py-1.5 px-2 font-medium text-right">Mercados</th>
-                  <th className="py-1.5 px-2 font-medium text-right">Acerto vs mercado</th>
-                  <th className="py-1.5 pl-2 font-medium text-right">Skill</th>
-                </tr>
-              </thead>
-              <tbody>
-                {cats.map(([cat, g]) => {
-                  const er = g.edgeN ? Math.round((g.edgeHits / g.edgeN) * 100) : null;
-                  const sk = g.n > 0 && g.mB > 0 ? 1 - (g.aiB / g.n) / (g.mB / g.n) : null;
-                  return (
-                    <tr key={cat} className="border-t border-border/10">
-                      <td className="py-1.5 pr-2 text-foreground">{cat}</td>
-                      <td className="py-1.5 px-2 text-right tabular-nums text-muted-foreground">{g.n}{g.official ? <span className="text-positive/70"> · {g.official} of.</span> : null}</td>
-                      <td className="py-1.5 px-2 text-right tabular-nums text-foreground">{er !== null ? `${er}%` : "—"}</td>
-                      <td className="py-1.5 pl-2 text-right tabular-nums"><SkillBadge value={sk} /></td>
+        {/* Por tema — a mesma régua de amostra do resto do site */}
+        {temas.length > 0 && (
+          <div>
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Por tema</p>
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="text-xs uppercase tracking-wide text-muted-foreground text-left">
+                    <th className="py-1.5 pr-2 font-medium">Tema</th>
+                    <th className="py-1.5 px-2 font-medium text-right">Mercados</th>
+                    <th className="py-1.5 px-2 font-medium text-right">Direção</th>
+                    <th className="py-1.5 pl-2 font-medium text-right">Ao divergir</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {temas.map((t) => (
+                    <tr key={t.tema} className="border-t border-border/10">
+                      <td className="py-1.5 pr-2 text-foreground">{nomeTema(t.tema)}</td>
+                      <td className="py-1.5 px-2 text-right tabular-nums text-muted-foreground">{t.n}</td>
+                      <td className="py-1.5 px-2 text-right tabular-nums text-foreground">{pct(t.acerto)}</td>
+                      <td className="py-1.5 pl-2 text-right tabular-nums text-foreground">{pct(t.acertoAoDivergir)}</td>
                     </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            {(cat.semAmostra?.length ?? 0) > 0 && (
+              <p className="text-xs text-muted-foreground leading-relaxed mt-2">
+                Ainda sem prova suficiente (menos de {minimo} casos):{" "}
+                {cat.semAmostra!.map((t) => `${nomeTema(t.tema)} (${t.n})`).join(", ")}.
+              </p>
+            )}
           </div>
-        </div>
+        )}
 
-        <p className="text-[10px] text-muted-foreground/60 leading-relaxed">
-          <strong className="text-foreground/70">Acerto vs mercado</strong> = das vezes em que a IA discordou do preço, quantas ela acertou o lado (o edge de verdade — mais honesto que "acertou vs 50%").{" "}
-          <strong className="text-foreground/70">Skill</strong> = quanto o Brier da IA é melhor (+) ou pior (−) que o do mercado. Cada mercado conta uma vez; nada de cherry-picking.
+        <p className="text-xs text-muted-foreground leading-relaxed">
+          <strong className="text-foreground/70">Direção</strong> = acertou o lado mais provável.{" "}
+          <strong className="text-foreground/70">Ao divergir</strong> = das vezes em que a IA discordou do
+          preço, quantas ela acertou — o teste que mede vantagem de verdade.{" "}
+          <strong className="text-foreground/70">Calibração</strong> = quanto o Brier da IA é melhor (+) ou
+          pior (−) que o do mercado. Cada mercado conta uma vez, e os dois números acima dividem pelo mesmo
+          conjunto de {N} resoluções.
         </p>
       </div>
     </AnimatedSection>

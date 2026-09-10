@@ -35,7 +35,10 @@ const VEREDITO: Record<Tendencia, string> = {
 };
 
 export function Evolucao() {
-  const [d, setD] = useState<{ available: boolean; meses?: Mes[]; tendencia?: Tendencia; minAmostra?: number } | null>(null);
+  const [d, setD] = useState<{
+    available: boolean; meses?: Mes[]; tendencia?: Tendencia; minAmostra?: number;
+    resolvidas?: number; semData?: number;
+  } | null>(null);
 
   useEffect(() => {
     let vivo = true;
@@ -84,7 +87,15 @@ export function Evolucao() {
       <p className="text-[10px] text-muted-foreground/60 leading-relaxed mt-3">
         A faixa clara é a margem de erro do mês; o traço é a taxa de acerto. Quando as faixas de dois
         meses se sobrepõem, a diferença entre eles pode ser só sorte da amostra. Meses com menos de{" "}
-        {d.minAmostra} casos ficam de fora.
+        {d.minAmostra} casos ficam de fora — a mesma régua do resto da página.
+        {/* Este bloco precisa de QUANDO cada previsão resolveu, e algumas não têm
+            a data gravada. Antes essa diferença ficava escondida na consulta e
+            aparecia como um total menor que o dos blocos vizinhos, sem
+            explicação — era um dos cinco números divergentes da auditoria. */}
+        {(d.semData ?? 0) > 0 && (
+          <> Das {d.resolvidas} resolvidas, {d.semData} não têm data de resolução gravada e não
+          entram nesta linha do tempo.</>
+        )}
       </p>
     </div>
   );

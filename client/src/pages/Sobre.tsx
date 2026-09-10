@@ -20,7 +20,7 @@ const OFFERINGS = [
   { icon: Calculator,    title: "Calculadoras EV, Kelly, Brier", desc: "Ferramentas interativas para Valor Esperado, Overround, Brier Score e Kelly — os fundamentos que 99% dos apostadores nunca calcularam." },
   { icon: Activity,      title: "Simuladores Monte Carlo",      desc: "Lei dos Grandes Números, Kelly Criterion e calibração interativa. Simulações de até 1.000 rodadas com visualização em tempo real." },
   { icon: Brain,         title: "IA Adaptativa por Domínio",    desc: "Previsão Guiada detecta o nível do usuário (leigo / intermediário / avançado) e aplica o modelo econométrico correto para cada pergunta." },
-  { icon: GitMerge,      title: "Cerebro — Base Proprietária",  desc: "Base de conhecimento curada: coleta notícias por RSS e gera sínteses por IA — o motor de contexto que alimenta todas as análises. (Contagem real na seção de métricas.)" },
+  { icon: GitMerge,      title: "Cérebro — Base Proprietária",  desc: "Base de conhecimento curada: coleta notícias por RSS e gera sínteses por IA — o motor de contexto que alimenta todas as análises. (Contagem real na seção de métricas.)" },
 ];
 
 const PRINCIPLES = [
@@ -44,7 +44,7 @@ const MARKET_FACTS = [
 ];
 
 const ROADMAP = [
-  { phase: "MVP — concluído",      status: "done",    items: ["Mercados ao vivo (Polymarket + Kalshi)", "IA adaptativa por domínio e nível", "5 níveis educacionais com calculadoras", "Cerebro (base curada por RSS + IA)", "Dashboard de calibração pessoal", "Sync de previsões em nuvem (Supabase)", "Rankings de calibração públicos", "Comunidade de forecasters (duelos)"] },
+  { phase: "MVP — concluído",      status: "done",    items: ["Mercados ao vivo (Polymarket + Kalshi)", "IA adaptativa por domínio e nível", "5 níveis educacionais com calculadoras", "Cérebro (base curada por RSS + IA)", "Dashboard de calibração pessoal", "Sync de previsões em nuvem (Supabase)", "Rankings de calibração públicos", "Comunidade de forecasters (duelos)"] },
   { phase: "Q3 2026 — em andamento", status: "active",  items: ["Integração Stripe (plano premium)", "Mobile app (PWA avançado)"] },
   { phase: "Q4 2026 — planejado",  status: "planned", items: ["API para desenvolvedores", "Integração B3 Mercados Preditivos"] },
 ];
@@ -65,7 +65,7 @@ export default function Sobre() {
   }, []);
 
   const metrics = [
-    { value: articleCount != null ? articleCount.toLocaleString("pt-BR") : "…", label: "artigos na base Cerebro",          sub: "atualizado diariamente via RSS" },
+    { value: articleCount != null ? articleCount.toLocaleString("pt-BR") : "…", label: "artigos na base Cérebro",          sub: "atualizado diariamente via RSS" },
     { value: analysisCount != null ? String(analysisCount) : "…",               label: "sínteses IA ativas",                sub: "domínios: macro, política, esportes, cripto" },
     ...STATIC_METRICS,
   ];

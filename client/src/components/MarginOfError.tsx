@@ -11,6 +11,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "wouter";
 import { Scale, ArrowRight } from "lucide-react";
+import { pct } from "@shared/formato";
 
 interface TrackRecord {
   available?: boolean;
@@ -22,6 +23,7 @@ interface TrackRecord {
    *  amostra (intervalo de Wilson). Diferente da taxa de erro. */
   hitRateIntervalo?: { baixo: number; alto: number; margemPp: number } | null;
   comparacaoMercado?: { veredito: "empate" | "melhor" | "pior"; explicacao: string } | null;
+  minAmostra?: number;
 }
 
 export default function MarginOfError() {
@@ -37,7 +39,8 @@ export default function MarginOfError() {
     return () => { alive = false; };
   }, []);
 
-  const enough = !!data && data.available !== false && data.hitRate !== null && data.resolvedCount >= 20;
+  const minimo = data?.minAmostra ?? 20;
+  const enough = !!data && data.available !== false && data.hitRate !== null && data.resolvedCount >= minimo;
 
   // Sem amostra estável (ou indisponível): postura honesta, sem número inventado.
   if (failed || (data && !enough)) {
@@ -74,29 +77,34 @@ export default function MarginOfError() {
       <div className="flex-1 min-w-0">
         <p className="text-xs sm:text-[13px] text-muted-foreground leading-relaxed">
           <strong className="text-foreground">Não somos perfeitos — e mostramos isso.</strong>{" "}
-          Nossa IA acerta a direção <strong className="text-foreground">~{hit}%</strong> das vezes (logo,{" "}
-          <strong className="text-negative">erra ~{err}%</strong>), em {data!.resolvedCount} previsões já resolvidas.
+          Nossa IA acerta a direção <strong className="text-foreground">~{pct(hit)}</strong> das vezes (logo,{" "}
+          <strong className="text-negative">erra ~{pct(err)}</strong>), em {data!.resolvedCount} previsões já resolvidas.
         </p>
 
         {/* A margem de erro PROPRIAMENTE DITA. Antes o selo chamava de "margem de
             erro" os {err}% que sobram do acerto — mas aquilo é a TAXA DE ERRO. A
             margem responde outra coisa: quanto esse número pode variar só por sorte
             da amostra. É o que diz se 79% é sólido ou acaso de poucas resoluções. */}
+        {/* O intervalo é de WILSON, e Wilson é ASSIMÉTRICO: perto dos extremos ele
+            sobra mais de um lado que do outro. Anunciar "±2,5 pontos (entre 77% e
+            82,1%)" contradizia o próprio número ao lado — 80 ± 2,5 daria 77,5 a
+            82,5. Mostramos o intervalo de verdade e dizemos de onde ele vem. */}
         {margem && (
-          <p className="text-[11px] text-muted-foreground/80 leading-relaxed mt-1.5">
-            <strong className="text-foreground/90">Margem de erro:</strong> ±{margem.margemPp} pontos
-            (entre {margem.baixo}% e {margem.alto}%). Quanto mais previsões acumulamos, mais estreita ela fica.
+          <p className="text-xs text-muted-foreground leading-relaxed mt-1.5">
+            <strong className="text-foreground/90">Margem de erro:</strong> o valor real está entre{" "}
+            {pct(margem.baixo, 1)} e {pct(margem.alto, 1)}, com 95% de confiança (intervalo de Wilson).
+            Quanto mais previsões acumulamos, mais estreito ele fica.
           </p>
         )}
 
         {/* Empate é uma AFIRMAÇÃO, não uma desculpa: quando a diferença é menor que
             a margem, dizer "perdemos por 0,4%" seria ler ruído como resultado. */}
-        <p className="text-[11px] text-muted-foreground/80 leading-relaxed mt-1">
+        <p className="text-xs text-muted-foreground leading-relaxed mt-1">
           {comparacao ? comparacao.explicacao : <>Na calibração fina, {vsMarket}.</>}
         </p>
         <Link href="/track-record">
-          <span className="inline-flex items-center gap-1 text-[11px] text-gold hover:underline mt-1 cursor-pointer">
-            Ver track record auditável <ArrowRight className="w-3 h-3" />
+          <span className="inline-flex items-center gap-1 text-xs text-gold hover:underline mt-1 cursor-pointer">
+            Ver track record auditável <ArrowRight className="w-3 h-3" aria-hidden="true" />
           </span>
         </Link>
       </div>

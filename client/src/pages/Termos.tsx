@@ -95,7 +95,7 @@ export default function Termos() {
             </Section>
 
             <Section n="7" title="Propriedade intelectual">
-              <p>A plataforma, a marca JLB Analytics, os modelos proprietários, a base de conhecimento Cerebro e o código são protegidos por direitos de propriedade intelectual. Dados de mercado são de seus respectivos provedores (Polymarket, Kalshi, BCB, entre outros).</p>
+              <p>A plataforma, a marca JLB Analytics, os modelos proprietários, a base de conhecimento Cérebro e o código são protegidos por direitos de propriedade intelectual. Dados de mercado são de seus respectivos provedores (Polymarket, Kalshi, BCB, entre outros).</p>
             </Section>
 
             <Section n="8" title="Dados de terceiros e disponibilidade">

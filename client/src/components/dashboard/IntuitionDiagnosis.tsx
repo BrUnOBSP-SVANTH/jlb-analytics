@@ -41,7 +41,7 @@ export function IntuitionDiagnosis({ preds }: { preds: StoredPrediction[] }) {
           <p className="text-sm font-semibold text-foreground">Diagnóstico da sua intuição</p>
         </div>
         <p className="text-xs text-muted-foreground">
-          Registre e resolva <strong className="text-foreground">{faltam}</strong> previsão{faltam === 1 ? "" : "ões"} a mais para desbloquear seu diagnóstico —
+          Registre e resolva <strong className="text-foreground">{faltam}</strong> {faltam === 1 ? "previsão" : "previsões"} a mais para desbloquear seu diagnóstico —
           quão calibrado você é e se o seu instinto bate o mercado.
         </p>
       </div>

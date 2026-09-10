@@ -5,6 +5,8 @@
 import { useState, useEffect } from "react";
 import AnimatedSection from "@/components/AnimatedSection";
 import { BarChart2, CheckCircle, Scale } from "lucide-react";
+import { pct, num } from "@shared/formato";
+import { BRIER_SUPERFORECASTER, FONTE_SUPERFORECASTER } from "@shared/referencias";
 import { SF_STEPS } from "@/components/previsao/ResultCards";
 
 export function SuperforecasterGuide() {
@@ -32,9 +34,10 @@ export function SuperforecasterGuide() {
         {open && (
           <div className="px-5 pb-5 space-y-3 border-t border-border/20">
             <p className="text-xs text-muted-foreground mt-4">
-              Superforecasters do GJP têm Brier Score médio de <strong className="text-foreground">0.10</strong> —
-              superando inteligência da CIA e modelos de banco de investimento.
-              A nossa IA aplica exatamente este protocolo em cada análise.
+              Superforecasters do {FONTE_SUPERFORECASTER} sustentam Brier Score em torno de{" "}
+              <strong className="text-foreground">{BRIER_SUPERFORECASTER.toFixed(2)}</strong> — melhor que
+              analistas de inteligência com acesso a material sigiloso. A nossa IA aplica esse mesmo
+              protocolo em cada análise.
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
               {SF_STEPS.map((s) => (
@@ -77,6 +80,10 @@ interface TrackRecordData {
   marketHitRate: number | null;    // idem para o mercado (baseline)
   directionalCount: number;
   settledCount: number;            // quantas resolvidas pelo resultado oficial
+  edgeRate: number | null;         // acerto QUANDO divergimos do preço
+  edgeCount: number;
+  minAmostra: number;              // a régua de amostra do site inteiro
+  openCount: number;
 }
 
 export function AiTrackRecord() {
@@ -92,9 +99,11 @@ export function AiTrackRecord() {
   if (!data) return null;
 
   // Histórico ainda em construção — estado honesto e substantivo (a máquina já
-  // roda). Corte em 20 resolvidas: abaixo disso o Brier é ruído estatístico,
-  // não evidência — exibir números com n pequeno mina a credibilidade.
-  if (data.resolvedCount < 20) {
+  // roda). O corte é a régua única do site (MIN_AMOSTRA, servida pelo endpoint):
+  // abaixo disso o Brier é ruído estatístico, não evidência. Tê-la escrita à mão
+  // aqui foi como o site acabou com quatro mínimos diferentes na mesma tela.
+  const minimo = data.minAmostra ?? 20;
+  if (data.resolvedCount < minimo) {
     return (
       <AnimatedSection>
         <div className="panel p-5">
@@ -112,7 +121,7 @@ export function AiTrackRecord() {
               Cada previsão da IA é registrada com data e <span className="text-foreground">fair value</span>, e
               comparada ao mercado <span className="text-foreground">quando ele resolve</span> — sem cherry-picking.
               O <span className="text-foreground">Brier Score</span> (calibração real, IA vs. mercado) aparece aqui
-              quando houver 20+ previsões resolvidas ({data.resolvedCount}/20) — antes disso é ruído, não evidência.
+              quando houver {minimo}+ previsões resolvidas ({data.resolvedCount}/{minimo}) — antes disso é ruído, não evidência.
             </p>
           </div>
         </div>
@@ -161,20 +170,26 @@ export function AiTrackRecord() {
             <p className="text-2xl font-mono font-bold text-muted-foreground">{data.marketBrier?.toFixed(3)}</p>
             <p className="text-[10px] text-muted-foreground mt-0.5">Brier do mercado</p>
           </div>
+          {/* O rótulo era "Bateu o mercado" — as MESMAS palavras que a tela de
+              análise usa para outra medida (acerto ao divergir). Na auditoria os
+              dois números apareciam como 12% e 43% na mesma página, e a leitura
+              natural é que um dos dois é maquiagem. Agora cada um diz o que mede. */}
           <div className="text-center">
             <p className={`text-2xl font-mono font-bold ${beatMarket ? "text-positive" : "text-muted-foreground"}`}>
-              {data.beatMarketPct}%
+              {pct(data.beatMarketPct)}
             </p>
-            <p className="text-[10px] text-muted-foreground mt-0.5">Bateu o mercado</p>
+            <p className="text-[10px] text-muted-foreground mt-0.5">Melhor calibrada<br />que o mercado</p>
           </div>
           <div className="text-center">
-            <p className="text-2xl font-mono font-bold text-foreground">±{data.avgAbsEdge}pp</p>
-            <p className="text-[10px] text-muted-foreground mt-0.5">Edge médio</p>
+            <p className="text-2xl font-mono font-bold text-foreground">{num(data.avgAbsEdge, 1)} pp</p>
+            <p className="text-[10px] text-muted-foreground mt-0.5">Distância média<br />do preço</p>
           </div>
         </div>
-        <p className="text-[10px] text-muted-foreground/60 mt-3 text-center">
-          Taxa de acerto = direção certa (SIM/NÃO). Brier = calibração fina (menor = melhor).
-          Tudo comparado ao resultado real da plataforma quando o mercado resolve — sem cherry-picking.
+        <p className="text-xs text-muted-foreground mt-3 text-center leading-relaxed">
+          Taxa de acerto = direção certa (SIM/NÃO). Brier = calibração fina (menor é melhor).
+          <strong className="text-foreground/70"> Melhor calibrada que o mercado</strong> = em quantos
+          mercados nosso Brier foi menor que o dele. Todos os números desta página dividem pelas mesmas{" "}
+          {data.resolvedCount} resoluções, e cada uma é comparada ao resultado real da plataforma.
         </p>
       </div>
     </AnimatedSection>

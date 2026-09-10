@@ -18,26 +18,41 @@ interface ProviderRow {
   hitRate: number | null;
   skillVsMarket: number | null;
   settledCount: number;
+  amostraSuficiente: boolean;
 }
 
+/**
+ * O nome que o usuário lê vem primeiro; o técnico fica entre parênteses (TRK-07).
+ *
+ * A auditoria apontou que "Gemini (fallback)" é vocabulário de engenharia vazando
+ * para a interface — quem visita não sabe o que é fallback, e o rótulo não diz o
+ * que importa (que aquele é o modelo de contingência). Tirar o nome técnico
+ * também não serve: ele é o que torna a tabela auditável, que é a tese da página.
+ * Então: função primeiro, marca depois.
+ */
 const LABEL: Record<string, string> = {
-  anthropic: "Claude (Anthropic)",
-  gemini: "Gemini (fallback)",
-  groq: "Groq (3º nível)",
-  desconhecido: "Sem registro (legado)",
+  anthropic: "Modelo principal (Claude)",
+  gemini: "Contingência (Gemini)",
+  groq: "Terceira opção (Groq)",
+  desconhecido: "Antes do registro por modelo",
 };
-
-/** Amostra mínima para o número de um provedor significar algo — mesmo critério do site. */
-const STABLE_N = 20;
 
 export function ProviderBreakdown() {
   const [rows, setRows] = useState<ProviderRow[] | null>(null);
+  // A régua de amostra vem do servidor: é a mesma de todo o site (MIN_AMOSTRA).
+  // Ter uma constante local aqui foi como o site acabou com quatro mínimos
+  // diferentes na mesma tela.
+  const [minimo, setMinimo] = useState(20);
 
   useEffect(() => {
     let alive = true;
     fetch("/api/ai/track-record")
-      .then((r) => r.ok ? r.json() as Promise<{ byProvider?: ProviderRow[] }> : null)
-      .then((d) => { if (alive && d?.byProvider) setRows(d.byProvider); })
+      .then((r) => r.ok ? r.json() as Promise<{ byProvider?: ProviderRow[]; minAmostra?: number }> : null)
+      .then((d) => {
+        if (!alive || !d?.byProvider) return;
+        setRows(d.byProvider);
+        if (d.minAmostra) setMinimo(d.minAmostra);
+      })
       .catch(() => {});
     return () => { alive = false; };
   }, []);
@@ -69,15 +84,15 @@ export function ProviderBreakdown() {
           </thead>
           <tbody>
             {rows.map((r) => {
-              const thin = r.resolvedCount < STABLE_N;
+              const thin = !r.amostraSuficiente;
               const beats = r.skillVsMarket !== null && r.skillVsMarket > 0;
               return (
                 <tr key={r.provider} className="border-b border-border/10 last:border-0">
                   <td className="py-2 pr-2 text-foreground">
                     {LABEL[r.provider] ?? r.provider}
-                    {thin && (
-                      <span className="ml-1.5 text-[10px] text-muted-foreground/60">amostra pequena</span>
-                    )}
+                    {/* Separador de verdade: sem o espaço a linha saía como
+                        "Groq (3º nível)amostra pequena" ao ser lida como texto. */}
+                    {thin && <> <span className="text-xs text-muted-foreground">· amostra pequena</span></>}
                   </td>
                   <td className="py-2 px-2 text-right font-mono text-foreground/80 tabular-nums">{r.resolvedCount}</td>
                   <td className="py-2 px-2 text-right font-mono text-foreground/80 tabular-nums">
@@ -100,10 +115,23 @@ export function ProviderBreakdown() {
         </table>
       </div>
 
-      <p className="text-[10px] text-muted-foreground/60 mt-3 leading-relaxed">
+      {/* A contradição que a auditoria apontou (TRK-05): se TODOS os provedores
+          aparecem piores que o mercado nesta tabela, a manchete não pode dizer
+          "empatamos ou superamos" sem explicar que são medidas diferentes. */}
+      {rows.every((r) => r.skillVsMarket !== null && r.skillVsMarket <= 0) && (
+        <p className="text-xs text-muted-foreground leading-relaxed mt-3 rounded-lg border border-border/25 bg-secondary/15 p-2.5">
+          Repare que aqui <strong className="text-foreground/80">nenhum modelo bate o mercado na
+          calibração</strong> — e a manchete da página fala em empate. Não é contradição: a manchete
+          mede se acertamos o <em>lado</em>, e esta tabela mede o quanto a probabilidade chegou perto
+          do resultado. Acertar o lado é fácil; chegar perto do número é o teste difícil, e nele ainda
+          perdemos. Preferimos deixar as duas leituras à vista.
+        </p>
+      )}
+
+      <p className="text-xs text-muted-foreground mt-3 leading-relaxed">
         <strong className="text-foreground/70">vs mercado</strong> = quanto o Brier do provedor é melhor
-        (+) ou pior (−) que o do próprio mercado no mesmo conjunto. Abaixo de {STABLE_N} resolvidas
-        tratamos como ruído, não evidência. As fatias usam a mesma regra de contagem da manchete
+        (+) ou pior (−) que o do próprio mercado no mesmo conjunto. Abaixo de {minimo} resolvidas
+        tratamos como ruído, não evidência. As fatias saem da mesma leitura da manchete
         (1 previsão por mercado), então elas somam exatamente o total.
       </p>
     </div>

@@ -241,8 +241,8 @@ export default function Leaderboard() {
               <Trophy className="w-12 h-12 text-muted-foreground/20 mx-auto" />
               <p className="text-foreground font-semibold">Nenhum forecaster no ranking ainda</p>
               <p className="text-sm text-muted-foreground max-w-sm mx-auto">
-                Para aparecer aqui, ative o perfil público em <strong>Configurações do Perfil</strong>
-                e resolva pelo menos 1 previsão.
+                Para aparecer aqui, ative o perfil público em <strong>Configurações do Perfil</strong>{" "}
+                e resolva pelo menos uma previsão.
               </p>
               <Link href="/perfil">
                 <span className="inline-flex items-center gap-2 mt-2 px-5 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity">

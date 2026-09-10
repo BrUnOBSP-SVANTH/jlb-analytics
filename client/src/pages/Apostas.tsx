@@ -667,8 +667,8 @@ export default function Apostas() {
           <AnimatedSection>
             <div className={`mt-6 p-3 rounded-xl border border-border/15 bg-obsidian/20 ${compareMap.size > 0 ? "mb-44" : ""}`}>
               <p className="text-[11px] text-muted-foreground/60 text-center leading-relaxed">
-                Caráter educacional e informativo. Nenhum conteúdo constitui recomendação de aposta ou investimento.
-                Apostar envolve risco de perda. Jogue com responsabilidade.
+                Caráter educacional e informativo. Nada aqui é recomendação de posição ou investimento.
+                Prever é errar parte das vezes — é para isso que a plataforma mede e publica os próprios erros.
               </p>
             </div>
           </AnimatedSection>
