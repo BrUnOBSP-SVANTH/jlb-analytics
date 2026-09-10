@@ -69,6 +69,46 @@ export function desambiguarPorPai<T>(
 }
 
 /**
+ * REDE DE SEGURANÇA: nenhum card pode compartilhar título com outro.
+ *
+ * `desambiguarPorPai` resolve o caso "mesmo título, pais DIFERENTES". Este
+ * resolve o oposto, que ele não cobre: mesmo título e MESMO pai — dois desfechos
+ * do mesmo evento. Flagrado em 09/09: "Fear & Greed Index on Oct 2, 2026?"
+ * aparecia duas vezes, uma para "Greed" (23,5%) e outra para "Fear" (34%), sem
+ * nada na tela que dissesse qual era qual. O usuário vê dois cards idênticos com
+ * números diferentes e conclui, com razão, que o site está quebrado.
+ *
+ * A desambiguação já existia nos dois caminhos que montam o catálogo do Kalshi,
+ * e ainda assim escapou: cada caminho só enxerga os irmãos da SUA busca, e estes
+ * dois vieram por caminhos distintos. Por isso a rede fica AQUI, onde a lista
+ * final existe — o invariante é sobre a lista inteira, então tem que ser
+ * verificado sobre a lista inteira.
+ *
+ * Sem rótulo disponível, deixa como está: acrescentar um código feio ao título
+ * seria trocar um problema por outro, e o duplicado sem rótulo é raro.
+ */
+export function desambiguarTitulosIguais<T>(
+  itens: T[],
+  ler: { titulo: (x: T) => string; rotulo: (x: T) => string | undefined },
+  aplicar: (x: T, novoTitulo: string) => T,
+): T[] {
+  const vezes = new Map<string, number>();
+  for (const x of itens) {
+    const t = ler.titulo(x);
+    vezes.set(t, (vezes.get(t) ?? 0) + 1);
+  }
+  return itens.map((x) => {
+    const t = ler.titulo(x);
+    if ((vezes.get(t) ?? 1) <= 1) return x;
+    const rot = ler.rotulo(x);
+    if (!rot) return x;
+    // Já contém o rótulo? Repetir viraria "Fear & Greed — Fear — Fear".
+    if (t.toLowerCase().includes(rot.toLowerCase())) return x;
+    return aplicar(x, `${t} — ${rot}`);
+  });
+}
+
+/**
  * `limit` da requisição, com padrão e teto.
  *
  * ⚠️ O corte tem que acontecer na RESPOSTA, nunca dentro do cache: a chave não

@@ -1,5 +1,8 @@
 import { describe, it, expect } from "vitest";
 import { dedupPorMercado, vereditoCalibracao, vereditoBold } from "./calibrationData.ts";
+import { readFileSync } from "node:fs";
+import { join, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
 
 const f = (market_id: string, forecast_date: string, created_at: string, marca = "") =>
   ({ market_id, forecast_date, created_at, marca });
@@ -81,5 +84,32 @@ describe("vereditoBold — divergir do mercado paga?", () => {
 
   it("divergir e piorar não vira meia-vitória", () => {
     expect(vereditoBold(50, 20, 0.30, 0.20, 0.18)).toContain("PIOROU");
+  });
+});
+
+describe("a lista do comparador usa a MESMA dedup das estatísticas", () => {
+  const fonte = readFileSync(
+    join(dirname(fileURLToPath(import.meta.url)), "..", "routes", "ai.ts"), "utf-8");
+
+  it("o endpoint /resolved deduplica por mercado", () => {
+    // Bug real (09/09): a lista trazia o mesmo mercado duas vezes com
+    // probabilidades DIFERENTES ("Apple Surprise" com 32% e 40%). A chave do
+    // React colidia — e, pior, o contador "X/Y acertos recentes" pesava o mesmo
+    // mercado duas vezes, numa tela cujo propósito é medição honesta.
+    const bloco = fonte.slice(fonte.indexOf('router.get("/resolved"'), fonte.indexOf('router.get("/resolved"') + 3000);
+    expect(bloco).toMatch(/dedupPorMercado\(rows\)/);
+  });
+
+  it("busca com FOLGA, porque deduplicar remove linhas", () => {
+    // Pedindo só `limit`, a lista voltaria menor que o pedido sempre que
+    // houvesse repetição — e a tela mostraria menos itens sem explicação.
+    const bloco = fonte.slice(fonte.indexOf('router.get("/resolved"'), fonte.indexOf('router.get("/resolved"') + 3000);
+    expect(bloco).toMatch(/limit \* 3/);
+  });
+
+  it("a chave do cache mudou junto com a regra", () => {
+    // Sem trocar, o cache antigo continuaria servindo a lista com repetição e
+    // ninguém veria a correção acontecer.
+    expect(fonte).toMatch(/ai-resolved-v2-/);
   });
 });

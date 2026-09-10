@@ -68,6 +68,10 @@ export interface KalshiMarket {
   closeTime?: string; category?: string; status?: string;
   externalUrl?: string; // URL canônica /markets/{series}/{event} computada no servidor
   outcomes?: { label: string; prob: number }[]; // multi-resultado agrupado (mutually_exclusive)
+  /** Rótulo do desfecho ("Greed", "Fear", "10 or more"), vindo de `yes_sub_title`.
+   *  Viaja até a lista final para desambiguar dois cards de mesmo título — ver
+   *  `desambiguarTitulosIguais`. Interno: a tela não o exibe sozinho. */
+  rotuloDesfecho?: string;
 }
 
 // ── Normalised quote (market data) ────────────────────────────────────────────

@@ -4,7 +4,7 @@ import { fetchWithRetry } from "../lib/fetcher.ts";
 import { kalshiMarketUrl, kalshiYesProb, kalshiTemPrecoReal } from "../lib/marketNormalize.ts";
 import type { KalshiEventsResponse, KalshiMarket, KalshiEvent, KalshiNestedMarket } from "../lib/types.ts";
 import { log } from "../lib/log.ts";
-import { comOrcamento, porVolume, desambiguarPorPai, limitePedido } from "../lib/marketCatalog.ts";
+import { comOrcamento, porVolume, desambiguarPorPai, desambiguarTitulosIguais, limitePedido } from "../lib/marketCatalog.ts";
 
 const router = Router();
 
@@ -45,6 +45,9 @@ const DIAS_CURTO_PRAZO = 30;
  *  dentro do curto prazo a diferença de volume é grande do mesmo jeito. */
 const COTA_ATE_7_DIAS = 20;
 
+/** O rótulo do desfecho ("Greed", "Fear", "10 or more") viaja junto com o
+ *  mercado até a lista final: é o que permite desambiguar dois cards de mesmo
+ *  título no último passo, quando já não se sabe por qual caminho eles vieram. */
 interface KalshiMercadoPlano {
   ticker?: string; event_ticker?: string; title?: string; yes_sub_title?: string;
   yes_bid_dollars?: string; yes_ask_dollars?: string; last_price_dollars?: string;
@@ -218,6 +221,7 @@ router.get("/markets", async (req, res) => {
           // mas verdadeiro. Nunca inventar o nome que falta. E `tituloDistinto`
           // ainda acrescenta o rótulo da faixa quando o evento tem irmãos.
           title: tituloDistinto(m, ev, irmaos),
+          rotuloDesfecho: tituloLimpo(m.yes_sub_title),
           yesProb: kalshiYesProb(m.yes_bid_dollars, m.yes_ask_dollars, m.last_price_dollars),
           prevYesProb: m.previous_price_dollars
             ? parseFloat((parseFloat(m.previous_price_dollars) * 100).toFixed(1))
@@ -311,6 +315,7 @@ router.get("/markets", async (req, res) => {
               if (irmaos < 2 || !rotulo) return base;
               return base.toLowerCase().includes(rotulo.toLowerCase()) ? base : `${base} — ${rotulo}`;
             })(),
+            rotuloDesfecho: tituloLimpo(m.yes_sub_title),
             yesProb: kalshiYesProb(m.yes_bid_dollars, m.yes_ask_dollars, m.last_price_dollars),
             prevYesProb: m.previous_price_dollars
               ? parseFloat((parseFloat(m.previous_price_dollars) * 100).toFixed(1))
@@ -337,9 +342,19 @@ router.get("/markets", async (req, res) => {
       // ADIVINHAR a partir do ticker, e inventar dado é o que este projeto não faz.
       // Então marcamos com a série — feio, mas verdadeiro e clicável — em vez de
       // exibir dois cards idênticos, que parecem defeito e não deixam escolher.
-      return desambiguarPorPai(
+      const porPai = desambiguarPorPai(
         juntos,
         { titulo: (m) => m.title, pai: (m) => m.eventTicker, sufixo: (m) => m.seriesTicker },
+        (m, titulo) => ({ ...m, title: titulo }),
+      );
+      // Rede de segurança: título ainda repetido depois de tudo — dois desfechos
+      // do MESMO evento, que a desambiguação por pai não cobre e que os dois
+      // caminhos de montagem não enxergam (cada um só vê os irmãos da sua busca).
+      // Aqui a lista final existe inteira, que é onde o invariante pode ser
+      // realmente garantido.
+      return desambiguarTitulosIguais(
+        porPai,
+        { titulo: (m) => m.title, rotulo: (m) => m.rotuloDesfecho },
         (m, titulo) => ({ ...m, title: titulo }),
       );
     });

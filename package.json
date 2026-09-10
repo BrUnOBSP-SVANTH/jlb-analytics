@@ -22,6 +22,7 @@
     "cerebro:limpeza": "node scripts/cerebro-limpeza.mjs",
     "cobertura": "node --env-file=.env --experimental-transform-types scripts/cobertura-analise.mjs",
     "qualidade": "node --env-file=.env --experimental-transform-types scripts/qualidade-analise.mjs",
+    "varredura": "node scripts/varredura-telas.mjs",
     "calibration:fit": "node scripts/calibration-fit.mjs",
     "sports:forecast": "node scripts/sports-forecast.mjs",
     "format": "prettier --write .",
@@ -130,7 +131,8 @@
   "pnpm": {
     "overrides": {
       "tailwindcss>nanoid": "3.3.7",
-      "body-parser": ">=1.20.6"
+      "body-parser": ">=1.20.6",
+      "qs": ">=6.16.0"
     }
   }
 }

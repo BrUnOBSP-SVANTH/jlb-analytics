@@ -632,12 +632,19 @@ router.get("/track-record", async (_req, res) => {
 router.get("/resolved", async (req, res) => {
   if (!SUPABASE_URL || !SUPABASE_KEY) return res.json({ available: false, items: [] });
   const limit = Math.min(Math.max(parseInt(String(req.query.limit ?? "12"), 10) || 12, 1), 50);
-  const cacheKey = `ai-resolved-${limit}`;
+  // v2 na chave: a saída mudou (deduplicada). Sem trocar, o cache antigo
+  // continuaria servindo a lista com o mercado repetido.
+  const cacheKey = `ai-resolved-v2-${limit}`;
   const cached = getCache<object>(cacheKey);
   if (cached) { res.locals.aiCacheHit = true; return res.json({ ...cached, cached: true }); }
-  const BASE = "market_id,source,title,category,ai_fair_value,market_prob,outcome,resolved_at";
+  // `forecast_date` e `created_at` entram no select porque são o CRITÉRIO da
+  // deduplicação (ver dedupPorMercado): a previsão que vale é a mais antiga.
+  const BASE = "market_id,source,title,category,ai_fair_value,market_prob,outcome,resolved_at,forecast_date,created_at";
+  // Busca com folga (3×) porque a deduplicação REMOVE linhas: pedindo só `limit`
+  // a lista voltaria menor que o pedido sempre que houvesse repetição.
+  const bruto = Math.min(limit * 3, 150);
   const fetchRows = (withSource: boolean) => fetch(
-    `${SUPABASE_URL}/rest/v1/ai_forecasts?resolved=eq.true&select=${withSource ? `${BASE},resolution_source` : BASE}&order=resolved_at.desc&limit=${limit}`,
+    `${SUPABASE_URL}/rest/v1/ai_forecasts?resolved=eq.true&select=${withSource ? `${BASE},resolution_source` : BASE}&order=resolved_at.desc&limit=${bruto}`,
     { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }, signal: AbortSignal.timeout(8_000) },
   );
   try {
@@ -650,8 +657,27 @@ router.get("/resolved", async (req, res) => {
       market_id: string; source: string; title: string; category: string | null;
       ai_fair_value: number | string; market_prob: number | string;
       outcome: boolean; resolution_source?: string | null; resolved_at: string | null;
+      forecast_date: string; created_at: string;
     }>;
-    const items = rows.map((row) => {
+
+    // UMA PREVISÃO POR MERCADO, e pela MESMA regra das estatísticas.
+    //
+    // O bug que isto conserta: a lista trazia o mesmo mercado duas vezes, com
+    // probabilidades DIFERENTES ("Apple Surprise" com 32% e 40%). Duas
+    // consequências, e a segunda é a grave:
+    //   · a chave do React colidia, e o React pode reaproveitar o componente
+    //     errado — mostrando o dado de uma linha em outra;
+    //   · o contador "X/Y acertos recentes" pesava o mesmo mercado duas vezes,
+    //     numa tela cujo propósito é medição honesta.
+    //
+    // Usar `dedupPorMercado` (e não um dedup próprio) é o ponto: se a lista
+    // seguisse uma regra e a estatística outra, a tela mostraria uma lista que
+    // não bate com o próprio número em cima dela.
+    const unicos = dedupPorMercado(rows)
+      .sort((a, b) => String(b.resolved_at ?? "").localeCompare(String(a.resolved_at ?? "")))
+      .slice(0, limit);
+
+    const items = unicos.map((row) => {
       const aiProb = Math.round(Number(row.ai_fair_value));
       const marketProb = Math.round(Number(row.market_prob));
       const outcome = row.outcome === true;
