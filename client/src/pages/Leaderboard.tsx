@@ -4,6 +4,9 @@
  * Mostra os forecasters com melhor Brier Score que optaram por perfil público.
  */
 import { useState, useEffect } from "react";
+import { BRIER_SUPERFORECASTER, BRIER_DO_CHUTE, FONTE_SUPERFORECASTER } from "@shared/referencias";
+import { num } from "@shared/formato";
+import { buscarJson } from "@/lib/api";
 import { Link } from "wouter";
 import PageHeader from "@/components/PageHeader";
 import AnimatedSection from "@/components/AnimatedSection";
@@ -126,6 +129,29 @@ export default function Leaderboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<"all" | "premium">("all");
+  /**
+   * As réguas contra as quais o usuário compete (LDR-03).
+   *
+   * Duas vêm MEDIDAS do nosso próprio track record; duas são constantes de
+   * `shared/referencias.ts`, com fonte. Nenhuma é inventada — se o track record
+   * ainda não responder, a linha aparece com travessão em vez de número.
+   */
+  const [regua, setRegua] = useState<{ aiBrier: number | null; marketBrier: number | null }>({
+    aiBrier: null, marketBrier: null,
+  });
+
+  useEffect(() => {
+    void buscarJson<{ aiBrier: number | null; marketBrier: number | null }>("/api/ai/track-record")
+      .then((d) => setRegua({ aiBrier: d.aiBrier ?? null, marketBrier: d.marketBrier ?? null }))
+      .catch(() => {});
+  }, []);
+
+  const REFERENCIAS = [
+    { nome: "Superforecasters do Good Judgment Project", nota: FONTE_SUPERFORECASTER, brier: BRIER_SUPERFORECASTER },
+    { nome: "O mercado (Polymarket e Kalshi)", nota: "medido nas mesmas perguntas que a nossa IA respondeu", brier: regua.marketBrier },
+    { nome: "A IA da JLB", nota: "o nosso próprio número, publicado no Track Record", brier: regua.aiBrier },
+    { nome: "Responder 50% em tudo", nota: "o piso: é o que se consegue sem saber nada", brier: BRIER_DO_CHUTE },
+  ];
 
   async function load() {
     setLoading(true);
@@ -149,11 +175,21 @@ export default function Leaderboard() {
 
   useEffect(() => { void load(); }, [filter]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  /**
+   * A faixa de referência do topo. Achado que a auditoria NÃO viu, e que este
+   * trabalho encontrou ao conferir a tela: "Média Polymarket 0.18" era um número
+   * ESCRITO À MÃO, ao lado de outros dois que vinham de constante. Não medimos
+   * 0,18 em lugar nenhum — e um número inventado numa tela de ranking, num site
+   * cuja tese é não inventar números, é o pior lugar possível para ele estar.
+   *
+   * Agora: o do mercado é o MEDIDO no nosso track record (some quando não há
+   * medição), e os outros dois vêm de `shared/referencias.ts`, com fonte.
+   */
   const benchmarks = [
-    { label: "Superforecasters GJP", bs: 0.10, color: "text-positive" },
-    { label: "Média Polymarket", bs: 0.18, color: "text-gold" },
-    { label: "Chute aleatório (50%)", bs: 0.25, color: "text-muted-foreground" },
-  ];
+    { label: "Superforecasters do GJP", bs: BRIER_SUPERFORECASTER, color: "text-positive" },
+    { label: "O mercado, medido por nós", bs: regua.marketBrier, color: "text-gold" },
+    { label: "Responder 50% em tudo", bs: BRIER_DO_CHUTE, color: "text-muted-foreground" },
+  ].filter((b) => b.bs != null);
 
   return (
     <div>
@@ -179,7 +215,7 @@ export default function Leaderboard() {
                     <Target className={`w-4 h-4 ${b.color}`} />
                   </div>
                   <div>
-                    <p className={`text-sm font-mono font-bold ${b.color}`}>{b.bs.toFixed(2)}</p>
+                    <p className={`text-sm font-mono font-bold ${b.color}`}>{num(b.bs!, 2)}</p>
                     <p className="text-[11px] text-muted-foreground">{b.label}</p>
                   </div>
                 </div>
@@ -222,8 +258,14 @@ export default function Leaderboard() {
           <div className="flex items-center gap-3 p-4 rounded-xl bg-negative/5 border border-negative/20">
             <AlertCircle className="w-4 h-4 text-negative shrink-0" />
             <div>
-              <p className="text-sm text-foreground">Não foi possível carregar o ranking</p>
-              <p className="text-xs text-muted-foreground mt-0.5">{error}</p>
+              {/* O erro cru do JavaScript ("TypeError: Failed to fetch") não diz
+                  nada ao usuário e ainda parece defeito nosso mesmo quando é a
+                  conexão dele. A mensagem técnica fica no title, para quem for
+                  reportar. */}
+              <p className="text-sm text-foreground">Não foi possível carregar o ranking agora</p>
+              <p className="text-xs text-muted-foreground mt-0.5" title={error ?? undefined}>
+                Verifique sua conexão e tente de novo em instantes.
+              </p>
             </div>
           </div>
         )}
@@ -237,18 +279,49 @@ export default function Leaderboard() {
           </div>
         ) : entries.length === 0 ? (
           <AnimatedSection>
-            <div className="glass-card rounded-xl p-12 text-center space-y-4">
-              <Trophy className="w-12 h-12 text-muted-foreground/20 mx-auto" />
-              <p className="text-foreground font-semibold">Nenhum forecaster no ranking ainda</p>
-              <p className="text-sm text-muted-foreground max-w-sm mx-auto">
-                Para aparecer aqui, ative o perfil público em <strong>Configurações do Perfil</strong>{" "}
-                e resolva pelo menos uma previsão.
+            {/* LDR-03: partida a frio. Um ranking vazio não convence ninguém a
+                entrar — e não dá para saber se um Brier de 0,18 é bom.
+                O artefato sugere "semear com linhas de referência", e é
+                exatamente o que isto faz: RÉGUAS, todas reais e todas
+                declaradas como réguas. Nenhum usuário fictício entra aqui: um
+                ranking com gente inventada seria a coisa mais destrutiva que
+                este site poderia fazer com a própria tese. */}
+            <div className="glass-card rounded-xl p-6 sm:p-8 space-y-5">
+              <div className="text-center space-y-2">
+                <Trophy className="w-10 h-10 text-muted-foreground/40 mx-auto" aria-hidden="true" />
+                <p className="text-foreground font-semibold">O ranking ainda não tem ninguém</p>
+                <p className="text-sm text-muted-foreground max-w-md mx-auto leading-relaxed">
+                  Enquanto isso, aqui está contra o que você vai competir. Estes números são reais e
+                  medidos — não são concorrentes, são a régua.
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                {REFERENCIAS.map((r) => (
+                  <div key={r.nome} className="flex items-center gap-3 px-4 py-3 rounded-xl border border-dashed border-border/50">
+                    <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground w-20 shrink-0">régua</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-foreground">{r.nome}</p>
+                      <p className="text-xs text-muted-foreground">{r.nota}</p>
+                    </div>
+                    <span className="font-mono font-bold text-foreground tabular-nums shrink-0">
+                      {r.brier != null ? num(r.brier, 3) : "—"}
+                    </span>
+                  </div>
+                ))}
+              </div>
+
+              <p className="text-xs text-muted-foreground text-center leading-relaxed">
+                Para entrar no ranking: ative o perfil público em Configurações do Perfil e resolva
+                pelo menos uma previsão. Menor é melhor — o Brier mede a distância entre o que você
+                disse e o que aconteceu.
               </p>
-              <Link href="/perfil">
-                <span className="inline-flex items-center gap-2 mt-2 px-5 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity">
-                  <User className="w-4 h-4" /> Ir para o Perfil
-                </span>
-              </Link>
+              <div className="text-center">
+                <Link href="/perfil"
+                  className="alvo-toque inline-flex items-center gap-2 px-5 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity">
+                  <User className="w-4 h-4" aria-hidden="true" /> Ir para o Perfil
+                </Link>
+              </div>
             </div>
           </AnimatedSection>
         ) : (

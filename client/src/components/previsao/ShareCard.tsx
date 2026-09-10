@@ -39,7 +39,7 @@ function buildSvg(d: TrackRecordData): string {
   const beats = hit != null && mkt != null && hit >= mkt;
 
   const heroColor = beats ? "#4ade80" : "#e8b74a";
-  const compare = `vs. ${mkt ?? "—"}% do mercado   ·   skill ${skillStr}   ·   Brier ${aiB} vs ${mktB}`;
+  const compare = `de acerto, contra ${mkt ?? "—"}% do mercado  ·  Brier ${aiB} vs ${mktB}  ·  skill ${skillStr}`;
   const honest = `${d.resolvedCount} previsões resolvidas — medidas contra o resultado REAL da plataforma, sem cherry-picking.`;
 
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" font-family="system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif">
@@ -59,11 +59,19 @@ function buildSvg(d: TrackRecordData): string {
   <rect x="792" y="76" width="336" height="44" rx="22" fill="#0f2418" stroke="#2f6b45" stroke-width="1.5"/>
   <text x="960" y="105" fill="#4ade80" font-size="21" font-weight="700" text-anchor="middle" letter-spacing="1">✓ TRACK RECORD VERIFICADO</text>
 
-  <text x="70" y="310" fill="${heroColor}" font-size="190" font-weight="800" letter-spacing="-4">${hit ?? "—"}%</text>
-  <text x="80" y="366" fill="#93a1b3" font-size="32">taxa de acerto da nossa IA</text>
+  <!-- TRK-08: o número-herói era a taxa de acerto direcional — que a PRÓPRIA
+       página chama de "a parte fácil: quase nenhum mercado é 50/50, então saber
+       o lado óbvio já acerta muito". Liderar com ela é vender o argumento que
+       qualquer concorrente também consegue alegar, e que o nosso próprio texto
+       desmonta três parágrafos depois.
+       O que ninguém mais faz é publicar o número medido contra o resultado real
+       da plataforma, incluindo quando ele é ruim. É esse o cartaz. -->
+  <text x="70" y="268" fill="#eef2f8" font-size="76" font-weight="800" letter-spacing="-2">Publicamos até</text>
+  <text x="70" y="352" fill="url(#gold)" font-size="76" font-weight="800" letter-spacing="-2">quando erramos.</text>
 
-  <line x1="72" y1="410" x2="${W - 72}" y2="410" stroke="#1c2838" stroke-width="1.5"/>
-  <text x="72" y="462" fill="#dfe6ef" font-size="27" font-weight="600">${esc(compare)}</text>
+  <line x1="72" y1="404" x2="${W - 72}" y2="404" stroke="#1c2838" stroke-width="1.5"/>
+  <text x="72" y="462" fill="${heroColor}" font-size="46" font-weight="800">${hit ?? "—"}%</text>
+  <text x="160" y="462" fill="#dfe6ef" font-size="27" font-weight="600">${esc(compare)}</text>
   <text x="72" y="512" fill="#93a1b3" font-size="24">${esc(honest)}</text>
 
   <text x="72" y="576" fill="#8b98a8" font-size="23">Faça sua previsão calibrada</text>
@@ -143,7 +151,7 @@ export function ShareCard() {
   const svg = useMemo(() => (hasNumbers ? buildSvg(data!) : buildGenericSvg()), [data, hasNumbers]);
 
   const shareText = hasNumbers
-    ? `A IA da JLB acerta ${data!.hitRate}% — track record verificado contra o resultado real, sem cherry-picking. Veja a prova:`
+    ? `A JLB publica o próprio track record medido contra o resultado real da plataforma — ${data!.resolvedCount} previsões, inclusive as que erramos. Confira:`
     : `Track record verificado da JLB: cada previsão da IA confrontada com o resultado real, sem cherry-picking. Veja a prova:`;
 
   return (

@@ -4,7 +4,7 @@
  */
 import { useState, useEffect } from "react";
 import AnimatedSection from "@/components/AnimatedSection";
-import { BarChart2, CheckCircle, Scale } from "lucide-react";
+import { BarChart2, CheckCircle, Scale, ChevronDown } from "lucide-react";
 import { pct, num } from "@shared/formato";
 import { BRIER_SUPERFORECASTER, FONTE_SUPERFORECASTER } from "@shared/referencias";
 import { SF_STEPS } from "@/components/previsao/ResultCards";
@@ -26,8 +26,13 @@ export function SuperforecasterGuide() {
               O protocolo de 4 etapas do Good Judgment Project (Philip Tetlock) — base da nossa IA
             </p>
           </div>
-          <span className="text-xs text-muted-foreground shrink-0">
+          {/* PRV-07: em cinza de texto secundário, sem sublinhado e sem
+              affordance, "Ver protocolo" lia-se como rótulo desabilitado — a
+              auditoria não percebeu que era clicável. O que é interativo tem que
+              parecer interativo. */}
+          <span className="text-xs font-medium text-gold shrink-0 inline-flex items-center gap-1">
             {open ? "Fechar" : "Ver protocolo"}
+            <ChevronDown className={`w-3.5 h-3.5 transition-transform ${open ? "rotate-180" : ""}`} aria-hidden="true" />
           </span>
         </button>
 
@@ -259,8 +264,12 @@ export function ResultComparator({ limit = 8 }: { limit?: number }) {
                   <span>Real: <span className={it.outcome ? "text-positive font-semibold" : "text-negative font-semibold"}>{it.outcome ? "SIM" : "NÃO"}</span></span>
                 </div>
               </div>
-              <span className={`shrink-0 text-[8px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded-full border ${it.official ? "border-positive/25 bg-positive/10 text-positive/90" : "border-border/25 bg-secondary/20 text-muted-foreground"}`}>
-                {it.official ? "oficial" : "inferido"}
+              {/* PRV-06: o selo aparecia em TODAS as linhas, e um selo que
+                  nunca falta não distingue nada — vira ruído com cara de
+                  informação. A metodologia da própria página diz que o padrão é
+                  o resultado oficial; então marcamos só a EXCEÇÃO. */}
+              <span className={`shrink-0 text-[11px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded-full border ${it.official ? "hidden" : "border-warning/30 bg-warning/10 text-warning"}`}>
+                {it.official ? "" : "inferido"}
               </span>
             </div>
             );
