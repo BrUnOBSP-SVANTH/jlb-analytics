@@ -52,7 +52,7 @@ function ZScoreCalculator() {
     <div className="glass-card rounded-xl p-6 space-y-4">
       <div className="flex items-center gap-2">
         <Activity className="w-4 h-4 text-primary" />
-        <h3 className="font-semibold text-foreground text-sm">Z-score — Detecção de Anomalias</h3>
+        <h2 className="font-semibold text-foreground text-sm">Z-score — Detecção de Anomalias</h2>
       </div>
       <p className="text-xs text-muted-foreground">
         Quantos desvios padrões um valor está da média? Z {">"} 2 indica anomalia.
@@ -119,7 +119,7 @@ function CICalculator() {
     <div className="glass-card rounded-xl p-6 space-y-4">
       <div className="flex items-center gap-2">
         <BarChart3 className="w-4 h-4 text-primary" />
-        <h3 className="font-semibold text-foreground text-sm">Intervalo de Confiança</h3>
+        <h2 className="font-semibold text-foreground text-sm">Intervalo de Confiança</h2>
       </div>
       <p className="text-xs text-muted-foreground">
         Nunca apresente uma estimativa sem incerteza. Um IC de 95% não significa "95% de chance
@@ -216,7 +216,7 @@ function CorrelationCalculator() {
     <div className="glass-card rounded-xl p-6 space-y-4 lg:col-span-2">
       <div className="flex items-center gap-2">
         <GitBranch className="w-4 h-4 text-primary" />
-        <h3 className="font-semibold text-foreground text-sm">Correlação de Pearson — r ∈ [-1, 1]</h3>
+        <h2 className="font-semibold text-foreground text-sm">Correlação de Pearson — r ∈ [-1, 1]</h2>
       </div>
 
       <div className="p-3 rounded-lg border border-warning/30 bg-warning/5">

@@ -104,7 +104,7 @@ export default function Portfolio() {
         <div className="container py-16">
           <div className="max-w-md mx-auto text-center glass-card rounded-2xl p-8">
             <Wallet className="w-12 h-12 mx-auto text-muted-foreground/20 mb-4" />
-            <h3 className="text-lg font-semibold text-foreground mb-2">Sua banca fica na sua conta</h3>
+            <h2 className="text-lg font-semibold text-foreground mb-2">Sua banca fica na sua conta</h2>
             <p className="text-sm text-muted-foreground mb-6">
               Entre para receber {reais(SALDO_INICIAL)} fictícios e acompanhar suas apostas até o
               resultado sair. Guardar na conta é o que permite abrir no celular e no computador
@@ -257,9 +257,9 @@ export default function Portfolio() {
         {!carregando && apostas.length === 0 && (
           <div className="text-center py-16 glass-card rounded-2xl">
             <Wallet className="w-12 h-12 mx-auto text-muted-foreground/20 mb-4" />
-            <h3 className="text-lg font-semibold text-foreground mb-2">
+            <h2 className="text-lg font-semibold text-foreground mb-2">
               Você tem {reais(SALDO_INICIAL)} para apostar
-            </h3>
+            </h2>
             <p className="text-sm text-muted-foreground mb-6 max-w-sm mx-auto">
               Escolha um mercado real, diga se acha que vai acontecer, e veja na hora quanto ganha se
               acertar e quanto perde se errar.

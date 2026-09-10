@@ -58,7 +58,7 @@ function DivergenceCalculator() {
     <div className="glass-card rounded-xl p-6 space-y-5">
       <div className="flex items-center gap-2">
         <GitMerge className="w-5 h-5 text-primary" />
-        <h3 className="font-semibold text-foreground">Divergência Modelo vs. Mercado</h3>
+        <h2 className="font-semibold text-foreground">Divergência Modelo vs. Mercado</h2>
       </div>
       <p className="text-sm text-muted-foreground">
         O sistema compara a probabilidade calculada pelos modelos com a probabilidade
@@ -189,7 +189,7 @@ function EnsembleCalculator() {
     <div className="glass-card rounded-xl p-6 space-y-4">
       <div className="flex items-center gap-2">
         <Layers className="w-5 h-5 text-primary" />
-        <h3 className="font-semibold text-foreground">Ensemble Multi-Modelo</h3>
+        <h2 className="font-semibold text-foreground">Ensemble Multi-Modelo</h2>
       </div>
       <p className="text-sm text-muted-foreground">
         Combina múltiplos modelos ponderados pelo Skill Score histórico.

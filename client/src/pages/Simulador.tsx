@@ -169,10 +169,10 @@ function EVSimulator() {
       <AnimatedSection>
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
           <div className="lg:col-span-2 glass-card rounded-xl p-6 space-y-4">
-            <h3 className="font-display font-semibold text-foreground flex items-center gap-2">
+            <h2 className="font-display font-semibold text-foreground flex items-center gap-2">
               <TrendingUp className="w-5 h-5 text-neon-blue" aria-hidden="true" />
               Parâmetros
-            </h3>
+            </h2>
 
             <Slider id="ev-prob" label="Sua chance real de ganhar" value={prob} min={1} max={99} step={0.5} onChange={setProb} format={(v) => `${v}%`}
               hint="A chance que VOCÊ acredita ser a real — não a que a casa oferece." />
@@ -204,9 +204,9 @@ function EVSimulator() {
             </div>
 
             <div className="glass-card rounded-xl p-5">
-              <h4 className="text-sm font-display font-semibold text-foreground mb-3">
+              <h3 className="text-sm font-display font-semibold text-foreground mb-3">
                 Trajetória real vs. EV esperado
-              </h4>
+              </h3>
               <ResponsiveContainer width="100%" height={280}>
                 <LineChart data={chartData} margin={{ right: 12, bottom: 4 }}>
                   <XAxis dataKey="n" axisLine={false} tickLine={false} minTickGap={32} tick={{ ...CHART_TICK_STYLE, fontSize: 11 }} label={{ value: "rodadas", position: "insideBottomRight", offset: -4, style: { fontSize: 11, fill: CHART_COLORS.muted } }} />
@@ -289,10 +289,10 @@ function KellySimulator() {
       <AnimatedSection>
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
           <div className="lg:col-span-2 glass-card rounded-xl p-6 space-y-4">
-            <h3 className="font-display font-semibold text-foreground flex items-center gap-2">
+            <h2 className="font-display font-semibold text-foreground flex items-center gap-2">
               <Activity className="w-5 h-5 text-neon-blue" aria-hidden="true" />
               Parâmetros
-            </h3>
+            </h2>
 
             <Slider id="k-prob" label="Sua chance real de ganhar" value={prob} min={1} max={99} step={0.5} onChange={setProb} format={(v) => `${v}%`}
               hint="Sua estimativa honesta de acertar." />
@@ -346,9 +346,9 @@ function KellySimulator() {
             </div>
 
             <div className="glass-card rounded-xl p-5">
-              <h4 className="text-sm font-display font-semibold text-foreground mb-3">
+              <h3 className="text-sm font-display font-semibold text-foreground mb-3">
                 Bankroll ao longo do tempo — Kelly vs. ½ Kelly vs. Overbet
-              </h4>
+              </h3>
               <ResponsiveContainer width="100%" height={300}>
                 <AreaChart data={chartData}>
                   <defs>
@@ -454,10 +454,10 @@ function CalibracaoSimulator() {
       <AnimatedSection>
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
           <div className="lg:col-span-2 glass-card rounded-xl p-6 space-y-4">
-            <h3 className="font-display font-semibold text-foreground flex items-center gap-2">
+            <h2 className="font-display font-semibold text-foreground flex items-center gap-2">
               <Target className="w-5 h-5 text-neon-blue" aria-hidden="true" />
               Parâmetros
-            </h3>
+            </h2>
 
             <Slider id="cal-npreds" label="Número de previsões" value={nPreds} min={20} max={500} step={20} onChange={setNPreds}
               hint="Quantas previsões o forecaster faz. Mais previsões = nota mais confiável." />
@@ -480,9 +480,9 @@ function CalibracaoSimulator() {
             </div>
 
             <div className="glass-card rounded-xl p-5">
-              <h4 className="text-sm font-display font-semibold text-foreground mb-3">
+              <h3 className="text-sm font-display font-semibold text-foreground mb-3">
                 Brier Score acumulado (convergência com mais previsões)
-              </h4>
+              </h3>
               <ResponsiveContainer width="100%" height={220}>
                 <LineChart data={chartData}>
                   <XAxis dataKey="n" axisLine={false} tickLine={false} minTickGap={32} tick={{ ...CHART_TICK_STYLE, fontSize: 11 }} />
@@ -496,9 +496,9 @@ function CalibracaoSimulator() {
             </div>
 
             <div className="glass-card rounded-xl p-5">
-              <h4 className="text-sm font-display font-semibold text-foreground mb-3">
+              <h3 className="text-sm font-display font-semibold text-foreground mb-3">
                 Calibração por decil — previsto vs. realizado
-              </h4>
+              </h3>
               <ResponsiveContainer width="100%" height={180}>
                 <LineChart data={decilData}>
                   <XAxis dataKey="decil" axisLine={false} tickLine={false} tick={{ ...CHART_TICK_STYLE, fontSize: 11 }} />

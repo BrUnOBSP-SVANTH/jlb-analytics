@@ -40,7 +40,7 @@ function ProspectCalculator() {
     <div className="glass-card rounded-xl p-6 space-y-4">
       <div className="flex items-center gap-2">
         <Brain className="w-4 h-4 text-primary" />
-        <h3 className="font-semibold text-sm text-foreground">Prospect Theory — Como o cérebro avalia risco</h3>
+        <h2 className="font-semibold text-sm text-foreground">Prospect Theory — Como o cérebro avalia risco</h2>
       </div>
       <p className="text-xs text-muted-foreground">
         Kahneman & Tversky (1992): perdas psicologicamente pesam 2.25× mais que ganhos equivalentes.
@@ -106,7 +106,7 @@ function BrierCalculator() {
     <div className="glass-card rounded-xl p-6 space-y-4">
       <div className="flex items-center gap-2">
         <Target className="w-4 h-4 text-primary" />
-        <h3 className="font-semibold text-sm text-foreground">Brier Score + Skill Score</h3>
+        <h2 className="font-semibold text-sm text-foreground">Brier Score + Skill Score</h2>
       </div>
       <p className="text-xs text-muted-foreground">
         A única métrica honesta de calibração. Penaliza overconfidence (dizer "90%" e errar)
@@ -172,7 +172,7 @@ function GamblerCalculator() {
     <div className="glass-card rounded-xl p-6 space-y-4">
       <div className="flex items-center gap-2">
         <Shuffle className="w-4 h-4 text-primary" />
-        <h3 className="font-semibold text-sm text-foreground">Falácia do Jogador</h3>
+        <h2 className="font-semibold text-sm text-foreground">Falácia do Jogador</h2>
       </div>
       <p className="text-xs text-muted-foreground">
         "Após 5 vermelhos seguidos na roleta, preto é mais provável." FALSO.
@@ -224,7 +224,7 @@ function MaturityCalculator() {
     <div className="glass-card rounded-xl p-6 space-y-4 lg:col-span-2">
       <div className="flex items-center gap-2">
         <TrendingUp className="w-4 h-4 text-primary" />
-        <h3 className="font-semibold text-sm text-foreground">Perfil de Maturidade Analítica</h3>
+        <h2 className="font-semibold text-sm text-foreground">Perfil de Maturidade Analítica</h2>
       </div>
       <p className="text-xs text-muted-foreground">
         Combina suas métricas comportamentais para classificar seu estágio analítico

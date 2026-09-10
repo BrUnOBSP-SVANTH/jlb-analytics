@@ -344,7 +344,7 @@ export default function Previsao() {
             <div className="glass-card rounded-2xl p-6 space-y-4">
               <div className="flex items-center gap-2">
                 <Zap className="w-4 h-4 text-gold" />
-                <h3 className="font-semibold text-foreground">Como funciona</h3>
+                <h2 className="font-semibold text-foreground">Como funciona</h2>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {[

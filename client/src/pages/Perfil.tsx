@@ -78,7 +78,10 @@ function GuestPrompt() {
       <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
         <LogIn className="w-6 h-6 text-primary" />
       </div>
-      <h2 className="text-xl font-bold text-[var(--titulo)]">Entre para ver seu perfil</h2>
+      {/* h1, e não h2: sem login este é o ÚNICO conteúdo da página, e
+            uma página sem h1 nenhum deixa quem usa leitor de tela sem
+            referência de onde está (TRV-13). */}
+      <h1 className="text-xl font-bold text-[var(--titulo)]">Entre para ver seu perfil</h1>
       <p className="text-sm text-muted-foreground leading-relaxed">
         Seu histórico de previsões, pontos acumulados e progresso nos níveis ficam
         salvos aqui. Crie uma conta gratuita para não perder o avanço.

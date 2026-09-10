@@ -89,7 +89,7 @@ function EVCalculator() {
     <div className="glass-card rounded-xl p-6 space-y-4">
       <div className="flex items-center gap-2">
         <Calculator className="w-4 h-4 text-primary" />
-        <h3 className="font-semibold text-foreground text-sm">Valor Esperado — E[X] = Σ pᵢ · xᵢ</h3>
+        <h2 className="font-semibold text-foreground text-sm">Valor Esperado — E[X] = Σ pᵢ · xᵢ</h2>
       </div>
       <p className="text-xs text-muted-foreground">
         A métrica mais ignorada e mais importante. Se E[X] {"<"} 0, a posição é matematicamente perdedora
@@ -172,7 +172,7 @@ function HouseEdgeCalculator() {
     <div className="glass-card rounded-xl p-6 space-y-4">
       <div className="flex items-center gap-2">
         <TrendingDown className="w-4 h-4 text-negative" />
-        <h3 className="font-semibold text-foreground text-sm">Margem da Casa (Overround)</h3>
+        <h2 className="font-semibold text-foreground text-sm">Margem da Casa (Overround)</h2>
       </div>
       <p className="text-xs text-muted-foreground">
         Toda casa de apostas e mercado preditivo embute uma margem nas odds.
@@ -252,7 +252,7 @@ function BayesCalculator() {
     <div className="glass-card rounded-xl p-6 space-y-4">
       <div className="flex items-center gap-2">
         <RefreshCw className="w-4 h-4 text-primary" />
-        <h3 className="font-semibold text-foreground text-sm">Atualização Bayesiana</h3>
+        <h2 className="font-semibold text-foreground text-sm">Atualização Bayesiana</h2>
       </div>
       <p className="text-xs text-muted-foreground">
         Como uma nova evidência deve alterar sua crença? Bayes é a matemática da aprendizagem

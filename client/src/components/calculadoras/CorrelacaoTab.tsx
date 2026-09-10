@@ -68,7 +68,7 @@ export function CorrelacaoTab() {
           <div className="flex items-center justify-between gap-2 mb-5 flex-wrap">
             <div className="flex items-center gap-2">
               <GitCompare className="w-5 h-5 text-neon-blue" aria-hidden="true" />
-              <h3 className="font-display font-semibold text-foreground">Correlação de Pearson — dados reais Yahoo Finance</h3>
+              <h2 className="font-display font-semibold text-foreground">Correlação de Pearson — dados reais Yahoo Finance</h2>
             </div>
             <div className="flex items-center gap-2">
               {loading && <span className="w-3 h-3 rounded-full border-2 border-neon-blue border-t-transparent animate-spin" />}
@@ -149,7 +149,7 @@ export function CorrelacaoTab() {
           <AnimatedSection>
             <div className="glass-card rounded-xl p-6">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="font-display font-semibold text-foreground">Preço de Fechamento Mensal — últimos 12 meses</h3>
+                <h2 className="font-display font-semibold text-foreground">Preço de Fechamento Mensal — últimos 12 meses</h2>
                 <span className="text-[11px] text-muted-foreground">Fonte: Yahoo Finance</span>
               </div>
               <ResponsiveContainer width="100%" height={300}>
@@ -173,7 +173,7 @@ export function CorrelacaoTab() {
           <div className="flex items-start gap-4">
             <Info className="w-5 h-5 text-neon-blue shrink-0 mt-1" aria-hidden="true" />
             <div className="space-y-4">
-              <h3 className="font-display font-semibold text-foreground">Fórmulas Utilizadas</h3>
+              <h2 className="font-display font-semibold text-foreground">Fórmulas Utilizadas</h2>
               <div>
                 <p className="text-sm font-medium text-foreground mb-1">Correlação de Pearson (amostral)</p>
                 <div className="p-3 rounded-lg bg-obsidian/50 border border-border/20">

@@ -50,7 +50,7 @@ function TaylorCalculator() {
     <div className="glass-card rounded-xl p-6 space-y-4">
       <div className="flex items-center gap-2">
         <TrendingUp className="w-4 h-4 text-primary" />
-        <h3 className="font-semibold text-sm text-foreground">Regra de Taylor — Economia</h3>
+        <h2 className="font-semibold text-sm text-foreground">Regra de Taylor — Economia</h2>
       </div>
       <p className="text-xs text-muted-foreground">
         Benchmark clássico para política monetária. Compara a Selic real com o nível implícito pelo modelo
@@ -107,7 +107,7 @@ function PoissonCalculator() {
     <div className="glass-card rounded-xl p-6 space-y-4">
       <div className="flex items-center gap-2">
         <BarChart2 className="w-4 h-4 text-primary" />
-        <h3 className="font-semibold text-sm text-foreground">Poisson Duplo + Dixon-Coles — Futebol</h3>
+        <h2 className="font-semibold text-sm text-foreground">Poisson Duplo + Dixon-Coles — Futebol</h2>
       </div>
       <p className="text-xs text-muted-foreground">
         Força de ataque/defesa relativa ao average da liga (1.0 = média). Valores acima de 1 = acima da média.
@@ -182,7 +182,7 @@ function GarchCalculator() {
     <div className="glass-card rounded-xl p-6 space-y-4">
       <div className="flex items-center gap-2">
         <Zap className="w-4 h-4 text-warning" />
-        <h3 className="font-semibold text-sm text-foreground">GARCH — Volatilidade</h3>
+        <h2 className="font-semibold text-sm text-foreground">GARCH — Volatilidade</h2>
       </div>
       <WarnBox text="GARCH prevê TAMANHO da variação, não direção. Não use para timing de entrada ou saída. Use para dimensionar risco." />
       <div>
@@ -227,7 +227,7 @@ function EnsoCalculator() {
     <div className="glass-card rounded-xl p-6 space-y-4">
       <div className="flex items-center gap-2">
         <Cloud className="w-4 h-4 text-primary" />
-        <h3 className="font-semibold text-sm text-foreground">ENSO — Fase El Niño / La Niña</h3>
+        <h2 className="font-semibold text-sm text-foreground">ENSO — Fase El Niño / La Niña</h2>
       </div>
       <div>
         <label className="block text-xs text-muted-foreground mb-1">Índice ONI (Oceanic Niño Index)</label>
@@ -279,7 +279,7 @@ function EloCalculator() {
     <div className="glass-card rounded-xl p-6 space-y-4">
       <div className="flex items-center gap-2">
         <Swords className="w-4 h-4 text-primary" />
-        <h3 className="font-semibold text-sm text-foreground">Elo Rating — Probabilidade de vitória</h3>
+        <h2 className="font-semibold text-sm text-foreground">Elo Rating — Probabilidade de vitória</h2>
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div>

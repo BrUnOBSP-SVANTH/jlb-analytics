@@ -161,7 +161,7 @@ function ModelCard({ model }: { model: ModelGuide }) {
                 <Icon className="w-4 h-4 text-primary" />
               </div>
               <div>
-                <h3 className="font-semibold text-foreground text-sm">{model.name}</h3>
+                <h2 className="font-semibold text-foreground text-sm">{model.name}</h2>
                 <p className="text-xs text-muted-foreground">{model.tagline}</p>
               </div>
             </div>

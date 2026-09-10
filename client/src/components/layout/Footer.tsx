@@ -42,6 +42,10 @@ export function Footer() {
   return (
     <footer className="border-t border-border/30 bg-card/30 mt-auto">
       <div className="container py-10">
+        {/* TRV-13: estas colunas eram <h4> dentro de <footer>, sem h3 acima —
+            um salto de nível em TODAS as rotas do site, porque o rodapé é
+            global. O nível de título vem da hierarquia do conteúdo; o tamanho
+            vem do CSS, que não mudou. */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-8 mb-8">
           <div>
             <div className="flex items-center gap-2 mb-4">
@@ -59,7 +63,7 @@ export function Footer() {
           </div>
 
           <div>
-            <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Aprender</h4>
+            <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Aprender</h2>
             <div className="space-y-1.5">
               {[
                 { label: "Trilha Completa",         href: "/educacao" },
@@ -77,7 +81,7 @@ export function Footer() {
           </div>
 
           <div>
-            <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Mercados & Dados</h4>
+            <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Mercados & Dados</h2>
             <div className="space-y-1.5">
               {[
                 { label: "Mercados Ao Vivo", href: "/mercados"  },
@@ -92,7 +96,7 @@ export function Footer() {
           </div>
 
           <div>
-            <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Ferramentas</h4>
+            <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Ferramentas</h2>
             <div className="space-y-1.5">
               {[
                 { label: "Previsão IA",   href: "/previsao"    },
@@ -112,7 +116,7 @@ export function Footer() {
               copyright — e nenhum e-mail, formulário ou rede social. A página
               /imprensa é boa e não tinha porta de entrada nenhuma. */}
           <div>
-            <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Contato</h4>
+            <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Contato</h2>
             <div className="space-y-1.5">
               <a href={`mailto:${EMAIL_CONTATO}`}
                 className="block text-sm text-muted-foreground hover:text-foreground transition-colors break-all">

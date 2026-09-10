@@ -66,7 +66,10 @@ function GuestView() {
         <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
           <LogIn className="w-6 h-6 text-primary" aria-hidden="true" />
         </div>
-        <h2 className="text-xl font-bold text-[var(--titulo)]">Entre para ver seu progresso</h2>
+        {/* h1, e não h2: sem login este é o ÚNICO conteúdo da página, e
+            uma página sem h1 nenhum deixa quem usa leitor de tela sem
+            referência de onde está (TRV-13). */}
+      <h1 className="text-xl font-bold text-[var(--titulo)]">Entre para ver seu progresso</h1>
         <p className="text-sm text-muted-foreground leading-relaxed">
           Brier Score, Skill Score, calibração e histórico de previsões ficam salvos na sua conta.
         </p>
@@ -268,7 +271,7 @@ function PredictionTracker({ userId }: { userId?: string }) {
   return (
     <div className="glass-card rounded-xl p-6 space-y-5">
       <div className="flex items-center justify-between gap-2 flex-wrap">
-        <h3 className="font-semibold text-foreground flex items-center gap-2">
+        <h2 className="font-semibold text-foreground flex items-center gap-2">
           <BookmarkCheck className="w-4 h-4 text-gold" />
           Portfólio de Previsões
           {streak >= 2 && (
@@ -276,7 +279,7 @@ function PredictionTracker({ userId }: { userId?: string }) {
               🔥 {streak}x streak
             </span>
           )}
-        </h3>
+        </h2>
         <div className="flex items-center gap-2">
           {userId && (
             <span className={`flex items-center gap-1 text-[11px] ${syncing ? "text-primary/60 animate-pulse" : syncedAt ? "text-positive/70" : "text-muted-foreground"}`}>

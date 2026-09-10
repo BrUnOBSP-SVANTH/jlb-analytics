@@ -14,10 +14,22 @@ import EntradaDePagina from "./components/EntradaDePagina";
 import Home from "./pages/Home";
 import { lazy, Suspense, useLayoutEffect } from "react";
 import { usePWA } from "./hooks/usePWA";
-import OnboardingTour from "./components/OnboardingTour";
-import ChatWidget from "./components/chat/ChatWidget";
 import ProgressSync from "./components/ProgressSync";
-import UpgradeModal from "./components/UpgradeModal";
+
+/**
+ * TRV-02: estes três entravam no bundle INICIAL de toda rota. A auditoria
+ * mediu: ao abrir /apostas, o navegador carregava também `Home.tsx`,
+ * `NotFound.tsx`, `UpgradeModal`, `OnboardingTour`, `ChatWidget` e
+ * `CommandPalette` — tudo de uma vez.
+ *
+ * Nenhum dos três aparece no primeiro quadro: o tour só existe para quem nunca
+ * viu o site, o chat só monta ao ser aberto e o modal de upgrade só quando a
+ * cota estoura. Carregar tarde não muda nada para o usuário e tira peso da
+ * primeira pintura, que é onde ele espera.
+ */
+const OnboardingTour = lazy(() => import("./components/OnboardingTour"));
+const ChatWidget     = lazy(() => import("./components/chat/ChatWidget"));
+const UpgradeModal   = lazy(() => import("./components/UpgradeModal"));
 
 const Login         = lazy(() => import("./pages/Login"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
@@ -167,9 +179,13 @@ function App() {
             <ProgressSync />
             <Router />
             <PWAInstallBanner />
-            <OnboardingTour />
-            <ChatWidget />
-            <UpgradeModal />
+            {/* `fallback={null}`: são acessórios: nenhum deles deve reservar
+                espaço nem piscar um esqueleto enquanto chega. */}
+            <Suspense fallback={null}>
+              <OnboardingTour />
+              <ChatWidget />
+              <UpgradeModal />
+            </Suspense>
           </TooltipProvider>
         </AuthProvider>
       </ThemeProvider>
