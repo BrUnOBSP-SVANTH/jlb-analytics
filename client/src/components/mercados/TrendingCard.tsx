@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { addToWatchlist, removeFromWatchlist, isWatched } from "@/lib/watchlist";
 import { useLivePrice } from "@/lib/livePrices";
+import { traduzir, pareceEmPortugues } from "@/lib/traducao";
 import { type TrendingItem, CATEGORY_LABELS, formatVolume } from "@/lib/trending";
 import {
   ProbSparkline, MarketBadge, SentimentBadge, SourceBadge, ProbHero, ProbBar, MultiOutcomePills,
@@ -60,18 +61,20 @@ function TrendingCardBase({ item, onCompare, inCompare, indice = 0 }: {
   }, [item.yesProb]);
 
   useEffect(() => {
-    if (!isMarket) return;
-    const ptWords = new Set(["do", "da", "de", "no", "na", "em", "com", "que", "por", "uma", "um", "são", "vai", "para"]);
-    const words = item.title.toLowerCase().split(/\s+/);
-    if (words.filter((w) => ptWords.has(w)).length >= 2) return;
-    let cancelled = false;
+    if (!isMarket || pareceEmPortugues(item.title)) return;
+    let cancelado = false;
     setTranslating(true);
-    fetch(`/api/translate?text=${encodeURIComponent(item.title)}`)
-      .then((r) => r.json())
-      .then((data: { translation?: string }) => { if (!cancelled && data.translation) setTranslation(data.translation); })
-      .catch(() => {})
-      .finally(() => { if (!cancelled) setTranslating(false); });
-    return () => { cancelled = true; };
+    // `traduzir` agrupa os pedidos de todos os cards visíveis numa requisição
+    // só (lib/traducao.ts). Antes eram 20 chamadas por carregamento de página.
+    void traduzir(item.title).then((t) => {
+      if (cancelado) return;
+      // `null` = não há tradução útil (falhou, ou saiu igual ao original). Nesse
+      // caso a segunda linha simplesmente não existe — era ela que fazia TODO
+      // card mostrar o título duas vezes.
+      setTranslation(t);
+      setTranslating(false);
+    });
+    return () => { cancelado = true; };
   }, [item.id, isMarket, item.title]);
 
   function handleBookmark() {
@@ -96,11 +99,8 @@ function TrendingCardBase({ item, onCompare, inCompare, indice = 0 }: {
   async function handleTranslate() {
     if (translation) { setTranslation(null); return; }
     setTranslating(true);
-    try {
-      const res = await fetch(`/api/translate?text=${encodeURIComponent(item.title)}`);
-      const data = await res.json() as { translation?: string };
-      setTranslation(data.translation ?? null);
-    } catch { /* ignore */ } finally { setTranslating(false); }
+    setTranslation(await traduzir(item.title));
+    setTranslating(false);
   }
 
   return (
@@ -140,11 +140,16 @@ function TrendingCardBase({ item, onCompare, inCompare, indice = 0 }: {
                 <p className="text-sm font-medium text-foreground leading-snug">{item.title}</p>
               )}
               {translating && !translation && isMarket && (
-                <p className="text-[10px] text-muted-foreground mt-1 flex items-center gap-1">
+                <p className="text-[11px] text-muted-foreground mt-1 flex items-center gap-1">
                   <Languages className="w-3 h-3" /> Traduzindo...
                 </p>
               )}
-              {translation && <p className="text-xs text-gold/80 mt-1 leading-snug italic">{translation}</p>}
+              {/* Só quando existe tradução DE VERDADE — e em `text-gold-forte`,
+                  que é o dourado com contraste no tema claro. O tom anterior
+                  media 1,71:1 sobre o fundo creme (TRV-07). */}
+              {translation && (
+                <p className="text-xs text-[var(--gold-legivel)] mt-1 leading-snug italic">{translation}</p>
+              )}
             </div>
           </div>
           {/* Número-herói (mercados binários) */}
@@ -160,7 +165,7 @@ function TrendingCardBase({ item, onCompare, inCompare, indice = 0 }: {
           {jlbEdge && Math.abs(jlbEdge.edge) >= 4 && (
             <span
               title={`Fair value JLB: ${jlbEdge.aiFairValue}% vs mercado — clique em Analisar`}
-              className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+              className={`text-[11px] font-bold px-2 py-0.5 rounded-full border ${
                 jlbEdge.edge > 0
                   ? "border-positive/40 bg-positive/10 text-positive"
                   : "border-negative/40 bg-negative/10 text-negative"
@@ -169,28 +174,34 @@ function TrendingCardBase({ item, onCompare, inCompare, indice = 0 }: {
               JLB {jlbEdge.edge > 0 ? "+" : ""}{jlbEdge.edge}pp
             </span>
           )}
+          {/* MKT-03: a etiqueta de CATEGORIA sempre existe, mesmo que seja
+              "Outros". Antes ela sumia quando a categoria era desconhecida, e o
+              selo de sentimento ao lado passava a ocupar o lugar dela — a
+              auditoria fotografou "POSITIVO" onde os vizinhos mostravam
+              Política, Esportes e Cripto. Slot vazio é slot que outro campo
+              ocupa. */}
+          <span className="text-[11px] font-medium px-2 py-0.5 rounded-full border border-primary/20 bg-primary/5 text-primary">
+            {CATEGORY_LABELS[item.normalizedCategory] ?? "Outros"}
+          </span>
+          {/* E o sentimento vira o que ele é: uma leitura do TEXTO, não uma
+              categoria. O prefixo diz isso em uma palavra. */}
           {item.sentiment.label !== "Neutro" && <SentimentBadge label={item.sentiment.label} />}
-          {item.normalizedCategory !== "other" && item.normalizedCategory !== "all" && (
-            <span className="text-[10px] font-medium px-2 py-0.5 rounded-full border border-primary/20 bg-primary/5 text-primary/70">
-              {CATEGORY_LABELS[item.normalizedCategory]}
-            </span>
-          )}
           {item.ageHours > 0 && (
-            <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+            <span className="text-[11px] text-muted-foreground flex items-center gap-1">
               <Clock className="w-3 h-3" />{formatAge(item.ageHours)}
             </span>
           )}
           {/* Tradução como chip discreto no fim da linha (não gasta uma linha própria) */}
           {isMarket && translation && (
             <button onClick={() => setTranslation(null)}
-              className="text-[10px] text-muted-foreground/70 hover:text-gold transition-colors flex items-center gap-0.5">
-              <Languages className="w-3 h-3" />ocultar
+              className="alvo-minimo text-[11px] text-muted-foreground hover:text-gold transition-colors gap-0.5">
+              <Languages className="w-3 h-3" aria-hidden="true" />ocultar
             </button>
           )}
           {!isMarket && (
             <button onClick={handleTranslate} disabled={translating}
-              className="text-[10px] text-muted-foreground/70 hover:text-gold transition-colors flex items-center gap-0.5 disabled:opacity-50">
-              <Languages className="w-3 h-3" />
+              className="alvo-minimo text-[11px] text-muted-foreground hover:text-gold transition-colors gap-0.5 disabled:opacity-50">
+              <Languages className="w-3 h-3" aria-hidden="true" />
               {translating ? "traduzindo..." : translation ? "ocultar" : "traduzir"}
             </button>
           )}
@@ -199,7 +210,7 @@ function TrendingCardBase({ item, onCompare, inCompare, indice = 0 }: {
         {/* ── Probabilidade: barra SIM/NÃO (binário) ou breakdown (multi-outcome) ── */}
         {item.parsedOutcomes ? (
           <div className="mb-3">
-            <p className="text-[9px] text-muted-foreground uppercase tracking-wider mb-1.5">Probabilidades</p>
+            <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-1.5">Probabilidades</p>
             <MultiOutcomePills outcomes={item.parsedOutcomes} />
           </div>
         ) : item.yesProb !== undefined ? (
@@ -226,9 +237,14 @@ function TrendingCardBase({ item, onCompare, inCompare, indice = 0 }: {
             <span className="flex items-center gap-1"><BarChart2 className="w-3 h-3" />{formatVolume(item.volume)} volume</span>
           )}
         </div>
-        <p className="text-[11px] text-muted-foreground/60 leading-relaxed line-clamp-1 mb-3">
-          <Flame className="w-3 h-3 text-primary/50 inline mr-1 align-[-2px]" />{item.whyTrending}
-        </p>
+        {/* MKT-08: quando não há nada específico a dizer sobre este mercado
+            hoje, a linha some. A versão anterior repetia a mesma frase em 12 dos
+            20 cards — e frase repetida ensina a pular a leitura. */}
+        {item.whyTrending && (
+          <p className="text-[11px] text-muted-foreground leading-relaxed line-clamp-1 mb-3">
+            <Flame className="w-3 h-3 text-primary/50 inline mr-1 align-[-2px]" aria-hidden="true" />{item.whyTrending}
+          </p>
+        )}
 
         {/* ── Ações (Analisar + rodapé) ──
             mt-auto ancora este bloco na BASE do card: com o card em flex-col + h-full,
@@ -295,7 +311,7 @@ function TrendingCardBase({ item, onCompare, inCompare, indice = 0 }: {
               <button
                 onClick={() => onCompare(item)}
                 title={inCompare ? "Remover da comparação" : "Adicionar à comparação"}
-                className={`flex items-center gap-1 text-[10px] transition-colors px-2 py-1 rounded-md border ${
+                className={`flex items-center gap-1 text-[11px] transition-colors px-2 py-1 rounded-md border ${
                   inCompare
                     ? "border-neon-blue/40 bg-neon-blue/10 text-neon-blue"
                     : "border-border/30 text-muted-foreground hover:text-neon-blue hover:border-neon-blue/30"
@@ -308,7 +324,7 @@ function TrendingCardBase({ item, onCompare, inCompare, indice = 0 }: {
             <button
               onClick={handleBookmark}
               title={watched ? "Remover da watchlist" : "Salvar na watchlist"}
-              className={`flex items-center gap-1 text-[10px] transition-colors px-2 py-1 rounded-md border ${
+              className={`flex items-center gap-1 text-[11px] transition-colors px-2 py-1 rounded-md border ${
                 watched
                   ? "border-gold/40 bg-gold/10 text-gold hover:bg-gold/20"
                   : "border-border/30 text-muted-foreground hover:text-gold hover:border-gold/30"

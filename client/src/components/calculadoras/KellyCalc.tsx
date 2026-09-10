@@ -45,7 +45,7 @@ export function KellyCalc() {
           <FormulaBox formula="f* = (b×p − q) / b" legend="b = odd−1 · p = prob. própria · q = 1−p" />
 
           <div className="p-3 rounded-lg bg-obsidian/50 border border-border/20 space-y-1">
-            <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Decomposição</p>
+            <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-1">Decomposição</p>
             {[
               ["Prob. implícita da odd", `${(impliedProb * 100).toFixed(1)}%`, false],
               ["Sua estimativa", `${prob.toFixed(1)}%`, false],

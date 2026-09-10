@@ -77,14 +77,14 @@ export function Evolucao() {
               <div className="absolute h-full w-px bg-gold" style={{ left: `${m.acerto}%` }} />
             </div>
             <span className="text-[11px] font-mono text-foreground w-24 text-right shrink-0">
-              {m.acerto}% <span className="text-muted-foreground/60">±{m.margemPp}</span>
+              {m.acerto}% <span className="text-muted-foreground">±{m.margemPp}</span>
             </span>
-            <span className="text-[11px] font-mono text-muted-foreground/70 w-10 text-right shrink-0">{m.n}</span>
+            <span className="text-[11px] font-mono text-muted-foreground w-10 text-right shrink-0">{m.n}</span>
           </div>
         ))}
       </div>
 
-      <p className="text-[10px] text-muted-foreground/60 leading-relaxed mt-3">
+      <p className="text-[11px] text-muted-foreground leading-relaxed mt-3">
         A faixa clara é a margem de erro do mês; o traço é a taxa de acerto. Quando as faixas de dois
         meses se sobrepõem, a diferença entre eles pode ser só sorte da amostra. Meses com menos de{" "}
         {d.minAmostra} casos ficam de fora — a mesma régua do resto da página.

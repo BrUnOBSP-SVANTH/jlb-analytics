@@ -183,7 +183,7 @@ function CICalculator() {
                   <div className="absolute h-4 w-0.5 bg-foreground" style={{ left: "50%" }} />
                   <div className="absolute h-4 w-0.5 bg-primary/60" style={{ left: `${hi}%` }} />
                 </div>
-                <div className="relative h-4 text-[10px] font-mono text-muted-foreground">
+                <div className="relative h-4 text-[11px] font-mono text-muted-foreground">
                   <span className="absolute -translate-x-1/2" style={{ left: `${lo}%` }}>{data.lower.toFixed(2)}</span>
                   <span className="absolute -translate-x-1/2 text-foreground" style={{ left: "50%" }}>{mid.toFixed(2)}</span>
                   <span className="absolute -translate-x-1/2" style={{ left: `${hi}%` }}>{data.upper.toFixed(2)}</span>

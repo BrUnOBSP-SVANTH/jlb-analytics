@@ -40,7 +40,7 @@ export default function PageHeader({ title, subtitle, badge, image, probability 
         {[0, 25, 50, 75, 100].map((pct) => (
           <span
             key={pct}
-            className="absolute bottom-2 font-mono text-[9px] text-gold/20 select-none"
+            className="absolute bottom-2 font-mono text-[11px] text-gold/20 select-none"
             style={{
               left: `${pct}%`,
               // Pontas alinhadas para dentro — centralizar em 0%/100% cortava metade do texto
@@ -56,7 +56,7 @@ export default function PageHeader({ title, subtitle, badge, image, probability 
             className="absolute top-0 bottom-6 w-0.5 bg-gold/50 transition-[left] duration-700 ease-out"
             style={{ left: `${probability}%` }}
           >
-            <span className="absolute -top-0 left-1 font-mono text-[10px] text-gold/70 whitespace-nowrap">
+            <span className="absolute -top-0 left-1 font-mono text-[11px] text-gold/70 whitespace-nowrap">
               {probability}%
             </span>
           </div>

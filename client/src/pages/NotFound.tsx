@@ -14,7 +14,7 @@ export default function NotFound() {
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="text-center">
             <div className="w-16 h-16 rounded-2xl bg-secondary/40 border border-border/40 flex items-center justify-center mx-auto mb-3">
-              <TrendingUp className="w-7 h-7 text-muted-foreground/60" aria-hidden="true" />
+              <TrendingUp className="w-7 h-7 text-muted-foreground" aria-hidden="true" />
             </div>
             <p className="text-3xl font-bold font-mono text-foreground">404</p>
           </div>

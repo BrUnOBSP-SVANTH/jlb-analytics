@@ -32,7 +32,7 @@ export default function MercadosTabs() {
                   <Icon className="w-3.5 h-3.5" aria-hidden="true" />
                   {t.label}
                   {t.badge && (
-                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-positive/15 text-positive border border-positive/20 leading-none">
+                    <span className="text-[11px] font-bold px-1.5 py-0.5 rounded-full bg-positive/15 text-positive border border-positive/20 leading-none">
                       {t.badge}
                     </span>
                   )}

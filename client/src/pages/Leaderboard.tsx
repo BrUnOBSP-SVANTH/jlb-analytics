@@ -29,7 +29,7 @@ interface LeaderEntry {
 
 function RankBadge({ rank }: { rank: number }) {
   if (rank === 1) return <Trophy className="w-5 h-5 text-gold" />;
-  if (rank === 2) return <Medal className="w-5 h-5 text-foreground/70" />;
+  if (rank === 2) return <Medal className="w-5 h-5 text-foreground/80" />;
   if (rank === 3) return <Medal className="w-5 h-5 text-amber-600" />;
   return (
     <span className="w-5 h-5 flex items-center justify-center text-xs font-mono font-bold text-muted-foreground">
@@ -39,13 +39,13 @@ function RankBadge({ rank }: { rank: number }) {
 }
 
 function ScoreBadge({ bs }: { bs: number | null }) {
-  if (bs === null) return <span className="text-xs text-muted-foreground/50">—</span>;
+  if (bs === null) return <span className="text-xs text-muted-foreground">—</span>;
   const color = bs < 0.10 ? "text-positive" : bs < 0.15 ? "text-warning" : bs < 0.20 ? "text-gold" : "text-muted-foreground";
   const label = bs < 0.10 ? "Elite" : bs < 0.15 ? "Calibrado" : bs < 0.20 ? "Intermediário" : "Iniciante";
   return (
     <div className="text-right">
       <p className={`text-sm font-mono font-bold ${color}`}>{bs.toFixed(3)}</p>
-      <p className={`text-[9px] ${color} opacity-70`}>{label}</p>
+      <p className={`text-[11px] ${color} opacity-70`}>{label}</p>
     </div>
   );
 }
@@ -58,7 +58,7 @@ function SkillBar({ ss }: { ss: number }) {
       <div className="w-16 h-1.5 bg-secondary/40 rounded-full overflow-hidden">
         <div className={`h-full rounded-full ${color}`} style={{ width: `${pct}%` }} />
       </div>
-      <span className={`text-[10px] font-mono ${ss > 0 ? "text-positive" : "text-muted-foreground/50"}`}>
+      <span className={`text-[11px] font-mono ${ss > 0 ? "text-positive" : "text-muted-foreground"}`}>
         {ss >= 0 ? "+" : ""}{(ss * 100).toFixed(0)}%
       </span>
     </div>
@@ -94,7 +94,7 @@ function DuelRanking() {
             <span className="text-[11px] text-muted-foreground hover:text-foreground transition-colors cursor-pointer">Duelar →</span>
           </Link>
         </div>
-        <div className="grid grid-cols-[28px_1fr_64px_80px] gap-3 px-3 sm:px-5 py-2 border-b border-border/10 text-[10px] font-semibold text-muted-foreground/60 uppercase tracking-wider">
+        <div className="grid grid-cols-[28px_1fr_64px_80px] gap-3 px-3 sm:px-5 py-2 border-b border-border/10 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
           <span>#</span><span>Duelista</span><span className="text-right">Brier</span><span className="text-right">V-D-E</span>
         </div>
         {rows.map((r, i) => (
@@ -102,7 +102,7 @@ function DuelRanking() {
             <span className="text-xs font-mono text-muted-foreground text-center">{i + 1}</span>
             <div className="flex items-center gap-2 min-w-0">
               <p className="text-sm font-medium text-foreground truncate">{r.name}</p>
-              {r.isIA && <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded bg-neon-blue/10 text-neon-blue border border-neon-blue/20 shrink-0">IA</span>}
+              {r.isIA && <span className="text-[11px] font-semibold px-1.5 py-0.5 rounded bg-neon-blue/10 text-neon-blue border border-neon-blue/20 shrink-0">IA</span>}
             </div>
             <span className={`text-xs font-mono font-bold text-right ${r.avgBrier < 0.18 ? "text-positive" : r.avgBrier < 0.25 ? "text-gold" : "text-muted-foreground"}`}>
               {r.avgBrier.toFixed(3)}
@@ -112,7 +112,7 @@ function DuelRanking() {
             </span>
           </div>
         ))}
-        <p className="text-[10px] text-muted-foreground/50 text-center py-2.5">
+        <p className="text-[11px] text-muted-foreground text-center py-2.5">
           Ordenado por calibração média nos duelos resolvidos — vitórias desempatam.
         </p>
       </div>
@@ -169,7 +169,7 @@ export default function Leaderboard() {
         {/* Benchmarks */}
         <AnimatedSection>
           <div className="glass-card rounded-xl p-5">
-            <p className="text-xs font-semibold text-muted-foreground/60 uppercase tracking-wider mb-3">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
               Referências de Brier Score
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -180,7 +180,7 @@ export default function Leaderboard() {
                   </div>
                   <div>
                     <p className={`text-sm font-mono font-bold ${b.color}`}>{b.bs.toFixed(2)}</p>
-                    <p className="text-[10px] text-muted-foreground/70">{b.label}</p>
+                    <p className="text-[11px] text-muted-foreground">{b.label}</p>
                   </div>
                 </div>
               ))}
@@ -255,7 +255,7 @@ export default function Leaderboard() {
           <AnimatedSection>
             <div className="glass-card rounded-xl overflow-hidden">
               {/* Header */}
-              <div className="grid grid-cols-[28px_1fr_72px] sm:grid-cols-[40px_1fr_90px_80px_90px] gap-3 px-3 sm:px-5 py-3 border-b border-border/20 text-[10px] font-semibold text-muted-foreground/60 uppercase tracking-wider">
+              <div className="grid grid-cols-[28px_1fr_72px] sm:grid-cols-[40px_1fr_90px_80px_90px] gap-3 px-3 sm:px-5 py-3 border-b border-border/20 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
                 <span>#</span>
                 <span>Forecaster</span>
                 <span className="text-right">Brier Score</span>
@@ -290,7 +290,7 @@ export default function Leaderboard() {
                         </p>
                         {entry.plan === "premium" && <Star className="w-3 h-3 text-gold shrink-0" />}
                       </div>
-                      <p className="text-[10px] text-muted-foreground/60">@{entry.username}</p>
+                      <p className="text-[11px] text-muted-foreground">@{entry.username}</p>
                     </div>
                   </div>
 
@@ -300,7 +300,7 @@ export default function Leaderboard() {
                   {/* Previsões */}
                   <div className="text-right hidden sm:block">
                     <p className="text-sm font-mono text-foreground">{entry.resolved_count}</p>
-                    <p className="text-[10px] text-muted-foreground/60">resolvidas</p>
+                    <p className="text-[11px] text-muted-foreground">resolvidas</p>
                   </div>
 
                   {/* Skill Score bar */}
@@ -311,7 +311,7 @@ export default function Leaderboard() {
               ))}
             </div>
 
-            <p className="text-[10px] text-muted-foreground/40 text-center mt-3">
+            <p className="text-[11px] text-muted-foreground text-center mt-3">
               Mín. 1 previsão resolvida · Atualizado em tempo real · Perfil público ativado
             </p>
           </AnimatedSection>

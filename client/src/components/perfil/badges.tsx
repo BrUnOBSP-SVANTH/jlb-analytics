@@ -255,7 +255,7 @@ export function BadgesSection({ ctx }: { ctx: BadgeContext }) {
       {/* Próximo badge em destaque */}
       {nextUp && !nextUp.earned && nextUp.prog && (
         <div className={`p-4 rounded-xl border border-gold/30 bg-gold/5 space-y-2`}>
-          <p className="text-[10px] font-semibold text-gold uppercase tracking-wider">Próxima conquista</p>
+          <p className="text-[11px] font-semibold text-gold uppercase tracking-wider">Próxima conquista</p>
           <div className="flex items-center gap-3">
             <div className={`w-10 h-10 rounded-xl ${nextUp.def.bg} flex items-center justify-center shrink-0`}>
               {(() => { const Icon = nextUp.def.icon; return <Icon className={`w-5 h-5 ${nextUp.def.color}`} />; })()}
@@ -270,7 +270,7 @@ export function BadgesSection({ ctx }: { ctx: BadgeContext }) {
                     style={{ width: `${Math.round((nextUp.prog.current / nextUp.prog.target) * 100)}%` }}
                   />
                 </div>
-                <span className="text-[10px] font-mono text-gold shrink-0">
+                <span className="text-[11px] font-mono text-gold shrink-0">
                   {nextUp.prog.current}/{nextUp.prog.target}
                 </span>
               </div>
@@ -281,7 +281,7 @@ export function BadgesSection({ ctx }: { ctx: BadgeContext }) {
 
       {earned.length > 0 && (
         <div>
-          <p className="text-[10px] font-semibold text-muted-foreground/60 uppercase tracking-wider mb-3">
+          <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-3">
             Conquistadas ({earned.length})
           </p>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
@@ -297,9 +297,9 @@ export function BadgesSection({ ctx }: { ctx: BadgeContext }) {
                     <Icon className={`w-4 h-4 ${def.color}`} aria-hidden="true" />
                   </div>
                   <p className={`text-xs font-bold ${def.color} leading-tight`}>{def.name}</p>
-                  <p className="text-[10px] text-muted-foreground leading-snug">{def.desc}</p>
+                  <p className="text-[11px] text-muted-foreground leading-snug">{def.desc}</p>
                   {earnedAt && (
-                    <p className="text-[9px] text-muted-foreground/50">
+                    <p className="text-[11px] text-muted-foreground">
                       {new Date(earnedAt).toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })}
                     </p>
                   )}
@@ -312,7 +312,7 @@ export function BadgesSection({ ctx }: { ctx: BadgeContext }) {
 
       {locked.length > 0 && (
         <div>
-          <p className="text-[10px] font-semibold text-muted-foreground/60 uppercase tracking-wider mb-3">
+          <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-3">
             Bloqueadas ({locked.length})
           </p>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
@@ -326,10 +326,10 @@ export function BadgesSection({ ctx }: { ctx: BadgeContext }) {
                   title={`Bloqueado: ${def.desc}`}
                 >
                   <div className="w-9 h-9 rounded-xl bg-secondary/30 flex items-center justify-center mx-auto">
-                    <Icon className="w-4 h-4 text-muted-foreground/50" aria-hidden="true" />
+                    <Icon className="w-4 h-4 text-muted-foreground" aria-hidden="true" />
                   </div>
-                  <p className="text-xs font-bold text-muted-foreground/70 leading-tight">{def.name}</p>
-                  <p className="text-[10px] text-muted-foreground/50 leading-snug">{def.desc}</p>
+                  <p className="text-xs font-bold text-muted-foreground leading-tight">{def.name}</p>
+                  <p className="text-[11px] text-muted-foreground leading-snug">{def.desc}</p>
                   {prog && prog.target > 0 && (
                     <div className="space-y-0.5">
                       <div className="h-1 bg-secondary/30 rounded-full overflow-hidden">
@@ -338,12 +338,12 @@ export function BadgesSection({ ctx }: { ctx: BadgeContext }) {
                           style={{ width: `${pct}%` }}
                         />
                       </div>
-                      <p className="text-[9px] text-muted-foreground/40 font-mono">
+                      <p className="text-[11px] text-muted-foreground font-mono">
                         {prog.current}/{prog.target}
                       </p>
                     </div>
                   )}
-                  {!prog && <Lock className="w-3 h-3 text-muted-foreground/30 mx-auto" />}
+                  {!prog && <Lock className="w-3 h-3 text-muted-foreground mx-auto" />}
                 </div>
               );
             })}
@@ -353,9 +353,9 @@ export function BadgesSection({ ctx }: { ctx: BadgeContext }) {
 
       {earned.length === 0 && !nextUp && (
         <div className="text-center py-6 space-y-2">
-          <Shield className="w-8 h-8 mx-auto text-muted-foreground/30" aria-hidden="true" />
+          <Shield className="w-8 h-8 mx-auto text-muted-foreground" aria-hidden="true" />
           <p className="text-sm text-muted-foreground">Nenhuma conquista ainda.</p>
-          <p className="text-xs text-muted-foreground/60">Faça previsões e explore os níveis para desbloquear.</p>
+          <p className="text-xs text-muted-foreground">Faça previsões e explore os níveis para desbloquear.</p>
         </div>
       )}
     </div>

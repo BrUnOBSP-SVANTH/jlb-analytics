@@ -93,7 +93,7 @@ export default function UpgradeModal() {
         <button
           onClick={() => setOpen(false)}
           aria-label="Fechar"
-          className="absolute top-4 right-4 text-muted-foreground/60 hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/50 rounded"
+          className="absolute top-4 right-4 text-muted-foreground hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/50 rounded"
         >
           <X className="w-4 h-4" />
         </button>
@@ -147,7 +147,7 @@ export default function UpgradeModal() {
 
         <button
           onClick={() => setOpen(false)}
-          className="w-full text-center text-[11px] text-muted-foreground/50 hover:text-muted-foreground mt-3 transition-colors"
+          className="w-full text-center text-[11px] text-muted-foreground hover:text-muted-foreground mt-3 transition-colors"
         >
           {isLogin ? "Agora não · conta grátis, sem cartão" : isCredits ? "Continuo grátis por enquanto · sem compromisso, cancele quando quiser" : "Agora não · sem compromisso, cancele quando quiser"}
         </button>

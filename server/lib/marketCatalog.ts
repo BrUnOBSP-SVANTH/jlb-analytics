@@ -120,3 +120,45 @@ export function limitePedido(bruto: unknown, padrao: number, teto: number): numb
   const n = parseInt(String(bruto ?? padrao), 10);
   return Math.min(Number.isFinite(n) && n > 0 ? n : padrao, teto);
 }
+
+/**
+ * Limpa o título do mercado uma vez, no ingest (MKT-11, ANL-02).
+ *
+ * O QUE A AUDITORIA VIU. Nos cards apareciam títulos assim:
+ *
+ *   "$LAPTOP FDV above ___ one day after launch?"
+ *   "Bitcoin above ___ on September 9?: 80,000"
+ *
+ * O `___` é o buraco que a plataforma de origem deixa para o valor, e o valor
+ * vem depois dos dois-pontos, no sufixo. Nenhuma das duas metades faz sentido
+ * sozinha, e o leitor vê um formulário em branco.
+ *
+ * Pior: o MESMO mercado aparecia com títulos diferentes em telas diferentes —
+ * "LAPTOP FDV above $1B one day after launch?" em /noticias e o `___` em
+ * /apostas — porque cada tela normalizava do seu jeito, quando normalizava. Por
+ * isso isto mora no servidor e roda uma vez: a tela recebe o título já pronto.
+ */
+export function normalizarTitulo(titulo: string): string {
+  let t = (titulo ?? "").trim();
+  if (!t) return t;
+
+  // "Pergunta com ___?: 80,000" → o sufixo é o valor que preenche o buraco.
+  const doisPontos = t.lastIndexOf(":");
+  if (doisPontos > 0 && t.includes("_")) {
+    const sufixo = t.slice(doisPontos + 1).trim();
+    const corpo = t.slice(0, doisPontos).trim();
+    // Só quando o sufixo é de fato um VALOR (número, com ou sem símbolo).
+    // "Fed Decision: what happens" não é preenchimento de lacuna.
+    if (sufixo && /^[$R\s]*[\d.,]+[KMB%]?$/i.test(sufixo)) {
+      t = corpo.replace(/_{2,}/g, sufixo);
+    }
+  }
+
+  // Sobrou lacuna sem valor: some com ela em vez de mostrar o buraco.
+  t = t.replace(/\s*_{2,}\s*/g, " ").replace(/\s{2,}/g, " ").trim();
+
+  // Sufixo de valor sem lacuna nenhuma no corpo continua sendo desambiguação
+  // legítima ("Bitcoin above X on Sep 9?: 80,000" com o X já preenchido) — por
+  // isso não removemos dois-pontos em geral, só o que virou lacuna.
+  return t;
+}

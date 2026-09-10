@@ -102,7 +102,7 @@ export function ProviderBreakdown() {
                     {r.aiBrier !== null ? r.aiBrier.toFixed(3) : "—"}
                   </td>
                   <td className={`py-2 pl-2 text-right font-mono tabular-nums ${
-                    thin ? "text-muted-foreground/60" : beats ? "text-positive" : "text-negative"
+                    thin ? "text-muted-foreground" : beats ? "text-positive" : "text-negative"
                   }`}>
                     {r.skillVsMarket !== null
                       ? `${r.skillVsMarket > 0 ? "+" : ""}${(r.skillVsMarket * 100).toFixed(1)}%`
@@ -129,7 +129,7 @@ export function ProviderBreakdown() {
       )}
 
       <p className="text-xs text-muted-foreground mt-3 leading-relaxed">
-        <strong className="text-foreground/70">vs mercado</strong> = quanto o Brier do provedor é melhor
+        <strong className="text-foreground/80">vs mercado</strong> = quanto o Brier do provedor é melhor
         (+) ou pior (−) que o do próprio mercado no mesmo conjunto. Abaixo de {minimo} resolvidas
         tratamos como ruído, não evidência. As fatias saem da mesma leitura da manchete
         (1 previsão por mercado), então elas somam exatamente o total.

@@ -44,7 +44,7 @@ export function BrierScoreCalc() {
         <div className="space-y-4">
           <p className="text-[11px] text-muted-foreground/80 leading-snug">Liste suas previsões passadas: a chance (%) que você deu e se o evento aconteceu. O “Erro²” mostra onde você errou mais.</p>
           <div className="space-y-2">
-            <div className="grid grid-cols-3 gap-2 text-[10px] text-muted-foreground uppercase tracking-wider px-1">
+            <div className="grid grid-cols-3 gap-2 text-[11px] text-muted-foreground uppercase tracking-wider px-1">
               <span>Previsão (%)</span>
               <span>Resultado</span>
               <span>Erro²</span>
@@ -91,7 +91,7 @@ export function BrierScoreCalc() {
           </div>
 
           <div className="p-3 rounded-lg bg-obsidian/50 border border-border/20 space-y-1">
-            <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Benchmarks reais</p>
+            <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-1">Benchmarks reais</p>
             {/* Uma tabela só, vinda de shared/referencias.ts. Esta lista dizia
                 "< 0.05 — Superforecasters", enquanto outra tela dizia 0.10 e uma
                 terceira, 0.14. O 0,05 não aparece em nenhuma publicação do GJP. */}

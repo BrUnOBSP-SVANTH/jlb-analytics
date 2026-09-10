@@ -274,13 +274,13 @@ function MethodologyPanel() {
                   <p className="text-xs font-semibold text-foreground">{v.label}</p>
                   <p className="text-[11px] text-muted-foreground">{v.note}</p>
                 </div>
-                <span className="text-[10px] font-mono text-gold bg-gold/10 border border-gold/20 px-1.5 py-0.5 rounded shrink-0">{v.weight}</span>
+                <span className="text-[11px] font-mono text-gold bg-gold/10 border border-gold/20 px-1.5 py-0.5 rounded shrink-0">{v.weight}</span>
               </div>
             ))}
           </div>
 
           <div>
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Histórico do modelo <span className="text-muted-foreground/50 normal-case">— 3 de 4 · amostra pequena, não é skill validado</span></p>
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Histórico do modelo <span className="text-muted-foreground normal-case">— 3 de 4 · amostra pequena, não é skill validado</span></p>
             <div className="flex flex-wrap gap-2">
               {[
                 { year: "2014", winner: "🇩🇪 Alemanha", hit: true },
@@ -298,7 +298,7 @@ function MethodologyPanel() {
             <p className="text-[11px] text-muted-foreground mt-2 italic">
               "If you bet money on the World Cup because of this model, nobody can help you." — Joachim Klement
             </p>
-            <p className="text-[10px] text-muted-foreground/50 mt-1">Histórico conforme ESPN Brasil / Klement on Investing. Campeão real de 2026: 🇪🇸 Espanha.</p>
+            <p className="text-[11px] text-muted-foreground mt-1">Histórico conforme ESPN Brasil / Klement on Investing. Campeão real de 2026: 🇪🇸 Espanha.</p>
           </div>
 
           <a
@@ -421,8 +421,8 @@ export default function KlementSection({ onClose }: { onClose: () => void }) {
           ].map(s => (
             <div key={s.label} className="glass-card rounded-xl p-4 text-center">
               <p className={`text-2xl font-mono font-bold ${s.color}`}>{s.value}</p>
-              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mt-1">{s.label}</p>
-              <p className="text-[10px] text-muted-foreground/60 mt-0.5">{s.sub}</p>
+              <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide mt-1">{s.label}</p>
+              <p className="text-[11px] text-muted-foreground mt-0.5">{s.sub}</p>
             </div>
           ))}
         </div>
@@ -437,8 +437,8 @@ export default function KlementSection({ onClose }: { onClose: () => void }) {
       <AnimatedSection>
         <div className="space-y-4">
           <div className="flex items-center gap-2 flex-wrap">
-            <h3 className="text-sm font-semibold text-foreground">Probabilidade de Campeão <span className="font-normal text-muted-foreground/60">— pré-Copa 2026</span></h3>
-            <span className="text-[10px] text-muted-foreground/60">top 16 exibidos</span>
+            <h3 className="text-sm font-semibold text-foreground">Probabilidade de Campeão <span className="font-normal text-muted-foreground">— pré-Copa 2026</span></h3>
+            <span className="text-[11px] text-muted-foreground">top 16 exibidos</span>
           </div>
 
           {/* Filtros */}
@@ -489,7 +489,7 @@ export default function KlementSection({ onClose }: { onClose: () => void }) {
                   margin={{ top: 4, right: 60, left: 120, bottom: 4 }}
                 >
                   <XAxis type="number" domain={[0, "dataMax"]} tickFormatter={v => `${v}%`}
-                    tick={{ fontSize: 10, fill: CHART_COLORS.muted }} axisLine={false} tickLine={false} />
+                    tick={{ fontSize: 11, fill: CHART_COLORS.muted }} axisLine={false} tickLine={false} />
                   <YAxis
                     type="category" dataKey="id" width={115}
                     tick={({ y, payload }: { y: number; payload: { value: string } }) => {
@@ -510,7 +510,7 @@ export default function KlementSection({ onClose }: { onClose: () => void }) {
                 {(Object.entries(CONF_COLORS) as [Confederation, string][])
                   .filter(([c]) => c !== "Play-off")
                   .map(([c, color]) => (
-                    <div key={c} className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+                    <div key={c} className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
                       <div className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: color }} />
                       {c}
                     </div>
@@ -559,16 +559,16 @@ export default function KlementSection({ onClose }: { onClose: () => void }) {
                               <span className="text-base leading-none">{t.flag}</span>
                               <span className="font-medium text-foreground">{t.name}</span>
                               {t.isHost && (
-                                <span className="text-[9px] font-bold px-1 py-0.5 rounded border text-gold bg-gold/10 border-gold/20 uppercase">Anfitrião</span>
+                                <span className="text-[11px] font-bold px-1 py-0.5 rounded border text-gold bg-gold/10 border-gold/20 uppercase">Anfitrião</span>
                               )}
                             </div>
                           </td>
                           <td className="px-3 py-2 text-right">
-                            <span className={`font-mono font-bold ${r.champProb >= 10 ? "text-gold" : r.champProb >= 5 ? "text-foreground" : r.champProb >= 1 ? "text-foreground/70" : "text-muted-foreground"}`}>
+                            <span className={`font-mono font-bold ${r.champProb >= 10 ? "text-gold" : r.champProb >= 5 ? "text-foreground" : r.champProb >= 1 ? "text-foreground/80" : "text-muted-foreground"}`}>
                               {r.champProb.toFixed(1)}%
                             </span>
                           </td>
-                          <td className="px-3 py-2 text-right font-mono text-foreground/70">{r.finalProb.toFixed(1)}%</td>
+                          <td className="px-3 py-2 text-right font-mono text-foreground/80">{r.finalProb.toFixed(1)}%</td>
                           <td className="px-3 py-2 text-right font-mono text-muted-foreground hidden sm:table-cell">{r.sfProb.toFixed(1)}%</td>
                           <td className="px-3 py-2 text-right font-mono text-muted-foreground hidden md:table-cell">{r.strength.toFixed(3)}</td>
                           <td className="px-3 py-2 text-right text-muted-foreground hidden lg:table-cell">${(t.gdpPerCapita / 1000).toFixed(0)}k</td>

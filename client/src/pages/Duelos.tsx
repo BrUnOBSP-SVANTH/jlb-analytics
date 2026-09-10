@@ -366,10 +366,10 @@ export default function Duelos() {
                           className={`text-left p-2.5 rounded-lg border text-xs leading-snug transition-colors ${
                             on ? "border-gold/40 bg-gold/10 text-foreground" : "border-border/20 bg-secondary/10 text-muted-foreground hover:border-border/40"
                           }`}>
-                          <span className="font-mono text-[10px] text-neon-blue mr-1.5">{m.probAtCreate}%</span>
+                          <span className="font-mono text-[11px] text-neon-blue mr-1.5">{m.probAtCreate}%</span>
                           {m.title}
                           {(() => { const d = daysToEnd(m.endDate); return d !== null && d <= 30 ? (
-                            <span className={`ml-1.5 text-[9px] font-semibold ${d <= 7 ? "text-gold" : "text-muted-foreground"}`}>
+                            <span className={`ml-1.5 text-[11px] font-semibold ${d <= 7 ? "text-gold" : "text-muted-foreground"}`}>
                               · encerra em {d === 0 ? "horas" : `${d}d`}
                             </span>
                           ) : null; })()}
@@ -442,8 +442,8 @@ export default function Duelos() {
           <AnimatedSection>
             {open.length === 0 ? (
               <div className="text-center py-14 glass-card rounded-xl px-6">
-                <Swords className="w-10 h-10 mx-auto text-muted-foreground/30 mb-3" aria-hidden="true" />
-                <p className="text-sm font-medium text-foreground/70 mb-1">Nenhum duelo aberto agora</p>
+                <Swords className="w-10 h-10 mx-auto text-muted-foreground mb-3" aria-hidden="true" />
+                <p className="text-sm font-medium text-foreground/80 mb-1">Nenhum duelo aberto agora</p>
                 <p className="text-xs text-muted-foreground mb-5">Seja o primeiro: desafie a comunidade — ou meça-se contra a nossa IA agora mesmo.</p>
                 <div className="flex items-center justify-center gap-3 flex-wrap">
                   <button onClick={() => void openCreate()}
@@ -473,7 +473,7 @@ export default function Duelos() {
                       ))}
                     </ul>
                     <div className="flex items-center justify-between pt-1">
-                      <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+                      <span className="text-[11px] text-muted-foreground flex items-center gap-1">
                         <Clock className="w-3 h-3" aria-hidden="true" /> {timeAgo(d.createdAt)}
                       </span>
                       <button
@@ -499,8 +499,8 @@ export default function Duelos() {
           <AnimatedSection>
             {mine.length === 0 ? (
               <div className="text-center py-14 glass-card rounded-xl px-6">
-                <Scale className="w-10 h-10 mx-auto text-muted-foreground/30 mb-3" aria-hidden="true" />
-                <p className="text-sm font-medium text-foreground/70 mb-1">Você ainda não duelou</p>
+                <Scale className="w-10 h-10 mx-auto text-muted-foreground mb-3" aria-hidden="true" />
+                <p className="text-sm font-medium text-foreground/80 mb-1">Você ainda não duelou</p>
                 <p className="text-xs text-muted-foreground">Crie um duelo ou aceite um desafio no lobby.</p>
               </div>
             ) : (
@@ -525,7 +525,7 @@ export default function Duelos() {
                         <div className="flex items-center gap-2">
                           {d.status === "open" && (
                             <>
-                              <span className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-secondary/40 text-muted-foreground">Aberto</span>
+                              <span className="text-[11px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-secondary/40 text-muted-foreground">Aberto</span>
                               <button onClick={() => void handleCancel(d)}
                                 className="text-[11px] text-muted-foreground hover:text-negative transition-colors">Cancelar</button>
                             </>
@@ -544,7 +544,7 @@ export default function Duelos() {
                                 : <span className="text-[11px] font-semibold text-negative">Derrota</span>
                           )}
                           {d.status === "cancelled" && (
-                            <span className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-secondary/40 text-muted-foreground">Cancelado</span>
+                            <span className="text-[11px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-secondary/40 text-muted-foreground">Cancelado</span>
                           )}
                         </div>
                       </div>
@@ -552,11 +552,11 @@ export default function Duelos() {
                       {d.status === "resolved" && myBrier != null && theirBrier != null && (
                         <div className="mt-3 pt-3 border-t border-border/15 grid grid-cols-2 gap-3 text-center">
                           <div>
-                            <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Seu Brier</p>
+                            <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-0.5">Seu Brier</p>
                             <p className={`text-lg font-mono font-bold ${d.won ? "text-positive" : "text-foreground"}`}>{myBrier.toFixed(3)}</p>
                           </div>
                           <div>
-                            <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Brier de {vsName}</p>
+                            <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-0.5">Brier de {vsName}</p>
                             <p className="text-lg font-mono font-bold text-muted-foreground">{theirBrier.toFixed(3)}</p>
                           </div>
                         </div>

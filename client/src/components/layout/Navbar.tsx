@@ -255,7 +255,7 @@ function AlertBell() {
           : <Bell className="w-4 h-4" aria-hidden="true" />
         }
         {unreadCount > 0 && (
-          <span className="absolute top-0.5 right-0.5 min-w-4 h-4 px-1 rounded-full bg-negative flex items-center justify-center text-[9px] font-bold text-white">
+          <span className="absolute top-0.5 right-0.5 min-w-4 h-4 px-1 rounded-full bg-negative flex items-center justify-center text-[11px] font-bold text-white">
             {unreadCount > 9 ? "9+" : unreadCount}
           </span>
         )}
@@ -270,9 +270,9 @@ function AlertBell() {
 
           {alerts.length === 0 ? (
             <div className="px-4 py-6 text-center">
-              <Bell className="w-6 h-6 text-muted-foreground/40 mx-auto mb-2" aria-hidden="true" />
+              <Bell className="w-6 h-6 text-muted-foreground mx-auto mb-2" aria-hidden="true" />
               <p className="text-xs text-muted-foreground">Nenhum alerta ainda.</p>
-              <p className="text-[11px] text-muted-foreground/70 mt-1">Acompanhando os mercados em tempo real.</p>
+              <p className="text-[11px] text-muted-foreground mt-1">Acompanhando os mercados em tempo real.</p>
             </div>
           ) : (
             <div className="max-h-80 overflow-y-auto">
@@ -281,7 +281,7 @@ function AlertBell() {
                 return (
                   <div key={alert.key ?? `${alert.source}-${alert.id}`}
                     className="flex items-center gap-3 px-4 py-2.5 border-b border-border/10 hover:bg-secondary/10 transition-colors">
-                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full border shrink-0 ${
+                    <span className={`text-[11px] font-bold px-1.5 py-0.5 rounded-full border shrink-0 ${
                       alert.source === "kalshi"
                         ? "border-green-500/30 bg-green-500/10 text-green-500"
                         : "border-neon-blue/30 bg-neon-blue/10 text-neon-blue"
@@ -332,14 +332,14 @@ function MegaMenu({ group, onClose }: { group: NavGroup; onClose: () => void }) 
                   <div className="flex items-center gap-2">
                     <p className="text-sm font-medium text-foreground leading-tight">{item.label}</p>
                     {item.badge && (
-                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-gold/15 text-gold border border-gold/20 leading-none">
+                      <span className="text-[11px] font-bold px-1.5 py-0.5 rounded-full bg-gold/15 text-gold border border-gold/20 leading-none">
                         {item.badge}
                       </span>
                     )}
                   </div>
                   <p className="text-[11px] text-muted-foreground leading-snug mt-0.5">{item.desc}</p>
                 </div>
-                <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/40 group-hover:text-muted-foreground transition-colors shrink-0" aria-hidden="true" />
+                <ChevronRight className="w-3.5 h-3.5 text-muted-foreground group-hover:text-muted-foreground transition-colors shrink-0" aria-hidden="true" />
               </div>
             </Link>
           );
@@ -385,7 +385,7 @@ export function Navbar() {
             </div>
             <div className="flex flex-col leading-none">
               <span className="text-sm font-display font-bold tracking-tight text-foreground">JLB</span>
-              <span className="text-[9px] font-mono font-medium text-gold/80 tracking-[0.25em] uppercase">Analytics</span>
+              <span className="text-[11px] font-mono font-medium text-gold/80 tracking-[0.25em] uppercase">Analytics</span>
             </div>
           </Link>
 
@@ -436,7 +436,7 @@ export function Navbar() {
             >
               <Search className="w-3 h-3" aria-hidden="true" />
               <span>Buscar</span>
-              <kbd className="text-[10px] border border-border/20 rounded px-1 bg-secondary/20">{ATALHO_BUSCA}</kbd>
+              <kbd className="text-[11px] border border-border/20 rounded px-1 bg-secondary/20">{ATALHO_BUSCA}</kbd>
             </button>
             <AlertBell />
             <div className="w-px h-5 bg-border/40 mx-0.5" aria-hidden="true" />
@@ -511,7 +511,7 @@ export function Navbar() {
                                 <Icon className="w-4 h-4 shrink-0" aria-hidden="true" />
                                 <span className="text-sm">{child.label}</span>
                                 {child.badge && (
-                                  <span className="ml-auto text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-gold/15 text-gold border border-gold/20">
+                                  <span className="ml-auto text-[11px] font-bold px-1.5 py-0.5 rounded-full bg-gold/15 text-gold border border-gold/20">
                                     {child.badge}
                                   </span>
                                 )}

@@ -27,7 +27,7 @@ function DataFreshness() {
 
   if (!data || (!data.lastArticleAt && !data.lastSnapshotAt)) return null;
   return (
-    <p className="text-[10px] text-muted-foreground text-center tabular-nums">
+    <p className="text-[11px] text-muted-foreground text-center tabular-nums">
       {data.lastArticleAt && <>Cérebro atualizado {timeAgo(data.lastArticleAt)}</>}
       {data.lastArticleAt && data.lastSnapshotAt && <span className="mx-1.5 text-border/40">·</span>}
       {data.lastSnapshotAt && <>preços de mercado {timeAgo(data.lastSnapshotAt)}</>}
@@ -121,7 +121,7 @@ export function Footer() {
             <span className="text-border/40">·</span>
             <Link href="/imprensa"><span className="text-muted-foreground hover:text-foreground transition-colors">Imprensa</span></Link>
           </div>
-          <p className="text-xs text-muted-foreground/70 text-center">
+          <p className="text-xs text-muted-foreground text-center">
             &copy; {new Date().getFullYear()} JLB Analytics. Todos os direitos reservados.
           </p>
           <DataFreshness />

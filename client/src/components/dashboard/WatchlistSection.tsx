@@ -45,7 +45,7 @@ export default function WatchlistSection() {
             <button
               onClick={() => void (push.enabled ? push.unsubscribe() : push.subscribe())}
               disabled={push.busy}
-              className={`text-[10px] font-medium px-2.5 py-1 rounded-full border transition-colors flex items-center gap-1 disabled:opacity-50 ${
+              className={`text-[11px] font-medium px-2.5 py-1 rounded-full border transition-colors flex items-center gap-1 disabled:opacity-50 ${
                 push.enabled
                   ? "text-positive border-positive/30 bg-positive/10"
                   : "text-muted-foreground border-border/40 hover:text-foreground hover:border-gold/40"
@@ -55,7 +55,7 @@ export default function WatchlistSection() {
               {push.enabled ? "Notificações ativas" : "Ativar notificações"}
             </button>
           )}
-          <span className="text-[10px] text-muted-foreground/50 flex items-center gap-1">
+          <span className="text-[11px] text-muted-foreground flex items-center gap-1">
             <Bell className="w-3 h-3" />clique no sino para ajustar alerta
           </span>
           <Link href="/apostas">
@@ -88,14 +88,14 @@ export default function WatchlistSection() {
                   <p className="text-xs font-medium text-foreground leading-snug line-clamp-1">{item.title}</p>
                 )}
                 <div className="flex items-center gap-2 mt-1 flex-wrap">
-                  <span className={`text-[10px] px-1.5 py-0.5 rounded border ${SOURCE_COLOR[item.source] ?? ""}`}>
+                  <span className={`text-[11px] px-1.5 py-0.5 rounded border ${SOURCE_COLOR[item.source] ?? ""}`}>
                     {SOURCE_LABEL[item.source] ?? item.source}
                   </span>
-                  <span className="text-[10px] text-muted-foreground">
+                  <span className="text-[11px] text-muted-foreground">
                     {new Date(item.savedAt).toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })}
                   </span>
                   {delta !== null && Math.abs(delta) >= 0.5 && (
-                    <span className={`text-[10px] font-mono font-semibold ${delta > 0 ? "text-positive" : "text-negative"}`}>
+                    <span className={`text-[11px] font-mono font-semibold ${delta > 0 ? "text-positive" : "text-negative"}`}>
                       {delta > 0 ? "+" : ""}{delta.toFixed(1)}pp desde salvo
                     </span>
                   )}
@@ -105,7 +105,7 @@ export default function WatchlistSection() {
               {displayPct !== null && (
                 <div className="shrink-0 text-right">
                   <p className={`text-sm font-mono font-bold ${probColor}`}>{displayPct.toFixed(1)}%</p>
-                  <p className="text-[9px] text-muted-foreground">{liveProb !== null ? "ao vivo" : "salvo"}</p>
+                  <p className="text-[11px] text-muted-foreground">{liveProb !== null ? "ao vivo" : "salvo"}</p>
                 </div>
               )}
 
@@ -113,13 +113,13 @@ export default function WatchlistSection() {
                 <button
                   onClick={() => handleCycleThreshold(item.id)}
                   title={`Alerta: ≥${threshold}pp — clique para alterar`}
-                  className="flex items-center gap-0.5 px-1.5 py-1 rounded-md text-[9px] font-mono border border-border/30 text-muted-foreground/60 hover:text-gold hover:border-gold/30 transition-colors"
+                  className="flex items-center gap-0.5 px-1.5 py-1 rounded-md text-[11px] font-mono border border-border/30 text-muted-foreground hover:text-gold hover:border-gold/30 transition-colors"
                 >
                   <Bell className="w-3 h-3" aria-hidden="true" />
                   {threshold}pp
                 </button>
                 <a href={item.externalUrl} target="_blank" rel="noopener noreferrer"
-                  className="p-1.5 rounded-md text-muted-foreground/50 hover:text-primary transition-colors"
+                  className="p-1.5 rounded-md text-muted-foreground hover:text-primary transition-colors"
                   title={`Ver no ${SOURCE_LABEL[item.source] ?? item.source}`}
                   aria-label={`Ver na fonte (${SOURCE_LABEL[item.source] ?? item.source}): ${item.title}`}>
                   <ExternalLink className="w-3.5 h-3.5" aria-hidden="true" />
@@ -127,7 +127,7 @@ export default function WatchlistSection() {
                 <button
                   onClick={() => handleRemove(item.id)}
                   title="Remover da watchlist" aria-label={`Remover: ${item.title}`}
-                  className="p-1.5 rounded-md text-muted-foreground/40 hover:text-negative transition-colors">
+                  className="p-1.5 rounded-md text-muted-foreground hover:text-negative transition-colors">
                   <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
                 </button>
               </div>

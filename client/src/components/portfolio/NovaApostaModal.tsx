@@ -92,18 +92,18 @@ export function NovaApostaModal({
                 {escolhido.fonte === "polymarket" ? "Polymarket" : "Kalshi"} · o mercado dá{" "}
                 <span className="font-mono font-bold text-foreground">{Math.round(escolhido.probSim * 100)}%</span> de chance para SIM
               </p>
-              <button onClick={() => setEscolhido(null)} className="text-[10px] text-muted-foreground/60 hover:text-muted-foreground mt-1">
+              <button onClick={() => setEscolhido(null)} className="text-[11px] text-muted-foreground hover:text-muted-foreground mt-1">
                 Trocar mercado
               </button>
             </div>
           ) : (
             <div className="space-y-2">
               <div className="relative">
-                <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground/50" />
+                <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                 <input
                   type="text" placeholder="Buscar mercado (em português ou inglês)…" value={busca}
                   onChange={(e) => setBusca(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2 rounded-lg text-xs bg-secondary/30 border border-border/30 text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-primary/40"
+                  className="w-full pl-9 pr-3 py-2 rounded-lg text-xs bg-secondary/30 border border-border/30 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/40"
                 />
               </div>
               <div className="max-h-48 overflow-y-auto space-y-0.5">
@@ -125,7 +125,7 @@ export function NovaApostaModal({
             <>
               {/* ── Escolher o lado ── */}
               <div className="space-y-1.5">
-                <p className="text-[10px] text-muted-foreground uppercase tracking-wider">No que você aposta?</p>
+                <p className="text-[11px] text-muted-foreground uppercase tracking-wider">No que você aposta?</p>
                 <div className="flex gap-2">
                   {(["sim", "nao"] as const).map((l) => {
                     const preco = precoDoLado(l, escolhido.probSim);
@@ -140,14 +140,14 @@ export function NovaApostaModal({
                         <span className="text-xs font-semibold flex items-center justify-center gap-1">
                           {l === "sim" ? <><TrendingUp className="w-3.5 h-3.5" /> VAI ACONTECER</> : <><TrendingDown className="w-3.5 h-3.5" /> NÃO VAI</>}
                         </span>
-                        <span className="block text-[10px] font-mono mt-0.5 opacity-80">
+                        <span className="block text-[11px] font-mono mt-0.5 opacity-80">
                           cota a {reais(preco)}
                         </span>
                       </button>
                     );
                   })}
                 </div>
-                <p className="text-[10px] text-muted-foreground leading-snug">
+                <p className="text-[11px] text-muted-foreground leading-snug">
                   Cada cota paga R$ 1 se você acertar. Quanto mais barata a cota, menos gente acredita
                   naquele lado — e mais ela paga.
                 </p>
@@ -155,7 +155,7 @@ export function NovaApostaModal({
 
               {/* ── Quanto apostar ── */}
               <div className="space-y-1.5">
-                <div className="flex justify-between text-[10px] text-muted-foreground">
+                <div className="flex justify-between text-[11px] text-muted-foreground">
                   <span>Quanto você aposta</span>
                   <span className="font-mono font-bold text-foreground">{reais(valor)}</span>
                 </div>
@@ -169,13 +169,13 @@ export function NovaApostaModal({
                 <div className="flex gap-2 flex-wrap">
                   {VALORES_RAPIDOS.filter((v) => v <= disponivel).map((v) => (
                     <button key={v} onClick={() => setValor(v)}
-                      className="px-2 py-0.5 rounded text-[10px] border border-border/30 text-muted-foreground hover:text-foreground transition-colors">
+                      className="px-2 py-0.5 rounded text-[11px] border border-border/30 text-muted-foreground hover:text-foreground transition-colors">
                       {reais(v)}
                     </button>
                   ))}
                   {disponivel >= APOSTA_MINIMA && (
                     <button onClick={() => setValor(Math.floor(disponivel))}
-                      className="px-2 py-0.5 rounded text-[10px] border border-border/30 text-muted-foreground hover:text-foreground transition-colors">
+                      className="px-2 py-0.5 rounded text-[11px] border border-border/30 text-muted-foreground hover:text-foreground transition-colors">
                       tudo
                     </button>
                   )}
@@ -185,22 +185,22 @@ export function NovaApostaModal({
               {/* ── A resposta: ganho e perda, lado a lado ── */}
               <div className="grid grid-cols-2 gap-3">
                 <div className="p-3 rounded-xl border border-positive/25 bg-positive/5">
-                  <p className="text-[10px] text-positive/80 uppercase tracking-wider mb-1">Se você acertar</p>
+                  <p className="text-[11px] text-positive/80 uppercase tracking-wider mb-1">Se você acertar</p>
                   <p className="text-lg font-mono font-bold text-positive tabular-nums">{reais(conta.retorno)}</p>
-                  <p className="text-[10px] text-muted-foreground mt-0.5">
+                  <p className="text-[11px] text-muted-foreground mt-0.5">
                     lucro de {reais(conta.lucro)} · paga {conta.odds.toFixed(2)}×
                   </p>
                 </div>
                 <div className="p-3 rounded-xl border border-negative/25 bg-negative/5">
-                  <p className="text-[10px] text-negative/80 uppercase tracking-wider mb-1">Se você errar</p>
+                  <p className="text-[11px] text-negative/80 uppercase tracking-wider mb-1">Se você errar</p>
                   <p className="text-lg font-mono font-bold text-negative tabular-nums">−{reais(conta.perda)}</p>
-                  <p className="text-[10px] text-muted-foreground mt-0.5">
+                  <p className="text-[11px] text-muted-foreground mt-0.5">
                     perde tudo que apostou
                   </p>
                 </div>
               </div>
 
-              <p className="text-[10px] text-muted-foreground leading-snug">
+              <p className="text-[11px] text-muted-foreground leading-snug">
                 Para essa aposta valer a pena no longo prazo, você precisa acreditar que a chance real é
                 maior que {Math.round(conta.preco * 100)}%. É isso que chamamos de{" "}
                 <Termo nome="Edge">vantagem</Termo>.

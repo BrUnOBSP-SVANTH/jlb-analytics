@@ -34,7 +34,7 @@ export default function Termos() {
       <PageHeader title="Termos de Uso" subtitle="As regras para uso da plataforma JLB Analytics." badge="Legal" />
       <div className="container py-12 max-w-3xl mx-auto">
         <AnimatedSection>
-          <p className="text-xs text-muted-foreground/60 mb-8">Última atualização: {UPDATED}</p>
+          <p className="text-xs text-muted-foreground mb-8">Última atualização: {UPDATED}</p>
           <div className="space-y-8">
             <Section n="1" title="Aceitação dos termos">
               <p>Ao acessar ou usar a JLB Analytics ("plataforma"), você concorda com estes Termos de Uso e com a nossa{" "}

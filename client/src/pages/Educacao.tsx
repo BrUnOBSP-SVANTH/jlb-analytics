@@ -311,7 +311,7 @@ export default function Educacao() {
               <p className="font-semibold text-sm text-foreground mb-1">{item.termo}</p>
               <p className="text-xs text-muted-foreground leading-relaxed">{item.simples}</p>
               {item.tecnico && (
-                <p className="text-[11px] text-muted-foreground/70 leading-relaxed mt-2 pt-2 border-t border-border/30">
+                <p className="text-[11px] text-muted-foreground leading-relaxed mt-2 pt-2 border-t border-border/30">
                   <span className="font-medium">Definição técnica:</span> {item.tecnico}
                 </p>
               )}

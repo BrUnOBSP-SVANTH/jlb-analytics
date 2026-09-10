@@ -120,7 +120,7 @@ export default function MarketDetail() {
                   {/* Cérebro articles chips */}
                   {cerebroArticles.length > 0 && (
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="flex items-center gap-1 text-[10px] text-muted-foreground/60 font-semibold uppercase tracking-wider">
+                      <span className="flex items-center gap-1 text-[11px] text-muted-foreground font-semibold uppercase tracking-wider">
                         <BookOpen className="w-3 h-3" />
                         Cérebro
                       </span>
@@ -156,7 +156,7 @@ export default function MarketDetail() {
                   linha secundária compacta. (Multi-desfecho usa a seção de Desfechos acima.) */}
               {!market.parsedOutcomes && (
                 <div className="glass-card rounded-xl p-6 mb-3">
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-1.5">Probabilidade de SIM</p>
+                  <p className="text-[11px] text-muted-foreground uppercase tracking-widest mb-1.5">Probabilidade de SIM</p>
                   <div className="flex items-baseline gap-x-3 gap-y-1 flex-wrap">
                     <span className={`font-mono font-bold leading-none tabular-nums ${probColor}`} style={{ fontSize: "clamp(3.25rem, 9vw, 4.75rem)" }}>
                       {probPct}<span className="text-3xl align-top leading-none">%</span>
@@ -175,23 +175,23 @@ export default function MarketDetail() {
               <div className="grid grid-cols-3 gap-3">
                 {/* Volume Total */}
                 <div className="glass-card rounded-xl p-4 text-center">
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Volume Total</p>
+                  <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-1">Volume Total</p>
                   <p className="text-2xl font-mono font-bold text-foreground">
                     {market.volume !== undefined ? formatVolume(market.volume) : "—"}
                   </p>
-                  <p className="text-[10px] text-muted-foreground mt-1">Negociado</p>
+                  <p className="text-[11px] text-muted-foreground mt-1">Negociado</p>
                 </div>
                 {/* Volume 24h */}
                 <div className="glass-card rounded-xl p-4 text-center">
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1"><Termo nome="volume">Volume 24h</Termo></p>
+                  <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-1"><Termo nome="volume">Volume 24h</Termo></p>
                   <p className="text-2xl font-mono font-bold text-neon-blue">
                     {market.volume24h !== undefined ? formatVolume(market.volume24h) : "—"}
                   </p>
-                  <p className="text-[10px] text-muted-foreground mt-1">Últimas 24 horas</p>
+                  <p className="text-[11px] text-muted-foreground mt-1">Últimas 24 horas</p>
                 </div>
                 {/* Variação 7d */}
                 <div className="glass-card rounded-xl p-4 text-center">
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Variação 7d</p>
+                  <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-1">Variação 7d</p>
                   {market.weekPriceChange !== undefined ? (
                     <>
                       <p className={`text-2xl font-mono font-bold flex items-center justify-center gap-1 ${market.weekPriceChange >= 0 ? "text-positive" : "text-negative"}`}>
@@ -200,7 +200,7 @@ export default function MarketDetail() {
                           : <TrendingDown className="w-5 h-5" />}
                         {market.weekPriceChange >= 0 ? "+" : ""}{Math.round(market.weekPriceChange * 100)}pp
                       </p>
-                      <p className="text-[10px] text-muted-foreground mt-1">vs semana anterior</p>
+                      <p className="text-[11px] text-muted-foreground mt-1">vs semana anterior</p>
                     </>
                   ) : (
                     <p className="text-2xl font-mono font-bold text-muted-foreground">—</p>
@@ -239,7 +239,7 @@ export default function MarketDetail() {
                       Histórico de Probabilidade (90 dias)
                     </h2>
                     {snapshotRows.length >= 4 && (
-                      <p className="text-[10px] text-muted-foreground mt-0.5">({snapshotRows.length} snapshots)</p>
+                      <p className="text-[11px] text-muted-foreground mt-0.5">({snapshotRows.length} snapshots)</p>
                     )}
                   </div>
                 </div>
@@ -292,9 +292,9 @@ export default function MarketDetail() {
                   </ResponsiveContainer>
                 ) : (
                   <div className="h-40 flex flex-col items-center justify-center gap-2 text-center">
-                    <BarChart2 className="w-8 h-8 text-muted-foreground/30" />
+                    <BarChart2 className="w-8 h-8 text-muted-foreground" />
                     <p className="text-sm text-muted-foreground">Dados históricos disponíveis após snapshots serem coletados</p>
-                    <p className="text-[10px] text-muted-foreground/60">Os dados aparecem aqui conforme o sistema coleta snapshots periódicos</p>
+                    <p className="text-[11px] text-muted-foreground">Os dados aparecem aqui conforme o sistema coleta snapshots periódicos</p>
                   </div>
                 )}
               </div>
@@ -345,22 +345,22 @@ export default function MarketDetail() {
                       }`}>
                         <div className="flex items-center gap-3 flex-wrap">
                           <div className="text-center">
-                            <p className="text-[9px] text-muted-foreground/60 uppercase">Mercado</p>
+                            <p className="text-[11px] text-muted-foreground uppercase">Mercado</p>
                             <p className="font-mono font-bold text-foreground">{Math.round(market.yesProb * 100)}%</p>
                           </div>
-                          <span className="text-muted-foreground/40 text-xs">vs</span>
+                          <span className="text-muted-foreground text-xs">vs</span>
                           <div className="text-center">
-                            <p className="text-[9px] text-gold/70 uppercase">Fair Value JLB</p>
+                            <p className="text-[11px] text-gold/70 uppercase">Fair Value JLB</p>
                             <p className="font-mono font-bold text-gold text-xl">{aiAnalysis.fairValue}%</p>
                           </div>
                           {aiAnalysis.edgePp != null && Math.abs(aiAnalysis.edgePp) >= 1 && (
                             <div className={`text-center px-2.5 py-1 rounded-lg ${aiAnalysis.edgePp > 0 ? "bg-positive/10 text-positive" : "bg-negative/10 text-negative"}`}>
-                              <p className="text-[9px] uppercase opacity-70"><Termo nome="edge">Edge</Termo></p>
+                              <p className="text-[11px] uppercase opacity-70"><Termo nome="edge">Edge</Termo></p>
                               <p className="font-mono font-bold">{aiAnalysis.edgePp > 0 ? "+" : ""}{aiAnalysis.edgePp}pp</p>
                             </div>
                           )}
                           {aiAnalysis.confidence && (
-                            <span className={`ml-auto text-[9px] font-bold px-2 py-0.5 rounded-full border uppercase ${
+                            <span className={`ml-auto text-[11px] font-bold px-2 py-0.5 rounded-full border uppercase ${
                               aiAnalysis.confidence === "alta" ? "border-positive/30 bg-positive/10 text-positive" :
                               aiAnalysis.confidence === "media" ? "border-gold/30 bg-gold/10 text-gold" :
                               "border-border/30 bg-secondary/20 text-muted-foreground"
@@ -371,7 +371,7 @@ export default function MarketDetail() {
                           <p className="text-xs text-muted-foreground leading-relaxed">{aiAnalysis.edgeSignal}</p>
                         )}
                         {aiAnalysis.referenceClass && (
-                          <p className="text-[10px] text-muted-foreground/70 leading-relaxed border-t border-border/15 pt-2">
+                          <p className="text-[11px] text-muted-foreground leading-relaxed border-t border-border/15 pt-2">
                             <span className="font-semibold">Âncora:</span> {aiAnalysis.referenceClass}
                           </p>
                         )}
@@ -383,7 +383,7 @@ export default function MarketDetail() {
                         aproveita nada do que vem depois. */}
                     {aiAnalysis.contexto && (
                       <div className="p-4 rounded-lg bg-secondary/20 border border-border/20">
-                        <p className="text-[10px] font-semibold text-foreground/60 uppercase tracking-wider mb-2 flex items-center gap-1">
+                        <p className="text-[11px] font-semibold text-foreground/80 uppercase tracking-wider mb-2 flex items-center gap-1">
                           <BookOpen className="w-3 h-3" />Entenda o assunto
                         </p>
                         <p className="text-sm text-muted-foreground leading-relaxed">{aiAnalysis.contexto}</p>
@@ -392,7 +392,7 @@ export default function MarketDetail() {
 
                     {/* Main analysis */}
                     <div className="p-4 rounded-lg bg-neon-blue/5 border border-neon-blue/15">
-                      <p className="text-[10px] font-semibold text-neon-blue/80 uppercase tracking-wider mb-2 flex items-center gap-1 flex-wrap">
+                      <p className="text-[11px] font-semibold text-neon-blue/80 uppercase tracking-wider mb-2 flex items-center gap-1 flex-wrap">
                         <Sparkles className="w-3 h-3" />Análise de IA
                         {(aiAnalysis.cerebroHits ?? 0) > 0 && (
                           <span className="px-1.5 py-0.5 rounded bg-neon-blue/10 border border-neon-blue/30 normal-case">🧠 Cérebro ×{aiAnalysis.cerebroHits}</span>
@@ -408,7 +408,7 @@ export default function MarketDetail() {
                     {/* Key factors */}
                     {aiAnalysis.keyFactors.length > 0 && (
                       <div>
-                        <p className="text-[10px] font-semibold text-foreground/60 uppercase tracking-wider mb-2 flex items-center gap-1">
+                        <p className="text-[11px] font-semibold text-foreground/80 uppercase tracking-wider mb-2 flex items-center gap-1">
                           <Target className="w-3 h-3" />Fatores-chave
                         </p>
                         <ul className="space-y-1.5">
@@ -426,16 +426,16 @@ export default function MarketDetail() {
                         aquele desfecho é o provável. */}
                     {aiAnalysis.cenarios && (
                       <div>
-                        <p className="text-[10px] font-semibold text-foreground/60 uppercase tracking-wider mb-2 flex items-center gap-1">
+                        <p className="text-[11px] font-semibold text-foreground/80 uppercase tracking-wider mb-2 flex items-center gap-1">
                           <GitBranch className="w-3 h-3" />O que decide
                         </p>
                         <div className="grid sm:grid-cols-2 gap-3">
                           <div className="p-3 rounded-lg bg-positive/5 border border-positive/20">
-                            <p className="text-[10px] font-semibold text-positive/80 uppercase tracking-wider mb-1">Para dar SIM</p>
+                            <p className="text-[11px] font-semibold text-positive/80 uppercase tracking-wider mb-1">Para dar SIM</p>
                             <p className="text-sm text-muted-foreground leading-relaxed">{aiAnalysis.cenarios.sim}</p>
                           </div>
                           <div className="p-3 rounded-lg bg-negative/5 border border-negative/20">
-                            <p className="text-[10px] font-semibold text-negative/80 uppercase tracking-wider mb-1">Para dar NÃO</p>
+                            <p className="text-[11px] font-semibold text-negative/80 uppercase tracking-wider mb-1">Para dar NÃO</p>
                             <p className="text-sm text-muted-foreground leading-relaxed">{aiAnalysis.cenarios.nao}</p>
                           </div>
                         </div>
@@ -445,7 +445,7 @@ export default function MarketDetail() {
                     {/* Watch for */}
                     {aiAnalysis.watchFor && (
                       <div className="p-3 rounded-lg bg-gold/5 border border-gold/15">
-                        <p className="text-[10px] font-semibold text-gold/70 uppercase tracking-wider mb-1">O que acompanhar</p>
+                        <p className="text-[11px] font-semibold text-gold/70 uppercase tracking-wider mb-1">O que acompanhar</p>
                         <p className="text-sm text-muted-foreground leading-relaxed">{aiAnalysis.watchFor}</p>
                       </div>
                     )}
@@ -461,7 +461,7 @@ export default function MarketDetail() {
                     {/* Fontes que a IA leu — cumpre a promessa "com as fontes à mostra" (antes o payload trazia, a tela descartava) */}
                     {aiAnalysis.articles && aiAnalysis.articles.length > 0 && (
                       <div>
-                        <p className="text-[10px] font-semibold text-foreground/60 uppercase tracking-wider mb-2 flex items-center gap-1">
+                        <p className="text-[11px] font-semibold text-foreground/80 uppercase tracking-wider mb-2 flex items-center gap-1">
                           <Newspaper className="w-3 h-3" aria-hidden="true" />Fontes que a IA leu
                         </p>
                         <ul className="space-y-1.5">
@@ -470,13 +470,13 @@ export default function MarketDetail() {
                               {a.url ? (
                                 <a href={a.url} target="_blank" rel="noopener noreferrer"
                                   className="flex items-start gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors group">
-                                  <ExternalLink className="w-3 h-3 shrink-0 mt-0.5 text-muted-foreground/50 group-hover:text-primary" aria-hidden="true" />
-                                  <span className="line-clamp-2">{a.title} <span className="text-muted-foreground/50">· {a.source}</span></span>
+                                  <ExternalLink className="w-3 h-3 shrink-0 mt-0.5 text-muted-foreground group-hover:text-primary" aria-hidden="true" />
+                                  <span className="line-clamp-2">{a.title} <span className="text-muted-foreground">· {a.source}</span></span>
                                 </a>
                               ) : (
                                 <span className="flex items-start gap-2 text-xs text-muted-foreground">
-                                  <Newspaper className="w-3 h-3 shrink-0 mt-0.5 text-muted-foreground/40" aria-hidden="true" />
-                                  <span className="line-clamp-2">{a.title} <span className="text-muted-foreground/50">· {a.source}</span></span>
+                                  <Newspaper className="w-3 h-3 shrink-0 mt-0.5 text-muted-foreground" aria-hidden="true" />
+                                  <span className="line-clamp-2">{a.title} <span className="text-muted-foreground">· {a.source}</span></span>
                                 </span>
                               )}
                             </li>

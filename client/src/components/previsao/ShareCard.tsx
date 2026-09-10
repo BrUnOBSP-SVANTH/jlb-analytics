@@ -152,7 +152,7 @@ export function ShareCard() {
         <div className="flex items-center gap-2 mb-4">
           <Share2 className="w-4 h-4 text-gold shrink-0" />
           <p className="text-sm font-semibold text-foreground">Compartilhe esta prova</p>
-          <span className="ml-auto text-[10px] text-muted-foreground/60">gera imagem para redes</span>
+          <span className="ml-auto text-[11px] text-muted-foreground">gera imagem para redes</span>
         </div>
 
         {/* Preview do cartão (o mesmo SVG que vira PNG) */}

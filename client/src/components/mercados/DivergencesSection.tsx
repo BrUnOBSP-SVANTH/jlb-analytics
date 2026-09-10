@@ -32,8 +32,8 @@ export function DivergencesSection() {
         >
           <Scale className="w-4 h-4 text-gold shrink-0" />
           <span className="text-sm font-semibold text-foreground">Onde a JLB discorda do mercado</span>
-          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-gold/15 border border-gold/30 text-gold">{divs.length}</span>
-          <span className="ml-auto text-[10px] text-muted-foreground">{collapsed ? "mostrar" : "ocultar"}</span>
+          <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-gold/15 border border-gold/30 text-gold">{divs.length}</span>
+          <span className="ml-auto text-[11px] text-muted-foreground">{collapsed ? "mostrar" : "ocultar"}</span>
         </button>
         {!collapsed && (
           <div className="px-4 pb-4 space-y-2">
@@ -50,26 +50,26 @@ export function DivergencesSection() {
                   <div className="flex items-center gap-3 p-2.5 rounded-lg bg-secondary/20 border border-border/15 hover:border-gold/30 transition-colors cursor-pointer">
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-medium text-foreground truncate">{d.title}</p>
-                      <p className="text-[10px] text-muted-foreground mt-0.5">
+                      <p className="text-[11px] text-muted-foreground mt-0.5">
                         Mercado <span className="font-mono text-foreground">{d.currentProb}%</span> ·
                         JLB <span className="font-mono text-gold">{d.aiFairValue}%</span>
                         <span className="ml-1">({d.source === "kalshi" ? "Kalshi" : "Polymarket"})</span>
                         {d.forecastAgeDays !== undefined && (
-                          <span className="ml-1 text-muted-foreground/70">
+                          <span className="ml-1 text-muted-foreground">
                             · estimativa de {d.forecastAgeDays === 0 ? "hoje" : `${d.forecastAgeDays}d atrás`}
                           </span>
                         )}
                       </p>
                     </div>
                     <div className={`text-center px-2.5 py-1 rounded-lg shrink-0 ${d.edge > 0 ? "bg-positive/10 text-positive" : "bg-negative/10 text-negative"}`}>
-                      <p className="text-[9px] uppercase">Edge</p>
+                      <p className="text-[11px] uppercase">Edge</p>
                       <p className="text-sm font-mono font-bold">{d.edge > 0 ? "+" : ""}{d.edge}pp</p>
                     </div>
                   </div>
                 </Link>
               );
             })}
-            <p className="text-[10px] text-muted-foreground/50 pt-1">
+            <p className="text-[11px] text-muted-foreground pt-1">
               Edge alto não é lucro garantido — o mercado pode ter informação que o modelo não tem. Sempre verifique a análise completa.
             </p>
           </div>

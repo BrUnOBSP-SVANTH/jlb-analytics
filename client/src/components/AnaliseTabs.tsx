@@ -31,7 +31,7 @@ export default function AnaliseTabs() {
                   <Icon className="w-3.5 h-3.5" aria-hidden="true" />
                   {t.label}
                   {t.badge && (
-                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-gold/15 text-gold border border-gold/20 leading-none">
+                    <span className="text-[11px] font-bold px-1.5 py-0.5 rounded-full bg-gold/15 text-gold border border-gold/20 leading-none">
                       {t.badge}
                     </span>
                   )}

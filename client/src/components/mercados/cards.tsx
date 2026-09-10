@@ -141,7 +141,7 @@ export function ProbSparkline({ tokenIds, marketId, source }: {
         <circle cx={fim.x} cy={fim.y} r={4} fill={color} fillOpacity={0.18} />
         <circle cx={fim.x} cy={fim.y} r={2} fill={color} />
       </svg>
-      <span className={`text-[9px] font-mono ${deltaPp === 0 ? "text-muted-foreground" : trend ? "text-positive" : "text-negative"}`}>
+      <span className={`text-[11px] font-mono ${deltaPp === 0 ? "text-muted-foreground" : trend ? "text-positive" : "text-negative"}`}>
         {deltaPp > 0 ? "+" : ""}{deltaPp}pp {displayDays}d
       </span>
     </div>
@@ -171,7 +171,7 @@ export function MarketBadge({ badge, endDate }: { badge: DynamicBadge; endDate?:
   }
 
   return (
-    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${cls}`}>
+    <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full border ${cls}`}>
       {label}
     </span>
   );
@@ -183,28 +183,37 @@ export function VolumeTrend({ volume, volume24h }: { volume?: number; volume24h?
   if (ratio < 0.05) return null;
   const isStrong = ratio > 0.2;
   return (
-    <span className={`text-[10px] font-mono ${isStrong ? "text-positive" : "text-muted-foreground/60"}`}
+    <span className={`text-[11px] font-mono ${isStrong ? "text-positive" : "text-muted-foreground"}`}
       title={`${(ratio * 100).toFixed(0)}% do volume total nas últimas 24h`}>
       {isStrong ? "↑↑" : "↑"}
     </span>
   );
 }
 
+/**
+ * Leitura de sentimento do TEXTO do mercado — não é a categoria dele.
+ *
+ * MKT-03: sem o prefixo, "POSITIVO" em caixa alta ao lado de "Política" e
+ * "Cripto" lê-se como mais uma categoria. O rótulo agora diz de que campo ele é,
+ * e a caixa alta sai (era ela que dava o peso de etiqueta de sistema).
+ */
 export function SentimentBadge({ label }: { label: string }) {
   return (
-    <span className={`text-[10px] font-medium uppercase tracking-wider px-2 py-0.5 rounded-full border ${
-      label === "Positivo" ? "border-positive/30 bg-positive/10 text-positive" :
-      label === "Negativo" ? "border-negative/30 bg-negative/10 text-negative" :
-      "border-border/30 bg-secondary/30 text-muted-foreground"
-    }`}>{label}</span>
+    <span
+      title="Leitura automática do tom do texto do mercado"
+      className={`text-[11px] font-medium px-2 py-0.5 rounded-full border ${
+        label === "Positivo" ? "border-positive/30 bg-positive/10 text-positive" :
+        label === "Negativo" ? "border-negative/30 bg-negative/10 text-negative" :
+        "border-border/30 bg-secondary/30 text-muted-foreground"
+      }`}>tom {label.toLowerCase()}</span>
   );
 }
 
 export function SourceBadge({ source, subreddit }: { source: Source; subreddit?: string }) {
   if (source === "reddit")
-    return <span className="text-[10px] font-medium px-2 py-0.5 rounded-full border border-orange-500/30 bg-orange-500/10 text-orange-400">r/{subreddit}</span>;
+    return <span className="text-[11px] font-medium px-2 py-0.5 rounded-full border border-orange-500/30 bg-orange-500/10 text-orange-400">r/{subreddit}</span>;
   if (source === "kalshi")
-    return <span className="text-[10px] font-medium px-2 py-0.5 rounded-full border border-green-500/30 bg-green-500/10 text-green-400">Kalshi</span>;
+    return <span className="text-[11px] font-medium px-2 py-0.5 rounded-full border border-green-500/30 bg-green-500/10 text-green-400">Kalshi</span>;
   if (source === "manifold")
     // "fictício" no rótulo, não só na dica: a Manifold opera com dinheiro de
     // brincadeira (mana). O preço dela ao lado de Polymarket e Kalshi parece a
@@ -212,13 +221,13 @@ export function SourceBadge({ source, subreddit }: { source: Source; subreddit?:
     // centavo, aqui não. Quem lê de relance precisa ver a diferença.
     return (
       <span
-        className="text-[10px] font-medium px-2 py-0.5 rounded-full border border-purple-500/30 bg-purple-500/10 text-purple-400"
+        className="text-[11px] font-medium px-2 py-0.5 rounded-full border border-purple-500/30 bg-purple-500/10 text-purple-400"
         title="A Manifold usa dinheiro fictício (mana). O preço reflete opinião, não dinheiro em risco — diferente de Polymarket e Kalshi."
       >
         Manifold · fictício
       </span>
     );
-  return <span className="text-[10px] font-medium px-2 py-0.5 rounded-full border border-neon-blue/30 bg-neon-blue/10 text-neon-blue">Polymarket</span>;
+  return <span className="text-[11px] font-medium px-2 py-0.5 rounded-full border border-neon-blue/30 bg-neon-blue/10 text-neon-blue">Polymarket</span>;
 }
 
 
@@ -272,7 +281,7 @@ export function ProbHero({ prob, flash }: { prob: number; flash?: "up" | "down" 
       <p className={`font-mono font-bold leading-none tabular-nums ${color} transition-colors duration-300`} style={{ fontSize: "2.75rem" }}>
         {pct}<span className="text-xl align-top leading-none">%</span>
       </p>
-      <p className="text-[9px] text-muted-foreground uppercase tracking-widest mt-1.5 flex items-center justify-end gap-1">
+      <p className="text-[11px] text-muted-foreground uppercase tracking-widest mt-1.5 flex items-center justify-end gap-1">
         {flash === "up" && <span className="text-positive leading-none">▲</span>}
         {flash === "down" && <span className="text-negative leading-none">▼</span>}
         chance SIM
@@ -294,9 +303,9 @@ export function ProbBar({ prob }: { prob: number }) {
         <div className={`h-full rounded-l-full rounded-r-[2px] min-w-[6px] ${color} transition-all duration-500`} style={{ width: `${largura}%` }} />
       </div>
       {/* Só o complemento NÃO é dado novo — o número SIM já é o herói acima. */}
-      <div className="flex justify-between text-[10px] mt-1">
+      <div className="flex justify-between text-[11px] mt-1">
         <span className="text-muted-foreground">SIM</span>
-        <span className="text-muted-foreground">NÃO <span className="text-foreground/70 font-mono font-medium">{100 - pct}%</span></span>
+        <span className="text-muted-foreground">NÃO <span className="text-foreground/80 font-mono font-medium">{100 - pct}%</span></span>
       </div>
     </div>
   );
@@ -326,21 +335,21 @@ export function MultiOutcomePills({ outcomes }: { outcomes: { label: string; pro
           const pct = Math.round(prob * 100);
           return (
             <div key={label} className="flex items-center gap-2">
-              <span className="text-[10px] text-muted-foreground truncate shrink-0 w-24 leading-none" title={label}>{label}</span>
+              <span className="text-[11px] text-muted-foreground truncate shrink-0 w-24 leading-none" title={label}>{label}</span>
               <div className="flex-1 h-1.5 bg-secondary/40 rounded-full overflow-hidden">
                 <div className={`h-full rounded-l-full rounded-r-[2px] ${pct >= 25 ? "bg-primary/60" : "bg-primary/35"}`} style={{ width: `${Math.max(2, pct)}%` }} />
               </div>
-              <span className="text-[10px] font-mono font-bold w-8 text-right shrink-0 text-foreground/70">{pct}%</span>
+              <span className="text-[11px] font-mono font-bold w-8 text-right shrink-0 text-foreground/80">{pct}%</span>
             </div>
           );
         })}
         {otherProb > 0.01 && (
           <div className="flex items-center gap-2">
-            <span className="text-[10px] text-muted-foreground/60 shrink-0 w-24">+{others.length} outros</span>
+            <span className="text-[11px] text-muted-foreground shrink-0 w-24">+{others.length} outros</span>
             <div className="flex-1 h-1.5 bg-secondary/30 rounded-full overflow-hidden">
               <div className="h-full rounded-full bg-secondary/60" style={{ width: `${Math.round(otherProb * 100)}%` }} />
             </div>
-            <span className="text-[10px] font-mono text-muted-foreground/60 w-8 text-right">{Math.round(otherProb * 100)}%</span>
+            <span className="text-[11px] font-mono text-muted-foreground w-8 text-right">{Math.round(otherProb * 100)}%</span>
           </div>
         )}
       </div>

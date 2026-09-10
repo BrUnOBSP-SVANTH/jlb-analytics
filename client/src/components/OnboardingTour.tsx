@@ -120,7 +120,7 @@ export default function OnboardingTour() {
               key={i}
               onClick={() => setStep(i)}
               aria-label={`Passo ${i + 1}`}
-              className={`rounded-full transition-all ${
+              className={`alvo-minimo justify-center rounded-full transition-all ${
                 i === step
                   ? "w-6 h-2 bg-primary"
                   : "w-2 h-2 bg-secondary/50 hover:bg-secondary"

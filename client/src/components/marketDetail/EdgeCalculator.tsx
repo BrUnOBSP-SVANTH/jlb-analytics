@@ -93,36 +93,36 @@ export function EdgeCalculator({ marketProb, marketId, question }: { marketProb:
           onChange={(e) => setYourPct(Number(e.target.value))}
           className="w-full h-2 rounded-full accent-primary cursor-pointer"
         />
-        <div className="flex justify-between text-[10px] text-muted-foreground/50 mt-0.5">
+        <div className="flex justify-between text-[11px] text-muted-foreground mt-0.5">
           <span>1%</span><span>50%</span><span>99%</span>
         </div>
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div className={`p-3 rounded-lg border ${evNeutral ? "border-border/20 bg-secondary/10" : hasValue ? "border-positive/20 bg-positive/5" : "border-negative/20 bg-negative/5"}`}>
-          <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Valor Esperado (EV)</p>
+          <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-1">Valor Esperado (EV)</p>
           <p className={`text-xl font-mono font-bold ${evNeutral ? "text-muted-foreground" : hasValue ? "text-positive" : "text-negative"}`}>
             {evNeutral ? "0.0" : `${ev >= 0 ? "+" : ""}${(ev * 100).toFixed(1)}`}%
           </p>
-          <p className="text-[10px] text-muted-foreground mt-0.5">por real na posição</p>
+          <p className="text-[11px] text-muted-foreground mt-0.5">por real na posição</p>
         </div>
         <div className={`p-3 rounded-lg border ${edge > 0 ? "border-neon-blue/20 bg-neon-blue/5" : "border-border/20 bg-secondary/10"}`}>
-          <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Edge vs Mercado</p>
+          <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-1">Edge vs Mercado</p>
           <p className={`text-xl font-mono font-bold ${edge > 0 ? "text-neon-blue" : "text-muted-foreground"}`}>
             {edge >= 0 ? "+" : ""}{(edge * 100).toFixed(1)}pp
           </p>
-          <p className="text-[10px] text-muted-foreground mt-0.5">
+          <p className="text-[11px] text-muted-foreground mt-0.5">
             Mercado: {Math.round(marketProb * 100)}% | Você: {yourPct}%
           </p>
         </div>
         <div className="p-3 rounded-lg border border-gold/20 bg-gold/5">
-          <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Kelly Completo</p>
+          <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-1">Kelly Completo</p>
           <p className="text-xl font-mono font-bold text-gold">{(kelly * 100).toFixed(1)}%</p>
-          <p className="text-[10px] text-muted-foreground mt-0.5">da banca</p>
+          <p className="text-[11px] text-muted-foreground mt-0.5">da banca</p>
         </div>
         <div className="p-3 rounded-lg border border-gold/10 bg-gold/[0.03]">
-          <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">½ Kelly (recomendado)</p>
+          <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-1">½ Kelly (recomendado)</p>
           <p className="text-xl font-mono font-bold text-gold/70">{(halfKelly * 100).toFixed(1)}%</p>
-          <p className="text-[10px] text-muted-foreground mt-0.5">da banca</p>
+          <p className="text-[11px] text-muted-foreground mt-0.5">da banca</p>
         </div>
       </div>
       <div className={`flex items-center gap-2 p-3 rounded-lg ${hasValue ? "bg-positive/10 border border-positive/20" : "bg-secondary/20 border border-border/20"}`}>
@@ -151,10 +151,10 @@ export function EdgeCalculator({ marketProb, marketId, question }: { marketProb:
           {explain && (
             <div className="space-y-2 p-3 rounded-lg bg-neon-blue/5 border border-neon-blue/15 text-xs leading-relaxed">
               <p className="text-muted-foreground">{explain.explanation}</p>
-              <div><span className="font-semibold text-foreground/70">Por que o mercado pode errar: </span><span className="text-muted-foreground">{explain.whyMarketMightBeMistaken}</span></div>
+              <div><span className="font-semibold text-foreground/80">Por que o mercado pode errar: </span><span className="text-muted-foreground">{explain.whyMarketMightBeMistaken}</span></div>
               <div><span className="font-semibold text-gold/80">💡 Insight: </span><span className="text-muted-foreground">{explain.keyInsight}</span></div>
               <div><span className="font-semibold text-negative/70">⚠️ Risco: </span><span className="text-muted-foreground">{explain.riskFactor}</span></div>
-              <p className="text-[10px] text-muted-foreground/50 pt-1 border-t border-border/15">Análise educacional da IA — nunca uma recomendação de compra.{explain.cached ? " (cache)" : ""}</p>
+              <p className="text-[11px] text-muted-foreground pt-1 border-t border-border/15">Análise educacional da IA — nunca uma recomendação de compra.{explain.cached ? " (cache)" : ""}</p>
             </div>
           )}
         </div>
@@ -177,7 +177,7 @@ export function EdgeCalculator({ marketProb, marketId, question }: { marketProb:
         </button>
       )}
       <details className="group">
-        <summary className="text-xs text-muted-foreground/60 hover:text-muted-foreground cursor-pointer flex items-center gap-1 select-none">
+        <summary className="text-xs text-muted-foreground hover:text-muted-foreground cursor-pointer flex items-center gap-1 select-none">
           <Info className="w-3 h-3" />Como foi calculado
         </summary>
         <div className="mt-2 p-3 rounded-lg bg-obsidian/40 border border-border/20 space-y-1.5 text-xs text-muted-foreground font-mono">

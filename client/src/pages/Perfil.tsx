@@ -258,9 +258,9 @@ export default function Perfil() {
                         }
                       </div>
                       <p className="text-xs font-semibold text-foreground">Nível {lvl.n}</p>
-                      <p className="text-[10px] text-muted-foreground mt-0.5">{lvl.title}</p>
+                      <p className="text-[11px] text-muted-foreground mt-0.5">{lvl.title}</p>
                       {!unlocked && (
-                        <p className="text-[10px] text-gold mt-1">{lvl.requires} pts</p>
+                        <p className="text-[11px] text-gold mt-1">{lvl.requires} pts</p>
                       )}
                     </div>
                   </Link>
@@ -322,7 +322,7 @@ export default function Perfil() {
 
             {predictions.length === 0 ? (
               <div className="text-center py-8 space-y-2">
-                <Target className="w-8 h-8 mx-auto text-muted-foreground/30" />
+                <Target className="w-8 h-8 mx-auto text-muted-foreground" />
                 <p className="text-sm text-muted-foreground">Nenhuma previsão ainda.</p>
                 <Link href="/apostas">
                   <span className="text-xs text-primary hover:underline">
@@ -353,7 +353,7 @@ export default function Perfil() {
                         <p className="text-xs font-medium text-foreground leading-snug line-clamp-2">
                           {pred.question}
                         </p>
-                        <div className="flex flex-wrap gap-3 mt-1.5 text-[10px] text-muted-foreground">
+                        <div className="flex flex-wrap gap-3 mt-1.5 text-[11px] text-muted-foreground">
                           <span>Mercado: {pred.marketProb}%</span>
                           <span>Você: {pred.userProb}%</span>
                           {pred.resolved && pred.outcome !== null && (
@@ -364,7 +364,7 @@ export default function Perfil() {
                           )}
                           <span>{fmtDate(pred.savedAt)}</span>
                           {pred.resolved && pred.resolutionSource && (
-                            <span className={pred.resolutionSource === "settled" ? "text-positive/70" : "text-muted-foreground/50"}>
+                            <span className={pred.resolutionSource === "settled" ? "text-positive/70" : "text-muted-foreground"}>
                               {pred.resolutionSource === "settled" ? "✓ oficial" : pred.resolutionSource === "inferred" ? "~ preço" : "✎ manual"}
                             </span>
                           )}
@@ -399,7 +399,7 @@ export default function Perfil() {
 
             {progress.activities.length === 0 ? (
               <div className="text-center py-8 space-y-2">
-                <Zap className="w-8 h-8 mx-auto text-muted-foreground/30" />
+                <Zap className="w-8 h-8 mx-auto text-muted-foreground" />
                 <p className="text-sm text-muted-foreground">
                   Nenhuma atividade ainda. Use calculadoras, faça previsões e explore os níveis para ganhar pontos.
                 </p>
@@ -416,7 +416,7 @@ export default function Perfil() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-xs font-medium text-foreground truncate">{act.label}</p>
-                        <p className="text-[10px] text-muted-foreground">{fmtRelative(act.timestamp)}</p>
+                        <p className="text-[11px] text-muted-foreground">{fmtRelative(act.timestamp)}</p>
                       </div>
                       <span className="text-xs font-bold text-gold shrink-0">+{act.points}</span>
                     </div>
@@ -447,7 +447,7 @@ export default function Perfil() {
                   <Icon className="w-4 h-4 text-gold shrink-0" />
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-medium text-foreground">{label}</p>
-                    <p className="text-[10px] text-muted-foreground">{limit}</p>
+                    <p className="text-[11px] text-muted-foreground">{limit}</p>
                   </div>
                   <span className="text-sm font-bold text-gold">{pts}</span>
                 </div>

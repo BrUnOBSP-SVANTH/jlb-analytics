@@ -359,21 +359,30 @@ export default function Apostas() {
                 Reddit · Polymarket · Kalshi — atualização automática a cada 3 minutos
               </p>
             </div>
-            {/* Live stat pills */}
+            {/* MKT-04: o número grande é o RESULTADO DO FILTRO, não o tamanho do
+                catálogo. Com Kalshi selecionado ele continuava marcando 300
+                enquanto as categorias somavam 60 — quem lê conclui que o filtro
+                não funcionou. Quando há filtro ativo, o total do catálogo vai
+                junto, em letra menor, porque a informação é útil e não conflita. */}
             {!loading && items.length > 0 && (
               <div className="flex items-center gap-3 flex-wrap">
                 <div className="px-3 py-1.5 rounded-lg bg-secondary/30 border border-border/30 text-center">
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Mercados</p>
-                  <p className="text-lg font-mono font-bold text-foreground">{items.length}</p>
+                  <p className="text-[11px] text-muted-foreground uppercase tracking-wider">Mercados</p>
+                  <p className="text-lg font-mono font-bold text-foreground">{filtered.length}</p>
+                  {filtered.length !== items.length && (
+                    <p className="text-[11px] text-muted-foreground">de {items.length}</p>
+                  )}
                 </div>
                 <div className="px-3 py-1.5 rounded-lg bg-secondary/30 border border-border/30 text-center">
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Atualizado</p>
-                  <p className="text-sm font-mono text-foreground">
+                  <p className="text-[11px] text-muted-foreground uppercase tracking-wider">Atualizado</p>
+                  {/* aria-live: a lista se atualiza sozinha a cada 3 minutos e nada
+                      anunciava isso a quem usa leitor de tela (TRV-14). */}
+                  <p className="text-sm font-mono text-foreground" aria-live="polite">
                     {lastUpdated?.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) ?? "—"}
                   </p>
                 </div>
                 <div className="px-3 py-1.5 rounded-lg bg-secondary/30 border border-border/30 text-center">
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Refresh em</p>
+                  <p className="text-[11px] text-muted-foreground uppercase tracking-wider">Próxima</p>
                   <p className="text-sm font-mono font-bold text-foreground">
                     {Math.floor(countdown / 60)}:{String(countdown % 60).padStart(2, "0")}
                   </p>
@@ -418,7 +427,7 @@ export default function Apostas() {
                   className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
                     catFilter === cat
                       ? "border-gold/50 bg-gold/10 text-gold"
-                      : "border-border/30 text-muted-foreground/70 hover:text-foreground hover:border-border/50"
+                      : "border-border/30 text-muted-foreground hover:text-foreground hover:border-border/50"
                   }`}>
                   {CATEGORY_LABELS[cat]}
                   <span className="ml-1 opacity-50">{catCounts.get(cat) ?? 0}</span>
@@ -435,9 +444,9 @@ export default function Apostas() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Buscar mercados… (/ para focar)"
-                className="w-full sm:w-72 pl-8 pr-3 py-1.5 rounded-lg text-xs bg-secondary/30 border border-border/30 text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-primary/40"
+                className="w-full sm:w-72 pl-8 pr-3 py-1.5 rounded-lg text-xs bg-secondary/30 border border-border/30 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/40"
               />
-              <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/50 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
               </svg>
             </div>
@@ -528,11 +537,11 @@ export default function Apostas() {
             <div className="glass-card rounded-xl overflow-hidden mb-6">
               {/* Table header */}
               <div className="grid grid-cols-[1fr_64px] sm:grid-cols-[1fr_80px_90px_90px_100px] gap-3 sm:gap-4 px-4 py-2.5 border-b border-border/30 bg-secondary/10">
-                <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Mercado</p>
-                <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider text-right">SIM</p>
-                <p className="hidden sm:block text-[10px] font-semibold text-muted-foreground uppercase tracking-wider text-right">Volume</p>
-                <p className="hidden sm:block text-[10px] font-semibold text-muted-foreground uppercase tracking-wider text-right">Hype</p>
-                <p className="hidden sm:block text-[10px] font-semibold text-muted-foreground uppercase tracking-wider text-right">Fonte</p>
+                <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Mercado</p>
+                <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider text-right">SIM</p>
+                <p className="hidden sm:block text-[11px] font-semibold text-muted-foreground uppercase tracking-wider text-right">Volume</p>
+                <p className="hidden sm:block text-[11px] font-semibold text-muted-foreground uppercase tracking-wider text-right">Hype</p>
+                <p className="hidden sm:block text-[11px] font-semibold text-muted-foreground uppercase tracking-wider text-right">Fonte</p>
               </div>
               {/* Rows */}
               <div className="divide-y divide-border/20">
@@ -545,14 +554,14 @@ export default function Apostas() {
                       <div className="min-w-0">
                         <div className="flex items-center gap-2 mb-0.5">
                           {item.badge && (
-                            <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full border ${BADGE_CONFIG[item.badge].cls}`}>
+                            <span className={`text-[11px] font-bold px-1.5 py-0.5 rounded-full border ${BADGE_CONFIG[item.badge].cls}`}>
                               {BADGE_CONFIG[item.badge].label}
                             </span>
                           )}
                         </div>
                         <p className="text-sm font-medium text-foreground line-clamp-1">{item.title}</p>
                         {item.parsedOutcomes && (
-                          <p className="text-[10px] text-muted-foreground mt-0.5">{item.parsedOutcomes.length} resultados</p>
+                          <p className="text-[11px] text-muted-foreground mt-0.5">{item.parsedOutcomes.length} resultados</p>
                         )}
                       </div>
                       {/* Prob */}
@@ -560,7 +569,7 @@ export default function Apostas() {
                         {pct !== null ? (
                           <>
                             <p className={`text-base font-mono font-bold ${pctColor}`}>{pct}%</p>
-                            <p className="text-[9px] text-muted-foreground">SIM</p>
+                            <p className="text-[11px] text-muted-foreground">SIM</p>
                           </>
                         ) : (
                           <p className="text-sm text-muted-foreground">—</p>
@@ -569,7 +578,7 @@ export default function Apostas() {
                       {/* Volume */}
                       <div className="hidden sm:block text-right">
                         <p className="text-sm font-mono text-foreground">{item.volume ? formatVolume(item.volume) : "—"}</p>
-                        {item.volume24h && <p className="text-[9px] text-neon-blue">{formatVolume(item.volume24h)} 24h</p>}
+                        {item.volume24h && <p className="text-[11px] text-neon-blue">{formatVolume(item.volume24h)} 24h</p>}
                       </div>
                       {/* Hype bar */}
                       <div className="hidden sm:flex items-center justify-end gap-1.5">
@@ -577,13 +586,13 @@ export default function Apostas() {
                           <div className={`h-full rounded-full ${item.score >= 70 ? "bg-positive" : item.score >= 40 ? "bg-gold" : "bg-primary/50"}`}
                             style={{ width: `${item.score}%` }} />
                         </div>
-                        <span className="text-[10px] font-mono text-muted-foreground w-8 text-right">{Math.round(item.score)}%</span>
+                        <span className="text-[11px] font-mono text-muted-foreground w-8 text-right">{Math.round(item.score)}%</span>
                       </div>
                       {/* Source + link */}
                       <div className="hidden sm:flex items-center justify-end gap-1.5">
                         <SourceBadge source={item.source} subreddit={item.subreddit} />
                         <a href={item.externalUrl} target="_blank" rel="noopener noreferrer"
-                          className="p-1 rounded text-muted-foreground/40 hover:text-primary transition-colors">
+                          className="p-1 rounded text-muted-foreground hover:text-primary transition-colors">
                           <ExternalLink className="w-3 h-3" aria-hidden="true" />
                         </a>
                       </div>
@@ -641,7 +650,7 @@ export default function Apostas() {
 
         {/* ── Infinite scroll sentinel ── */}
         {!loading && filtered.length > visibleCount && (
-          <div ref={sentinelRef} className="flex justify-center items-center gap-2 py-6 text-xs text-muted-foreground/50">
+          <div ref={sentinelRef} className="flex justify-center items-center gap-2 py-6 text-xs text-muted-foreground">
             <RefreshCw className="w-3.5 h-3.5 animate-spin" aria-hidden="true" />
             Carregando mais · {filtered.length - visibleCount} restantes
           </div>
@@ -651,8 +660,8 @@ export default function Apostas() {
           <AnimatedSection>
             <div className="text-center py-16">
               <Flame className="w-10 h-10 mx-auto mb-3 text-muted-foreground/20" aria-hidden="true" />
-              <p className="text-sm font-medium text-foreground/50 mb-1">Nenhum mercado para este filtro</p>
-              <p className="text-xs text-muted-foreground/40">Tente "Todos" ou outro filtro de categoria</p>
+              <p className="text-sm font-medium text-foreground/80 mb-1">Nenhum mercado para este filtro</p>
+              <p className="text-xs text-muted-foreground">Tente "Todos" ou outro filtro de categoria</p>
             </div>
           </AnimatedSection>
         )}
@@ -666,7 +675,7 @@ export default function Apostas() {
         {!loading && (
           <AnimatedSection>
             <div className={`mt-6 p-3 rounded-xl border border-border/15 bg-obsidian/20 ${compareMap.size > 0 ? "mb-44" : ""}`}>
-              <p className="text-[11px] text-muted-foreground/60 text-center leading-relaxed">
+              <p className="text-[11px] text-muted-foreground text-center leading-relaxed">
                 Caráter educacional e informativo. Nada aqui é recomendação de posição ou investimento.
                 Prever é errar parte das vezes — é para isso que a plataforma mede e publica os próprios erros.
               </p>

@@ -51,7 +51,7 @@ export function OverroundCalc() {
           <FormulaBox formula="Overround = (Σ 1/oddᵢ − 1) × 100" legend="Margem = overround / Σ(1/oddᵢ)" />
 
           <div className="p-3 rounded-lg bg-obsidian/50 border border-border/20 space-y-1">
-            <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-2">Probabilidades implícitas</p>
+            <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-2">Probabilidades implícitas</p>
             {parsed.map((o, i) => (
               <div key={i} className="flex justify-between text-xs">
                 <span className="text-muted-foreground">Odd {o.toFixed(2)}</span>
@@ -82,7 +82,7 @@ export function OverroundCalc() {
           </div>
 
           <div className="p-3 rounded-lg bg-obsidian/50 border border-border/20 space-y-2">
-            <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Fair odds (sem margem)</p>
+            <p className="text-[11px] text-muted-foreground uppercase tracking-wider">Fair odds (sem margem)</p>
             {fairOdds.map((fo, i) => (
               <div key={i} className="flex justify-between text-xs">
                 <span className="text-muted-foreground">Odd {i + 1} (original: {parsed[i].toFixed(2)})</span>

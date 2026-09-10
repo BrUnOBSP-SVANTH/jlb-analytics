@@ -55,17 +55,17 @@ function TrackForm({ market, marketProb, onSaved, onCancel }: TrackFormProps) {
       </div>
       <div className="grid grid-cols-3 gap-2 text-center">
         <div className="p-2 rounded-lg bg-secondary/30">
-          <p className="text-[10px] text-muted-foreground">Mercado</p>
+          <p className="text-[11px] text-muted-foreground">Mercado</p>
           <p className="font-mono text-xs font-semibold text-foreground">{marketProb.toFixed(1)}%</p>
         </div>
         <div className="p-2 rounded-lg bg-secondary/30">
-          <p className="text-[10px] text-muted-foreground">Edge</p>
+          <p className="text-[11px] text-muted-foreground">Edge</p>
           <p className={`font-mono text-xs font-semibold ${edgeColor}`}>
             {e >= 0 ? "+" : ""}{e.toFixed(1)}pp
           </p>
         </div>
         <div className="p-2 rounded-lg bg-secondary/30">
-          <p className="text-[10px] text-muted-foreground">Kelly</p>
+          <p className="text-[11px] text-muted-foreground">Kelly</p>
           <p className="font-mono text-xs font-semibold text-gold">
             {kf > 0 ? `${(kf * 100).toFixed(1)}%` : "—"}
           </p>
@@ -155,18 +155,18 @@ export function MarketCard({ market, savedIds, onSaved, highlight = false, indic
       {/* Badges: categoria + destaque + tempo */}
       <div className="flex flex-wrap items-center gap-1">
         {highlight && (
-          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-semibold uppercase tracking-wider border text-gold bg-gold/10 border-gold/20">
+          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-semibold uppercase tracking-wider border text-gold bg-gold/10 border-gold/20">
             ★ Destaque
           </span>
         )}
         <CategoryBadge category={market.category} />
         {(() => { const d = daysLeft(market.endDate); return d !== null ? (
-          <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-semibold border ${d <= 3 ? "text-negative bg-negative/10 border-negative/20" : "text-muted-foreground bg-secondary/40 border-border/20"}`}>
+          <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-semibold border ${d <= 3 ? "text-negative bg-negative/10 border-negative/20" : "text-muted-foreground bg-secondary/40 border-border/20"}`}>
             {d === 0 ? "Encerra hoje" : `${d}d restantes`}
           </span>
         ) : null; })()}
         {market.weekPriceChange !== undefined && market.weekPriceChange !== 0 && (
-          <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-semibold border ${market.weekPriceChange > 0 ? "text-positive bg-positive/10 border-positive/20" : "text-negative bg-negative/10 border-negative/20"}`}>
+          <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-semibold border ${market.weekPriceChange > 0 ? "text-positive bg-positive/10 border-positive/20" : "text-negative bg-negative/10 border-negative/20"}`}>
             {market.weekPriceChange > 0 ? "▲" : "▼"} {Math.abs(market.weekPriceChange * 100).toFixed(1)}pp semana
           </span>
         )}
@@ -187,7 +187,7 @@ export function MarketCard({ market, savedIds, onSaved, highlight = false, indic
           <button
             onClick={handleTranslate}
             disabled={translating}
-            className="mt-1.5 flex items-center gap-1 text-[10px] text-muted-foreground hover:text-gold transition-colors disabled:opacity-50"
+            className="mt-1.5 flex items-center gap-1 text-[11px] text-muted-foreground hover:text-gold transition-colors disabled:opacity-50"
           >
             <Languages className="w-3 h-3" />
             {translating ? "Traduzindo..." : translation ? "Ocultar tradução" : "Traduzir"}
@@ -216,20 +216,20 @@ export function MarketCard({ market, savedIds, onSaved, highlight = false, indic
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           <span>Vol: <span className="font-mono text-foreground">{formatVolume(market.volume)}</span></span>
           {market.volume24hr != null && market.volume24hr > 0 && (
-            <span className="text-[10px]">24h: <span className="font-mono text-foreground/70">{formatVolume(market.volume24hr)}</span></span>
+            <span className="text-[11px]">24h: <span className="font-mono text-foreground/80">{formatVolume(market.volume24hr)}</span></span>
           )}
           {market.liquidity != null && market.liquidity > 0 && (
-            <span className="text-[10px]">Liq: <span className="font-mono text-foreground/70">{formatVolume(market.liquidity)}</span></span>
+            <span className="text-[11px]">Liq: <span className="font-mono text-foreground/80">{formatVolume(market.liquidity)}</span></span>
           )}
         </div>
         <div className="flex items-center gap-1.5">
           {(isSaved || justSaved) && (
-            <span className="text-[10px] text-gold/70 font-medium">Registrado</span>
+            <span className="text-[11px] text-gold/70 font-medium">Registrado</span>
           )}
           {!isSaved && !justSaved && prices && (
             <button
               onClick={() => setTracking((v) => !v)}
-              className={`flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-medium transition-colors ${
+              className={`flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-medium transition-colors ${
                 tracking
                   ? "bg-gold/10 text-gold border border-gold/20"
                   : "text-muted-foreground hover:text-gold border border-transparent hover:border-gold/20"
@@ -244,7 +244,7 @@ export function MarketCard({ market, savedIds, onSaved, highlight = false, indic
             href={market.eventSlug ? `https://polymarket.com/pt/event/${market.eventSlug}` : "https://polymarket.com/pt"}
             target="_blank"
             rel="noopener noreferrer"
-            className="p-1 text-muted-foreground/40 hover:text-gold transition-colors"
+            className="p-1 text-muted-foreground hover:text-gold transition-colors"
             aria-label="Abrir no Polymarket"
           >
             <ExternalLink className="w-3.5 h-3.5" />

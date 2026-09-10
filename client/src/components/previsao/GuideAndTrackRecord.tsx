@@ -26,7 +26,7 @@ export function SuperforecasterGuide() {
               O protocolo de 4 etapas do Good Judgment Project (Philip Tetlock) — base da nossa IA
             </p>
           </div>
-          <span className="text-xs text-muted-foreground/60 shrink-0">
+          <span className="text-xs text-muted-foreground shrink-0">
             {open ? "Fechar" : "Ver protocolo"}
           </span>
         </button>
@@ -44,17 +44,17 @@ export function SuperforecasterGuide() {
                 <div key={s.step} className={`p-4 rounded-xl border ${s.border} ${s.bg} space-y-2`}>
                   <div className="flex items-center gap-2">
                     <span className="text-base">{s.icon}</span>
-                    <span className={`text-[10px] font-mono font-bold ${s.color}`}>ETAPA {s.step}</span>
+                    <span className={`text-[11px] font-mono font-bold ${s.color}`}>ETAPA {s.step}</span>
                   </div>
                   <p className={`text-xs font-semibold ${s.color}`}>{s.title}</p>
                   <p className="text-[11px] text-muted-foreground leading-relaxed">{s.desc}</p>
                   <div className="p-2 rounded-lg bg-secondary/30 mt-1">
-                    <p className="text-[10px] text-muted-foreground/70 italic leading-relaxed">{s.example}</p>
+                    <p className="text-[11px] text-muted-foreground italic leading-relaxed">{s.example}</p>
                   </div>
                 </div>
               ))}
             </div>
-            <p className="text-[10px] text-muted-foreground/50 text-center pt-2">
+            <p className="text-[11px] text-muted-foreground text-center pt-2">
               Referência: Tetlock & Gardner (2015) "Superforecasting: The Art and Science of Prediction" ·
               Good Judgment Project · Kahneman & Tversky (1979)
             </p>
@@ -110,12 +110,12 @@ export function AiTrackRecord() {
           <div className="flex items-center gap-2 mb-4">
             <BarChart2 className="w-4 h-4 text-gold shrink-0" />
             <p className="text-sm font-semibold text-foreground">Track record da IA — em construção</p>
-            <span className="ml-auto text-[9px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full border border-gold/25 bg-gold/10 text-gold/90">honesto</span>
+            <span className="ml-auto text-[11px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full border border-gold/25 bg-gold/10 text-gold/90">honesto</span>
           </div>
           <div className="flex items-end gap-5">
             <div className="shrink-0">
               <p className="numeric-hero text-5xl text-foreground leading-none">{data.totalCount}</p>
-              <p className="text-[10px] text-muted-foreground mt-1.5">previsões<br />sendo acompanhadas</p>
+              <p className="text-[11px] text-muted-foreground mt-1.5">previsões<br />sendo acompanhadas</p>
             </div>
             <p className="text-xs text-muted-foreground leading-relaxed flex-1">
               Cada previsão da IA é registrada com data e <span className="text-foreground">fair value</span>, e
@@ -137,7 +137,7 @@ export function AiTrackRecord() {
         <div className="flex items-center gap-2 mb-4">
           <CheckCircle className="w-4 h-4 text-positive" />
           <p className="text-sm font-semibold text-foreground">Track Record verificado da nossa IA</p>
-          <span className="ml-auto text-[10px] text-muted-foreground/60">
+          <span className="ml-auto text-[11px] text-muted-foreground">
             {data.resolvedCount} resolvidas{data.settledCount > 0 ? ` · ${data.settledCount} pelo resultado oficial` : ""}
           </span>
         </div>
@@ -147,7 +147,7 @@ export function AiTrackRecord() {
           <div className="flex items-end gap-5 mb-4 pb-4 border-b border-border/15">
             <div className="shrink-0">
               <p className="numeric-hero text-5xl text-positive leading-none">{data.hitRate}%</p>
-              <p className="text-[10px] text-muted-foreground mt-1.5">taxa de acerto<br />da nossa IA</p>
+              <p className="text-[11px] text-muted-foreground mt-1.5">taxa de acerto<br />da nossa IA</p>
             </div>
             <p className="flex-1 text-xs text-muted-foreground leading-relaxed">
               Em {data.directionalCount} previsões com lado definido, a IA acertou a direção
@@ -164,11 +164,11 @@ export function AiTrackRecord() {
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <div className="text-center">
             <p className="text-2xl font-mono font-bold text-gold">{data.aiBrier?.toFixed(3)}</p>
-            <p className="text-[10px] text-muted-foreground mt-0.5">Brier da IA</p>
+            <p className="text-[11px] text-muted-foreground mt-0.5">Brier da IA</p>
           </div>
           <div className="text-center">
             <p className="text-2xl font-mono font-bold text-muted-foreground">{data.marketBrier?.toFixed(3)}</p>
-            <p className="text-[10px] text-muted-foreground mt-0.5">Brier do mercado</p>
+            <p className="text-[11px] text-muted-foreground mt-0.5">Brier do mercado</p>
           </div>
           {/* O rótulo era "Bateu o mercado" — as MESMAS palavras que a tela de
               análise usa para outra medida (acerto ao divergir). Na auditoria os
@@ -178,16 +178,16 @@ export function AiTrackRecord() {
             <p className={`text-2xl font-mono font-bold ${beatMarket ? "text-positive" : "text-muted-foreground"}`}>
               {pct(data.beatMarketPct)}
             </p>
-            <p className="text-[10px] text-muted-foreground mt-0.5">Melhor calibrada<br />que o mercado</p>
+            <p className="text-[11px] text-muted-foreground mt-0.5">Melhor calibrada<br />que o mercado</p>
           </div>
           <div className="text-center">
             <p className="text-2xl font-mono font-bold text-foreground">{num(data.avgAbsEdge, 1)} pp</p>
-            <p className="text-[10px] text-muted-foreground mt-0.5">Distância média<br />do preço</p>
+            <p className="text-[11px] text-muted-foreground mt-0.5">Distância média<br />do preço</p>
           </div>
         </div>
         <p className="text-xs text-muted-foreground mt-3 text-center leading-relaxed">
           Taxa de acerto = direção certa (SIM/NÃO). Brier = calibração fina (menor é melhor).
-          <strong className="text-foreground/70"> Melhor calibrada que o mercado</strong> = em quantos
+          <strong className="text-foreground/80"> Melhor calibrada que o mercado</strong> = em quantos
           mercados nosso Brier foi menor que o dele. Todos os números desta página dividem pelas mesmas{" "}
           {data.resolvedCount} resoluções, e cada uma é comparada ao resultado real da plataforma.
         </p>
@@ -231,7 +231,7 @@ export function ResultComparator({ limit = 8 }: { limit?: number }) {
         <div className="flex items-center gap-2 mb-1">
           <Scale className="w-4 h-4 text-neon-blue shrink-0" />
           <p className="text-sm font-semibold text-foreground">Comparador: o que dissemos × o que aconteceu</p>
-          <span className="ml-auto text-[10px] text-muted-foreground/60">{hits}/{sided.length} acertos recentes</span>
+          <span className="ml-auto text-[11px] text-muted-foreground">{hits}/{sided.length} acertos recentes</span>
         </div>
         <p className="text-[11px] text-muted-foreground mb-4">
           Cada previsão da IA confrontada com o resultado que a plataforma liquidou de verdade.
@@ -251,15 +251,15 @@ export function ResultComparator({ limit = 8 }: { limit?: number }) {
               </span>
               <div className="flex-1 min-w-0">
                 <p className="text-xs text-foreground truncate">{it.title}</p>
-                <div className="flex flex-wrap items-center gap-x-2.5 gap-y-0.5 mt-1 text-[10px] text-muted-foreground">
+                <div className="flex flex-wrap items-center gap-x-2.5 gap-y-0.5 mt-1 text-[11px] text-muted-foreground">
                   <span>IA: <span className="text-foreground font-semibold">{it.aiProb}%</span> SIM</span>
-                  <span className="text-muted-foreground/40">·</span>
+                  <span className="text-muted-foreground">·</span>
                   <span>Mercado: {it.marketProb}%</span>
-                  <span className="text-muted-foreground/40">·</span>
+                  <span className="text-muted-foreground">·</span>
                   <span>Real: <span className={it.outcome ? "text-positive font-semibold" : "text-negative font-semibold"}>{it.outcome ? "SIM" : "NÃO"}</span></span>
                 </div>
               </div>
-              <span className={`shrink-0 text-[8px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded-full border ${it.official ? "border-positive/25 bg-positive/10 text-positive/90" : "border-border/25 bg-secondary/20 text-muted-foreground/70"}`}>
+              <span className={`shrink-0 text-[8px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded-full border ${it.official ? "border-positive/25 bg-positive/10 text-positive/90" : "border-border/25 bg-secondary/20 text-muted-foreground"}`}>
                 {it.official ? "oficial" : "inferido"}
               </span>
             </div>

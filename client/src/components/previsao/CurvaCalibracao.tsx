@@ -72,7 +72,7 @@ export function CurvaCalibracao() {
                 <td className="py-2 text-foreground/90">{f.faixa}</td>
                 <td className="py-2 text-right text-muted-foreground">{f.n}</td>
                 <td className="py-2 text-right text-foreground font-semibold">{f.aconteceu}%</td>
-                <td className="py-2 text-right text-muted-foreground/70 hidden sm:table-cell">±{f.margemPp}</td>
+                <td className="py-2 text-right text-muted-foreground hidden sm:table-cell">±{f.margemPp}</td>
                 <td className={`py-2 text-right font-sans text-[11px] ${f.dentroDaMargem ? "text-positive" : "text-gold"}`}>
                   {f.dentroDaMargem
                     ? "no alvo"
@@ -84,7 +84,7 @@ export function CurvaCalibracao() {
         </table>
       </div>
 
-      <p className="text-[11px] text-muted-foreground/70 leading-relaxed mt-3">
+      <p className="text-[11px] text-muted-foreground leading-relaxed mt-3">
         “No alvo” quer dizer que o que prometemos cabe dentro da margem do que aconteceu.
         As faixas fora do alvo ficam aqui à vista — mostrar onde erramos é o que dá valor ao resto.
       </p>

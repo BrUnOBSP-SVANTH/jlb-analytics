@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { comOrcamento, porVolume, desambiguarPorPai, limitePedido } from "./marketCatalog.ts";
+import { comOrcamento, porVolume, desambiguarPorPai, limitePedido, normalizarTitulo } from "./marketCatalog.ts";
 
 describe("comOrcamento — página que demora não pode derrubar a tela", () => {
   it("devolve o resultado quando chega a tempo", async () => {
@@ -82,5 +82,35 @@ describe("limitePedido", () => {
     expect(limitePedido("abc", 150, 300)).toBe(150);
     expect(limitePedido("-5", 150, 300)).toBe(150);   // negativo não zera o catálogo
     expect(limitePedido("0", 150, 300)).toBe(150);
+  });
+});
+
+describe("normalizarTitulo — o buraco que aparecia no card", () => {
+  it("preenche a lacuna com o valor que vinha no sufixo", () => {
+    // Exatamente o que a auditoria fotografou (MKT-11).
+    expect(normalizarTitulo("Bitcoin above ___ on September 9?: 80,000"))
+      .toBe("Bitcoin above 80,000 on September 9?");
+    expect(normalizarTitulo("$LAPTOP FDV above ___ one day after launch?: $1B"))
+      .toBe("$LAPTOP FDV above $1B one day after launch?");
+  });
+
+  it("sem valor no sufixo, some com a lacuna em vez de mostrar o buraco", () => {
+    expect(normalizarTitulo("Bitcoin above ___ on September 9?"))
+      .toBe("Bitcoin above on September 9?");
+  });
+
+  it("não confunde dois-pontos comum com preenchimento de lacuna", () => {
+    // Sem `___` no corpo, o sufixo não é valor de lacuna: é desambiguação, e
+    // apagá-lo criaria dois cards com o mesmo título (o defeito oposto).
+    expect(normalizarTitulo("Fed Decision in September?: 25 bps"))
+      .toBe("Fed Decision in September?: 25 bps");
+    expect(normalizarTitulo("Quem ganha: Flamengo ou Palmeiras?"))
+      .toBe("Quem ganha: Flamengo ou Palmeiras?");
+  });
+
+  it("aguenta título vazio e junta espaço sobrando", () => {
+    expect(normalizarTitulo("")).toBe("");
+    // Espaço duplicado vem de título que já teve algo removido na origem.
+    expect(normalizarTitulo("  Mercado   normal  ")).toBe("Mercado normal");
   });
 });

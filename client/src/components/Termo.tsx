@@ -66,7 +66,7 @@ export function Termo({ nome, children }: { nome: string; children?: React.React
           <span className="block text-xs font-semibold text-foreground mb-1">{verbete.termo}</span>
           <span className="block text-xs text-muted-foreground leading-relaxed">{verbete.simples}</span>
           {verbete.tecnico && (
-            <span className="block mt-2 pt-2 border-t border-border/40 text-[11px] text-muted-foreground/70 leading-relaxed">
+            <span className="block mt-2 pt-2 border-t border-border/40 text-[11px] text-muted-foreground leading-relaxed">
               <span className="font-medium">Definição técnica:</span> {verbete.tecnico}
             </span>
           )}

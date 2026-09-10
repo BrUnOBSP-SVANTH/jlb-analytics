@@ -87,7 +87,7 @@ export function PremiumUpgrade({ userId, userEmail }: { userId: string; userEmai
             Assinar Premium
           </button>
         ) : (
-          <p className="text-[11px] text-muted-foreground/60">
+          <p className="text-[11px] text-muted-foreground">
             Checkout em configuração. Defina <code className="font-mono">VITE_STRIPE_PREMIUM_PRICE_ID</code> e <code className="font-mono">STRIPE_SECRET_KEY</code> para ativar.
           </p>
         )}

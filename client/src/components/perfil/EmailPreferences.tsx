@@ -99,7 +99,7 @@ export function EmailPreferences({ userId }: { userId: string }) {
         {/* Preview do que será enviado — valor imediato, mesmo sem email configurado */}
         {preview && (preview.topDivergences.length > 0 || (preview.trackRecord?.resolvedCount ?? 0) > 0) && (
           <div className="p-4 rounded-xl border border-gold/15 bg-gold/3 space-y-2">
-            <p className="text-[10px] font-semibold text-gold uppercase tracking-wider">Prévia do resumo desta semana</p>
+            <p className="text-[11px] font-semibold text-gold uppercase tracking-wider">Prévia do resumo desta semana</p>
             {preview.trackRecord && preview.trackRecord.resolvedCount >= 5 && (
               <p className="text-xs text-muted-foreground">📊 A IA bateu o mercado em <span className="text-positive font-semibold">{preview.trackRecord.beatMarketPct}%</span> das {preview.trackRecord.resolvedCount} previsões resolvidas.</p>
             )}
@@ -109,7 +109,7 @@ export function EmailPreferences({ userId }: { userId: string }) {
               </p>
             ))}
             {preview.topDivergences.length === 0 && (
-              <p className="text-xs text-muted-foreground/60">As divergências aparecem aqui conforme a IA analisa mercados.</p>
+              <p className="text-xs text-muted-foreground">As divergências aparecem aqui conforme a IA analisa mercados.</p>
             )}
           </div>
         )}
@@ -122,7 +122,7 @@ export function EmailPreferences({ userId }: { userId: string }) {
           </button>
           {saved && <p className="text-xs text-positive">✓ Salvo!</p>}
         </div>
-        <p className="text-[10px] text-muted-foreground/50">
+        <p className="text-[11px] text-muted-foreground">
           O envio de emails requer um provedor configurado (Resend). Até lá, a prévia acima mostra o conteúdo no app.
         </p>
       </div>

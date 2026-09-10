@@ -54,14 +54,14 @@ export function ValorEsperado() {
             {outcomes.map((o, i) => (
               <div key={i} className="flex gap-2 items-end">
                 <div className="flex-1">
-                  <label className="text-[10px] text-muted-foreground/60" htmlFor={`ev-prob-${i}`}>
+                  <label className="text-[11px] text-muted-foreground" htmlFor={`ev-prob-${i}`}>
                     Probabilidade (%)
                   </label>
                   <input id={`ev-prob-${i}`} type="number" min={0} max={100} step={0.5} value={o.prob}
                     onChange={(e) => update(i, "prob", e.target.value)} className={inputClass} />
                 </div>
                 <div className="flex-1">
-                  <label className="text-[10px] text-muted-foreground/60" htmlFor={`ev-pay-${i}`}>
+                  <label className="text-[11px] text-muted-foreground" htmlFor={`ev-pay-${i}`}>
                     Odd (retorno total)
                   </label>
                   <input id={`ev-pay-${i}`} type="number" min={0} step={0.01} value={o.payout}
@@ -118,7 +118,7 @@ export function ValorEsperado() {
           </div>
 
           <div className="p-3 rounded-lg bg-obsidian/50 border border-border/20">
-            <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Probabilidade implícita da odd</p>
+            <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-1">Probabilidade implícita da odd</p>
             {outcomes.map((o, i) => (
               <div key={i} className="flex justify-between text-xs mt-1">
                 <span className="text-muted-foreground">Cenário {i + 1} (odd {o.payout.toFixed(2)})</span>

@@ -118,7 +118,7 @@ function BrierCalculator() {
           { label: "Resultados reais (0 ou 1)", val: outcomesText, set: setOutcomesText, hint: "ex: 1, 1, 0" },
         ].map(({ label, val, set, hint }) => (
           <div key={label}>
-            <label className="block text-xs text-muted-foreground mb-1">{label} <span className="text-muted-foreground/60">{hint}</span></label>
+            <label className="block text-xs text-muted-foreground mb-1">{label} <span className="text-muted-foreground">{hint}</span></label>
             <input type="text" value={val} onChange={(e) => set(e.target.value)}
               className="w-full px-3 py-2 rounded-lg bg-secondary/50 border border-border/50 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary" />
           </div>

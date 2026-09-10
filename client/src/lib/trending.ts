@@ -6,6 +6,7 @@
  * para isolar a lógica pura da UI. São funções puras + fetch — sem React.
  */
 import { analyzeSentiment } from "@/lib/predictions";
+import { dolar, pct, pp } from "@shared/formato";
 import { getMarkets } from "@/lib/marketsCache";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -208,10 +209,14 @@ export function hoursAgo(utcSeconds: number) {
   return (Date.now() / 1000 - utcSeconds) / 3600;
 }
 
+/**
+ * Volume em dólar, escrito em português (MKT-09).
+ *
+ * Saía como `$108.6M`, `$898K`, `Liq: $2K` — formato en-US num produto
+ * brasileiro que já formata corretamente em reais na Banca Simulada.
+ */
 export function formatVolume(v: number) {
-  if (v >= 1_000_000) return `$${(v / 1_000_000).toFixed(1)}M`;
-  if (v >= 1_000) return `$${(v / 1_000).toFixed(0)}K`;
-  return `$${v.toFixed(0)}`;
+  return dolar(v);
 }
 
 export function formatOdds(prob: number): string {
@@ -251,35 +256,66 @@ function whyTrendingReddit(post: RedditPost): string {
   return `"${snippet}" — presença mantida no feed quente, interesse acima da média. Expanda para ver análise contextual com notícias relacionadas.`;
 }
 
+/**
+ * A frase que explica por que o mercado está em destaque.
+ *
+ * TRÊS CORREÇÕES DA AUDITORIA MORAM AQUI:
+ *
+ * MKT-08 — a mesma frase aparecia em 12 dos 20 cards: "Volume expressivo de $X
+ * no Polymarket — interesse institucional ou de traders avançados." Todo mercado
+ * acima de um milhão caía nessa saída, então ela não distinguia nada. Doze
+ * frases idênticas ensinam o usuário a pular a leitura, e a partir daí ele
+ * também pula a frase que teria algo a dizer. Agora, quando não há nada
+ * específico, devolvemos VAZIO e o card não desenha a linha.
+ *
+ * MKT-06 — "prob. subiu 24% na semana" convivia com "+3pp 7d" no mesmo card.
+ * Diferença entre duas probabilidades é PONTO PERCENTUAL. Numa plataforma que
+ * ensina calibração, confundir pp com variação relativa é errar exatamente a
+ * coisa que ela existe para corrigir.
+ *
+ * MKT-02 — "mercado dividido (53% SIM)" era escrito também para mercados de
+ * múltiplos desfechos, onde não existe SIM: a decisão do Fed tem três resultados
+ * possíveis e o US Open tem dezenas. Agora há um texto para cada tipo.
+ */
 export function whyTrendingMarket(item: {
   volume: number; volume24h?: number; liquidity?: number;
   yesProb: number; prevYesProb?: number; weekPriceChange?: number;
   source: Source;
+  /** Mercado de múltiplos desfechos: não existe "SIM" para descrever. */
+  multiDesfecho?: boolean;
 }): string {
-  const { volume, volume24h, liquidity, yesProb, prevYesProb, weekPriceChange, source } = item;
-  const closeness = Math.abs(yesProb - 0.5);
-  const probChange = prevYesProb !== undefined ? yesProb - prevYesProb : undefined;
-  const platformName = source === "kalshi" ? "Kalshi" : "Polymarket";
+  const { volume, volume24h, liquidity, yesProb, prevYesProb, weekPriceChange, source, multiDesfecho } = item;
+  const perto50 = Math.abs(yesProb - 0.5);
+  const variacao = prevYesProb !== undefined ? yesProb - prevYesProb : undefined;
+  const plataforma = source === "kalshi" ? "Kalshi" : "Polymarket";
 
-  const parts: string[] = [];
+  // O que é ESPECÍFICO deste mercado hoje. Se nada aqui casar, não há notícia.
+  const especifico: string[] = [];
   if (volume24h && volume24h > 50_000)
-    parts.push(`${formatVolume(volume24h)} movimentados nas últimas 24h`);
+    especifico.push(`${dolar(volume24h)} movimentados nas últimas 24 horas`);
   if (weekPriceChange !== undefined && Math.abs(weekPriceChange) > 0.03)
-    parts.push(`prob. ${weekPriceChange > 0 ? "subiu" : "caiu"} ${Math.abs(Math.round(weekPriceChange * 100))}% na semana`);
-  if (probChange !== undefined && Math.abs(probChange) > 0.02)
-    parts.push(`${probChange > 0 ? "alta" : "queda"} de ${Math.abs(Math.round(probChange * 100))}pp recentemente`);
+    especifico.push(`probabilidade ${weekPriceChange > 0 ? "subiu" : "caiu"} ${pp(Math.abs(weekPriceChange * 100)).replace("+", "")} na semana`);
+  if (variacao !== undefined && Math.abs(variacao) > 0.02)
+    especifico.push(`${variacao > 0 ? "alta" : "queda"} de ${pp(Math.abs(variacao * 100)).replace("+", "")} nas últimas horas`);
 
-  const base = parts.length > 0 ? parts.join(", ") + ". " : "";
+  const abertura = especifico.length > 0 ? especifico.join(", ") + ". " : "";
 
-  if (volume > 1_000_000 && closeness < 0.1)
-    return `${base}Volume de ${formatVolume(volume)} no ${platformName} com mercado dividido (${Math.round(yesProb * 100)}% SIM) — resultado genuinamente incerto, dinheiro informado fluindo dos dois lados.`;
-  if (volume > 1_000_000)
-    return `${base}Volume expressivo de ${formatVolume(volume)} no ${platformName} — interesse institucional ou de traders avançados. Liquidez de ${liquidity ? formatVolume(liquidity) : "alta"} reduz spread.`;
+  // O líder de um mercado multi-desfecho não é "SIM": é o desfecho na frente.
+  const nivel = multiDesfecho
+    ? `líder com ${pct(yesProb * 100)}`
+    : `${pct(yesProb * 100)} para SIM`;
+
+  if (volume > 1_000_000 && perto50 < 0.1)
+    return `${abertura}${dolar(volume)} negociados no ${plataforma} com o resultado em aberto (${nivel}) — dinheiro informado dos dois lados.`;
   if (yesProb > 0.80 || yesProb < 0.20)
-    return `${base}Consenso forte no ${platformName} (${Math.round(yesProb * 100)}% SIM) — dinheiro informado posicionado de um lado. O lado minoritário pode ter valor se você identificou risco ignorado.`;
-  if (closeness < 0.12)
-    return `${base}Mercado muito equilibrado no ${platformName} (${Math.round(yesProb * 100)}% SIM) — resultado imprevisível, spread atrativo para quem tem informação de qualidade.`;
-  return `${base}Volume de ${formatVolume(volume)} no ${platformName} — mercado ganhando atenção, spread ainda pode favorecer entradas antes do ajuste de liquidez.`;
+    return `${abertura}Consenso forte no ${plataforma} (${nivel}) — o lado minoritário só tem valor se você enxergou um risco que o mercado ignorou.`;
+  if (perto50 < 0.12)
+    return `${abertura}Mercado equilibrado no ${plataforma} (${nivel}) — é onde a informação de qualidade vale mais.`;
+
+  // Chegou aqui: só há volume, que já aparece no próprio card, ao lado. Repetir
+  // em prosa não acrescenta — e era isso que produzia as doze frases iguais.
+  // Melhor um card limpo do que uma frase que ninguém precisa ler.
+  return abertura.trim();
 }
 
 function bestBetNoteReddit(post: RedditPost): string {
@@ -389,7 +425,7 @@ export function buildPolyItem(bet: PolyBet): TrendingItem | null {
     parsedOutcomes,
     clobTokenIds: bet.clobTokenIds,
     externalUrl,
-    whyTrending: whyTrendingMarket({ volume: vol, volume24h: vol24h, liquidity: liq, yesProb, prevYesProb: bet.prevYesProb, weekPriceChange: weekChg, source: "polymarket" }),
+    whyTrending: whyTrendingMarket({ volume: vol, volume24h: vol24h, liquidity: liq, yesProb, prevYesProb: bet.prevYesProb, weekPriceChange: weekChg, source: "polymarket", multiDesfecho: !!parsedOutcomes }),
     bestBetNote: bestBetNoteMarket(yesProb, vol, "polymarket"),
     sentiment: analyzeSentiment(displayTitle),
     ageHours: 0,
@@ -419,7 +455,7 @@ export function buildKalshiItem(m: KalshiMarket): TrendingItem | null {
     prevYesProb: prevDecimal,
     parsedOutcomes: m.outcomes,
     externalUrl: m.externalUrl ?? `https://kalshi.com/markets/${m.seriesTicker.toLowerCase()}/${m.eventTicker.toLowerCase()}`,
-    whyTrending: whyTrendingMarket({ volume: m.volume, volume24h: m.volume24h, liquidity: m.liquidity, yesProb: yesDecimal, prevYesProb: prevDecimal, source: "kalshi" }),
+    whyTrending: whyTrendingMarket({ volume: m.volume, volume24h: m.volume24h, liquidity: m.liquidity, yesProb: yesDecimal, prevYesProb: prevDecimal, source: "kalshi", multiDesfecho: !!m.outcomes }),
     bestBetNote: bestBetNoteMarket(yesDecimal, m.volume, "kalshi"),
     sentiment: analyzeSentiment(m.title),
     ageHours: 0,
@@ -449,7 +485,7 @@ export function buildManifoldItem(m: ManifoldMarket): TrendingItem | null {
     volume: vol,
     yesProb,
     externalUrl: m.url,
-    whyTrending: `Volume de $${vol.toFixed(0)} no Manifold Markets — plataforma de previsões abertas com criadores globais. Prob. atual: ${Math.round(yesProb * 100)}% SIM.`,
+    whyTrending: `${dolar(vol)} no Manifold, plataforma de previsões abertas — ${pct(yesProb * 100)} para SIM. O Manifold usa dinheiro fictício: o preço reflete opinião, não dinheiro em risco.`,
     bestBetNote: bestBetNoteMarket(yesProb, vol, "manifold" as Source),
     sentiment: analyzeSentiment(m.question),
     ageHours,

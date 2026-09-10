@@ -43,51 +43,51 @@ function EdgeCalculator({ marketProb }: { marketProb: number }) {
         <Calculator className="w-3.5 h-3.5 text-primary/70" />
         <p className="text-[11px] font-semibold text-foreground/80 uppercase tracking-wider">Calculadora de Edge</p>
       </div>
-      <p className="text-[10px] text-muted-foreground leading-relaxed">
+      <p className="text-[11px] text-muted-foreground leading-relaxed">
         Insira sua estimativa de probabilidade. O sistema calcula automaticamente o Valor Esperado e a fração de Kelly recomendada.
       </p>
       <div>
         <div className="flex justify-between items-center mb-1">
-          <span className="text-[10px] text-muted-foreground">Sua estimativa</span>
+          <span className="text-[11px] text-muted-foreground">Sua estimativa</span>
           <span className="text-sm font-mono font-bold text-foreground">{yourPct}%</span>
         </div>
         <input type="range" min={1} max={99} value={yourPct}
           onChange={(e) => setYourPct(Number(e.target.value))}
           className="w-full h-1.5 rounded-full accent-primary cursor-pointer"
         />
-        <div className="flex justify-between text-[9px] text-muted-foreground/50 mt-0.5">
+        <div className="flex justify-between text-[11px] text-muted-foreground mt-0.5">
           <span>1%</span><span>50%</span><span>99%</span>
         </div>
       </div>
       <div className="grid grid-cols-2 gap-2">
         <div className={`p-2.5 rounded-lg border ${evNeutral ? "border-border/20 bg-secondary/10" : hasValue ? "border-positive/20 bg-positive/5" : "border-negative/20 bg-negative/5"}`}>
-          <p className="text-[9px] text-muted-foreground uppercase tracking-wider mb-1">Valor Esperado (EV)</p>
+          <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-1">Valor Esperado (EV)</p>
           <p className={`text-base font-mono font-bold ${evNeutral ? "text-muted-foreground" : hasValue ? "text-positive" : "text-negative"}`}>
             {evNeutral ? "0.0" : `${ev >= 0 ? "+" : ""}${(ev * 100).toFixed(1)}`}%
           </p>
-          <p className="text-[9px] text-muted-foreground mt-0.5">por real na posição</p>
+          <p className="text-[11px] text-muted-foreground mt-0.5">por real na posição</p>
         </div>
         <div className={`p-2.5 rounded-lg border ${edge > 0 ? "border-neon-blue/20 bg-neon-blue/5" : "border-border/20 bg-secondary/10"}`}>
-          <p className="text-[9px] text-muted-foreground uppercase tracking-wider mb-1">Edge vs Mercado</p>
+          <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-1">Edge vs Mercado</p>
           <p className={`text-base font-mono font-bold ${edge > 0 ? "text-neon-blue" : "text-muted-foreground"}`}>
             {edge >= 0 ? "+" : ""}{(edge * 100).toFixed(1)}pp
           </p>
-          <p className="text-[9px] text-muted-foreground mt-0.5">Mercado: {Math.round(marketProb * 100)}% | Você: {yourPct}%</p>
+          <p className="text-[11px] text-muted-foreground mt-0.5">Mercado: {Math.round(marketProb * 100)}% | Você: {yourPct}%</p>
         </div>
         <div className="p-2.5 rounded-lg border border-gold/20 bg-gold/5">
-          <p className="text-[9px] text-muted-foreground uppercase tracking-wider mb-1">Kelly Completo</p>
+          <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-1">Kelly Completo</p>
           <p className="text-base font-mono font-bold text-gold">{(kelly * 100).toFixed(1)}%</p>
-          <p className="text-[9px] text-muted-foreground mt-0.5">da banca</p>
+          <p className="text-[11px] text-muted-foreground mt-0.5">da banca</p>
         </div>
         <div className="p-2.5 rounded-lg border border-gold/10 bg-gold/[0.03]">
-          <p className="text-[9px] text-muted-foreground uppercase tracking-wider mb-1">½ Kelly (recomendado)</p>
+          <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-1">½ Kelly (recomendado)</p>
           <p className="text-base font-mono font-bold text-gold/70">{(halfKelly * 100).toFixed(1)}%</p>
-          <p className="text-[9px] text-muted-foreground mt-0.5">da banca</p>
+          <p className="text-[11px] text-muted-foreground mt-0.5">da banca</p>
         </div>
       </div>
       <div className={`flex items-center gap-2 p-2 rounded-lg ${hasValue ? "bg-positive/10 border border-positive/20" : "bg-secondary/20 border border-border/20"}`}>
         <Zap className={`w-3 h-3 shrink-0 ${hasValue ? "text-positive" : "text-muted-foreground"}`} />
-        <p className="text-[10px] leading-relaxed">
+        <p className="text-[11px] leading-relaxed">
           {hasValue
             ? `Valor positivo detectado. Com ½ Kelly: arrisque ${(halfKelly * 100).toFixed(1)}% da banca. EV de longo prazo: ${(ev * 100).toFixed(1)}% por posição.`
             : evNeutral
@@ -96,10 +96,10 @@ function EdgeCalculator({ marketProb }: { marketProb: number }) {
         </p>
       </div>
       <details className="group">
-        <summary className="text-[10px] text-muted-foreground/60 hover:text-muted-foreground cursor-pointer flex items-center gap-1 select-none">
+        <summary className="text-[11px] text-muted-foreground hover:text-muted-foreground cursor-pointer flex items-center gap-1 select-none">
           <Info className="w-3 h-3" />Como foi calculado
         </summary>
-        <div className="mt-2 p-2.5 rounded-lg bg-obsidian/40 border border-border/20 space-y-1.5 text-[10px] text-muted-foreground font-mono">
+        <div className="mt-2 p-2.5 rounded-lg bg-obsidian/40 border border-border/20 space-y-1.5 text-[11px] text-muted-foreground font-mono">
           <p>Odds justas = 1 ÷ {marketProb.toFixed(2)} = {(1/marketProb).toFixed(2)}x</p>
           <p>b (ganho líquido) = {(1/marketProb).toFixed(2)} − 1 = {(1/marketProb - 1).toFixed(2)}</p>
           <p>EV = {yourProb.toFixed(2)} × {(1/marketProb - 1).toFixed(2)} − {(1-yourProb).toFixed(2)} = {ev.toFixed(3)}</p>
@@ -118,32 +118,32 @@ export function MarketAnalysis({ item }: { item: TrendingItem }) {
   return (
     <div className="space-y-4">
       <div>
-        <p className="text-[10px] font-semibold text-foreground/70 uppercase tracking-wider mb-2 flex items-center gap-1">
+        <p className="text-[11px] font-semibold text-foreground/80 uppercase tracking-wider mb-2 flex items-center gap-1">
           <Target className="w-3 h-3" />Análise de Mercado
         </p>
         <div className="grid grid-cols-2 gap-2">
           <div className="p-2.5 rounded-lg bg-positive/5 border border-positive/15">
-            <p className="text-[9px] text-muted-foreground mb-1">SIM — Probabilidade</p>
+            <p className="text-[11px] text-muted-foreground mb-1">SIM — Probabilidade</p>
             <p className="text-sm font-mono font-bold text-positive">{Math.round(prob * 100)}%</p>
-            <p className="text-[9px] text-muted-foreground mt-0.5">Odds justas: {formatOdds(prob)}</p>
+            <p className="text-[11px] text-muted-foreground mt-0.5">Odds justas: {formatOdds(prob)}</p>
           </div>
           <div className="p-2.5 rounded-lg bg-negative/5 border border-negative/15">
-            <p className="text-[9px] text-muted-foreground mb-1">NÃO — Probabilidade</p>
+            <p className="text-[11px] text-muted-foreground mb-1">NÃO — Probabilidade</p>
             <p className="text-sm font-mono font-bold text-negative">{Math.round(noProb * 100)}%</p>
-            <p className="text-[9px] text-muted-foreground mt-0.5">Odds justas: {formatOdds(noProb)}</p>
+            <p className="text-[11px] text-muted-foreground mt-0.5">Odds justas: {formatOdds(noProb)}</p>
           </div>
         </div>
       </div>
       <div className="grid grid-cols-3 gap-2">
         {item.volume !== undefined && (
           <div className="p-2 rounded-lg bg-secondary/20 border border-border/10 text-center">
-            <p className="text-[9px] text-muted-foreground mb-0.5">Volume Total</p>
+            <p className="text-[11px] text-muted-foreground mb-0.5">Volume Total</p>
             <p className="text-xs font-mono font-bold text-foreground">{formatVolume(item.volume)}</p>
           </div>
         )}
         {item.volume24h !== undefined && (
           <div className="p-2 rounded-lg bg-secondary/20 border border-border/10 text-center">
-            <p className="text-[9px] text-muted-foreground mb-0.5 flex items-center justify-center gap-1">
+            <p className="text-[11px] text-muted-foreground mb-0.5 flex items-center justify-center gap-1">
               Volume 24h <VolumeTrend volume={item.volume} volume24h={item.volume24h} />
             </p>
             <p className="text-xs font-mono font-bold text-neon-blue">{formatVolume(item.volume24h)}</p>
@@ -151,7 +151,7 @@ export function MarketAnalysis({ item }: { item: TrendingItem }) {
         )}
         {(item.liquidity ?? item.openInterest) !== undefined && (
           <div className="p-2 rounded-lg bg-secondary/20 border border-border/10 text-center">
-            <p className="text-[9px] text-muted-foreground mb-0.5">{item.source === "kalshi" ? "Open Interest" : "Liquidez"}</p>
+            <p className="text-[11px] text-muted-foreground mb-0.5">{item.source === "kalshi" ? "Open Interest" : "Liquidez"}</p>
             <p className="text-xs font-mono font-bold text-gold">{formatVolume((item.openInterest ?? item.liquidity) as number)}</p>
           </div>
         )}
@@ -160,7 +160,7 @@ export function MarketAnalysis({ item }: { item: TrendingItem }) {
         <div className="flex gap-2">
           {probChange !== undefined && Math.abs(probChange) > 0.005 && (
             <div className={`flex-1 p-2 rounded-lg border text-center ${probChange > 0 ? "border-positive/20 bg-positive/5" : "border-negative/20 bg-negative/5"}`}>
-              <p className="text-[9px] text-muted-foreground mb-0.5">Variação Recente</p>
+              <p className="text-[11px] text-muted-foreground mb-0.5">Variação Recente</p>
               <p className={`text-xs font-mono font-bold ${probChange > 0 ? "text-positive" : "text-negative"}`}>
                 {probChange > 0 ? "+" : ""}{Math.round(probChange * 100)}pp
               </p>
@@ -168,7 +168,7 @@ export function MarketAnalysis({ item }: { item: TrendingItem }) {
           )}
           {item.weekPriceChange !== undefined && Math.abs(item.weekPriceChange) > 0.01 && (
             <div className={`flex-1 p-2 rounded-lg border text-center ${item.weekPriceChange > 0 ? "border-positive/20 bg-positive/5" : "border-negative/20 bg-negative/5"}`}>
-              <p className="text-[9px] text-muted-foreground mb-0.5">Variação 7d</p>
+              <p className="text-[11px] text-muted-foreground mb-0.5">Variação 7d</p>
               <p className={`text-xs font-mono font-bold ${item.weekPriceChange > 0 ? "text-positive" : "text-negative"}`}>
                 {item.weekPriceChange > 0 ? "+" : ""}{Math.round(item.weekPriceChange * 100)}pp
               </p>
@@ -177,7 +177,7 @@ export function MarketAnalysis({ item }: { item: TrendingItem }) {
         </div>
       )}
       <div>
-        <p className="text-[10px] text-muted-foreground mb-2">EV de referência (lado SIM)</p>
+        <p className="text-[11px] text-muted-foreground mb-2">EV de referência (lado SIM)</p>
         <div className="space-y-1">
           {[40, 50, 60, 70].map((pct) => {
             const p = pct / 100;
@@ -185,19 +185,19 @@ export function MarketAnalysis({ item }: { item: TrendingItem }) {
             const hasVal = ev > 0;
             return (
               <div key={pct} className="flex items-center gap-2">
-                <span className="text-[10px] font-mono text-muted-foreground w-16">Prob {pct}%</span>
+                <span className="text-[11px] font-mono text-muted-foreground w-16">Prob {pct}%</span>
                 <div className="flex-1 h-1 bg-secondary/30 rounded-full overflow-hidden">
                   <div className={`h-full rounded-full ${hasVal ? "bg-positive" : "bg-negative/50"}`}
                     style={{ width: `${Math.min(100, Math.abs(ev) * 200)}%` }} />
                 </div>
-                <span className={`text-[10px] font-mono w-16 text-right ${hasVal ? "text-positive" : "text-negative/70"}`}>
+                <span className={`text-[11px] font-mono w-16 text-right ${hasVal ? "text-positive" : "text-negative/70"}`}>
                   EV {ev >= 0 ? "+" : ""}{(ev * 100).toFixed(1)}%
                 </span>
               </div>
             );
           })}
         </div>
-        <p className="text-[9px] text-muted-foreground/60 mt-1.5">
+        <p className="text-[11px] text-muted-foreground mt-1.5">
           EV positivo = sua prob {'>'} prob do mercado ({Math.round(prob * 100)}%)
         </p>
       </div>
@@ -242,14 +242,14 @@ function isRedditResult(r: AnyAnalysisResult): r is RedditContextResult {
 function NewsArticleList({ articles }: { articles: MarketAnalysisResult["articles"] }) {
   if (articles.length === 0) {
     return (
-      <p className="text-[10px] text-muted-foreground/60 text-center py-1">
+      <p className="text-[11px] text-muted-foreground text-center py-1">
         Nenhuma notícia recente encontrada.
       </p>
     );
   }
   return (
     <div>
-      <p className="text-[10px] font-semibold text-foreground/60 uppercase tracking-wider mb-1.5 flex items-center gap-1">
+      <p className="text-[11px] font-semibold text-foreground/80 uppercase tracking-wider mb-1.5 flex items-center gap-1">
         <Newspaper className="w-3 h-3" />Notícias relacionadas
       </p>
       <div className="space-y-2">
@@ -257,14 +257,14 @@ function NewsArticleList({ articles }: { articles: MarketAnalysisResult["article
           <a key={i} href={a.url} target="_blank" rel="noopener noreferrer"
             className="block p-2.5 rounded-lg bg-secondary/10 border border-border/10 hover:border-border/30 transition-colors">
             <div className="flex items-center gap-1.5 mb-0.5">
-              <span className="text-[9px] font-medium text-primary/60 uppercase tracking-wider">{a.source}</span>
-              <span className="text-[9px] text-muted-foreground/50">· {a.publishedAt.slice(0, 10)}</span>
+              <span className="text-[11px] font-medium text-primary/60 uppercase tracking-wider">{a.source}</span>
+              <span className="text-[11px] text-muted-foreground">· {a.publishedAt.slice(0, 10)}</span>
             </div>
             <p className="text-xs text-foreground/80 leading-snug mb-0.5">{a.title}</p>
             {a.description && (
-              <p className="text-[10px] text-muted-foreground leading-relaxed line-clamp-2">{a.description}</p>
+              <p className="text-[11px] text-muted-foreground leading-relaxed line-clamp-2">{a.description}</p>
             )}
-            <span className="text-[9px] text-primary/50 flex items-center gap-0.5 mt-1">
+            <span className="text-[11px] text-primary/50 flex items-center gap-0.5 mt-1">
               <ExternalLink className="w-2.5 h-2.5" />Ler artigo completo
             </span>
           </a>
@@ -353,7 +353,7 @@ export function NewsAnalysisPanel({ item }: { item: TrendingItem }) {
       {error && (
         <div className="mt-2 p-2 rounded-lg bg-negative/10 border border-negative/20 flex items-center gap-2">
           <AlertTriangle className="w-3 h-3 text-negative shrink-0" />
-          <p className="text-[10px] text-negative/80">{error}</p>
+          <p className="text-[11px] text-negative/80">{error}</p>
         </div>
       )}
 
@@ -361,7 +361,7 @@ export function NewsAnalysisPanel({ item }: { item: TrendingItem }) {
         <div className="mt-2 space-y-3">
           {/* Why trending — contextual */}
           <div className="p-3 rounded-lg bg-neon-blue/5 border border-neon-blue/15">
-            <p className="text-[10px] font-semibold text-neon-blue/80 uppercase tracking-wider mb-1.5 flex items-center gap-1">
+            <p className="text-[11px] font-semibold text-neon-blue/80 uppercase tracking-wider mb-1.5 flex items-center gap-1">
               <Flame className="w-3 h-3" />Por que está viral — análise contextual
               {result.cached && <span className="ml-1 opacity-60" title="Esta análise já tinha sido gerada hoje">de hoje</span>}
             </p>
@@ -371,7 +371,7 @@ export function NewsAnalysisPanel({ item }: { item: TrendingItem }) {
           {/* Background context */}
           {result.context && (
             <div className="p-2.5 rounded-lg bg-secondary/20 border border-border/20">
-              <p className="text-[9px] font-semibold text-foreground/60 uppercase tracking-wider mb-1">Contexto de fundo</p>
+              <p className="text-[11px] font-semibold text-foreground/80 uppercase tracking-wider mb-1">Contexto de fundo</p>
               <p className="text-xs text-muted-foreground leading-relaxed">{result.context}</p>
             </div>
           )}
@@ -379,7 +379,7 @@ export function NewsAnalysisPanel({ item }: { item: TrendingItem }) {
           {/* Key facts */}
           {result.keyFacts.length > 0 && (
             <div>
-              <p className="text-[10px] font-semibold text-foreground/60 uppercase tracking-wider mb-1.5 flex items-center gap-1">
+              <p className="text-[11px] font-semibold text-foreground/80 uppercase tracking-wider mb-1.5 flex items-center gap-1">
                 <Target className="w-3 h-3" />Fatos-chave
               </p>
               <ul className="space-y-1">
@@ -395,7 +395,7 @@ export function NewsAnalysisPanel({ item }: { item: TrendingItem }) {
           {/* Betting angle */}
           {result.bettingAngle && (
             <div className="p-2.5 rounded-lg bg-gold/5 border border-gold/15">
-              <p className="text-[9px] font-semibold text-gold/70 uppercase tracking-wider mb-1">Ângulo de mercado</p>
+              <p className="text-[11px] font-semibold text-gold/70 uppercase tracking-wider mb-1">Ângulo de mercado</p>
               <p className="text-xs text-muted-foreground leading-relaxed">{result.bettingAngle}</p>
             </div>
           )}
@@ -409,15 +409,15 @@ export function NewsAnalysisPanel({ item }: { item: TrendingItem }) {
           {/* Fair Value / Edge — a saída mais decisória do cérebro (antes só aparecia no Detalhe) */}
           {result.fairValue != null && (
             <div className="flex items-center gap-2 flex-wrap p-2.5 rounded-lg bg-gold/5 border border-gold/20">
-              <span className="text-[9px] text-gold/70 uppercase tracking-wider">Fair Value JLB</span>
+              <span className="text-[11px] text-gold/70 uppercase tracking-wider">Fair Value JLB</span>
               <span className="font-mono font-bold text-gold text-sm">{result.fairValue}%</span>
               {result.edgePp != null && Math.abs(result.edgePp) >= 1 && (
-                <span className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded ${result.edgePp > 0 ? "bg-positive/10 text-positive" : "bg-negative/10 text-negative"}`}>
+                <span className={`text-[11px] font-mono font-bold px-1.5 py-0.5 rounded ${result.edgePp > 0 ? "bg-positive/10 text-positive" : "bg-negative/10 text-negative"}`}>
                   {result.edgePp > 0 ? "+" : ""}{result.edgePp}pp vs mercado
                 </span>
               )}
               {result.confidence && (
-                <span className="ml-auto text-[9px] font-bold px-1.5 py-0.5 rounded-full border border-border/30 bg-secondary/20 text-muted-foreground uppercase">conf. {result.confidence}</span>
+                <span className="ml-auto text-[11px] font-bold px-1.5 py-0.5 rounded-full border border-border/30 bg-secondary/20 text-muted-foreground uppercase">conf. {result.confidence}</span>
               )}
             </div>
           )}
@@ -425,14 +425,14 @@ export function NewsAnalysisPanel({ item }: { item: TrendingItem }) {
               não sabe do que se trata não aproveita o que vem depois. */}
           {result.contexto && (
             <div className="p-3 rounded-lg bg-secondary/20 border border-border/20">
-              <p className="text-[10px] font-semibold text-foreground/60 uppercase tracking-wider mb-1.5">Entenda o assunto</p>
+              <p className="text-[11px] font-semibold text-foreground/80 uppercase tracking-wider mb-1.5">Entenda o assunto</p>
               <p className="text-xs text-muted-foreground leading-relaxed">{result.contexto}</p>
             </div>
           )}
 
           {/* AI analysis */}
           <div className="p-3 rounded-lg bg-neon-blue/5 border border-neon-blue/15">
-            <p className="text-[10px] font-semibold text-neon-blue/80 uppercase tracking-wider mb-1.5 flex items-center gap-1">
+            <p className="text-[11px] font-semibold text-neon-blue/80 uppercase tracking-wider mb-1.5 flex items-center gap-1">
               <Sparkles className="w-3 h-3" />Análise de IA
               {result.cached && <span className="ml-1 opacity-60" title="Esta análise já tinha sido gerada hoje">de hoje</span>}
             </p>
@@ -442,7 +442,7 @@ export function NewsAnalysisPanel({ item }: { item: TrendingItem }) {
           {/* Key factors */}
           {result.keyFactors.length > 0 && (
             <div>
-              <p className="text-[10px] font-semibold text-foreground/60 uppercase tracking-wider mb-1.5 flex items-center gap-1">
+              <p className="text-[11px] font-semibold text-foreground/80 uppercase tracking-wider mb-1.5 flex items-center gap-1">
                 <Target className="w-3 h-3" />Fatores-chave
               </p>
               <ul className="space-y-1">
@@ -458,11 +458,11 @@ export function NewsAnalysisPanel({ item }: { item: TrendingItem }) {
           {result.cenarios && (
             <div className="grid grid-cols-2 gap-2">
               <div className="p-2.5 rounded-lg bg-positive/5 border border-positive/20">
-                <p className="text-[9px] font-semibold text-positive/80 uppercase tracking-wider mb-1">Para dar SIM</p>
+                <p className="text-[11px] font-semibold text-positive/80 uppercase tracking-wider mb-1">Para dar SIM</p>
                 <p className="text-xs text-muted-foreground leading-relaxed">{result.cenarios.sim}</p>
               </div>
               <div className="p-2.5 rounded-lg bg-negative/5 border border-negative/20">
-                <p className="text-[9px] font-semibold text-negative/80 uppercase tracking-wider mb-1">Para dar NÃO</p>
+                <p className="text-[11px] font-semibold text-negative/80 uppercase tracking-wider mb-1">Para dar NÃO</p>
                 <p className="text-xs text-muted-foreground leading-relaxed">{result.cenarios.nao}</p>
               </div>
             </div>
@@ -470,7 +470,7 @@ export function NewsAnalysisPanel({ item }: { item: TrendingItem }) {
 
           {result.watchFor && (
             <div className="p-2.5 rounded-lg bg-gold/5 border border-gold/15">
-              <p className="text-[9px] font-semibold text-gold/70 uppercase tracking-wider mb-1">O que acompanhar</p>
+              <p className="text-[11px] font-semibold text-gold/70 uppercase tracking-wider mb-1">O que acompanhar</p>
               <p className="text-xs text-muted-foreground leading-relaxed">{result.watchFor}</p>
             </div>
           )}
@@ -478,7 +478,7 @@ export function NewsAnalysisPanel({ item }: { item: TrendingItem }) {
           {result.biasAlert && (
             <div className="p-2 rounded-lg bg-warning/5 border border-warning/15 flex items-start gap-2">
               <AlertTriangle className="w-3 h-3 text-warning shrink-0 mt-0.5" />
-              <p className="text-[10px] text-muted-foreground leading-relaxed">{result.biasAlert}</p>
+              <p className="text-[11px] text-muted-foreground leading-relaxed">{result.biasAlert}</p>
             </div>
           )}
 

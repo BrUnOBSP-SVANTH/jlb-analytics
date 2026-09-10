@@ -11,11 +11,11 @@ export function MarketHeader({ market }: { market: MarketBasic }) {
     <AnimatedSection delay={0.05}>
       <div className="glass-card rounded-xl p-6 space-y-3">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 uppercase tracking-wider">
+          <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 uppercase tracking-wider">
             {market.source}
           </span>
           {market.category && (
-            <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-secondary/30 text-muted-foreground border border-border/20 uppercase tracking-wider">
+            <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-secondary/30 text-muted-foreground border border-border/20 uppercase tracking-wider">
               {market.category}
             </span>
           )}
@@ -30,7 +30,7 @@ export function MarketHeader({ market }: { market: MarketBasic }) {
           </a>
         </div>
         <h1 className="text-2xl font-bold text-[var(--titulo)] leading-snug">{market.title}</h1>
-        <p className="text-xs text-muted-foreground/70 leading-relaxed">
+        <p className="text-xs text-muted-foreground leading-relaxed">
           Esta tela reúne tudo sobre este mercado — o preço atual, o histórico, o consenso das fontes e as ferramentas
           para você decidir com lógica, não no achismo. Abaixo, cada seção explica o que mostra e como usar.
         </p>

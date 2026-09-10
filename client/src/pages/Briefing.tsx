@@ -94,7 +94,7 @@ function QuickPredict({ market, marketProb }: { market: string; marketProb: numb
     return (
       <button
         onClick={() => setOpen(true)}
-        className="mt-1 flex items-center gap-1 text-[10px] text-muted-foreground/60 hover:text-gold transition-colors"
+        className="mt-1 flex items-center gap-1 text-[11px] text-muted-foreground hover:text-gold transition-colors"
       >
         <BookmarkPlus className="w-3 h-3" />
         Registrar minha estimativa
@@ -108,13 +108,13 @@ function QuickPredict({ market, marketProb }: { market: string; marketProb: numb
   return (
     <div className="mt-2 p-3 rounded-lg bg-primary/5 border border-primary/15 space-y-2.5">
       <div className="flex items-center justify-between">
-        <p className="text-[10px] font-semibold text-foreground uppercase tracking-wide">Minha estimativa</p>
+        <p className="text-[11px] font-semibold text-foreground uppercase tracking-wide">Minha estimativa</p>
         <span className={`text-xs font-mono font-bold ${edgeColor}`}>
           Edge: {edge >= 0 ? "+" : ""}{edge.toFixed(0)}pp
         </span>
       </div>
       <div className="space-y-1">
-        <div className="flex justify-between text-[10px] text-muted-foreground">
+        <div className="flex justify-between text-[11px] text-muted-foreground">
           <span>Prob. SIM</span>
           <span className="font-mono font-bold text-foreground">{userProb}%</span>
         </div>
@@ -123,7 +123,7 @@ function QuickPredict({ market, marketProb }: { market: string; marketProb: numb
           onChange={(e) => setUserProb(parseInt(e.target.value, 10))}
           className="w-full h-1.5 rounded-full accent-primary cursor-pointer"
         />
-        <div className="flex justify-between text-[9px] text-muted-foreground/50">
+        <div className="flex justify-between text-[11px] text-muted-foreground">
           <span>Mercado: {marketProb}%</span>
           <span>Arraste para ajustar</span>
         </div>
@@ -143,7 +143,7 @@ function QuickPredict({ market, marketProb }: { market: string; marketProb: numb
         )}
         <button
           onClick={() => setOpen(false)}
-          className="text-[10px] text-muted-foreground hover:text-foreground transition-colors"
+          className="text-[11px] text-muted-foreground hover:text-foreground transition-colors"
         >
           Cancelar
         </button>
@@ -205,9 +205,9 @@ function ExpiringPredictions({ preds }: { preds: StoredPrediction[] }) {
               <div className="flex-1 min-w-0">
                 <p className="text-xs font-medium text-foreground line-clamp-2">{p.question}</p>
                 <div className="flex items-center gap-3 mt-1">
-                  <span className="text-[10px] text-muted-foreground">{age} dias atrás</span>
-                  <span className="text-[10px] font-mono text-gold">{p.userProb}% SIM</span>
-                  <span className="text-[10px] text-muted-foreground">Mercado: {p.marketProb.toFixed(1)}%</span>
+                  <span className="text-[11px] text-muted-foreground">{age} dias atrás</span>
+                  <span className="text-[11px] font-mono text-gold">{p.userProb}% SIM</span>
+                  <span className="text-[11px] text-muted-foreground">Mercado: {p.marketProb.toFixed(1)}%</span>
                 </div>
               </div>
             </div>
@@ -341,7 +341,7 @@ export default function Briefing() {
               <div className="flex-1">
                 <h2 className="text-lg font-bold text-[var(--titulo)] leading-snug">{briefing.headline}</h2>
                 {briefing.cached && (
-                  <span className="inline-flex items-center gap-1 mt-1 text-[10px] text-muted-foreground/60">
+                  <span className="inline-flex items-center gap-1 mt-1 text-[11px] text-muted-foreground">
                     <Clock className="w-3 h-3" aria-hidden="true" /> Publicado hoje
                   </span>
                 )}
@@ -406,8 +406,8 @@ export default function Briefing() {
                 {briefing.topMarkets.map((m, i) => (
                   <div key={i} className="border-b border-border/10 last:border-0 pb-2 last:pb-0">
                     <div className="flex items-center gap-3 py-1.5">
-                      <span className="text-[10px] font-mono text-muted-foreground/60 w-4 shrink-0">{i + 1}</span>
-                      <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium shrink-0 ${
+                      <span className="text-[11px] font-mono text-muted-foreground w-4 shrink-0">{i + 1}</span>
+                      <span className={`text-[11px] px-1.5 py-0.5 rounded font-medium shrink-0 ${
                         m.source === "Polymarket" ? "bg-neon-blue/10 text-neon-blue" : "bg-purple-400/10 text-purple-400"
                       }`}>{m.source}</span>
                       <p className="text-xs text-foreground flex-1 line-clamp-1">{m.title}</p>

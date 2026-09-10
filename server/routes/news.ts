@@ -9,13 +9,56 @@ const router = Router();
 
 // ── Translate endpoint (helpers compartilhados em lib/translate.ts) ──────────
 
+/**
+ * Tradução de um texto. NUNCA finge ter traduzido.
+ *
+ * O QUE ISTO CONSERTA (MKT-01, o achado crítico dos cards). Esta rota devolvia
+ * `translation: translation ?? text` — ou seja, quando a tradução falhava, ela
+ * devolvia o ORIGINAL no campo da tradução. O card fazia
+ * `if (data.translation) setTranslation(...)`, que era verdadeiro, e desenhava o
+ * mesmo título de novo logo abaixo, em itálico dourado. Resultado: TODO card do
+ * site mostrava o título duas vezes — e no tema claro a segunda linha ficava com
+ * contraste 1,71:1, ilegível.
+ *
+ * A regra agora é dupla, e as duas metades importam:
+ *   · falhou   → `traducao: null`. Ausência de tradução é informação.
+ *   · idêntica → `traducao: null` também. Um título que já estava em português
+ *     (ou um nome próprio que "traduz" para ele mesmo) não vira segunda linha.
+ */
 router.get("/translate", async (req, res) => {
   const text = String(req.query.text ?? "").trim().slice(0, 500);
   if (!text) return res.status(400).json({ error: "text required" });
 
-  // translateToPt cacheia sucesso por 24h; falha devolve o original sem cachear
-  const translation = await translateToPt(text);
-  res.json({ translation: translation ?? text });
+  const traduzida = await translateToPt(text);
+  const util = traduzida && traduzida !== text ? traduzida : null;
+  res.json({ traducao: util, original: text, traduzido: util !== null });
+});
+
+/**
+ * Tradução EM LOTE (TRV-01).
+ *
+ * A auditoria contou 52 chamadas de API por carregamento de página, das quais
+ * `/api/translate` sozinha respondia por 20 — até 4,0 s de espera com a tela em
+ * branco. Cada card pedia a sua. Uma chamada com N títulos resolve a lista
+ * inteira, e `translateToPt` já guarda cada texto por 24 h, então o segundo
+ * carregamento não custa nada.
+ */
+router.post("/translate/lote", async (req, res) => {
+  const bruto = (req.body as { textos?: unknown })?.textos;
+  if (!Array.isArray(bruto)) return res.status(400).json({ error: "textos required" });
+
+  // Teto de 40: acima disso a chamada demora mais que as individuais que ela
+  // veio substituir, e a lista visível de mercados nunca passa disso.
+  const textos = bruto.slice(0, 40).map((t) => String(t ?? "").trim().slice(0, 500)).filter(Boolean);
+
+  const traducoes: Record<string, string> = {};
+  await Promise.all(textos.map(async (t) => {
+    const r = await translateToPt(t);
+    // Mesma regra da rota individual: só entra o que traduziu DE VERDADE.
+    if (r && r !== t) traducoes[t] = r;
+  }));
+
+  res.json({ traducoes });
 });
 
 // ── NewsAPI ──────────────────────────────────────────────────────────────────

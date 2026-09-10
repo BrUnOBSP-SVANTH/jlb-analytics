@@ -139,7 +139,7 @@ export default function TrackRecord() {
                 </div>
               ))}
             </div>
-            <p className="text-[10px] text-muted-foreground/60 mt-4 leading-relaxed">
+            <p className="text-[11px] text-muted-foreground mt-4 leading-relaxed">
               Métricas: <span className="text-foreground/80">taxa de acerto</span> (previu o lado certo, SIM/NÃO) e{" "}
               <span className="text-foreground/80"><Termo nome="brier">Brier Score</Termo></span> (calibração fina — quão perto a probabilidade
               esteve do resultado; menor é melhor). Estamos migrando 100% da resolução para o settlement oficial da

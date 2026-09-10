@@ -87,7 +87,7 @@ export function PorTema() {
                 <td className="py-2 font-sans text-foreground/90">{NOMES[t.tema] ?? t.tema}</td>
                 <td className="py-2 text-right text-muted-foreground">{t.n}</td>
                 <td className="py-2 text-right text-foreground font-semibold">
-                  {t.acerto}% <span className="text-muted-foreground/60 font-normal">±{t.margemPp}</span>
+                  {t.acerto}% <span className="text-muted-foreground font-normal">±{t.margemPp}</span>
                 </td>
                 <td className="py-2 text-right text-muted-foreground">{t.acertoMercado}%</td>
                 <td className={`py-2 text-right font-sans text-[11px] ${LEITURA[t.comparacao ?? "empate"].cor}`}>
@@ -100,7 +100,7 @@ export function PorTema() {
       </div>
 
       {semAmostra.length > 0 && (
-        <p className="text-[11px] text-muted-foreground/70 leading-relaxed mt-3">
+        <p className="text-[11px] text-muted-foreground leading-relaxed mt-3">
           Ainda sem prova suficiente (menos de {d.minAmostra} casos):{" "}
           {semAmostra.map((t) => `${NOMES[t.tema] ?? t.tema} (${t.n})`).join(", ")}. Preferimos dizer
           que não sabemos a publicar porcentagem que a amostra não sustenta.

@@ -66,7 +66,7 @@ export function IntuitionDiagnosis({ preds }: { preds: StoredPrediction[] }) {
           <Gauge className="w-4 h-4 text-neon-blue" />
           <p className="text-sm font-semibold text-foreground">Diagnóstico da sua intuição</p>
         </div>
-        <span className="text-[10px] text-muted-foreground/60">{resolvedN} resolvidas</span>
+        <span className="text-[11px] text-muted-foreground">{resolvedN} resolvidas</span>
       </div>
 
       {small && (
@@ -78,7 +78,7 @@ export function IntuitionDiagnosis({ preds }: { preds: StoredPrediction[] }) {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {/* Você vs mercado */}
         <div className="rounded-lg border border-border/20 bg-secondary/10 p-3.5">
-          <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1">Você vs mercado</p>
+          <p className="text-[11px] uppercase tracking-wide text-muted-foreground mb-1">Você vs mercado</p>
           <p className={`text-xl font-bold tabular-nums inline-flex items-center gap-1 ${skillVsMkt == null ? "text-muted-foreground" : beat ? "text-positive" : "text-negative"}`}>
             <MktIcon className="w-4 h-4" />
             {mktPct == null ? "—" : `${mktPct > 0 ? "+" : ""}${mktPct}%`}
@@ -90,7 +90,7 @@ export function IntuitionDiagnosis({ preds }: { preds: StoredPrediction[] }) {
 
         {/* Excesso de confiança */}
         <div className="rounded-lg border border-border/20 bg-secondary/10 p-3.5">
-          <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1">Confiança</p>
+          <p className="text-[11px] uppercase tracking-wide text-muted-foreground mb-1">Confiança</p>
           {cc && v ? (
             <>
               <p className={`text-xl font-bold ${v.tone}`}>{v.label}</p>

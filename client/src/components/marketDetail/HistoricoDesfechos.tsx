@@ -116,7 +116,7 @@ export function HistoricoDesfechos({ market }: { market: MarketBasic }) {
         <div className="flex items-center gap-2 flex-wrap">
           <LineChart className="w-4 h-4 text-primary" />
           <h2 className="text-sm font-semibold text-[var(--titulo)]">Como cada um chegou aqui</h2>
-          <span className="ml-auto text-[10px] text-muted-foreground/60">
+          <span className="ml-auto text-[11px] text-muted-foreground">
             {series.length} desfechos · {dias} dias
           </span>
         </div>
@@ -141,8 +141,12 @@ export function HistoricoDesfechos({ market }: { market: MarketBasic }) {
                 <line x1={PAD_ESQ} y1={emY(n)} x2={W - PAD_DIR} y2={emY(n)}
                   stroke="var(--color-muted-foreground)" strokeOpacity={n === 0.5 ? 0.22 : 0.1}
                   strokeWidth={1} strokeDasharray={n === 0.5 ? "3 4" : undefined} />
-                <text x={W - PAD_DIR + 6} y={emY(n) + 3} fontSize={9}
-                  fill="var(--color-muted-foreground)" opacity={0.55}>{n * 100}%</text>
+                {/* Rótulo de eixo é DADO, não decoração (TRV-12). Estava em 9px
+                    com opacidade 0,55 — a auditoria mediu 1,42:1, quase invisível
+                    no tema escuro. Sem opacidade e em 11px ele passa a ser legível
+                    com a mesma cor de texto secundário do resto do site. */}
+                <text x={W - PAD_DIR + 6} y={emY(n) + 4} fontSize={11}
+                  fill="var(--color-muted-foreground)">{n * 100}%</text>
               </g>
             ))}
 

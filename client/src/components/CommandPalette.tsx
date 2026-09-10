@@ -175,22 +175,22 @@ export default function CommandPalette() {
             >
               {/* Input */}
               <div className="flex items-center gap-3 px-4 py-3.5 border-b border-border/20">
-                <Search className="w-4 h-4 text-muted-foreground/60 shrink-0" />
+                <Search className="w-4 h-4 text-muted-foreground shrink-0" />
                 <input
                   ref={inputRef}
                   type="text"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder="Buscar páginas, artigos, modelos…"
-                  className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none"
+                  className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
                 />
                 <div className="flex items-center gap-1.5">
                   {query && (
-                    <button onClick={() => setQuery("")} className="text-muted-foreground/40 hover:text-muted-foreground">
+                    <button onClick={() => setQuery("")} className="text-muted-foreground hover:text-muted-foreground">
                       <X className="w-3.5 h-3.5" />
                     </button>
                   )}
-                  <kbd className="hidden sm:inline-flex items-center px-1.5 py-0.5 rounded border border-border/30 text-[10px] text-muted-foreground/50">esc</kbd>
+                  <kbd className="hidden sm:inline-flex items-center px-1.5 py-0.5 rounded border border-border/30 text-[11px] text-muted-foreground">esc</kbd>
                 </div>
               </div>
 
@@ -200,7 +200,7 @@ export default function CommandPalette() {
                 {filteredPages.length > 0 && (
                   <div>
                     {!query && (
-                      <p className="px-4 py-1.5 text-[10px] font-semibold text-muted-foreground/50 uppercase tracking-wider">
+                      <p className="px-4 py-1.5 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
                         Navegação rápida
                       </p>
                     )}
@@ -219,7 +219,7 @@ export default function CommandPalette() {
                             <Icon className={`w-3.5 h-3.5 ${isSelected ? "text-primary" : "text-muted-foreground"}`} />
                           </div>
                           <span className="text-sm">{item.label}</span>
-                          {isSelected && <kbd className="ml-auto text-[10px] text-muted-foreground/40">↵</kbd>}
+                          {isSelected && <kbd className="ml-auto text-[11px] text-muted-foreground">↵</kbd>}
                         </button>
                       );
                     })}
@@ -229,13 +229,13 @@ export default function CommandPalette() {
                 {/* Artigos do Cérebro */}
                 {query.length >= 2 && (
                   <div>
-                    <p className="px-4 py-1.5 text-[10px] font-semibold text-muted-foreground/50 uppercase tracking-wider flex items-center gap-2">
+                    <p className="px-4 py-1.5 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
                       <Brain className="w-3 h-3" />
                       Cérebro
                       {loadingArticles && <span className="w-2.5 h-2.5 rounded-full border border-gold border-t-transparent animate-spin" />}
                     </p>
                     {articles.length === 0 && !loadingArticles && query.length >= 2 && (
-                      <p className="px-4 py-3 text-xs text-muted-foreground/50">Nenhum artigo encontrado para "{query}"</p>
+                      <p className="px-4 py-3 text-xs text-muted-foreground">Nenhum artigo encontrado para "{query}"</p>
                     )}
                     {articles.map((art, i) => {
                       const idx = filteredPages.length + i;
@@ -248,15 +248,15 @@ export default function CommandPalette() {
                             isSelected ? "bg-primary/10" : "hover:bg-secondary/20"
                           }`}
                         >
-                          <FileText className={`w-3.5 h-3.5 mt-0.5 shrink-0 ${isSelected ? "text-primary" : "text-muted-foreground/50"}`} />
+                          <FileText className={`w-3.5 h-3.5 mt-0.5 shrink-0 ${isSelected ? "text-primary" : "text-muted-foreground"}`} />
                           <div className="flex-1 min-w-0">
                             <p className="text-sm text-foreground leading-snug line-clamp-1">{art.title}</p>
                             {art.summary && (
-                              <p className="text-[11px] text-muted-foreground/60 line-clamp-1 mt-0.5">{art.summary}</p>
+                              <p className="text-[11px] text-muted-foreground line-clamp-1 mt-0.5">{art.summary}</p>
                             )}
                           </div>
                           {art.category && (
-                            <span className={`text-[10px] font-semibold shrink-0 ${CAT_COLORS[art.category] ?? "text-muted-foreground/50"}`}>
+                            <span className={`text-[11px] font-semibold shrink-0 ${CAT_COLORS[art.category] ?? "text-muted-foreground"}`}>
                               {art.category}
                             </span>
                           )}
@@ -269,13 +269,13 @@ export default function CommandPalette() {
                 {allItems.length === 0 && !loadingArticles && query.length >= 2 && (
                   <div className="px-4 py-8 text-center">
                     <Search className="w-6 h-6 text-muted-foreground/20 mx-auto mb-2" />
-                    <p className="text-sm text-muted-foreground/60">Nenhum resultado para "{query}"</p>
+                    <p className="text-sm text-muted-foreground">Nenhum resultado para "{query}"</p>
                   </div>
                 )}
               </div>
 
               {/* Footer */}
-              <div className="px-4 py-2 border-t border-border/15 flex items-center gap-4 text-[10px] text-muted-foreground/40">
+              <div className="px-4 py-2 border-t border-border/15 flex items-center gap-4 text-[11px] text-muted-foreground">
                 <span className="flex items-center gap-1"><kbd className="border border-border/30 rounded px-1">↑↓</kbd> navegar</span>
                 <span className="flex items-center gap-1"><kbd className="border border-border/30 rounded px-1">↵</kbd> abrir</span>
                 <span className="flex items-center gap-1"><kbd className="border border-border/30 rounded px-1">esc</kbd> fechar</span>

@@ -177,7 +177,7 @@ export default function CalibrationTest() {
               </button>
             ))}
           </div>
-          <button onClick={() => setPick(null)} className="text-[11px] text-muted-foreground/70 hover:text-foreground mt-2.5 transition-colors">← mudar resposta</button>
+          <button onClick={() => setPick(null)} className="text-[11px] text-muted-foreground hover:text-foreground mt-2.5 transition-colors">← mudar resposta</button>
         </div>
       )}
     </div>

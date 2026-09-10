@@ -30,7 +30,7 @@ export function ToolIntro({ icon: Icon, tagline, description, example, accuracy 
           <div className="flex items-start justify-between gap-2">
             <p className="text-sm font-semibold text-foreground">{tagline}</p>
             {accuracy && (
-              <span className={`shrink-0 text-[10px] font-semibold px-2 py-0.5 rounded-full border ${accuracy.color}`}>
+              <span className={`shrink-0 text-[11px] font-semibold px-2 py-0.5 rounded-full border ${accuracy.color}`}>
                 {accuracy.label}: {accuracy.value}
               </span>
             )}
@@ -72,7 +72,7 @@ export function ResultBox({ label, value, color = "text-foreground", sub, big, h
       <p className="text-xs text-muted-foreground">{termo ? <Termo nome={termo}>{label}</Termo> : label}</p>
       <p className={`${big ? "text-4xl" : "text-xl"} font-mono font-bold mt-1 leading-none ${color}`}>{value}</p>
       {hint && <p className="text-[11px] text-muted-foreground mt-2 leading-snug">{hint}</p>}
-      {sub && <p className="text-xs text-muted-foreground/60 mt-1">{sub}</p>}
+      {sub && <p className="text-xs text-muted-foreground mt-1">{sub}</p>}
     </div>
   );
 }
@@ -93,7 +93,7 @@ export function Field({ label, htmlFor, hint, children }: {
 export function FormulaBox({ formula, legend }: { formula: string; legend?: string }) {
   return (
     <div className="p-3 rounded-lg bg-obsidian/50 border border-border/20">
-      <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Fórmula</p>
+      <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-1">Fórmula</p>
       <p className="font-mono text-sm text-gold">{formula}</p>
       {legend && <p className="text-xs text-muted-foreground mt-1">{legend}</p>}
     </div>

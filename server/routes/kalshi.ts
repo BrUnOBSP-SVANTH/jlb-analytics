@@ -4,7 +4,7 @@ import { fetchWithRetry } from "../lib/fetcher.ts";
 import { kalshiMarketUrl, kalshiYesProb, kalshiTemPrecoReal } from "../lib/marketNormalize.ts";
 import type { KalshiEventsResponse, KalshiMarket, KalshiEvent, KalshiNestedMarket } from "../lib/types.ts";
 import { log } from "../lib/log.ts";
-import { comOrcamento, porVolume, desambiguarPorPai, desambiguarTitulosIguais, limitePedido } from "../lib/marketCatalog.ts";
+import { comOrcamento, porVolume, desambiguarPorPai, desambiguarTitulosIguais, limitePedido, normalizarTitulo } from "../lib/marketCatalog.ts";
 
 const router = Router();
 
@@ -220,7 +220,7 @@ router.get("/markets", async (req, res) => {
           // o título do evento nesse caso; se nem ele existir, o ticker, que é feio
           // mas verdadeiro. Nunca inventar o nome que falta. E `tituloDistinto`
           // ainda acrescenta o rótulo da faixa quando o evento tem irmãos.
-          title: tituloDistinto(m, ev, irmaos),
+          title: normalizarTitulo(tituloDistinto(m, ev, irmaos)),
           rotuloDesfecho: tituloLimpo(m.yes_sub_title),
           yesProb: kalshiYesProb(m.yes_bid_dollars, m.yes_ask_dollars, m.last_price_dollars),
           prevYesProb: m.previous_price_dollars
@@ -260,7 +260,7 @@ router.get("/markets", async (req, res) => {
             const sum = (f: "volume" | "volume24h") => mapped.reduce((s, m) => s + (m[f] ?? 0), 0);
             return [{
               ...mapped[topIdx],           // representante = mercado do desfecho líder (ticker p/ navegação)
-              title: ev.title ?? mapped[topIdx].title,
+              title: normalizarTitulo(ev.title ?? mapped[topIdx].title),
               volume: sum("volume"),
               volume24h: sum("volume24h"),
               outcomes,

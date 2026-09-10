@@ -121,6 +121,23 @@
   --shadow-card: 0 1px 0 oklch(1 0 0 / 4%) inset, 0 10px 30px -16px oklch(0 0 0 / 0.55);
   --shadow-soft: 0 2px 8px -4px oklch(0 0 0 / 0.4);
   --obsidian: oklch(0.135 0.011 280);
+
+  /* ── ACENTOS COM CONTRASTE GARANTIDO (TRV-07) ────────────────────────────
+     A auditoria mediu 14 falhas de contraste NO TEMA CLARO: o dourado da
+     tradução em 1,71:1, a aba ativa em 1,76:1, o selo "AO VIVO" em 1,84:1, o
+     chip "Polymarket" em ~2,0:1. Todos abaixo do mínimo de 4,5:1 da WCAG AA.
+
+     A causa é sempre a mesma: a rampa de cor foi desenhada para o fundo
+     quase-preto e reaproveitada sobre o creme. Cor de marca precisa de DUAS
+     variantes, uma por fundo — não de uma rampa só.
+
+     Estes tokens são para TEXTO e ícone pequeno. Fundo de selo e barra de
+     gráfico continuam usando o acento cheio, onde a área grande resolve a
+     leitura. No escuro eles são o próprio acento. */
+  --gold-legivel: oklch(0.82 0.12 85);
+  --positivo-legivel: oklch(0.72 0.19 155);
+  --negativo-legivel: oklch(0.70 0.19 25);
+  --azul-legivel: oklch(0.75 0.16 240);
 }
 
 /* ───────────────────────────────────────────────────────────────────────────
@@ -171,6 +188,13 @@
   --shadow-card: 0 1px 2px oklch(0 0 0 / 0.04), 0 12px 28px -16px oklch(0.3 0.05 80 / 0.22);
   --shadow-soft: 0 2px 10px -6px oklch(0.3 0.05 80 / 0.18);
   --obsidian: oklch(0.945 0.008 88);
+
+  /* As mesmas cores, uma volta mais escuras: é isto que faltava (TRV-07).
+     Medidas contra --background (oklch 0.975) para ficarem acima de 4,5:1. */
+  --gold-legivel: oklch(0.50 0.11 76);
+  --positivo-legivel: oklch(0.48 0.15 155);
+  --negativo-legivel: oklch(0.50 0.19 27);
+  --azul-legivel: oklch(0.48 0.16 245);
 }
 
 @layer base {
@@ -260,6 +284,40 @@
     .entrada-pagina { animation: none; }
   }
 
+  /* ── REVELAR AO ENTRAR NA TELA ─────────────────────────────────────────────
+     A regra desta seção, e a lição mais cara da auditoria: **nenhum bloco nasce
+     invisível**. O estado de repouso é o conteúdo visível; a animação só
+     acrescenta um movimento em cima disso.
+
+     A versão anterior fazia o contrário — `opacity: 0` até o JavaScript provar
+     que o elemento estava na tela — e a auditoria encontrou o rodapé, cards e
+     seções inteiras paradas em opacidade ~0,15 em cinco rotas, com um viewport
+     inteiro em branco em /previsao, /simulador e /perfil.
+
+     `backwards` (e não `both`) é a peça central: o navegador aplica o quadro
+     inicial APENAS enquanto a animação está agendada. Sem a classe
+     `.revelar-pronto`, não há animação e não há `opacity: 0` — o conteúdo
+     simplesmente está lá. Ver components/AnimatedSection.tsx. */
+  @keyframes revelar-cima   { from { opacity: 0; transform: translateY(24px); } }
+  @keyframes revelar-baixo  { from { opacity: 0; transform: translateY(-24px); } }
+  @keyframes revelar-esq    { from { opacity: 0; transform: translateX(24px); } }
+  @keyframes revelar-dir    { from { opacity: 0; transform: translateX(-24px); } }
+  @keyframes revelar-parado { from { opacity: 0; } }
+
+  .revelar-pronto {
+    animation: 560ms cubic-bezier(0.25, 0.46, 0.45, 0.94) backwards;
+  }
+  .revelar-up.revelar-pronto    { animation-name: revelar-cima; }
+  .revelar-down.revelar-pronto  { animation-name: revelar-baixo; }
+  .revelar-left.revelar-pronto  { animation-name: revelar-esq; }
+  .revelar-right.revelar-pronto { animation-name: revelar-dir; }
+  .revelar-none.revelar-pronto  { animation-name: revelar-parado; }
+
+  /* Quem pediu menos movimento recebe a página pronta. Sem exceção. */
+  @media (prefers-reduced-motion: reduce) {
+    .revelar-pronto { animation: none !important; }
+  }
+
   /* ── MINIGRÁFICO DOS CARDS ─────────────────────────────────────────────────
      A linha se desenha da esquerda para a direita ao aparecer, como um preço
      sendo registrado. É o gesto que faz o gráfico parecer vivo em vez de
@@ -320,16 +378,49 @@
     min-width: 44px;
   }
 
+  /* O piso ABSOLUTO da WCAG 2.5.8, para controle que vive apertado dentro de uma
+     fileira densa (um "ocultar" no fim de uma linha de chips, um ponto de
+     paginação). A área cresce por padding invisível: o controle continua com o
+     mesmo desenho, só fica possível de acertar com o dedo.
+
+     Nota do que NÃO entra aqui: link de texto dentro de um parágrafo é isento
+     pela própria 2.5.8 (exceção "inline"). A medição pega 20 links "Ver no
+     Polymarket" com 16px de altura, e engordá-los quebraria a entrelinha do
+     texto sem ganho nenhum de acessibilidade. */
+  .alvo-minimo {
+    position: relative;
+    min-height: 24px;
+    min-width: 24px;
+    display: inline-flex;
+    align-items: center;
+  }
+  /* Área de toque de 44px sem ocupar 44px de layout. */
+  .alvo-minimo::after {
+    content: "";
+    position: absolute;
+    inset: 50% 50%;
+    width: 44px;
+    height: 44px;
+    transform: translate(-50%, -50%);
+  }
+
   /* Seleção de texto com o dourado da marca */
   ::selection {
     background: oklch(0.78 0.12 85 / 25%);
     color: var(--foreground);
   }
 
-  /* Foco visível consistente e elegante (acessibilidade + craft) */
+  /* Foco visível consistente (TRV-10).
+     A auditoria mediu 1,6px, abaixo dos 2px que a WCAG 2.2 pede — o `outline`
+     daqui estava sendo vencido pelo `outline-ring/50` do reset universal, que a
+     camada de utilitários do Tailwind aplica DEPOIS. O `!important` aqui não é
+     preguiça: é a única forma de uma regra da camada base ganhar de uma da
+     camada de utilitários, que vence por ORDEM DE CAMADA e não por
+     especificidade. O foco é a única pista de onde se está para quem navega por
+     teclado; ele não pode depender de qual camada foi impressa por último. */
   :focus-visible {
-    outline: 2px solid var(--ring);
-    outline-offset: 2px;
+    outline: 2px solid var(--ring) !important;
+    outline-offset: 2px !important;
     border-radius: 4px;
   }
 

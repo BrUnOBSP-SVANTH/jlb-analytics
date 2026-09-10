@@ -244,7 +244,7 @@ export default function ChatPanel({ open, onClose, onReady }: { open: boolean; o
           <Sparkles className="w-4 h-4 text-primary" aria-hidden="true" />
           <div>
             <p className="text-sm font-semibold text-foreground leading-none">Analista JLB</p>
-            <p className="text-[10px] text-muted-foreground mt-0.5">Educacional — nunca recomenda posições</p>
+            <p className="text-[11px] text-muted-foreground mt-0.5">Educacional — nunca recomenda posições</p>
           </div>
         </div>
         {messages.length > 0 && (
@@ -279,13 +279,13 @@ export default function ChatPanel({ open, onClose, onReady }: { open: boolean; o
             {m.role === "assistant" && m.content && i === messages.length - 1 && !streaming && (
               <div className="flex items-center gap-1 mt-1 pl-1">
                 {voted[i] ? (
-                  <span className="text-[10px] text-muted-foreground">Obrigado pelo feedback!</span>
+                  <span className="text-[11px] text-muted-foreground">Obrigado pelo feedback!</span>
                 ) : (
                   <>
-                    <button onClick={() => sendFeedback(i, 1)} aria-label="Resposta útil" className="p-1 rounded text-muted-foreground/60 hover:text-positive transition-colors">
+                    <button onClick={() => sendFeedback(i, 1)} aria-label="Resposta útil" className="p-1 rounded text-muted-foreground hover:text-positive transition-colors">
                       <ThumbsUp className="w-3 h-3" aria-hidden="true" />
                     </button>
-                    <button onClick={() => sendFeedback(i, -1)} aria-label="Resposta ruim" className="p-1 rounded text-muted-foreground/60 hover:text-negative transition-colors">
+                    <button onClick={() => sendFeedback(i, -1)} aria-label="Resposta ruim" className="p-1 rounded text-muted-foreground hover:text-negative transition-colors">
                       <ThumbsDown className="w-3 h-3" aria-hidden="true" />
                     </button>
                   </>
@@ -361,7 +361,7 @@ export default function ChatPanel({ open, onClose, onReady }: { open: boolean; o
         const remaining = Math.max(0, Number(credits.limit) - Number(credits.used));
         const low = remaining <= 2;
         return (
-          <p className={`text-[10px] text-center pb-1.5 -mt-0.5 ${low ? "text-gold font-medium" : "text-muted-foreground"}`}>
+          <p className={`text-[11px] text-center pb-1.5 -mt-0.5 ${low ? "text-gold font-medium" : "text-muted-foreground"}`}>
             {low
               ? <>Restam {remaining} análises grátis este mês · <a href="/perfil" onClick={() => track("premium_click")} className="underline underline-offset-2">Premium é ilimitado</a></>
               : <>{credits.used}/{credits.limit} análises de IA neste mês</>}

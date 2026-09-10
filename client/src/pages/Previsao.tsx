@@ -152,7 +152,7 @@ export default function Previsao() {
                     <p className="text-[11px] font-semibold text-foreground uppercase tracking-wider">Em alta agora</p>
                   </div>
                   {hotMarkets.length > 0 && (
-                    <div className="flex rounded-lg border border-border/30 overflow-hidden text-[10px] font-medium shrink-0">
+                    <div className="flex rounded-lg border border-border/30 overflow-hidden text-[11px] font-medium shrink-0">
                       <button type="button" onClick={() => setHotTab("br")} className={`px-2.5 py-1 transition-colors ${hotTab === "br" ? "bg-primary/15 text-primary" : "text-muted-foreground hover:text-foreground"}`}>🇧🇷 Brasil</button>
                       <button type="button" onClick={() => setHotTab("world")} className={`px-2.5 py-1 transition-colors ${hotTab === "world" ? "bg-primary/15 text-primary" : "text-muted-foreground hover:text-foreground"}`}>🌎 Mundo</button>
                     </div>
@@ -172,11 +172,11 @@ export default function Previsao() {
                         onClick={() => { setQuestion(m.title); track("previsao_hot_pick", { source: m.source, br: hotTab === "br" }); }}
                         className="group shrink-0 max-w-[240px] flex items-center gap-2 pl-3 pr-2.5 py-1.5 rounded-full bg-secondary/40 border border-border/25 hover:border-primary/40 hover:bg-secondary/60 transition-colors">
                         <span className="text-[11px] text-muted-foreground group-hover:text-foreground truncate">{m.title}</span>
-                        {m.prob != null && <span className="text-[10px] font-mono font-bold text-foreground/70 shrink-0">{m.prob}%</span>}
+                        {m.prob != null && <span className="text-[11px] font-mono font-bold text-foreground/80 shrink-0">{m.prob}%</span>}
                       </button>
                     ))
                   ) : (
-                    <p className="text-[11px] text-muted-foreground/60 py-1.5">Nenhum mercado nesta faixa agora — toque em {hotTab === "br" ? "🌎 Mundo" : "🇧🇷 Brasil"}.</p>
+                    <p className="text-[11px] text-muted-foreground py-1.5">Nenhum mercado nesta faixa agora — toque em {hotTab === "br" ? "🌎 Mundo" : "🇧🇷 Brasil"}.</p>
                   )}
                 </div>
               </div>
@@ -190,7 +190,7 @@ export default function Previsao() {
                 >
                   <Trophy className="w-4 h-4 text-gold shrink-0" />
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-gold">Modelo Klement — Copa 2026 <span className="font-normal text-muted-foreground/70">· retrospectiva</span></p>
+                    <p className="text-sm font-semibold text-gold">Modelo Klement — Copa 2026 <span className="font-normal text-muted-foreground">· retrospectiva</span></p>
                     <p className="text-xs text-muted-foreground">3 de 4 Copas — errou 2026 (Holanda) · Monte Carlo 48 seleções · modelo econométrico pré-configurado</p>
                   </div>
                   <span className="text-xs text-gold/60 shrink-0">Simular →</span>
@@ -208,9 +208,9 @@ export default function Previsao() {
                 onChange={(e) => setQuestion(e.target.value)}
                 rows={3}
                 placeholder={`Ex: "${selectedDomain.examples.split(",")[0].trim()} nos próximos 3 meses"`}
-                className="w-full px-4 py-3 rounded-xl bg-secondary/50 border border-border/50 text-sm text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:ring-1 focus:ring-primary resize-none"
+                className="w-full px-4 py-3 rounded-xl bg-secondary/50 border border-border/50 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary resize-none"
               />
-              <p className="text-[10px] text-muted-foreground mt-1">
+              <p className="text-[11px] text-muted-foreground mt-1">
                 Seja específico — quanto mais detalhe, mais preciso o modelo.
               </p>
             </div>
@@ -230,7 +230,7 @@ export default function Previsao() {
                   onChange={(e) => setContext(e.target.value)}
                   rows={2}
                   placeholder="Ex: Considere que a Selic está a 10.5%, há eleição em outubro, o petróleo subiu 15% no mês..."
-                  className="mt-2 w-full px-4 py-3 rounded-xl bg-secondary/50 border border-border/50 text-sm text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:ring-1 focus:ring-primary resize-none"
+                  className="mt-2 w-full px-4 py-3 rounded-xl bg-secondary/50 border border-border/50 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary resize-none"
                 />
               )}
             </div>
@@ -254,7 +254,7 @@ export default function Previsao() {
                     <p className={`text-sm font-semibold ${horizon === h.id ? "text-primary" : "text-foreground"}`}>
                       {h.label}
                     </p>
-                    <p className="text-[10px] text-muted-foreground mt-0.5">{h.desc}</p>
+                    <p className="text-[11px] text-muted-foreground mt-0.5">{h.desc}</p>
                   </button>
                 ))}
               </div>
@@ -277,7 +277,7 @@ export default function Previsao() {
                   className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-secondary/50 border border-border/50 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
                 />
               </div>
-              <p className="text-[10px] text-muted-foreground mt-1">
+              <p className="text-[11px] text-muted-foreground mt-1">
                 Se informado, a IA calcula o impacto estimado no seu patrimônio.
               </p>
             </div>
@@ -305,11 +305,11 @@ export default function Previsao() {
                 </div>
                 {/* Passos guiados pela FASE REAL do servidor (stream SSE) */}
                 <div className="flex flex-col gap-1 pl-5">
-                  <span className={`text-[11px] transition-colors ${(phase === null || phase === "context") ? "text-gold" : "text-muted-foreground/40"}`}>{(phase === null || phase === "context") ? "›" : "✓"} Cruza notícias recentes, macro (BCB) e Cérebro</span>
-                  <span className={`text-[11px] transition-colors ${(phase === "context_done" || phase === "analyzing") ? "text-gold" : "text-muted-foreground/30"}`}>{(phase === "context_done" || phase === "analyzing") ? "›" : "·"} Seleciona o modelo econométrico e roda o protocolo Superforecaster</span>
-                  <span className={`text-[11px] transition-colors ${(phase === "context_done" || phase === "analyzing") ? "text-muted-foreground/50" : "text-muted-foreground/30"}`}>· Calcula os 3 horizontes + impacto no patrimônio</span>
+                  <span className={`text-[11px] transition-colors ${(phase === null || phase === "context") ? "text-gold" : "text-muted-foreground"}`}>{(phase === null || phase === "context") ? "›" : "✓"} Cruza notícias recentes, macro (BCB) e Cérebro</span>
+                  <span className={`text-[11px] transition-colors ${(phase === "context_done" || phase === "analyzing") ? "text-gold" : "text-muted-foreground"}`}>{(phase === "context_done" || phase === "analyzing") ? "›" : "·"} Seleciona o modelo econométrico e roda o protocolo Superforecaster</span>
+                  <span className={`text-[11px] transition-colors ${(phase === "context_done" || phase === "analyzing") ? "text-muted-foreground" : "text-muted-foreground"}`}>· Calcula os 3 horizontes + impacto no patrimônio</span>
                 </div>
-                <p className="text-[10px] text-muted-foreground/60 pl-5">
+                <p className="text-[11px] text-muted-foreground pl-5">
                   {elapsed < 25
                     ? "É a previsão mais completa do site — leva alguns segundos."
                     : "Quase lá — finalizando a análise dos horizontes."}
@@ -380,7 +380,7 @@ export default function Previsao() {
             {anchorMarket && anchorMarket.prob != null && (
               <AnimatedSection>
                 <div className="glass-card rounded-xl p-4 border border-gold/20 bg-gold/[0.03]">
-                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1.5">Mercado real vs. IA JLB</p>
+                  <p className="text-[11px] uppercase tracking-wider text-muted-foreground mb-1.5">Mercado real vs. IA JLB</p>
                   {/* Tradução pra leigo do que os números significam */}
                   <p className="text-sm font-semibold text-foreground mb-3 leading-snug">
                     {Math.abs(result.confidenceMedium - anchorMarket.prob) < 1
@@ -390,26 +390,26 @@ export default function Previsao() {
                   <div className="flex items-center gap-4 flex-wrap">
                     <Link href={`/apostas/${anchorMarket.id}`}>
                       <div className="text-center cursor-pointer group">
-                        <p className="text-[9px] text-muted-foreground/70 uppercase">Mercado</p>
+                        <p className="text-[11px] text-muted-foreground uppercase">Mercado</p>
                         <p className="text-2xl font-mono font-bold text-foreground group-hover:text-primary transition-colors">{anchorMarket.prob}%</p>
                       </div>
                     </Link>
-                    <span className="text-muted-foreground/40 text-sm">vs</span>
+                    <span className="text-muted-foreground text-sm">vs</span>
                     <div className="text-center">
-                      <p className="text-[9px] text-gold/70 uppercase">IA JLB</p>
+                      <p className="text-[11px] text-gold/70 uppercase">IA JLB</p>
                       <p className="text-2xl font-mono font-bold text-gold">{result.confidenceMedium}%</p>
                     </div>
                     {Math.abs(result.confidenceMedium - anchorMarket.prob) >= 1 && (
                       <div className={`text-center px-2.5 py-1 rounded-lg ${result.confidenceMedium - anchorMarket.prob > 0 ? "bg-positive/10 text-positive" : "bg-negative/10 text-negative"}`}>
-                        <p className="text-[9px] uppercase opacity-70">Diferença</p>
+                        <p className="text-[11px] uppercase opacity-70">Diferença</p>
                         <p className="text-sm font-mono font-bold">{result.confidenceMedium - anchorMarket.prob > 0 ? "+" : ""}{result.confidenceMedium - anchorMarket.prob}pp</p>
                       </div>
                     )}
-                    <p className="text-[10px] text-muted-foreground flex-1 min-w-[180px] leading-relaxed">
+                    <p className="text-[11px] text-muted-foreground flex-1 min-w-[180px] leading-relaxed">
                       A IA foi ancorada neste mercado. Divergência não é ordem de compra — é onde investigar se você (ou o mercado) tem uma informação que o outro não tem.
                     </p>
                   </div>
-                  <p className="text-[10px] text-muted-foreground/50 mt-2 truncate">Mercado: {anchorMarket.title}</p>
+                  <p className="text-[11px] text-muted-foreground mt-2 truncate">Mercado: {anchorMarket.title}</p>
                 </div>
               </AnimatedSection>
             )}
@@ -443,15 +443,15 @@ export default function Previsao() {
                         <div className="flex items-center gap-3 p-3 rounded-lg bg-secondary/20 border border-border/15 hover:border-primary/30 transition-colors cursor-pointer">
                           <div className="flex-1 min-w-0">
                             <p className="text-xs font-medium text-foreground truncate">{m.title}</p>
-                            <p className="text-[10px] text-muted-foreground mt-0.5 capitalize">{m.source}{m.isBR ? " · 🇧🇷" : ""}</p>
+                            <p className="text-[11px] text-muted-foreground mt-0.5 capitalize">{m.source}{m.isBR ? " · 🇧🇷" : ""}</p>
                           </div>
                           {m.prob != null && (
                             <div className="text-center shrink-0">
                               <p className="text-sm font-mono font-bold text-foreground">{m.prob}%</p>
-                              <p className="text-[9px] text-muted-foreground">mercado</p>
+                              <p className="text-[11px] text-muted-foreground">mercado</p>
                             </div>
                           )}
-                          <ExternalLink className="w-3.5 h-3.5 text-muted-foreground/50 shrink-0" aria-hidden="true" />
+                          <ExternalLink className="w-3.5 h-3.5 text-muted-foreground shrink-0" aria-hidden="true" />
                         </div>
                       </Link>
                     ))}
@@ -466,7 +466,7 @@ export default function Previsao() {
                 <div className="glass-card rounded-xl p-4 text-center">
                   <FlaskConical className="w-4 h-4 text-primary mx-auto mb-1.5" />
                   <p className="text-xs font-mono font-bold text-foreground">{result.modelChosen.split(" ").slice(0, 2).join(" ")}</p>
-                  <p className="text-[10px] text-muted-foreground mt-0.5">Modelo</p>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">Modelo</p>
                 </div>
                 <div className="glass-card rounded-xl p-4 text-center">
                   <Target className="w-4 h-4 text-gold mx-auto mb-1.5" />
@@ -475,19 +475,19 @@ export default function Previsao() {
                   ) : (
                     <p className="text-xl font-bold font-mono text-foreground">{result.confidenceMedium}%</p>
                   )}
-                  <p className="text-[10px] text-muted-foreground mt-0.5">Chance estimada</p>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">Chance estimada</p>
                 </div>
                 <div className="glass-card rounded-xl p-4 text-center">
                   <BarChart2 className="w-4 h-4 text-neon-blue mx-auto mb-1.5" />
                   <p className="text-xs font-bold text-foreground">{result.modelFamily}</p>
-                  <p className="text-[10px] text-muted-foreground mt-0.5">Família</p>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">Família</p>
                 </div>
                 <div className="glass-card rounded-xl p-4 text-center">
                   <Brain className="w-4 h-4 text-positive mx-auto mb-1.5" />
                   <p className="text-xs font-bold text-foreground capitalize">
                     {result.expertiseLevel === "leigo" ? "Acessível" : result.expertiseLevel === "avancado" ? "Avançado" : "Intermediário"}
                   </p>
-                  <p className="text-[10px] text-muted-foreground mt-0.5">Nível detectado</p>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">Nível detectado</p>
                 </div>
               </div>
             </AnimatedSection>
@@ -545,7 +545,7 @@ export default function Previsao() {
                     </button>
                   </div>
                 )}
-                <p className="text-[10px] text-muted-foreground/60">
+                <p className="text-[11px] text-muted-foreground">
                   Salvo no seu Dashboard para acompanhar calibração e Brier Score quando o resultado sair.
                 </p>
               </div>

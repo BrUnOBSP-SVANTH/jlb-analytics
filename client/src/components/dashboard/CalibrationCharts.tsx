@@ -17,7 +17,7 @@ export function CalibrationChart({ predictions }: { predictions: StoredPredictio
   if (buckets.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-40 text-center gap-2">
-        <BarChart2 className="w-8 h-8 text-muted-foreground/30" aria-hidden="true" />
+        <BarChart2 className="w-8 h-8 text-muted-foreground" aria-hidden="true" />
         <p className="text-xs text-muted-foreground">
           Resolva pelo menos 5 previsões para ver a curva de calibração.
         </p>
@@ -158,7 +158,7 @@ export function CalibrationTrend({ history }: { history: CalibrationSnapshot[] }
         </LineChart>
       </ResponsiveContainer>
 
-      <p className="text-[10px] text-muted-foreground/60 text-center">
+      <p className="text-[11px] text-muted-foreground text-center">
         Snapshot salvo automaticamente cada vez que você resolve uma previsão.
         {improving ? " Você está melhorando a calibração." : " Continue resolvendo para ver a tendência."}
       </p>

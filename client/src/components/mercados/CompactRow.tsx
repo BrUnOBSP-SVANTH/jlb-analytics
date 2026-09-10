@@ -22,10 +22,10 @@ export function CompactRow({ item, onCompare, inCompare, onWatch, watched }: {
       )}
       <span className="flex-1 min-w-0 truncate text-foreground/80" title={item.title}>{item.title}</span>
       {item.volume !== undefined && (
-        <span className="hidden sm:block text-muted-foreground/60 shrink-0 w-14 text-right">{formatVolume(item.volume)}</span>
+        <span className="hidden sm:block text-muted-foreground shrink-0 w-14 text-right">{formatVolume(item.volume)}</span>
       )}
       {item.normalizedCategory !== "other" && item.normalizedCategory !== "all" && (
-        <span className="hidden md:block text-[9px] text-muted-foreground/50 shrink-0 w-16 truncate">{CATEGORY_LABELS[item.normalizedCategory]}</span>
+        <span className="hidden md:block text-[11px] text-muted-foreground shrink-0 w-16 truncate">{CATEGORY_LABELS[item.normalizedCategory]}</span>
       )}
       {item.badge && (
         <span className="hidden lg:block"><MarketBadge badge={item.badge} endDate={item.endDate} /></span>
@@ -33,16 +33,16 @@ export function CompactRow({ item, onCompare, inCompare, onWatch, watched }: {
       <div className="flex items-center gap-1 shrink-0">
         {onCompare && (
           <button onClick={() => onCompare(item)} title={inCompare ? "Remover comparação" : "Comparar"}
-            className={`p-1 rounded transition-colors ${inCompare ? "text-neon-blue" : "text-muted-foreground/40 hover:text-neon-blue"}`}>
+            className={`p-1 rounded transition-colors ${inCompare ? "text-neon-blue" : "text-muted-foreground hover:text-neon-blue"}`}>
             <Scale className="w-3 h-3" />
           </button>
         )}
         <button onClick={() => onWatch?.(item)} title={watched ? "Remover watchlist" : "Watchlist"}
-          className={`p-1 rounded transition-colors ${watched ? "text-gold" : "text-muted-foreground/40 hover:text-gold"}`}>
+          className={`p-1 rounded transition-colors ${watched ? "text-gold" : "text-muted-foreground hover:text-gold"}`}>
           {watched ? <BookmarkCheck className="w-3 h-3" /> : <Bookmark className="w-3 h-3" />}
         </button>
         <a href={item.externalUrl} target="_blank" rel="noopener noreferrer"
-          className="p-1 rounded text-muted-foreground/40 hover:text-primary transition-colors">
+          className="p-1 rounded text-muted-foreground hover:text-primary transition-colors">
           <ExternalLink className="w-3 h-3" />
         </a>
       </div>

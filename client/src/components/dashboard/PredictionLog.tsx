@@ -52,18 +52,18 @@ export function PredictionRow({
         <div className="flex-1 min-w-0">
           <p className="text-xs font-medium text-foreground leading-snug line-clamp-2">{pred.question}</p>
           <div className="flex items-center gap-3 mt-1.5 flex-wrap">
-            <span className="text-[10px] text-muted-foreground">{savedDate}</span>
-            <span className="text-[10px] font-mono">
+            <span className="text-[11px] text-muted-foreground">{savedDate}</span>
+            <span className="text-[11px] font-mono">
               Você: <span className="text-gold font-semibold">{pred.userProb}%</span>
             </span>
-            <span className="text-[10px] font-mono">
+            <span className="text-[11px] font-mono">
               Mercado: <span className="text-muted-foreground">{pred.marketProb.toFixed(1)}%</span>
             </span>
-            <span className={`text-[10px] font-mono font-semibold ${edgeColor}`}>
+            <span className={`text-[11px] font-mono font-semibold ${edgeColor}`}>
               Edge: {edgePp >= 0 ? "+" : ""}{edgePp.toFixed(1)}pp
             </span>
             {pred.resolved && pred.brierScore !== null && (
-              <span className="text-[10px] font-mono">
+              <span className="text-[11px] font-mono">
                 BS: <span className={pred.brierScore < 0.1 ? "text-positive" : pred.brierScore < 0.25 ? "text-warning" : "text-negative"}>
                   {pred.brierScore.toFixed(3)}
                 </span>
@@ -98,7 +98,7 @@ export function PredictionRow({
             title="Compartilhar previsão (copia link)"
             aria-label="Compartilhar previsão"
             className={`p-1 rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border ${
-              copied ? "text-positive" : "text-muted-foreground/40 hover:text-neon-blue hover:bg-neon-blue/10"
+              copied ? "text-positive" : "text-muted-foreground hover:text-neon-blue hover:bg-neon-blue/10"
             }`}
           >
             {copied ? <Copy className="w-3.5 h-3.5" aria-hidden="true" /> : <Share2 className="w-3.5 h-3.5" aria-hidden="true" />}
@@ -107,7 +107,7 @@ export function PredictionRow({
             onClick={() => onDelete(pred.id)}
             title="Remover previsão"
             aria-label="Remover previsão"
-            className="p-1 rounded-md text-muted-foreground/40 hover:text-muted-foreground hover:bg-secondary/30 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border"
+            className="p-1 rounded-md text-muted-foreground hover:text-muted-foreground hover:bg-secondary/30 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border"
           >
             <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
           </button>
@@ -196,22 +196,22 @@ export function UserVsMarket({ preds }: { preds: StoredPrediction[] }) {
         <div className="grid grid-cols-3 gap-2">
           <div className="p-3 rounded-lg bg-secondary/30 text-center">
             <p className={`text-xl font-bold font-mono ${beatPct >= 50 ? "text-positive" : "text-negative"}`}>{beatPct}%</p>
-            <p className="text-[10px] text-muted-foreground mt-0.5">bateu o mercado</p>
-            <p className="text-[9px] text-muted-foreground/50">{beatsMarket}/{resolved.length} previsões</p>
+            <p className="text-[11px] text-muted-foreground mt-0.5">bateu o mercado</p>
+            <p className="text-[11px] text-muted-foreground">{beatsMarket}/{resolved.length} previsões</p>
           </div>
           <div className="p-3 rounded-lg bg-secondary/30 text-center">
             <p className={`text-xl font-bold font-mono ${avgEdgePp > 0 ? "text-positive" : avgEdgePp < 0 ? "text-negative" : "text-foreground"}`}>
               {avgEdgePp >= 0 ? "+" : ""}{avgEdgePp}pp
             </p>
-            <p className="text-[10px] text-muted-foreground mt-0.5">edge médio</p>
-            <p className="text-[9px] text-muted-foreground/50">sua prob − mercado</p>
+            <p className="text-[11px] text-muted-foreground mt-0.5">edge médio</p>
+            <p className="text-[11px] text-muted-foreground">sua prob − mercado</p>
           </div>
           <div className="p-3 rounded-lg bg-secondary/30 text-center">
             <p className={`text-xl font-bold font-mono ${streak >= 3 ? "text-positive" : streak >= 1 ? "text-warning" : "text-muted-foreground"}`}>
               {streak}
             </p>
-            <p className="text-[10px] text-muted-foreground mt-0.5">sequência</p>
-            <p className="text-[9px] text-muted-foreground/50">BS {"<"} 0.15 seguidos</p>
+            <p className="text-[11px] text-muted-foreground mt-0.5">sequência</p>
+            <p className="text-[11px] text-muted-foreground">BS {"<"} 0.15 seguidos</p>
           </div>
         </div>
         {/* Percentil estimado */}
@@ -221,18 +221,18 @@ export function UserVsMarket({ preds }: { preds: StoredPrediction[] }) {
               <p className={`text-lg font-bold font-mono leading-none ${calibPercentile >= 70 ? "text-positive" : calibPercentile >= 40 ? "text-gold" : "text-muted-foreground"}`}>
                 {calibPercentile}%
               </p>
-              <p className="text-[8px] text-muted-foreground/60 leading-none mt-0.5">top</p>
+              <p className="text-[8px] text-muted-foreground leading-none mt-0.5">top</p>
             </div>
             <div>
               <p className={`text-[11px] font-semibold ${calibPercentile >= 70 ? "text-positive" : calibPercentile >= 40 ? "text-gold" : "text-foreground"}`}>{calibLabel}</p>
-              <p className="text-[10px] text-muted-foreground">Brier médio: {avgBrier.toFixed(3)} · percentil estimado vs. forecasters globais</p>
+              <p className="text-[11px] text-muted-foreground">Brier médio: {avgBrier.toFixed(3)} · percentil estimado vs. forecasters globais</p>
             </div>
           </div>
         )}
         {beatPct >= 60 && (
           <div className="mt-2 flex items-center gap-2 p-2 rounded-lg bg-positive/5 border border-positive/20">
             <Trophy className="w-3 h-3 text-positive shrink-0" />
-            <p className="text-[10px] text-positive">Você está batendo o mercado consistentemente. Skill Score acima da média.</p>
+            <p className="text-[11px] text-positive">Você está batendo o mercado consistentemente. Skill Score acima da média.</p>
           </div>
         )}
       </div>
@@ -257,13 +257,13 @@ export function UserVsMarket({ preds }: { preds: StoredPrediction[] }) {
                       style={{ width: `${barW}%` }} />
                   </div>
                   <span className={`text-[11px] font-mono font-bold ${color} w-12 text-right`}>{bs.toFixed(3)}</span>
-                  <span className="text-[9px] text-gold">{"★".repeat(stars)}</span>
-                  <span className="text-[9px] text-muted-foreground/50">({count})</span>
+                  <span className="text-[11px] text-gold">{"★".repeat(stars)}</span>
+                  <span className="text-[11px] text-muted-foreground">({count})</span>
                 </div>
               );
             })}
           </div>
-          <p className="text-[9px] text-muted-foreground/50 mt-1.5">Brier Score por categoria — menor = melhor calibração</p>
+          <p className="text-[11px] text-muted-foreground mt-1.5">Brier Score por categoria — menor = melhor calibração</p>
         </div>
       )}
     </div>

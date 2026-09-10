@@ -102,10 +102,10 @@ export function ProfilePublicSettings({ userId }: { userId: string }) {
                 onChange={(e) => setUsername(e.target.value.toLowerCase())}
                 placeholder="meu_username"
                 maxLength={20}
-                className="flex-1 px-3 py-2 bg-secondary/30 border border-border/40 rounded-r-lg text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-primary"
+                className="flex-1 px-3 py-2 bg-secondary/30 border border-border/40 rounded-r-lg text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
               />
             </div>
-            <p className="text-[10px] text-muted-foreground/50 mt-1">3-20 chars, minúsculas, números e _</p>
+            <p className="text-[11px] text-muted-foreground mt-1">3-20 chars, minúsculas, números e _</p>
           </div>
           <div>
             <label className="text-xs text-muted-foreground uppercase tracking-wider">Nome de exibição</label>
@@ -115,7 +115,7 @@ export function ProfilePublicSettings({ userId }: { userId: string }) {
               onChange={(e) => setDisplayName(e.target.value)}
               placeholder="Como quer ser chamado"
               maxLength={40}
-              className="w-full mt-1.5 px-3 py-2 bg-secondary/30 border border-border/40 rounded-lg text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-primary"
+              className="w-full mt-1.5 px-3 py-2 bg-secondary/30 border border-border/40 rounded-lg text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
             />
           </div>
         </div>
@@ -128,9 +128,9 @@ export function ProfilePublicSettings({ userId }: { userId: string }) {
             placeholder="Breve descrição sobre você e seus interesses em forecasting…"
             maxLength={200}
             rows={2}
-            className="w-full mt-1.5 px-3 py-2 bg-secondary/30 border border-border/40 rounded-lg text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-primary resize-none"
+            className="w-full mt-1.5 px-3 py-2 bg-secondary/30 border border-border/40 rounded-lg text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary resize-none"
           />
-          <p className="text-[10px] text-muted-foreground/50 mt-0.5">{bio.length}/200</p>
+          <p className="text-[11px] text-muted-foreground mt-0.5">{bio.length}/200</p>
         </div>
 
         {error && <p className="text-xs text-negative">{error}</p>}

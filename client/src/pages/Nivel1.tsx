@@ -266,7 +266,7 @@ function BayesCalculator() {
           { label: "P(E|¬H)", hint: "Prob. da evidência se o evento NÃO ocorrer", value: lFalse, set: setLFalse },
         ].map(({ label, hint, value, set }) => (
           <div key={label}>
-            <label className="block text-xs text-muted-foreground mb-1">{label} <span className="text-muted-foreground/60">— {hint}</span></label>
+            <label className="block text-xs text-muted-foreground mb-1">{label} <span className="text-muted-foreground">— {hint}</span></label>
             <input
               type="range" min="0.01" max="0.99" step="0.01"
               value={value}

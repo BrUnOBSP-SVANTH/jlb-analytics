@@ -136,7 +136,7 @@ export function AccuracyAnalysis() {
             <p className="text-xs text-muted-foreground leading-relaxed">
               A IA sabe qual lado é o <strong className="text-foreground/80">mais provável</strong> — vai acontecer ou não?
               {tr.marketHitRate !== null && <> O mercado acerta {pct(tr.marketHitRate)} nas mesmas perguntas.</>}
-              <span className="text-foreground/70"> É a parte fácil: quase nenhum mercado é 50/50, então saber o lado óbvio já acerta muito.</span>
+              <span className="text-foreground/80"> É a parte fácil: quase nenhum mercado é 50/50, então saber o lado óbvio já acerta muito.</span>
             </p>
           </div>
 
@@ -150,7 +150,7 @@ export function AccuracyAnalysis() {
             <p className="text-xs text-muted-foreground leading-relaxed">
               Quando a IA <strong className="text-foreground/80">discorda do preço</strong> e arrisca dizer que o mercado
               errou, ela acerta? Em {plural(tr.edgeCount, "caso de divergência", "casos de divergência")}.
-              <span className="text-foreground/70"> É o teste mais difícil que existe — vencer a sabedoria da multidão.</span>
+              <span className="text-foreground/80"> É o teste mais difícil que existe — vencer a sabedoria da multidão.</span>
             </p>
           </div>
         </div>
@@ -201,10 +201,10 @@ export function AccuracyAnalysis() {
         )}
 
         <p className="text-xs text-muted-foreground leading-relaxed">
-          <strong className="text-foreground/70">Direção</strong> = acertou o lado mais provável.{" "}
-          <strong className="text-foreground/70">Ao divergir</strong> = das vezes em que a IA discordou do
+          <strong className="text-foreground/80">Direção</strong> = acertou o lado mais provável.{" "}
+          <strong className="text-foreground/80">Ao divergir</strong> = das vezes em que a IA discordou do
           preço, quantas ela acertou — o teste que mede vantagem de verdade.{" "}
-          <strong className="text-foreground/70">Calibração</strong> = quanto o Brier da IA é melhor (+) ou
+          <strong className="text-foreground/80">Calibração</strong> = quanto o Brier da IA é melhor (+) ou
           pior (−) que o do mercado. Cada mercado conta uma vez, e os dois números acima dividem pelo mesmo
           conjunto de {N} resoluções.
         </p>

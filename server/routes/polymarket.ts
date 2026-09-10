@@ -4,7 +4,7 @@ import { fetchWithRetry, fetchJSON } from "../lib/fetcher.ts";
 import { parseYesPrice, polyEventUrl, rankOutcomes } from "../lib/marketNormalize.ts";
 import type { PolyEvent, PolyMarket } from "../lib/types.ts";
 import { log } from "../lib/log.ts";
-import { comOrcamento, desambiguarPorPai, limitePedido } from "../lib/marketCatalog.ts";
+import { comOrcamento, desambiguarPorPai, limitePedido, normalizarTitulo } from "../lib/marketCatalog.ts";
 
 const router = Router();
 
@@ -108,7 +108,10 @@ router.get("/markets", async (req, res) => {
             // .trim() porque o Polymarket publica com sobra: "Alaska Governor
             // Election Winner  " vinha com dois espaços no fim, e isso vaza para o
             // card e para o <title> da página de detalhe.
-            question: m.question?.trim(),
+            // Normalizado UMA vez, aqui: o `___` que aparecia no card e o
+            // mesmo mercado com títulos diferentes em telas diferentes
+            // (MKT-11, ANL-02) vinham de cada tela limpar do seu jeito.
+            question: normalizarTitulo(m.question ?? ""),
             groupItemTitle: m.groupItemTitle?.trim(),
             eventTitle: ev.title?.trim(),
             slug: m.slug,
@@ -147,7 +150,7 @@ router.get("/markets", async (req, res) => {
           const lead = ranked[0].ref;
           return [{
             ...lead,
-            question: ev.title ?? lead.question,
+            question: normalizarTitulo(ev.title ?? lead.question ?? ""),
             eventTitle: ev.title,
             volume: toNum(ev.volume) ?? lead.volume,
             outcomes: JSON.stringify(ranked.map((o) => o.label)),

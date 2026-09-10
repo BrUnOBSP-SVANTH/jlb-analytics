@@ -24,7 +24,7 @@ export default function Privacidade() {
       <PageHeader title="Política de Privacidade" subtitle="Como tratamos seus dados — em conformidade com a LGPD (Lei 13.709/2018)." badge="Legal" />
       <div className="container py-12 max-w-3xl mx-auto">
         <AnimatedSection>
-          <p className="text-xs text-muted-foreground/60 mb-8">Última atualização: {UPDATED}</p>
+          <p className="text-xs text-muted-foreground mb-8">Última atualização: {UPDATED}</p>
           <div className="space-y-8">
             <Section n="1" title="Quem somos (controlador)">
               <p>A JLB Analytics é a controladora dos dados pessoais tratados nesta plataforma. Contato do encarregado (DPO): <a href="mailto:contato.jlbanalytics@gmail.com" className="text-gold hover:underline">contato.jlbanalytics@gmail.com</a>.</p>

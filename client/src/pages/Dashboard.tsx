@@ -85,7 +85,7 @@ function GuestView() {
 
       {/* Preview of what the dashboard looks like */}
       <div className="space-y-3">
-        <p className="text-xs text-muted-foreground/50 text-center uppercase tracking-wider">Prévia do dashboard</p>
+        <p className="text-xs text-muted-foreground text-center uppercase tracking-wider">Prévia do dashboard</p>
         <div className="blur-[3px] pointer-events-none select-none opacity-50 space-y-4" aria-hidden="true">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {[
@@ -97,7 +97,7 @@ function GuestView() {
               <div key={s.label} className="glass-card rounded-xl p-4">
                 <p className="text-xs text-muted-foreground mb-1">{s.label}</p>
                 <p className={`text-2xl font-bold font-mono ${s.color}`}>{s.value}</p>
-                <p className="text-[10px] text-muted-foreground/60 mt-0.5">{s.sub}</p>
+                <p className="text-[11px] text-muted-foreground mt-0.5">{s.sub}</p>
               </div>
             ))}
           </div>
@@ -113,7 +113,7 @@ function GuestView() {
             <div className="glass-card rounded-xl p-5 space-y-3">
               <div className="text-xs font-semibold text-muted-foreground">Últimas previsões</div>
               {["Eleição presidencial 2026 → 65%", "Selic abaixo de 10% em Q3 → 48%", "Copa do Mundo Brasil → 22%"].map((p) => (
-                <div key={p} className="flex items-center gap-2 text-xs text-muted-foreground/70">
+                <div key={p} className="flex items-center gap-2 text-xs text-muted-foreground">
                   <div className="w-1.5 h-1.5 rounded-full bg-neon-blue/50" />
                   {p}
                 </div>
@@ -122,7 +122,7 @@ function GuestView() {
             <div className="glass-card rounded-xl p-5 space-y-3">
               <div className="text-xs font-semibold text-muted-foreground">Análise comportamental</div>
               {["Overconfidence: +8% (moderado)", "Falácia do jogador: baixo risco", "Aversão à perda: λ=2.4 (calibrado)"].map((b) => (
-                <div key={b} className="flex items-center gap-2 text-xs text-muted-foreground/70">
+                <div key={b} className="flex items-center gap-2 text-xs text-muted-foreground">
                   <div className="w-1.5 h-1.5 rounded-full bg-gold/50" />
                   {b}
                 </div>
@@ -271,14 +271,14 @@ function PredictionTracker({ userId }: { userId?: string }) {
           <BookmarkCheck className="w-4 h-4 text-gold" />
           Portfólio de Previsões
           {streak >= 2 && (
-            <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-orange-500/15 border border-orange-500/30 text-[10px] font-bold text-orange-400">
+            <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-orange-500/15 border border-orange-500/30 text-[11px] font-bold text-orange-400">
               🔥 {streak}x streak
             </span>
           )}
         </h3>
         <div className="flex items-center gap-2">
           {userId && (
-            <span className={`flex items-center gap-1 text-[10px] ${syncing ? "text-primary/60 animate-pulse" : syncedAt ? "text-positive/70" : "text-muted-foreground/50"}`}>
+            <span className={`flex items-center gap-1 text-[11px] ${syncing ? "text-primary/60 animate-pulse" : syncedAt ? "text-positive/70" : "text-muted-foreground"}`}>
               {syncing ? "Sincronizando…" : syncedAt ? `☁ ${syncedAt.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}` : "☁ sem sync"}
             </span>
           )}
@@ -303,7 +303,7 @@ function PredictionTracker({ userId }: { userId?: string }) {
       {/* Filter tabs */}
       {preds.length > 0 && (
         <div className="flex items-center gap-1">
-          <Filter className="w-3 h-3 text-muted-foreground/50 mr-1" aria-hidden="true" />
+          <Filter className="w-3 h-3 text-muted-foreground mr-1" aria-hidden="true" />
           {(["all", "pending", "resolved"] as PredFilter[]).map((f) => {
             const count = f === "all" ? preds.length : f === "pending" ? pending.length : resolved.length;
             const label = f === "all" ? "Todas" : f === "pending" ? "Pendentes" : "Resolvidas";
@@ -335,14 +335,14 @@ function PredictionTracker({ userId }: { userId?: string }) {
               <p className="text-sm font-semibold text-foreground">
                 {active.length === 1 ? "1 previsão pronta para resolver" : `${active.length} previsões prontas para resolver`}
               </p>
-              <span className="ml-auto text-[10px] text-muted-foreground/60">inferido do preço ao vivo · confirme</span>
+              <span className="ml-auto text-[11px] text-muted-foreground">inferido do preço ao vivo · confirme</span>
             </div>
             <div className="space-y-2">
               {active.slice(0, 4).map((r) => (
                 <div key={r.prediction.id} className="flex items-center gap-3 p-2.5 rounded-lg bg-secondary/20 border border-border/15">
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-medium text-foreground truncate">{r.prediction.question}</p>
-                    <p className="text-[10px] text-muted-foreground mt-0.5">
+                    <p className="text-[11px] text-muted-foreground mt-0.5">
                       Mercado agora em <span className="font-mono font-semibold text-foreground">{Math.round(r.currentProb)}%</span> ·
                       sugestão: <span className={r.suggestedOutcome ? "text-positive font-semibold" : "text-negative font-semibold"}>
                         {r.suggestedOutcome ? "SIM" : "NÃO"}
@@ -360,7 +360,7 @@ function PredictionTracker({ userId }: { userId?: string }) {
                     <button
                       onClick={() => setDismissedRes((s) => new Set(s).add(r.prediction.id))}
                       title="Ignorar sugestão"
-                      className="p-1 rounded-md text-muted-foreground/40 hover:text-muted-foreground transition-colors"
+                      className="p-1 rounded-md text-muted-foreground hover:text-muted-foreground transition-colors"
                     >
                       <XIcon className="w-3.5 h-3.5" />
                     </button>
@@ -368,7 +368,7 @@ function PredictionTracker({ userId }: { userId?: string }) {
                 </div>
               ))}
             </div>
-            <p className="text-[10px] text-muted-foreground/50">
+            <p className="text-[11px] text-muted-foreground">
               Confirme apenas se você concorda com o resultado. A resolução atualiza seu Brier Score e ranking.
             </p>
           </div>
@@ -377,7 +377,7 @@ function PredictionTracker({ userId }: { userId?: string }) {
 
       {preds.length === 0 ? (
         <div className="text-center py-8 space-y-3">
-          <Target className="w-10 h-10 mx-auto text-muted-foreground/30" />
+          <Target className="w-10 h-10 mx-auto text-muted-foreground" />
           <p className="text-sm text-muted-foreground">Nenhuma previsão registrada ainda.</p>
           <Link href="/noticias">
             <span className="inline-flex items-center gap-1.5 text-xs text-gold hover:underline">
@@ -390,15 +390,15 @@ function PredictionTracker({ userId }: { userId?: string }) {
           {/* Summary stats */}
           <div className="grid grid-cols-4 gap-3">
             <div className="text-center p-2 rounded-lg bg-secondary/30">
-              <p className="text-[10px] text-muted-foreground">Total</p>
+              <p className="text-[11px] text-muted-foreground">Total</p>
               <p className="font-mono text-sm font-bold text-foreground">{preds.length}</p>
             </div>
             <div className="text-center p-2 rounded-lg bg-secondary/30">
-              <p className="text-[10px] text-muted-foreground">Resolvidas</p>
+              <p className="text-[11px] text-muted-foreground">Resolvidas</p>
               <p className="font-mono text-sm font-bold text-foreground">{resolved.length}</p>
             </div>
             <div className="text-center p-2 rounded-lg bg-secondary/30">
-              <p className="text-[10px] text-muted-foreground"><Termo nome="brier">Brier</Termo></p>
+              <p className="text-[11px] text-muted-foreground"><Termo nome="brier">Brier</Termo></p>
               <p className={`font-mono text-sm font-bold ${
                 bs === null ? "text-muted-foreground" : bs < 0.1 ? "text-positive" : bs < 0.25 ? "text-warning" : "text-negative"
               }`}>
@@ -406,7 +406,7 @@ function PredictionTracker({ userId }: { userId?: string }) {
               </p>
             </div>
             <div className="text-center p-2 rounded-lg bg-secondary/30">
-              <p className="text-[10px] text-muted-foreground"><Termo nome="skill">Skill</Termo></p>
+              <p className="text-[11px] text-muted-foreground"><Termo nome="skill">Skill</Termo></p>
               <p className={`font-mono text-sm font-bold ${
                 ss === null ? "text-muted-foreground" : ss > 0.2 ? "text-positive" : ss > 0 ? "text-warning" : "text-negative"
               }`}>
@@ -424,14 +424,14 @@ function PredictionTracker({ userId }: { userId?: string }) {
               <div className="flex items-center justify-between mb-3">
                 <p className="text-xs font-medium text-foreground">Curva de Calibração</p>
                 {resolved.length < 20 && (
-                  <span className="text-[10px] text-muted-foreground font-mono">
+                  <span className="text-[11px] text-muted-foreground font-mono">
                     {resolved.length}/20 para estabilidade estatística
                   </span>
                 )}
               </div>
               <CalibrationChart predictions={preds} />
               {resolved.length < 20 && (
-                <p className="text-[10px] text-muted-foreground/60 mt-1 text-center italic">
+                <p className="text-[11px] text-muted-foreground mt-1 text-center italic">
                   Com {resolved.length} {resolved.length > 1 ? "resoluções" : "resolução"}, a curva ainda é ruidosa — {20 - resolved.length} previsões restantes para calibração confiável.
                 </p>
               )}
@@ -570,7 +570,7 @@ export default function Dashboard() {
           }`}>
             {bs === null ? "—" : bs.toFixed(3)}
           </p>
-          <p className="text-[10px] text-muted-foreground">
+          <p className="text-[11px] text-muted-foreground">
             {bs === null ? "Resolva previsões" : bs < 0.25 ? "Melhor que baseline" : "A melhorar"}
           </p>
         </div>
@@ -587,7 +587,7 @@ export default function Dashboard() {
           }`}>
             {ss === null ? "—" : (ss >= 0 ? "+" : "") + ss.toFixed(2)}
           </p>
-          <p className="text-[10px] text-muted-foreground">
+          <p className="text-[11px] text-muted-foreground">
             {ss === null ? "Resolva previsões" : ss > 0.2 ? "Excelente" : ss > 0 ? "Acima da baseline" : "Abaixo da baseline"}
           </p>
         </div>
@@ -603,7 +603,7 @@ export default function Dashboard() {
             {preds.filter((p) => p.resolved).length}
             <span className="text-sm font-normal text-muted-foreground">/{preds.length}</span>
           </p>
-          <p className="text-[10px] text-muted-foreground">
+          <p className="text-[11px] text-muted-foreground">
             {preds.filter((p) => !p.resolved).length} pendentes
           </p>
         </div>
@@ -616,7 +616,7 @@ export default function Dashboard() {
             <p className="text-xs text-muted-foreground">Pontos</p>
           </div>
           <p className="text-2xl font-bold font-mono text-gold">{userPoints}</p>
-          <p className="text-[10px] text-muted-foreground">
+          <p className="text-[11px] text-muted-foreground">
             {userPoints >= 100 ? "Nível 5 desbloqueado" : userPoints >= 50 ? "Nível 4 desbloqueado" : `${50 - Math.min(userPoints, 50)} pts p/ Nível 4`}
           </p>
         </div>

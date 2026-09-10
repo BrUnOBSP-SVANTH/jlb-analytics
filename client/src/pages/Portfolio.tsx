@@ -135,7 +135,7 @@ export default function Portfolio() {
         {/* Como funciona — a explicação mora onde ela faz falta */}
         <AnimatedSection>
           <div className="flex items-start gap-3 p-4 rounded-xl border border-border/20 bg-secondary/5">
-            <Info className="w-4 h-4 text-muted-foreground/50 shrink-0 mt-0.5" />
+            <Info className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
             <p className="text-xs text-muted-foreground leading-relaxed">
               <strong className="text-foreground">Nenhum centavo é real.</strong> Toda banca começa com{" "}
               {reais(SALDO_INICIAL)} fictícios. Você aposta pelo preço que o mercado está pagando de
@@ -331,9 +331,9 @@ export default function Portfolio() {
 function Numero({ rotulo, valor, nota, cor }: { rotulo: string; valor: string; nota: string; cor?: string }) {
   return (
     <div className="glass-card rounded-xl p-4">
-      <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">{rotulo}</p>
+      <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-1">{rotulo}</p>
       <p className={`text-xl font-mono font-bold tabular-nums ${cor ?? "text-foreground"}`}>{valor}</p>
-      <p className="text-[10px] text-muted-foreground/70 mt-0.5">{nota}</p>
+      <p className="text-[11px] text-muted-foreground mt-0.5">{nota}</p>
     </div>
   );
 }

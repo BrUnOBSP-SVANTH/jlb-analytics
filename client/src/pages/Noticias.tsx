@@ -362,7 +362,7 @@ export default function Noticias() {
                   value={articleSearch}
                   onChange={(e) => setArticleSearch(e.target.value)}
                   placeholder="Buscar artigos…"
-                  className="w-full pl-9 pr-4 py-2 rounded-lg bg-secondary/30 border border-border/40 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-gold/40 transition-colors"
+                  className="w-full pl-9 pr-4 py-2 rounded-lg bg-secondary/30 border border-border/40 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-gold/40 transition-colors"
                 />
               </div>
               <button
@@ -424,7 +424,7 @@ export default function Noticias() {
             {/* Empty */}
             {!loadingArticles && !errorArticles && articles.length === 0 && (
               <div className="text-center py-20">
-                <Loader2 className="w-8 h-8 animate-spin mx-auto mb-3 text-muted-foreground/40" aria-hidden="true" />
+                <Loader2 className="w-8 h-8 animate-spin mx-auto mb-3 text-muted-foreground" aria-hidden="true" />
                 <p className="text-sm text-muted-foreground">Aguardando artigos…</p>
               </div>
             )}
@@ -437,7 +437,7 @@ export default function Noticias() {
           (tab === "news" && posts.length === 0)
         ) && (
           <div className="text-center py-20">
-            <Loader2 className="w-8 h-8 animate-spin mx-auto mb-3 text-muted-foreground/40" aria-hidden="true" />
+            <Loader2 className="w-8 h-8 animate-spin mx-auto mb-3 text-muted-foreground" aria-hidden="true" />
             <p className="text-sm text-muted-foreground">Aguardando dados…</p>
           </div>
         )}

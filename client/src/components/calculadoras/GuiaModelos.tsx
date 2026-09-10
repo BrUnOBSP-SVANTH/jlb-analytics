@@ -165,7 +165,7 @@ function ModelCard({ model }: { model: ModelGuide }) {
                 <p className="text-xs text-muted-foreground">{model.tagline}</p>
               </div>
             </div>
-            <span className={`shrink-0 text-[9px] font-semibold px-2 py-0.5 rounded-full border ${model.accuracyColor}`}>
+            <span className={`shrink-0 text-[11px] font-semibold px-2 py-0.5 rounded-full border ${model.accuracyColor}`}>
               {model.accuracy}
             </span>
           </div>
@@ -173,7 +173,7 @@ function ModelCard({ model }: { model: ModelGuide }) {
           <p className="text-xs text-muted-foreground leading-relaxed mb-3">{model.howItWorks}</p>
 
           <div className="mb-3">
-            <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1.5">Quando usar</p>
+            <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-1.5">Quando usar</p>
             <ul className="space-y-1">
               {model.whenToUse.map((u) => (
                 <li key={u} className="flex items-start gap-1.5 text-xs text-muted-foreground">
@@ -185,7 +185,7 @@ function ModelCard({ model }: { model: ModelGuide }) {
           </div>
 
           <div className="p-3 rounded-lg bg-gold/5 border border-gold/20 mb-3">
-            <p className="text-[10px] font-semibold text-gold uppercase tracking-wider mb-1">Uso em Mercados Preditivos</p>
+            <p className="text-[11px] font-semibold text-gold uppercase tracking-wider mb-1">Uso em Mercados Preditivos</p>
             <p className="text-xs text-muted-foreground leading-relaxed">{model.polymarketUso}</p>
           </div>
 
@@ -201,7 +201,7 @@ function ModelCard({ model }: { model: ModelGuide }) {
         {expanded && (
           <div className="border-t border-border/20 p-5 space-y-4 bg-obsidian/20">
             <div>
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-2">Passo a passo</p>
+              <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-2">Passo a passo</p>
               <ol className="space-y-1">
                 {model.steps.map((s) => (
                   <li key={s} className="text-xs text-muted-foreground leading-relaxed">{s}</li>
@@ -209,7 +209,7 @@ function ModelCard({ model }: { model: ModelGuide }) {
               </ol>
             </div>
             <div>
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-2">Benchmarks de referência</p>
+              <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-2">Benchmarks de referência</p>
               <div className="space-y-1">
                 {model.benchmarks.map(([v, l]) => (
                   <div key={v} className="flex justify-between text-xs gap-4">

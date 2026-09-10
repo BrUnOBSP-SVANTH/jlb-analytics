@@ -73,7 +73,7 @@ export function CorrelacaoTab() {
             <div className="flex items-center gap-2">
               {loading && <span className="w-3 h-3 rounded-full border-2 border-neon-blue border-t-transparent animate-spin" />}
               {updatedAt && !loading && (
-                <span className="text-[10px] text-positive/70 border border-positive/20 rounded-full px-2 py-0.5">
+                <span className="text-[11px] text-positive/70 border border-positive/20 rounded-full px-2 py-0.5">
                   ● Ao vivo · {updatedAt}
                 </span>
               )}
@@ -150,7 +150,7 @@ export function CorrelacaoTab() {
             <div className="glass-card rounded-xl p-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-display font-semibold text-foreground">Preço de Fechamento Mensal — últimos 12 meses</h3>
-                <span className="text-[10px] text-muted-foreground/50">Fonte: Yahoo Finance</span>
+                <span className="text-[11px] text-muted-foreground">Fonte: Yahoo Finance</span>
               </div>
               <ResponsiveContainer width="100%" height={300}>
                 <LineChart data={chartData}>

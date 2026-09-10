@@ -106,18 +106,18 @@ export default function Imprensa() {
               </p>
               <div className="inline-flex items-stretch rounded-xl border border-gold/30 bg-gold/5 overflow-hidden max-w-full">
                 <div className="px-4 py-3 flex flex-col justify-center shrink-0">
-                  <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Probabilidade</p>
+                  <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Probabilidade</p>
                   <p className="text-2xl font-display font-bold text-foreground tabular-nums">{featured.prob}%</p>
                 </div>
                 <div className="px-4 py-3 border-l border-gold/20 flex flex-col justify-center min-w-0">
                   <p className="text-xs text-foreground line-clamp-2">{featured.question}</p>
                   <div className="mt-1 flex items-center gap-2 flex-wrap">
                     <MovementChip delta={featured.delta7d} />
-                    <span className="text-[10px] text-muted-foreground">via JLB Analytics</span>
+                    <span className="text-[11px] text-muted-foreground">via JLB Analytics</span>
                   </div>
                 </div>
               </div>
-              <p className="text-[10px] text-muted-foreground/60 mt-3">Exemplo com dado ao vivo. Formato final a combinar: card, tabela, gráfico ou API — títulos traduzíveis para pt-BR.</p>
+              <p className="text-[11px] text-muted-foreground mt-3">Exemplo com dado ao vivo. Formato final a combinar: card, tabela, gráfico ou API — títulos traduzíveis para pt-BR.</p>
             </div>
           </section>
         )}
@@ -147,9 +147,9 @@ export default function Imprensa() {
                     <h3 className="font-display font-semibold text-foreground text-sm leading-snug text-balance">{it.question}</h3>
                     <p className="text-xs text-muted-foreground mt-1">{it.read}</p>
                     <div className="flex items-center gap-2 mt-2">
-                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted/50 text-muted-foreground">{SOURCE_LABEL[it.source] ?? it.source}</span>
+                      <span className="text-[11px] px-1.5 py-0.5 rounded bg-muted/50 text-muted-foreground">{SOURCE_LABEL[it.source] ?? it.source}</span>
                       {it.externalUrl && (
-                        <a href={it.externalUrl} target="_blank" rel="noopener noreferrer" className="text-[10px] text-primary inline-flex items-center gap-0.5 hover:underline">
+                        <a href={it.externalUrl} target="_blank" rel="noopener noreferrer" className="text-[11px] text-primary inline-flex items-center gap-0.5 hover:underline">
                           fonte <ExternalLink className="w-2.5 h-2.5" />
                         </a>
                       )}

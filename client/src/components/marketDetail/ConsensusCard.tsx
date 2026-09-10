@@ -68,8 +68,8 @@ export function ConsensusCard({ market, community, ai, trackRecord }: {
         <div className="flex items-center gap-2 mb-4">
           <GitMerge className="w-4 h-4 text-gold" />
           <h2 className="text-sm font-semibold text-[var(--titulo)]">Consenso JLB</h2>
-          <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-gold/15 border border-gold/30 text-gold">{result.nSources} {result.nSources === 1 ? "fonte" : "fontes"}</span>
-          <span className="ml-auto text-[10px] text-muted-foreground/60">agregação logit extremizada</span>
+          <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-gold/15 border border-gold/30 text-gold">{result.nSources} {result.nSources === 1 ? "fonte" : "fontes"}</span>
+          <span className="ml-auto text-[11px] text-muted-foreground">agregação logit extremizada</span>
         </div>
 
         <div className="mb-4">
@@ -84,18 +84,18 @@ export function ConsensusCard({ market, community, ai, trackRecord }: {
         {/* Número principal + intervalo */}
         <div className="flex items-end gap-4 flex-wrap mb-4">
           <div>
-            <p className="text-[10px] text-muted-foreground/60 uppercase">Estimativa de consenso</p>
+            <p className="text-[11px] text-muted-foreground uppercase">Estimativa de consenso</p>
             <p className="text-4xl font-mono font-bold text-gold leading-none">{result.consensus}%</p>
-            <p className="text-[10px] text-muted-foreground mt-1">IC 80%: {result.low}%–{result.high}%</p>
+            <p className="text-[11px] text-muted-foreground mt-1">IC 80%: {result.low}%–{result.high}%</p>
           </div>
           <div className="text-center">
-            <p className="text-[10px] text-muted-foreground/60 uppercase">vs Mercado</p>
+            <p className="text-[11px] text-muted-foreground uppercase">vs Mercado</p>
             <p className={`text-xl font-mono font-bold ${diffColor}`}>{diff >= 0 ? "+" : ""}{diff}pp</p>
           </div>
           <div className="flex-1 min-w-[120px]">
             <div className="flex items-center justify-between mb-1">
-              <span className="text-[10px] text-muted-foreground/60 uppercase">Concordância</span>
-              <span className={`text-[10px] font-semibold ${agreeColor}`}>{agreeLabel}</span>
+              <span className="text-[11px] text-muted-foreground uppercase">Concordância</span>
+              <span className={`text-[11px] font-semibold ${agreeColor}`}>{agreeLabel}</span>
             </div>
             <div className="h-1.5 bg-secondary/40 rounded-full overflow-hidden">
               <div className={`h-full rounded-full ${agreePct >= 75 ? "bg-positive" : agreePct >= 45 ? "bg-gold" : "bg-negative"}`} style={{ width: `${agreePct}%` }} />
@@ -112,18 +112,18 @@ export function ConsensusCard({ market, community, ai, trackRecord }: {
               <div className="flex-1 h-1 bg-secondary/30 rounded-full overflow-hidden">
                 <div className="h-full bg-gold/50 rounded-full" style={{ width: `${s.weight * 100}%` }} />
               </div>
-              <span className="text-[10px] text-muted-foreground/60 w-16 text-right">peso {Math.round(s.weight * 100)}%</span>
-              {s.note && <span className="hidden sm:block text-[10px] text-muted-foreground/50 w-32 truncate">{s.note}</span>}
+              <span className="text-[11px] text-muted-foreground w-16 text-right">peso {Math.round(s.weight * 100)}%</span>
+              {s.note && <span className="hidden sm:block text-[11px] text-muted-foreground w-32 truncate">{s.note}</span>}
             </div>
           ))}
         </div>
 
         {!ai?.fairValue && (
-          <p className="text-[10px] text-muted-foreground/60 mt-3">
+          <p className="text-[11px] text-muted-foreground mt-3">
             💡 Rode a <span className="text-gold">Análise por IA</span> abaixo para incluir o sinal da IA e refinar o consenso.
           </p>
         )}
-        <p className="text-[10px] text-muted-foreground/40 mt-2">
+        <p className="text-[11px] text-muted-foreground mt-2">
           Método Good Judgment Project (Satopää et al. 2014). Pesos por liquidez, track record da IA e tamanho da amostra. Não é recomendação de posição.
         </p>
       </div>

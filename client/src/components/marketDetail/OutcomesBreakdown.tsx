@@ -17,7 +17,7 @@ export function OutcomesBreakdown({ market }: { market: MarketBasic }) {
         <div className="flex items-center gap-2">
           <BarChart2 className="w-4 h-4 text-neon-blue" />
           <h2 className="text-sm font-semibold text-[var(--titulo)]">Desfechos possíveis</h2>
-          <span className="ml-auto text-[10px] text-muted-foreground/60">{outcomes.length} opções · fonte: {market.source}</span>
+          <span className="ml-auto text-[11px] text-muted-foreground">{outcomes.length} opções · fonte: {market.source}</span>
         </div>
         <Explain>
           Este mercado tem <strong className="text-foreground">mais de dois desfechos</strong>. Cada linha é uma

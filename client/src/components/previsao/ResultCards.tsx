@@ -20,7 +20,7 @@ const EXPERTISE_CONFIG = {
 export function ExpertiseTag({ level }: { level: "leigo" | "intermediario" | "avancado" }) {
   const cfg = EXPERTISE_CONFIG[level];
   return (
-    <span className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full border ${cfg.color}`}>
+    <span className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full border ${cfg.color}`}>
       <span>{cfg.icon}</span> {cfg.label}
     </span>
   );
@@ -60,7 +60,7 @@ export function ModelCard({ result }: { result: PredictResult }) {
             <div className="flex-1">
               <div className="flex items-center gap-2 flex-wrap mb-1">
                 <span className="text-xs text-muted-foreground uppercase tracking-wider">Modelo selecionado</span>
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-primary/10 text-primary border border-primary/20">
+                <span className="px-2 py-0.5 rounded-full text-[11px] font-medium bg-primary/10 text-primary border border-primary/20">
                   {result.modelFamily}
                 </span>
                 <ExpertiseTag level={level} />
@@ -77,7 +77,7 @@ export function ModelCard({ result }: { result: PredictResult }) {
             <div className="flex items-start gap-2">
               <Lightbulb className={`w-4 h-4 shrink-0 mt-0.5 ${level === "leigo" ? "text-gold" : "text-neon-blue"}`} />
               <div>
-                <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1 font-medium">
+                <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-1 font-medium">
                   {level === "avancado" ? "Paralelo histórico" : level === "leigo" ? "Em outras palavras" : "Contexto"}
                 </p>
                 <p className="text-sm text-foreground leading-relaxed">{result.analogyExplanation}</p>
@@ -92,7 +92,7 @@ export function ModelCard({ result }: { result: PredictResult }) {
             <div className="flex items-center gap-3">
               <Target className="w-4 h-4 text-primary shrink-0" />
               <div>
-                <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5 font-medium">Avaliação do modelo</p>
+                <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-0.5 font-medium">Avaliação do modelo</p>
                 <p className="text-base font-bold text-foreground">{result.probabilityVerbal}</p>
               </div>
             </div>
@@ -108,14 +108,14 @@ export function ModelCard({ result }: { result: PredictResult }) {
             <span className="flex items-center gap-2 font-medium">
               <BookOpen className="w-4 h-4 text-gold" />
               {level === "leigo" ? "Curiosidade: ver a matemática por trás" : "Fórmula matemática"}
-              {isAdvanced && <span className="text-[9px] px-1.5 py-0.5 rounded bg-primary/10 text-primary border border-primary/20 ml-1">Paper citado</span>}
+              {isAdvanced && <span className="text-[11px] px-1.5 py-0.5 rounded bg-primary/10 text-primary border border-primary/20 ml-1">Paper citado</span>}
             </span>
             {formulaOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
           </button>
           {formulaOpen && (
             <div className="px-6 pb-5 space-y-3">
               <div className="p-4 rounded-xl bg-obsidian/60 border border-border/30">
-                <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-2">Fórmula</p>
+                <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-2">Fórmula</p>
                 <p className="font-mono text-sm text-gold leading-relaxed whitespace-pre-wrap">{result.formula}</p>
               </div>
               <p className="text-xs text-muted-foreground leading-relaxed">
@@ -161,7 +161,7 @@ export function ModelCard({ result }: { result: PredictResult }) {
             <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">
               {level === "leigo" ? "Quão segura é essa previsão?" : "Grau de confiança por horizonte"}
             </p>
-            <span className="text-[9px] px-1.5 py-0.5 rounded bg-warning/10 text-warning border border-warning/20 font-medium">estimativa do modelo</span>
+            <span className="text-[11px] px-1.5 py-0.5 rounded bg-warning/10 text-warning border border-warning/20 font-medium">estimativa do modelo</span>
           </div>
           <ConfidenceBar value={result.confidenceShort}  label="Curto prazo"  />
           <ConfidenceBar value={result.confidenceMedium} label="Médio prazo"  />
@@ -173,8 +173,8 @@ export function ModelCard({ result }: { result: PredictResult }) {
             </div>
           )}
           <div className="flex items-start gap-1.5 pt-1">
-            <AlertCircle className="w-3 h-3 text-muted-foreground/50 shrink-0 mt-0.5" />
-            <p className="text-[10px] text-muted-foreground/70">
+            <AlertCircle className="w-3 h-3 text-muted-foreground shrink-0 mt-0.5" />
+            <p className="text-[11px] text-muted-foreground">
               {level === "leigo"
                 ? "Esses percentuais mostram o quanto o modelo tem certeza — nenhum modelo é perfeito. Use isso como referência, não como verdade absoluta."
                 : "Estimativas do modelo econométrico — não são probabilidades empiricamente calibradas. Registre suas previsões no Dashboard para calibração real."}
@@ -214,7 +214,7 @@ export function SuperforecasterCard({ result }: { result: PredictResult }) {
               Visão externa → Decomposição → Ajuste → Síntese
             </p>
           </div>
-          <span className="text-xs text-muted-foreground/50">
+          <span className="text-xs text-muted-foreground">
             {open ? "Fechar" : "Ver raciocínio"}
           </span>
         </button>
@@ -225,7 +225,7 @@ export function SuperforecasterCard({ result }: { result: PredictResult }) {
             {/* Etapa 1 — Classe de Referência */}
             {result.referenceClass && (
               <div className="space-y-2">
-                <p className="text-[10px] font-bold text-neon-blue/70 uppercase tracking-wider mt-4">
+                <p className="text-[11px] font-bold text-neon-blue/70 uppercase tracking-wider mt-4">
                   Etapa 1 — Visão Externa (Base Rate)
                 </p>
                 <div className="p-3 rounded-lg bg-neon-blue/5 border border-neon-blue/15">
@@ -233,7 +233,7 @@ export function SuperforecasterCard({ result }: { result: PredictResult }) {
                   {baseRate !== null && (
                     <div className="flex items-center gap-3 mt-3">
                       <div className="flex-1">
-                        <p className="text-[10px] text-muted-foreground/60 mb-1">Frequência base histórica</p>
+                        <p className="text-[11px] text-muted-foreground mb-1">Frequência base histórica</p>
                         <div className="h-2 bg-secondary/40 rounded-full overflow-hidden">
                           <div className="h-full bg-neon-blue/50 rounded-full" style={{ width: `${baseRate}%` }} />
                         </div>
@@ -242,7 +242,7 @@ export function SuperforecasterCard({ result }: { result: PredictResult }) {
                     </div>
                   )}
                   {result.baseRateSource && (
-                    <p className="text-[10px] text-muted-foreground/50 mt-1">Fonte: {result.baseRateSource}</p>
+                    <p className="text-[11px] text-muted-foreground mt-1">Fonte: {result.baseRateSource}</p>
                   )}
                 </div>
               </div>
@@ -251,7 +251,7 @@ export function SuperforecasterCard({ result }: { result: PredictResult }) {
             {/* Etapa 2 — Decomposição de Fermi */}
             {result.decomposition && result.decomposition.length > 0 && (
               <div className="space-y-2">
-                <p className="text-[10px] font-bold text-gold/70 uppercase tracking-wider">
+                <p className="text-[11px] font-bold text-gold/70 uppercase tracking-wider">
                   Etapa 2 — Decomposição de Fermi
                 </p>
                 <div className="space-y-2">
@@ -273,13 +273,13 @@ export function SuperforecasterCard({ result }: { result: PredictResult }) {
             {/* Etapa 3 — Ajuste (Visão Interna) */}
             {((result.insideViewUp && result.insideViewUp.length > 0) || (result.insideViewDown && result.insideViewDown.length > 0)) && (
               <div className="space-y-2">
-                <p className="text-[10px] font-bold text-muted-foreground/60 uppercase tracking-wider">
+                <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
                   Etapa 3 — Visão Interna (Ajustes)
                 </p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {result.insideViewUp && result.insideViewUp.length > 0 && (
                     <div className="p-3 rounded-lg bg-positive/5 border border-positive/15 space-y-1.5">
-                      <p className="text-[10px] font-semibold text-positive flex items-center gap-1">
+                      <p className="text-[11px] font-semibold text-positive flex items-center gap-1">
                         <TrendingUp className="w-3 h-3" /> Aumenta a probabilidade
                       </p>
                       {result.insideViewUp.map((f, i) => (
@@ -289,7 +289,7 @@ export function SuperforecasterCard({ result }: { result: PredictResult }) {
                   )}
                   {result.insideViewDown && result.insideViewDown.length > 0 && (
                     <div className="p-3 rounded-lg bg-negative/5 border border-negative/15 space-y-1.5">
-                      <p className="text-[10px] font-semibold text-negative flex items-center gap-1">
+                      <p className="text-[11px] font-semibold text-negative flex items-center gap-1">
                         <TrendingDown className="w-3 h-3" /> Diminui a probabilidade
                       </p>
                       {result.insideViewDown.map((f, i) => (
@@ -304,7 +304,7 @@ export function SuperforecasterCard({ result }: { result: PredictResult }) {
             {/* Etapa 4 — Síntese */}
             {adjustment !== null && (
               <div className="space-y-2">
-                <p className="text-[10px] font-bold text-muted-foreground/60 uppercase tracking-wider">
+                <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
                   Etapa 4 — Síntese
                 </p>
                 <div className="flex items-center gap-4 p-4 rounded-lg bg-secondary/20 border border-border/20">
@@ -316,14 +316,14 @@ export function SuperforecasterCard({ result }: { result: PredictResult }) {
                     <p className="text-xs">Ajuste</p>
                     <p className="text-sm font-mono font-bold">{adjustment >= 0 ? "+" : ""}{adjustment.toFixed(1)}pp</p>
                   </div>
-                  <div className="text-[10px] text-muted-foreground/50">=</div>
+                  <div className="text-[11px] text-muted-foreground">=</div>
                   <div className="text-center">
                     <p className="text-xs text-muted-foreground">Final</p>
                     <p className="text-xl font-mono font-bold text-primary">{finalProb}%</p>
                   </div>
                   {result.confidenceLow80 != null && result.confidenceHigh80 != null && (
                     <div className="ml-auto text-center">
-                      <p className="text-[10px] text-muted-foreground">IC 80%</p>
+                      <p className="text-[11px] text-muted-foreground">IC 80%</p>
                       <p className="text-xs font-mono text-foreground">[{result.confidenceLow80}%–{result.confidenceHigh80}%]</p>
                     </div>
                   )}
@@ -334,7 +334,7 @@ export function SuperforecasterCard({ result }: { result: PredictResult }) {
             {/* Quando atualizar */}
             {result.updateTriggers && result.updateTriggers.length > 0 && (
               <div className="space-y-2">
-                <p className="text-[10px] font-bold text-muted-foreground/60 uppercase tracking-wider">
+                <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
                   Quando atualizar esta previsão
                 </p>
                 <div className="space-y-1">
@@ -398,7 +398,7 @@ export function PredictionTimeline({ result }: { result: PredictResult }) {
               <div className="flex items-center justify-between mb-3">
                 <div>
                   <p className="text-xs font-bold text-foreground">{c.horizon}</p>
-                  <p className="text-[10px] text-muted-foreground">{c.desc}</p>
+                  <p className="text-[11px] text-muted-foreground">{c.desc}</p>
                 </div>
                 <span className={`text-xs font-bold font-mono ${c.iconColor}`}>{c.confidence}%</span>
               </div>
@@ -427,7 +427,7 @@ export function PlainLanguageCard({ result }: { result: PredictResult }) {
         <div className="flex items-center gap-2">
           <Lightbulb className="w-5 h-5 text-gold" />
           <h3 className="font-semibold text-foreground">{t.main}</h3>
-          {level !== "leigo" && <span className="text-[10px] text-muted-foreground ml-auto">análise quantitativa</span>}
+          {level !== "leigo" && <span className="text-[11px] text-muted-foreground ml-auto">análise quantitativa</span>}
         </div>
 
         {/* Bloco principal — tom adapta ao nível */}
@@ -464,7 +464,7 @@ export function PlainLanguageCard({ result }: { result: PredictResult }) {
         )}
 
         <div className="p-3 rounded-lg bg-secondary/10 border border-border/10">
-          <p className="text-[10px] text-muted-foreground">
+          <p className="text-[11px] text-muted-foreground">
             {level === "leigo"
               ? "Esta análise é educacional. Nenhum modelo prevê o futuro com certeza — use como ferramenta de apoio, não como verdade definitiva."
               : "Análise educacional. O modelo tem limitações documentadas e premissas que podem não se verificar. Decisão de investimento ou aposta é sempre responsabilidade do usuário."}

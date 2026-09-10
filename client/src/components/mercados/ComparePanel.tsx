@@ -50,7 +50,7 @@ export function ComparePanel({ items, onClear }: { items: TrendingItem[]; onClea
                   toast("Link copiado!", { description: "Cole em qualquer lugar para compartilhar a comparação." });
                 });
               }}
-              className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded-md border border-border/30"
+              className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded-md border border-border/30"
             >
               <Link2 className="w-3 h-3" />
               Copiar link
@@ -75,14 +75,14 @@ export function ComparePanel({ items, onClear }: { items: TrendingItem[]; onClea
                   <div className="flex items-center gap-2 mt-1">
                     <SourceBadge source={item.source} subreddit={item.subreddit} />
                     {item.volume !== undefined && (
-                      <span className="text-[10px] text-muted-foreground">{formatVolume(item.volume)}</span>
+                      <span className="text-[11px] text-muted-foreground">{formatVolume(item.volume)}</span>
                     )}
                   </div>
                 </div>
                 {pct !== null && (
                   <div className="shrink-0 text-right">
                     <p className={`text-xl font-bold font-mono ${pctColor}`}>{pct}%</p>
-                    <p className="text-[9px] text-muted-foreground">SIM</p>
+                    <p className="text-[11px] text-muted-foreground">SIM</p>
                   </div>
                 )}
               </div>
@@ -91,7 +91,7 @@ export function ComparePanel({ items, onClear }: { items: TrendingItem[]; onClea
 
           {/* Placeholder for second slot */}
           {items.length < 2 && (
-            <div className="flex items-center justify-center p-3 rounded-xl border border-dashed border-border/30 text-muted-foreground/40">
+            <div className="flex items-center justify-center p-3 rounded-xl border border-dashed border-border/30 text-muted-foreground">
               <p className="text-xs">Clique em <Scale className="w-3 h-3 inline mx-0.5" /> num segundo mercado</p>
             </div>
           )}

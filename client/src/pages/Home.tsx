@@ -93,7 +93,7 @@ function LiveMarketCard({ market }: { market: LiveMarket }) {
   const inner = (
     <div className="w-[200px] h-full p-4 rounded-xl border border-border/30 bg-secondary/10 group-hover:border-primary/40 transition-colors space-y-2">
       <div className="flex items-center gap-1.5 mb-0.5">
-        <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-neon-blue/10 text-neon-blue">
+        <span className="text-[11px] font-bold px-1.5 py-0.5 rounded bg-neon-blue/10 text-neon-blue">
           Polymarket
         </span>
       </div>
@@ -316,7 +316,7 @@ export default function Home() {
             {macro.selic != null && (
               <>
                 <span className="flex items-center gap-1.5">
-                  <span className="text-[10px] font-bold text-muted-foreground/50 uppercase">Selic</span>
+                  <span className="text-[11px] font-bold text-muted-foreground uppercase">Selic</span>
                   <strong className="text-foreground font-mono">{macro.selic.toFixed(2)}%</strong>
                 </span>
                 <span className="hidden sm:inline text-border/60">·</span>
@@ -325,7 +325,7 @@ export default function Home() {
             {macro.ipca != null && (
               <>
                 <span className="flex items-center gap-1.5">
-                  <span className="text-[10px] font-bold text-muted-foreground/50 uppercase">IPCA</span>
+                  <span className="text-[11px] font-bold text-muted-foreground uppercase">IPCA</span>
                   <strong className="text-foreground font-mono">{macro.ipca.toFixed(2)}%</strong>
                 </span>
                 <span className="hidden sm:inline text-border/60">·</span>
@@ -334,7 +334,7 @@ export default function Home() {
             {macro.usdBrl != null && (
               <>
                 <span className="flex items-center gap-1.5">
-                  <span className="text-[10px] font-bold text-muted-foreground/50 uppercase">USD/BRL</span>
+                  <span className="text-[11px] font-bold text-muted-foreground uppercase">USD/BRL</span>
                   <strong className="text-foreground font-mono">R${macro.usdBrl.toFixed(2)}</strong>
                 </span>
                 <span className="hidden sm:inline text-border/60">·</span>
@@ -384,7 +384,7 @@ export default function Home() {
               <button
                 onClick={dismissBanner}
                 aria-label="Fechar"
-                className="p-1.5 rounded-lg text-muted-foreground/50 hover:text-muted-foreground hover:bg-secondary/30 transition-colors">
+                className="p-1.5 rounded-lg text-muted-foreground hover:text-muted-foreground hover:bg-secondary/30 transition-colors">
                 <X className="w-3.5 h-3.5" aria-hidden="true" />
               </button>
             </div>
@@ -438,13 +438,13 @@ export default function Home() {
                   <Newspaper className="w-3.5 h-3.5 text-gold" aria-hidden="true" />
                 </div>
                 <div className="min-w-0 text-left">
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-gold mb-0.5">
+                  <p className="text-[11px] font-semibold uppercase tracking-wider text-gold mb-0.5">
                     Briefing do Dia{briefing.cached ? "" : " — gerado agora"}
                   </p>
                   <p className="text-sm font-medium text-foreground truncate">{briefing.headline}</p>
                 </div>
               </div>
-              <div className="shrink-0 text-muted-foreground/50 group-hover:text-muted-foreground transition-colors">
+              <div className="shrink-0 text-muted-foreground group-hover:text-muted-foreground transition-colors">
                 {briefingExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
               </div>
             </button>
@@ -482,13 +482,13 @@ export default function Home() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {briefing.watchToday && (
                     <div className="p-3 rounded-lg bg-neon-blue/5 border border-neon-blue/15">
-                      <p className="text-[10px] font-semibold text-neon-blue uppercase tracking-wider mb-1">Fique de olho</p>
+                      <p className="text-[11px] font-semibold text-neon-blue uppercase tracking-wider mb-1">Fique de olho</p>
                       <p className="text-xs text-foreground">{briefing.watchToday}</p>
                     </div>
                   )}
                   {briefing.calibrationTip && (
                     <div className="p-3 rounded-lg bg-positive/5 border border-positive/15">
-                      <p className="text-[10px] font-semibold text-positive uppercase tracking-wider mb-1">Dica de calibração</p>
+                      <p className="text-[11px] font-semibold text-positive uppercase tracking-wider mb-1">Dica de calibração</p>
                       <p className="text-xs text-foreground">{briefing.calibrationTip}</p>
                     </div>
                   )}
@@ -521,7 +521,7 @@ export default function Home() {
               return (
                 <div key={item.step} className="relative p-6 rounded-2xl border border-border/30 bg-secondary/5 text-center">
                   {/* Numeral decorativo (marca d'água) — fora da árvore de acessibilidade */}
-                  <span aria-hidden="true" className="absolute -top-3 left-5 text-[10px] font-bold font-mono text-muted-foreground/70 tracking-widest">
+                  <span aria-hidden="true" className="absolute -top-3 left-5 text-[11px] font-bold font-mono text-muted-foreground tracking-widest">
                     {item.step}
                   </span>
                   <div className={`w-12 h-12 rounded-2xl ${item.bg} flex items-center justify-center mx-auto mb-4`}>
@@ -555,9 +555,9 @@ export default function Home() {
                     <div className="w-9 h-9 rounded-lg bg-background/60 flex items-center justify-center mx-auto mb-3">
                       <Icon className={`w-4 h-4 ${level.color}`} aria-hidden="true" />
                     </div>
-                    <p className="text-[10px] font-semibold text-muted-foreground mb-0.5">Nível {level.n}</p>
+                    <p className="text-[11px] font-semibold text-muted-foreground mb-0.5">Nível {level.n}</p>
                     <p className="text-xs font-bold text-foreground leading-snug">{level.title}</p>
-                    <span className={`inline-block mt-2 text-[10px] px-2 py-0.5 rounded-full ${
+                    <span className={`inline-block mt-2 text-[11px] px-2 py-0.5 rounded-full ${
                       level.badge === "Grátis" ? "bg-positive/10 text-positive" : "bg-gold/10 text-gold"
                     }`}>
                       {level.badge}
@@ -627,7 +627,7 @@ export default function Home() {
               <div key={stat.value} className="p-6 rounded-xl border border-border/20 text-center">
                 <div className="text-3xl font-bold text-negative font-mono mb-2">{stat.value}</div>
                 <p className="text-xs text-muted-foreground leading-snug">{stat.label}</p>
-                <p className="text-[10px] text-muted-foreground/50 mt-1">{stat.source}</p>
+                <p className="text-[11px] text-muted-foreground mt-1">{stat.source}</p>
               </div>
             ))}
           </div>
@@ -658,7 +658,7 @@ export default function Home() {
                   dot: "bg-gold", label: "artigos no Cérebro", sub: "atualizado diariamente",
                 },
                 stats.markets > 0 && {
-                  value: <>{stats.markets}<span className="text-2xl text-muted-foreground/60">+</span></>,
+                  value: <>{stats.markets}<span className="text-2xl text-muted-foreground">+</span></>,
                   dot: "bg-neon-blue", label: "mercados monitorados", sub: "Polymarket + Kalshi",
                 },
                 stats.predictions > 0 && {
@@ -675,7 +675,7 @@ export default function Home() {
                       <p className="text-xs text-muted-foreground mt-3 flex items-center justify-center gap-1.5">
                         <span className={`w-1 h-1 rounded-full ${t.dot}`} aria-hidden="true" />{t.label}
                       </p>
-                      <p className="text-[10px] text-muted-foreground/50 mt-0.5">{t.sub}</p>
+                      <p className="text-[11px] text-muted-foreground mt-0.5">{t.sub}</p>
                     </div>
                   ))}
                 </div>

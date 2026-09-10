@@ -39,17 +39,17 @@ interface CrossRefResult {
 
 function VerdictBadge({ verdict }: { verdict: CrossRefMarket["verdict"] }) {
   if (verdict === "higher") return (
-    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold border text-positive bg-positive/10 border-positive/20">
+    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold border text-positive bg-positive/10 border-positive/20">
       <TrendingUp className="w-3 h-3" />SUBESTIMADO
     </span>
   );
   if (verdict === "lower") return (
-    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold border text-negative bg-negative/10 border-negative/20">
+    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold border text-negative bg-negative/10 border-negative/20">
       <TrendingDown className="w-3 h-3" />SUPERESTIMADO
     </span>
   );
   return (
-    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold border text-muted-foreground bg-secondary/40 border-border/20">
+    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold border text-muted-foreground bg-secondary/40 border-border/20">
       <Minus className="w-3 h-3" />ALINHADO
     </span>
   );
@@ -61,13 +61,13 @@ function ProbCompare({ marketProb, jlbProb }: { marketProb: number; jlbProb: num
   return (
     <div className="flex items-center gap-3">
       <div className="text-center">
-        <p className="text-[9px] text-muted-foreground uppercase tracking-wide mb-0.5">Mercado</p>
+        <p className="text-[11px] text-muted-foreground uppercase tracking-wide mb-0.5">Mercado</p>
         <p className="font-mono text-base font-bold text-foreground">{marketProb}%</p>
       </div>
       <div className="flex-1 flex flex-col items-center gap-0.5">
         <div className="w-full h-0.5 bg-border/30 relative">
           <div
-            className={`absolute top-1/2 -translate-y-1/2 text-[9px] font-bold ${diffColor}`}
+            className={`absolute top-1/2 -translate-y-1/2 text-[11px] font-bold ${diffColor}`}
             style={{ left: diff >= 0 ? "50%" : "auto", right: diff < 0 ? "50%" : "auto" }}
           >
             {diff >= 0 ? "+" : ""}{diff.toFixed(0)}pp
@@ -75,7 +75,7 @@ function ProbCompare({ marketProb, jlbProb }: { marketProb: number; jlbProb: num
         </div>
       </div>
       <div className="text-center">
-        <p className="text-[9px] text-gold uppercase tracking-wide mb-0.5">JLB Honesto</p>
+        <p className="text-[11px] text-gold uppercase tracking-wide mb-0.5">JLB Honesto</p>
         <p className={`font-mono text-base font-bold text-gold`}>{jlbProb}%</p>
       </div>
     </div>
@@ -161,12 +161,12 @@ export function ArticleDetailModal({ article, onClose }: ArticleDetailModalProps
             <p className="text-sm font-medium text-foreground leading-snug line-clamp-2">{article.title}</p>
             <div className="flex items-center gap-2 mt-1.5">
               {article.source && (
-                <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
                   <Globe className="w-3 h-3" />
                   {article.source}
                 </span>
               )}
-              <span className="text-[10px] text-muted-foreground">{timeAgoISO(article.publishedAt)}</span>
+              <span className="text-[11px] text-muted-foreground">{timeAgoISO(article.publishedAt)}</span>
             </div>
           </div>
           <button
@@ -251,7 +251,7 @@ export function ArticleDetailModal({ article, onClose }: ArticleDetailModalProps
                 <div className="text-center py-8 space-y-2">
                   <p className="text-sm text-muted-foreground">Nenhum mercado diretamente relacionado encontrado.</p>
                   {result.marketsAvailable === 0 && (
-                    <p className="text-xs text-muted-foreground/60">
+                    <p className="text-xs text-muted-foreground">
                       Os mercados ainda não foram carregados. Acesse a aba Polymarket ou Kalshi primeiro.
                     </p>
                   )}
@@ -263,7 +263,7 @@ export function ArticleDetailModal({ article, onClose }: ArticleDetailModalProps
                 <div key={`${m.id}-${i}`} className="glass-card rounded-xl p-4 space-y-3">
                   {/* Source + verdict */}
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border uppercase tracking-wide ${
+                    <span className={`text-[11px] font-bold px-1.5 py-0.5 rounded border uppercase tracking-wide ${
                       m.source === "Polymarket"
                         ? "text-blue-400 bg-blue-400/10 border-blue-400/20"
                         : "text-purple-400 bg-purple-400/10 border-purple-400/20"
@@ -271,7 +271,7 @@ export function ArticleDetailModal({ article, onClose }: ArticleDetailModalProps
                       {m.source}
                     </span>
                     <VerdictBadge verdict={m.verdict} />
-                    <span className={`ml-auto text-[10px] font-medium ${confidenceColor(m.confidence)}`}>
+                    <span className={`ml-auto text-[11px] font-medium ${confidenceColor(m.confidence)}`}>
                       {confidenceLabel(m.confidence)}
                     </span>
                   </div>
@@ -289,7 +289,7 @@ export function ArticleDetailModal({ article, onClose }: ArticleDetailModalProps
                 </div>
               ))}
 
-              <p className="text-[10px] text-muted-foreground/50 text-center pt-2">
+              <p className="text-[11px] text-muted-foreground text-center pt-2">
                 Análise educacional — não é recomendação de compra · {result.marketsAvailable} mercados analisados
               </p>
             </>

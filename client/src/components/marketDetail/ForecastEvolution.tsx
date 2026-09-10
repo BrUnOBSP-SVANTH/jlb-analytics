@@ -38,7 +38,7 @@ export function ForecastEvolution({ marketId, source }: { marketId: string; sour
         <div className="flex items-center gap-2 mb-3">
           <TrendingUp className="w-4 h-4 text-neon-blue" />
           <h2 className="text-sm font-semibold text-[var(--titulo)]">Evolução da estimativa da IA</h2>
-          <span className="ml-auto text-[10px] text-muted-foreground/60">{history.length} pontos · {days}d</span>
+          <span className="ml-auto text-[11px] text-muted-foreground">{history.length} pontos · {days}d</span>
         </div>
         <p className="text-xs text-muted-foreground mb-3">
           A IA foi de <span className="font-mono text-neon-blue">{first.aiFairValue}%</span> →
@@ -67,7 +67,7 @@ export function ForecastEvolution({ marketId, source }: { marketId: string; sour
             <Area type="monotone" dataKey="IA" stroke="oklch(0.62 0.2 250)" strokeWidth={2} fill="url(#aiEvo)" dot={false} />
           </AreaChart>
         </ResponsiveContainer>
-        <p className="text-[10px] text-muted-foreground/40 mt-1 text-center">
+        <p className="text-[11px] text-muted-foreground mt-1 text-center">
           Azul = fair value da IA · Tracejado = preço do mercado
         </p>
       </div>

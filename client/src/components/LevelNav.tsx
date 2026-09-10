@@ -28,7 +28,7 @@ export default function LevelNav({ current }: { current: number }) {
               <GraduationCap className="w-5 h-5 text-primary" aria-hidden="true" />
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Próximo nível</p>
+              <p className="text-[11px] uppercase tracking-wider text-muted-foreground">Próximo nível</p>
               <p className="text-sm font-semibold text-foreground">Nível {next}: {LEVELS[next].title}</p>
               <p className="text-xs text-muted-foreground line-clamp-1">{LEVELS[next].teaser}</p>
             </div>

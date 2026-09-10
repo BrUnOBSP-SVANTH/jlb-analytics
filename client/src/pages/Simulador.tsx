@@ -89,7 +89,7 @@ function ResultStat({ label, value, tone = "neutral", hint, big }: {
     : tone === "gold" ? "text-gold" : tone === "blue" ? "text-neon-blue" : "text-foreground";
   return (
     <div className="glass-card rounded-xl p-4">
-      <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">{label}</p>
+      <p className="text-[11px] uppercase tracking-wider text-muted-foreground mb-1">{label}</p>
       <p className={`${big ? "text-4xl" : "text-2xl"} font-mono font-bold tabular-nums leading-none ${color}`}>{value}</p>
       {hint && <p className="text-[11px] text-muted-foreground mt-1.5 leading-snug">{hint}</p>}
     </div>
@@ -203,7 +203,7 @@ function EVSimulator() {
               </h4>
               <ResponsiveContainer width="100%" height={280}>
                 <LineChart data={chartData} margin={{ right: 12, bottom: 4 }}>
-                  <XAxis dataKey="n" axisLine={false} tickLine={false} minTickGap={32} tick={{ ...CHART_TICK_STYLE, fontSize: 11 }} label={{ value: "rodadas", position: "insideBottomRight", offset: -4, style: { fontSize: 10, fill: CHART_COLORS.muted } }} />
+                  <XAxis dataKey="n" axisLine={false} tickLine={false} minTickGap={32} tick={{ ...CHART_TICK_STYLE, fontSize: 11 }} label={{ value: "rodadas", position: "insideBottomRight", offset: -4, style: { fontSize: 11, fill: CHART_COLORS.muted } }} />
                   <YAxis axisLine={false} tickLine={false} tick={{ ...CHART_TICK_STYLE, fontSize: 11 }}
                     tickFormatter={formatAxisBRL} />
                   <Tooltip contentStyle={CHART_TOOLTIP_STYLE} formatter={(v: number, name: string) => [`R$ ${v.toFixed(0)}`, name]} />
@@ -323,7 +323,7 @@ function KellySimulator() {
                 <ResultStat label="Kelly completo" value={`R$ ${last.Kelly.toFixed(0)}`} tone="gold" hint="ótimo na teoria, porém mais volátil" />
                 <ResultStat label="Overbet (2× Kelly)" value={`R$ ${last.Overbet.toFixed(0)}`} tone="negative" hint="apostou demais → tende à ruína" />
               </div>
-              <p className="text-[11px] text-muted-foreground/70 mt-2">Todas começaram em R$ 1.000 · toque 🎲 pra outra sequência.</p>
+              <p className="text-[11px] text-muted-foreground mt-2">Todas começaram em R$ 1.000 · toque 🎲 pra outra sequência.</p>
             </div>
 
             <div className="glass-card rounded-xl p-5">
@@ -470,7 +470,7 @@ function CalibracaoSimulator() {
                   <YAxis axisLine={false} tickLine={false} tick={{ ...CHART_TICK_STYLE, fontSize: 11 }} domain={[0, 0.35]} />
                   <Tooltip contentStyle={CHART_TOOLTIP_STYLE} formatter={(v: number, name: string) => [v.toFixed(4), name]} />
                   <Legend />
-                  <ReferenceLine y={0.25} stroke={CHART_COLORS.muted} strokeDasharray="3 3" label={{ value: "BS=0.25 (aleatório)", position: "right", style: { fontSize: 9, fill: CHART_COLORS.muted } }} />
+                  <ReferenceLine y={0.25} stroke={CHART_COLORS.muted} strokeDasharray="3 3" label={{ value: "BS=0.25 (aleatório)", position: "right", style: { fontSize: 11, fill: CHART_COLORS.muted } }} />
                   <Line type="monotone" dataKey="BS_acumulado" stroke={CHART_COLORS.primary} strokeWidth={2} dot={false} name="Brier Score" />
                 </LineChart>
               </ResponsiveContainer>
@@ -482,7 +482,7 @@ function CalibracaoSimulator() {
               </h4>
               <ResponsiveContainer width="100%" height={180}>
                 <LineChart data={decilData}>
-                  <XAxis dataKey="decil" axisLine={false} tickLine={false} tick={{ ...CHART_TICK_STYLE, fontSize: 10 }} />
+                  <XAxis dataKey="decil" axisLine={false} tickLine={false} tick={{ ...CHART_TICK_STYLE, fontSize: 11 }} />
                   <YAxis axisLine={false} tickLine={false} tick={{ ...CHART_TICK_STYLE, fontSize: 11 }} domain={[0, 100]} tickFormatter={(v: number) => `${v}%`} />
                   <Tooltip contentStyle={CHART_TOOLTIP_STYLE} formatter={(v: number, name: string) => [`${v.toFixed(1)}%`, name]} />
                   <Legend />

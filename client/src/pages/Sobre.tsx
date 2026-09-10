@@ -119,7 +119,7 @@ export default function Sobre() {
                   <p className="text-3xl font-bold font-mono text-gold mb-1">{m.value}</p>
                 )}
                 <p className="text-xs font-semibold text-foreground mb-0.5">{m.label}</p>
-                <p className="text-[10px] text-muted-foreground/70">{m.sub}</p>
+                <p className="text-[11px] text-muted-foreground">{m.sub}</p>
               </div>
             ))}
           </div>
@@ -138,7 +138,7 @@ export default function Sobre() {
                 <span className="text-2xl font-bold font-mono text-gold shrink-0">{f.stat}</span>
                 <div>
                   <p className="text-sm text-foreground leading-snug">{f.desc}</p>
-                  <p className="text-[10px] text-muted-foreground/60 mt-1">{f.source}</p>
+                  <p className="text-[11px] text-muted-foreground mt-1">{f.source}</p>
                 </div>
               </div>
             ))}
@@ -223,7 +223,7 @@ export default function Sobre() {
                   ) : phase.status === "active" ? (
                     <Rocket className="w-4 h-4 text-gold shrink-0" />
                   ) : (
-                    <Clock className="w-4 h-4 text-muted-foreground/50 shrink-0" />
+                    <Clock className="w-4 h-4 text-muted-foreground shrink-0" />
                   )}
                   <span className={`text-sm font-semibold ${
                     phase.status === "done" ? "text-positive" :
@@ -283,8 +283,8 @@ export default function Sobre() {
         {/* Disclaimer */}
         <AnimatedSection>
           <div className="glass-card rounded-xl p-5 border-border/20">
-            <h3 className="text-xs font-semibold text-muted-foreground/60 uppercase tracking-wider mb-2">Aviso Legal</h3>
-            <p className="text-xs text-muted-foreground/60 leading-relaxed">
+            <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Aviso Legal</h3>
+            <p className="text-xs text-muted-foreground leading-relaxed">
               Plataforma exclusivamente educacional. Dados, modelos e análises não constituem recomendação de investimento,
               consultoria financeira ou incentivo a apostas. Dados via APIs públicas — podem apresentar atraso.
               Modelos são simplificações e falham sob condições que violam suas premissas.

@@ -31,7 +31,7 @@ export function CategoryBadge({ category }: { category?: string }) {
   if (!category) return null;
   const colors = CATEGORY_COLORS[category] ?? "text-muted-foreground bg-secondary/50 border-border/30";
   return (
-    <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-semibold uppercase tracking-wider border ${colors}`}>
+    <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-semibold uppercase tracking-wider border ${colors}`}>
       {category}
     </span>
   );
@@ -62,12 +62,12 @@ export function PostCard({ post }: { post: RedditPost }) {
       className="glass-card rounded-xl p-4 flex flex-col gap-2 hover:border-gold/30 transition-colors group"
     >
       <div className="flex items-center justify-between">
-        <span className="text-[10px] font-semibold text-gold/70 uppercase tracking-wider">
+        <span className="text-[11px] font-semibold text-gold/70 uppercase tracking-wider">
           r/{post.subreddit}
         </span>
         <div className="flex items-center gap-2">
-          <span className={`text-[10px] font-medium ${sentiment.color}`}>{sentiment.label}</span>
-          <span className="text-[10px] text-muted-foreground">{timeAgo(post.created_utc)}</span>
+          <span className={`text-[11px] font-medium ${sentiment.color}`}>{sentiment.label}</span>
+          <span className="text-[11px] text-muted-foreground">{timeAgo(post.created_utc)}</span>
         </div>
       </div>
       <p className="text-sm font-medium text-foreground leading-snug group-hover:text-gold/90 transition-colors">
@@ -76,10 +76,10 @@ export function PostCard({ post }: { post: RedditPost }) {
       <div className="flex items-center justify-between pt-1 border-t border-border/20">
         <span className="text-xs text-muted-foreground">
           <span className="font-mono text-foreground">↑{post.score}</span>
-          <span className="ml-1.5 text-muted-foreground/60">u/{post.author}</span>
+          <span className="ml-1.5 text-muted-foreground">u/{post.author}</span>
         </span>
         {isExternal && (
-          <ExternalLink className="w-3 h-3 text-muted-foreground/50 group-hover:text-gold transition-colors" aria-hidden="true" />
+          <ExternalLink className="w-3 h-3 text-muted-foreground group-hover:text-gold transition-colors" aria-hidden="true" />
         )}
       </div>
     </a>
@@ -115,16 +115,16 @@ export function ArticleCard({ article, onCardClick }: { article: Article; onCard
 
       {/* Meta row */}
       <div className="flex items-center gap-2 flex-wrap">
-        <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border uppercase tracking-wide ${langColor}`}>
+        <span className={`text-[11px] font-bold px-1.5 py-0.5 rounded border uppercase tracking-wide ${langColor}`}>
           {langLabel}
         </span>
         {article.source && (
-          <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
+          <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
             <Globe className="w-3 h-3" aria-hidden="true" />
             {article.source}
           </span>
         )}
-        <span className="ml-auto flex items-center gap-1 text-[10px] text-muted-foreground/60">
+        <span className="ml-auto flex items-center gap-1 text-[11px] text-muted-foreground">
           <Clock className="w-3 h-3" aria-hidden="true" />
           {timeAgoISO(article.publishedAt)}
         </span>
@@ -153,7 +153,7 @@ export function ArticleCard({ article, onCardClick }: { article: Article; onCard
           target="_blank"
           rel="noopener noreferrer"
           onClick={(e) => e.stopPropagation()}
-          className="flex items-center gap-1 text-[10px] text-muted-foreground/60 hover:text-muted-foreground transition-colors"
+          className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-muted-foreground transition-colors"
           aria-label="Ler artigo original"
         >
           <ExternalLink className="w-3 h-3" />
