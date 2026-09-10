@@ -5,6 +5,9 @@
 import { useState, useEffect } from "react";
 import { Link } from "wouter";
 
+/** O e-mail que existe de verdade — o mesmo da Política de Privacidade. */
+const EMAIL_CONTATO = "contato.jlbanalytics@gmail.com";
+
 /** "há 2h", "há 3d" — idade amigável de um timestamp ISO. */
 function timeAgo(iso: string): string {
   const mins = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60_000));
@@ -39,7 +42,7 @@ export function Footer() {
   return (
     <footer className="border-t border-border/30 bg-card/30 mt-auto">
       <div className="container py-10">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-8 mb-8">
           <div>
             <div className="flex items-center gap-2 mb-4">
               <div className="w-6 h-6 rounded-md bg-gold/12 border border-gold/25 flex items-center justify-center overflow-hidden">
@@ -97,12 +100,33 @@ export function Footer() {
                 { label: "Simulador EV",  href: "/simulador"   },
                 { label: "Calculadoras",  href: "/calculadoras"},
                 { label: "Dashboard",     href: "/dashboard"   },
-                { label: "Sobre",         href: "/sobre"       },
               ].map((l) => (
                 <Link key={l.href} href={l.href}>
                   <span className="block text-sm text-muted-foreground hover:text-foreground transition-colors">{l.label}</span>
                 </Link>
               ))}
+            </div>
+          </div>
+
+          {/* LEG-04: o rodapé tinha quatro colunas de navegação, disclaimers e
+              copyright — e nenhum e-mail, formulário ou rede social. A página
+              /imprensa é boa e não tinha porta de entrada nenhuma. */}
+          <div>
+            <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Contato</h4>
+            <div className="space-y-1.5">
+              <a href={`mailto:${EMAIL_CONTATO}`}
+                className="block text-sm text-muted-foreground hover:text-foreground transition-colors break-all">
+                {EMAIL_CONTATO}
+              </a>
+              <Link href="/imprensa">
+                <span className="block text-sm text-muted-foreground hover:text-foreground transition-colors">Para a imprensa</span>
+              </Link>
+              <Link href="/planos">
+                <span className="block text-sm text-muted-foreground hover:text-foreground transition-colors">Planos e preços</span>
+              </Link>
+              <Link href="/sobre">
+                <span className="block text-sm text-muted-foreground hover:text-foreground transition-colors">Sobre a plataforma</span>
+              </Link>
             </div>
           </div>
         </div>
@@ -121,6 +145,10 @@ export function Footer() {
             <span className="text-border/40">·</span>
             <Link href="/imprensa"><span className="text-muted-foreground hover:text-foreground transition-colors">Imprensa</span></Link>
           </div>
+          {/* LEG-02: falta a identificação do controlador (razão social e CNPJ).
+              A Política de Privacidade cita ANPD e encarregado sem dizer quem é o
+              controlador. Isso depende de dado que só o fundador tem — o lugar
+              está pronto, o texto entra quando o dado existir. */}
           <p className="text-xs text-muted-foreground text-center">
             &copy; {new Date().getFullYear()} JLB Analytics. Todos os direitos reservados.
           </p>

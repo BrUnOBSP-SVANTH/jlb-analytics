@@ -5,6 +5,8 @@ import PageHeader from "@/components/PageHeader";
 import AnimatedSection from "@/components/AnimatedSection";
 import { useSEO } from "@/hooks/useSEO";
 
+/** Versionado junto com os Termos — ver a nota em pages/Termos.tsx (LEG-01). */
+const VERSAO = "1.0";
 const UPDATED = "24 de junho de 2026";
 
 function Section({ n, title, children }: { n: string; title: string; children: React.ReactNode }) {
@@ -24,7 +26,7 @@ export default function Privacidade() {
       <PageHeader title="Política de Privacidade" subtitle="Como tratamos seus dados — em conformidade com a LGPD (Lei 13.709/2018)." badge="Legal" />
       <div className="container py-12 max-w-3xl mx-auto">
         <AnimatedSection>
-          <p className="text-xs text-muted-foreground mb-8">Última atualização: {UPDATED}</p>
+          <p className="text-xs text-muted-foreground mb-8">Versão {VERSAO} · última atualização em {UPDATED}</p>
           <div className="space-y-8">
             <Section n="1" title="Quem somos (controlador)">
               <p>A JLB Analytics é a controladora dos dados pessoais tratados nesta plataforma. Contato do encarregado (DPO): <a href="mailto:contato.jlbanalytics@gmail.com" className="text-gold hover:underline">contato.jlbanalytics@gmail.com</a>.</p>

@@ -49,15 +49,17 @@ export default function AvisoDeCookies() {
       <div className="container py-4 flex flex-col lg:flex-row lg:items-center gap-4">
         <MarcaProbabilidade className="text-primary shrink-0 hidden lg:block" size={26} />
 
+        {/* LEG-03: eram cinco linhas fixas no rodapé, cobrindo conteúdo em todas
+            as rotas até a pessoa escolher. O tom é um diferencial e fica; o
+            tamanho não precisava ser. Duas linhas dizem a mesma coisa, e o resto
+            mora na lista completa — que já existe e é boa. */}
         <p className="text-xs text-muted-foreground leading-relaxed flex-1">
           <strong className="text-foreground">Guardamos algumas coisas no seu aparelho.</strong>{" "}
-          O essencial — sua sessão, o tema e as previsões que você registrou — não tem como ser
-          desligado, senão o site não funciona. Além disso, gostaríamos de guardar um{" "}
-          <strong className="text-foreground/80">identificador aleatório</strong> (sem nome, e-mail
-          ou IP) só para contar quantas pessoas usaram cada tela. Ele vai para o nosso servidor, e
-          para mais ninguém — não há publicidade, rastreador de terceiro nem venda de dado aqui.{" "}
+          O essencial (sessão, tema, suas previsões) não dá para desligar. Opcional: um{" "}
+          <strong className="text-foreground/80">identificador aleatório</strong>, sem nome, e-mail
+          ou IP, só para contar quantas pessoas usaram cada tela.{" "}
           <Link href="/privacidade">
-            <span className="text-gold hover:underline">Ver a lista completa do que guardamos</span>
+            <span className="text-gold hover:underline">Ver a lista completa</span>
           </Link>.
         </p>
 

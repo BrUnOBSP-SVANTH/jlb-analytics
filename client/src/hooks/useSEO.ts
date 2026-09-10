@@ -1,42 +1,76 @@
 /**
- * useSEO — define <title> e <meta description> por página (JLB Analytics).
+ * useSEO — título, descrição e PRÉVIA DE COMPARTILHAMENTO por rota.
  *
- * SPA não tem SSR, mas o Googlebot executa JS e indexa o título/description
- * resultante. Isso dá a cada rota um título próprio (aba, bookmark, busca) —
- * muito melhor que o título estático único do index.html.
+ * O QUE ISTO CONSERTA (NEG-03). A auditoria reportou que links do site
+ * compartilhados no WhatsApp não carregam prévia. O diagnóstico dela foi "SPA
+ * sem SSR"; medindo aqui, a causa é mais específica e mais fácil de consertar:
  *
- * Para conteúdo rico em crawlers que NÃO executam JS, o passo completo é
- * prerender/SSR (vite-plugin) — este hook é o ganho de baixo custo e alto valor.
+ * O `index.html` JÁ tem Open Graph estático completo, e o site JÁ serve
+ * snapshots pré-renderizados para bots (ver `scripts/prerender.mjs` e o
+ * dynamic rendering em `server/index.ts`). O que faltava é que este hook
+ * atualizava só `<title>` e `meta[name=description]` — e as tags do Open Graph
+ * usam `property=`, não `name=`. Resultado: QUALQUER link do site, de qualquer
+ * página, mostrava a prévia genérica da home.
+ *
+ * Um link para o Track Record — a prova de valor, a página que dá vontade de
+ * mandar para alguém — chegava no WhatsApp dizendo "Plataforma de educação
+ * quantitativa para mercados preditivos". No Brasil, prévia errada custa quase
+ * tanto quanto prévia nenhuma.
+ *
+ * Agora o hook escreve as duas famílias, e o snapshot pré-renderizado sai com
+ * elas dentro — que é o que o crawler lê, já que ele não executa JavaScript.
  */
 import { useEffect } from "react";
 
-const DEFAULT_TITLE = "JLB Analytics — Educação em Mercados Preditivos";
+const TITULO_PADRAO = "JLB Analytics — Educação em Mercados Preditivos";
+const DESCRICAO_PADRAO =
+  "Plataforma de educação quantitativa para mercados preditivos. Aprenda Valor Esperado, calibração, modelos Poisson, GARCH e ensemble com dados reais.";
 
-function upsertMeta(name: string, content: string): void {
-  let tag = document.querySelector(`meta[name="${name}"]`);
+/** `name=` (description, twitter:*) e `property=` (og:*) são atributos diferentes. */
+function upsert(atributo: "name" | "property", chave: string, conteudo: string): void {
+  let tag = document.head.querySelector(`meta[${atributo}="${chave}"]`);
   if (!tag) {
     tag = document.createElement("meta");
-    tag.setAttribute("name", name);
+    tag.setAttribute(atributo, chave);
     document.head.appendChild(tag);
   }
-  tag.setAttribute("content", content);
+  tag.setAttribute("content", conteudo);
 }
 
 export function useSEO(title: string, description?: string): void {
   useEffect(() => {
-    document.title = `${title} · JLB Analytics`;
+    const tituloCompleto = `${title} · JLB Analytics`;
+    const desc = description ?? DESCRICAO_PADRAO;
+    const url = `${window.location.origin}${window.location.pathname}`;
 
-    if (description) upsertMeta("description", description);
+    document.title = tituloCompleto;
+    upsert("name", "description", desc);
+
+    // A prévia que aparece no WhatsApp, no LinkedIn e no Telegram.
+    upsert("property", "og:title", tituloCompleto);
+    upsert("property", "og:description", desc);
+    upsert("property", "og:url", url);
+    upsert("name", "twitter:title", tituloCompleto);
+    upsert("name", "twitter:description", desc);
+    upsert("name", "twitter:url", url);
 
     // Canonical da rota atual (sem query/hash) — evita indexação duplicada
-    let link = document.querySelector('link[rel="canonical"]');
+    let link = document.head.querySelector('link[rel="canonical"]');
     if (!link) {
       link = document.createElement("link");
       link.setAttribute("rel", "canonical");
       document.head.appendChild(link);
     }
-    link.setAttribute("href", `${window.location.origin}${window.location.pathname}`);
+    link.setAttribute("href", url);
 
-    return () => { document.title = DEFAULT_TITLE; };
+    // Ao sair da rota, volta ao padrão da home — senão a próxima página herda a
+    // prévia da anterior enquanto o efeito dela não roda.
+    return () => {
+      document.title = TITULO_PADRAO;
+      upsert("property", "og:title", TITULO_PADRAO);
+      upsert("property", "og:description", DESCRICAO_PADRAO);
+      upsert("name", "twitter:title", TITULO_PADRAO);
+      upsert("name", "twitter:description", DESCRICAO_PADRAO);
+    };
   }, [title, description]);
 }

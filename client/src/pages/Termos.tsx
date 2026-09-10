@@ -6,6 +6,17 @@ import AnimatedSection from "@/components/AnimatedSection";
 import { Link } from "wouter";
 import { useSEO } from "@/hooks/useSEO";
 
+/**
+ * LEG-01. A auditoria leu "Última atualização: 9 de setembro de 2026" no dia 9 de
+ * setembro e concluiu que a data era gerada em tempo de execução. Não era: já
+ * estava fixa, e coincidiu com o dia da auditoria porque foi o dia da última
+ * edição do documento.
+ *
+ * A recomendação continua valendo, e é a parte que faltava: sem VERSÃO, quem
+ * volta à página não tem como saber se algo mudou desde a última leitura — a
+ * data sozinha não diz se a mudança foi de vírgula ou de obrigação.
+ */
+const VERSAO = "1.1";
 const UPDATED = "9 de setembro de 2026";
 
 /**
@@ -34,7 +45,7 @@ export default function Termos() {
       <PageHeader title="Termos de Uso" subtitle="As regras para uso da plataforma JLB Analytics." badge="Legal" />
       <div className="container py-12 max-w-3xl mx-auto">
         <AnimatedSection>
-          <p className="text-xs text-muted-foreground mb-8">Última atualização: {UPDATED}</p>
+          <p className="text-xs text-muted-foreground mb-8">Versão {VERSAO} · última atualização em {UPDATED}</p>
           <div className="space-y-8">
             <Section n="1" title="Aceitação dos termos">
               <p>Ao acessar ou usar a JLB Analytics ("plataforma"), você concorda com estes Termos de Uso e com a nossa{" "}

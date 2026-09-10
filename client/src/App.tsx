@@ -33,6 +33,7 @@ const Calculadoras  = lazy(() => import("./pages/Calculadoras"));
 const Educacao      = lazy(() => import("./pages/Educacao"));
 const Dashboard     = lazy(() => import("./pages/Dashboard"));
 const Perfil        = lazy(() => import("./pages/Perfil"));
+const Planos        = lazy(() => import("./pages/Planos"));
 const Sobre         = lazy(() => import("./pages/Sobre"));
 const Previsao      = lazy(() => import("./pages/Previsao"));
 const TrackRecord   = lazy(() => import("./pages/TrackRecord"));
@@ -125,6 +126,7 @@ function Router() {
               <Route path="/imprensa"     component={Imprensa} />
               <Route path="/briefing"     component={Briefing} />
               <Route path="/portfolio"    component={Portfolio} />
+              <Route path="/planos"       component={Planos} />
               <Route path="/sobre"        component={Sobre} />
               <Route path="/termos"       component={Termos} />
               <Route path="/privacidade"  component={Privacidade} />
@@ -140,7 +142,9 @@ function Router() {
               {["/cerebro"].map(p => <Route key={p} path={p}>{() => { window.location.replace("/previsao"); return null; }}</Route>)}
               {["/analise"].map(p => <Route key={p} path={p}>{() => { window.location.replace("/previsao"); return null; }}</Route>)}
               {["/correlacao"].map(p => <Route key={p} path={p}>{() => { window.location.replace("/calculadoras"); return null; }}</Route>)}
-              {["/premium","/contato"].map(p => <Route key={p} path={p}>{() => { window.location.replace("/sobre"); return null; }}</Route>)}
+              {/* /premium agora tem destino de verdade (NEG-02) */}
+              <Route path="/premium">{() => { window.location.replace("/planos"); return null; }}</Route>
+              {["/contato"].map(p => <Route key={p} path={p}>{() => { window.location.replace("/sobre"); return null; }}</Route>)}
               <Route path="/404"          component={NotFound} />
               <Route                      component={NotFound} />
             </Switch>

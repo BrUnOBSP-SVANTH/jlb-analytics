@@ -101,6 +101,9 @@ const NAV_GROUPS: NavGroup[] = [
       { label: "Dashboard",   href: "/dashboard",   icon: LayoutDashboard, desc: "Sua calibração ao longo do tempo" },
       { label: "Perfil",      href: "/perfil",      icon: User,            desc: "Pontos, plano e conquistas" },
       { label: "Leaderboard", href: "/leaderboard", icon: Star,            desc: "Ranking por calibração", badge: "NOVO" },
+      // NEG-02: a primeira menção a Premium na navegação era um FILTRO do
+      // Leaderboard. Cota de IA sem preço à vista irrita em vez de converter.
+      { label: "Planos",      href: "/planos",      icon: Wallet,          desc: "O que é grátis e o que não é" },
       { label: "Sobre",       href: "/sobre",       icon: BookOpen,        desc: "Metodologia e missão" },
     ],
   },

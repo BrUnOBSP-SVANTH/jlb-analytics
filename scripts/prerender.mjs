@@ -20,11 +20,26 @@ const OUT = path.join(ROOT, "prerendered");
 const PORT = 3312;
 const BASE = `http://localhost:${PORT}`;
 
-// Rotas de conteúdo estável — as data-heavy (apostas/noticias) ficam de fora:
-// o conteúdo delas é vivo e o snapshot estaria sempre velho.
+/**
+ * Rotas de conteúdo estável.
+ *
+ * NEG-03 da auditoria: "links compartilhados no WhatsApp não carregam título nem
+ * imagem". O mecanismo existia, mas a lista não tinha justamente as rotas que as
+ * pessoas mandam por mensagem — `/track-record` (a prova de valor) e
+ * `/imprensa` (a página feita para ser compartilhada). No Brasil, link sem
+ * prévia no WhatsApp é praticamente link não clicado.
+ *
+ * `/backtester` saiu: é rota morta, redireciona para /calculadoras desde que a
+ * tela foi retirada. Estava gerando um snapshot de uma página que ninguém abre.
+ *
+ * As data-heavy (/mercados, /noticias) continuam de fora de propósito: o
+ * conteúdo delas muda a cada minuto e o snapshot estaria sempre velho — prévia
+ * errada é pior que prévia genérica.
+ */
 const ROUTES = [
   "/", "/educacao", "/nivel/1", "/nivel/2", "/nivel/3", "/nivel/4", "/nivel/5",
-  "/calculadoras", "/simulador", "/backtester", "/previsao",
+  "/calculadoras", "/simulador", "/previsao",
+  "/track-record", "/imprensa", "/leaderboard", "/planos",
   "/sobre", "/termos", "/privacidade",
 ];
 
@@ -62,9 +77,19 @@ try {
     await page.goto(BASE + route, { waitUntil: "domcontentloaded", timeout: 30_000 });
     await page.waitForSelector("#root h1, #root h2", { timeout: 15_000 });
     await page.waitForTimeout(400); // estabiliza contadores/efeitos rápidos
+    // As meta tags são escritas em tempo de execução por `useSEO.ts`. Como o
+    // snapshot é tirado DEPOIS de o React rodar, ele sai com o título, a
+    // descrição e o Open Graph daquela rota — que é exatamente o que faltava:
+    // antes o crawler recebia a prévia genérica da home para qualquer link.
+    const titulo = await page.title();
+    const og = await page.evaluate(() =>
+      document.head.querySelector('meta[property="og:title"]')?.getAttribute("content") ?? "");
+    if (og && !og.startsWith(titulo.slice(0, 20))) {
+      console.warn(`  ⚠ og:title não acompanhou a rota ${route}: "${og.slice(0, 60)}"`);
+    }
     const html = await page.content();
     fs.writeFileSync(path.join(OUT, slug(route)), "<!doctype html>\n" + html.replace(/^<!doctype html>\s*/i, ""), "utf-8");
-    console.log(`ok: ${route} → prerendered/${slug(route)} (${Math.round(html.length / 1024)}KB)`);
+    console.log(`ok: ${route} → ${slug(route)} (${Math.round(html.length / 1024)}KB) — "${titulo.slice(0, 60)}"`);
   }
 
   await browser.close();
