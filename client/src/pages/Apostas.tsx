@@ -24,6 +24,7 @@ import { CompactRow } from "@/components/mercados/CompactRow";
 import { LoadingSkeleton } from "@/components/mercados/LoadingSkeleton";
 import { DivergencesSection } from "@/components/mercados/DivergencesSection";
 import { casaBusca } from "@/lib/marketSearch";
+import { ehSobreBrasil } from "@/lib/brasil";
 import { num } from "@shared/formato";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -81,6 +82,8 @@ export default function Apostas() {
   const [error, setError]           = useState<string | null>(null);
   const [filter, setFilter]         = useState<Filter>(() => (localStorage.getItem("apostas_filter") as Filter) ?? "all");
   const [catFilter, setCatFilter]   = useState<CategoryFilter>(() => (localStorage.getItem("apostas_catFilter") as CategoryFilter) ?? "all");
+  // NEG-04: "tem alguma coisa daqui?" é a pergunta mais óbvia de quem chega.
+  const [soBrasil, setSoBrasil] = useState(false);
   const [viewMode, setViewMode]     = useState<ViewMode>(() => (localStorage.getItem("apostas_viewMode") as ViewMode) ?? "grid");
   const [sortBy, setSortBy]         = useState<SortBy>(() => (localStorage.getItem("apostas_sortBy") as SortBy) ?? "trending");
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
@@ -295,8 +298,21 @@ export default function Apostas() {
     [items, filter]
   );
 
+  /**
+   * O filtro Brasil só aparece quando há mercado brasileiro no catálogo.
+   *
+   * Um filtro que sempre devolve zero é pior que filtro nenhum: ele promete
+   * conteúdo, entrega vazio e ainda faz o site parecer quebrado. Medido em
+   * 10/09/2026: 3 mercados de 150, todos sobre a eleição.
+   */
+  const temBrasil = useMemo(() => items.some((i) => ehSobreBrasil(i.title, i.category)), [items]);
+
   const filtered = useMemo(() => {
     let result = catFilter === "all" ? bySource : bySource.filter((i) => i.normalizedCategory === catFilter);
+    // NEG-04: o recorte que faltava. Nos 20 primeiros mercados a auditoria só
+    // encontrou US Open, primárias americanas, Fed e Champions — e o único
+    // conteúdo brasileiro estava escondido, em inglês, sem como filtrar.
+    if (soBrasil) result = result.filter((i) => ehSobreBrasil(i.title, i.category));
     if (deferredSearch.trim()) {
       // Busca BILÍNGUE: as bolsas publicam em inglês (medido: 0% dos 600 títulos
       // em português) e o público é brasileiro. Antes, buscar "eleição" devolvia
@@ -304,11 +320,11 @@ export default function Apostas() {
       result = result.filter((i) => casaBusca(i.title, deferredSearch, i.category));
     }
     return sortItems(result, sortBy);
-  }, [bySource, catFilter, sortBy, deferredSearch]);
+  }, [bySource, catFilter, sortBy, deferredSearch, soBrasil]);
 
   // reset pagination + comparison when filters/sort change
-  useEffect(() => { setVisibleCount(PAGE_SIZE); }, [filter, catFilter, sortBy]);
-  useEffect(() => { setCompareMap(new Map()); }, [filter, catFilter]);
+  useEffect(() => { setVisibleCount(PAGE_SIZE); }, [filter, catFilter, sortBy, soBrasil]);
+  useEffect(() => { setCompareMap(new Map()); }, [filter, catFilter, soBrasil]);
 
   // Infinite scroll — incrementa visibleCount quando sentinel entra na viewport
   useEffect(() => {
@@ -425,7 +441,26 @@ export default function Apostas() {
                 );
               })}
 
-              <div className="w-px h-5 bg-border/40 mx-1 shrink-0" />
+              {/* Brasil: separado das fontes de propósito — é um recorte de
+                  ASSUNTO, não de origem, e some quando o catálogo não tem
+                  nenhum, para não prometer o que não existe. */}
+              {temBrasil && (
+                <>
+                  <div className="w-px h-5 bg-border/40 mx-1 shrink-0" aria-hidden="true" />
+                  <button
+                    onClick={() => setSoBrasil((v) => !v)}
+                    aria-pressed={soBrasil}
+                    className={`shrink-0 px-3.5 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
+                      soBrasil
+                        ? "bg-positive text-background border-positive"
+                        : "border-positive/40 text-positive hover:bg-positive/10"
+                    }`}>
+                    🇧🇷 Brasil
+                  </button>
+                </>
+              )}
+
+              <div className="w-px h-5 bg-border/40 mx-1 shrink-0" aria-hidden="true" />
 
               {/* Category pills */}
               {!loading && availableCats.filter((c) => c !== "all").map((cat) => (
