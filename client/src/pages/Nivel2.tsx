@@ -14,6 +14,7 @@ import { awardPoints } from "@/lib/userProgress";
 import { useSEO } from "@/hooks/useSEO";
 import LevelNav from "@/components/LevelNav";
 import PageHeader from "@/components/PageHeader";
+import { num } from "@shared/formato";
 
 interface ZResult { z: number; p_two_tail: number; signal: string; explanation: string; }
 interface CIResult { lower: number; upper: number; margin: number; se: number; dist_used: string; level_pct: number; signal: string; explanation: string; }
@@ -83,11 +84,11 @@ function ZScoreCalculator() {
         <div className="space-y-2">
           <div className="flex justify-between items-center">
             <span className="text-xs text-muted-foreground">Z-score</span>
-            <span className={`text-2xl font-bold ${zColor}`}>{data.z.toFixed(3)}</span>
+            <span className={`text-2xl font-bold ${zColor}`}>{num(data.z, 3)}</span>
           </div>
           <div className="flex justify-between text-xs text-muted-foreground">
             <span>p-valor (bicaudal)</span>
-            <span className="text-foreground font-medium">{(data.p_two_tail * 100).toFixed(2)}%</span>
+            <span className="text-foreground font-medium">{num((data.p_two_tail * 100), 2)}%</span>
           </div>
           {/* Escala visual */}
           <div className="relative h-2 rounded-full bg-gradient-to-r from-positive via-warning to-negative overflow-hidden">
@@ -159,11 +160,11 @@ function CICalculator() {
       {data && (
         <div className="space-y-3">
           <div className="text-center">
-            <div className="text-xs text-muted-foreground mb-1">IC {data.level_pct.toFixed(0)}% ({data.dist_used})</div>
+            <div className="text-xs text-muted-foreground mb-1">IC {num(data.level_pct, 0)}% ({data.dist_used})</div>
             <div className="text-xl font-bold text-foreground">
-              [{data.lower.toFixed(4)}, {data.upper.toFixed(4)}]
+              [{num(data.lower, 4)}, {num(data.upper, 4)}]
             </div>
-            <div className="text-xs text-muted-foreground">margem ± {data.margin.toFixed(4)} | EP = {data.se.toFixed(4)}</div>
+            <div className="text-xs text-muted-foreground">margem ± {num(data.margin, 4)} | EP = {num(data.se, 4)}</div>
           </div>
           {/* Linha visual do IC — posições e rótulos derivados dos valores REAIS.
               Antes as marcas eram fixas (15/50/85%), fingindo representar o cálculo. */}
@@ -184,9 +185,9 @@ function CICalculator() {
                   <div className="absolute h-4 w-0.5 bg-primary/60" style={{ left: `${hi}%` }} />
                 </div>
                 <div className="relative h-4 text-[11px] font-mono text-muted-foreground">
-                  <span className="absolute -translate-x-1/2" style={{ left: `${lo}%` }}>{data.lower.toFixed(2)}</span>
-                  <span className="absolute -translate-x-1/2 text-foreground" style={{ left: "50%" }}>{mid.toFixed(2)}</span>
-                  <span className="absolute -translate-x-1/2" style={{ left: `${hi}%` }}>{data.upper.toFixed(2)}</span>
+                  <span className="absolute -translate-x-1/2" style={{ left: `${lo}%` }}>{num(data.lower, 2)}</span>
+                  <span className="absolute -translate-x-1/2 text-foreground" style={{ left: "50%" }}>{num(mid, 2)}</span>
+                  <span className="absolute -translate-x-1/2" style={{ left: `${hi}%` }}>{num(data.upper, 2)}</span>
                 </div>
               </div>
             );
@@ -223,7 +224,7 @@ function CorrelationCalculator() {
         <p className="text-xs text-muted-foreground">
           <strong className="text-foreground">Aviso crítico:</strong> correlação mede associação LINEAR.
           Séries temporais não-estacionárias produzem correlações espúrias altíssimas sem nenhuma relação causal real
-          (ex: vendas de sorvete e afogamentos têm r ≈ 0.9 por conta do calor).
+          (ex.: vendas de sorvete e afogamentos têm r ≈ 0,9 por conta do calor).
           Sempre teste estacionariedade antes de interpretar.
         </p>
       </div>
@@ -250,16 +251,16 @@ function CorrelationCalculator() {
         <div className="grid gap-4 sm:grid-cols-3">
           <div className="text-center">
             <div className="text-xs text-muted-foreground">r (Pearson)</div>
-            <div className={`text-2xl font-bold ${rColor}`}>{data.r.toFixed(4)}</div>
+            <div className={`text-2xl font-bold ${rColor}`}>{num(data.r, 4)}</div>
           </div>
           <div className="text-center">
             <div className="text-xs text-muted-foreground">R² (variância explicada)</div>
-            <div className="text-2xl font-bold text-foreground">{(data.r_squared * 100).toFixed(1)}%</div>
+            <div className="text-2xl font-bold text-foreground">{num((data.r_squared * 100), 1)}%</div>
           </div>
           <div className="text-center">
             <div className="text-xs text-muted-foreground">p-valor</div>
             <div className={`text-2xl font-bold ${data.p_value < 0.05 ? "text-positive" : "text-negative"}`}>
-              {data.p_value.toFixed(4)}
+              {num(data.p_value, 4)}
             </div>
             <div className="text-xs text-muted-foreground">{data.p_value < 0.05 ? "significante" : "não significante"}</div>
           </div>

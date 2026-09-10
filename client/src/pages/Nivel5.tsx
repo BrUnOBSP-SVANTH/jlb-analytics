@@ -13,6 +13,7 @@ import { awardPoints } from "@/lib/userProgress";
 import { useSEO } from "@/hooks/useSEO";
 import LevelNav from "@/components/LevelNav";
 import PageHeader from "@/components/PageHeader";
+import { num } from "@shared/formato";
 
 interface DivergenceResult {
   divergence_pct: number; signal: string; label: string;
@@ -72,7 +73,7 @@ function DivergenceCalculator() {
             onChange={(e) => setModelP(e.target.value)} className="w-full accent-primary" />
           <div className="flex justify-between text-xs mt-0.5">
             <span className="text-muted-foreground">0%</span>
-            <span className="font-medium text-foreground">{(parseFloat(modelP) * 100).toFixed(0)}%</span>
+            <span className="font-medium text-foreground">{num((parseFloat(modelP) * 100), 0)}%</span>
             <span className="text-muted-foreground">100%</span>
           </div>
         </div>
@@ -82,7 +83,7 @@ function DivergenceCalculator() {
             onChange={(e) => setMarketP(e.target.value)} className="w-full accent-primary" />
           <div className="flex justify-between text-xs mt-0.5">
             <span className="text-muted-foreground">0%</span>
-            <span className="font-medium text-foreground">{(parseFloat(marketP) * 100).toFixed(0)}%</span>
+            <span className="font-medium text-foreground">{num((parseFloat(marketP) * 100), 0)}%</span>
             <span className="text-muted-foreground">100%</span>
           </div>
         </div>
@@ -92,7 +93,7 @@ function DivergenceCalculator() {
             onChange={(e) => setConfidence(e.target.value)} className="w-full accent-primary" />
           <div className="flex justify-between text-xs mt-0.5">
             <span className="text-muted-foreground">0%</span>
-            <span className="font-medium text-foreground">{(parseFloat(confidence) * 100).toFixed(0)}%</span>
+            <span className="font-medium text-foreground">{num((parseFloat(confidence) * 100), 0)}%</span>
             <span className="text-muted-foreground">100%</span>
           </div>
         </div>
@@ -119,19 +120,19 @@ function DivergenceCalculator() {
           <div className="p-4 rounded-xl bg-secondary/30 space-y-3">
             <div className="flex justify-between items-end">
               <div className="text-center">
-                <div className="text-2xl font-bold text-primary">{(parseFloat(modelP) * 100).toFixed(0)}%</div>
+                <div className="text-2xl font-bold text-primary">{num((parseFloat(modelP) * 100), 0)}%</div>
                 <div className="text-xs text-muted-foreground">Modelo</div>
               </div>
               <div className="text-center flex-1">
                 <div className={`text-3xl font-bold ${data.divergence_pct > 0 ? "text-positive" : "text-negative"}`}>
-                  {data.divergence_pct > 0 ? "+" : ""}{data.divergence_pct.toFixed(1)} pp
+                  {data.divergence_pct > 0 ? "+" : ""}{num(data.divergence_pct, 1)} pp
                 </div>
                 <div className={`text-xs ${tierColors[data.tier ?? ""] ?? "text-muted-foreground"}`}>
                   {data.label}
                 </div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-foreground">{(parseFloat(marketP) * 100).toFixed(0)}%</div>
+                <div className="text-2xl font-bold text-foreground">{num((parseFloat(marketP) * 100), 0)}%</div>
                 <div className="text-xs text-muted-foreground">Mercado</div>
               </div>
             </div>
@@ -225,8 +226,8 @@ function EnsembleCalculator() {
         <div className="space-y-4">
           <div className="text-center p-4 rounded-xl bg-secondary/30">
             <div className="text-xs text-muted-foreground">P ensemble (ponderado por Skill Score)</div>
-            <div className="text-4xl font-bold text-primary my-1">{Number.isFinite(data.ensemble_probability) ? `${(data.ensemble_probability * 100).toFixed(1)}%` : "—"}</div>
-            <div className="text-xs text-muted-foreground">{Number.isFinite(data.ensemble_std) ? `± ${(data.ensemble_std * 100).toFixed(1)}% dispersão entre modelos` : "sem modelos válidos para combinar (todos com Skill Score ≤ 0)"}</div>
+            <div className="text-4xl font-bold text-primary my-1">{Number.isFinite(data.ensemble_probability) ? `${num((data.ensemble_probability * 100), 1)}%` : "—"}</div>
+            <div className="text-xs text-muted-foreground">{Number.isFinite(data.ensemble_std) ? `± ${num((data.ensemble_std * 100), 1)}% dispersão entre modelos` : "sem modelos válidos para combinar (todos com Skill Score ≤ 0)"}</div>
           </div>
 
           {data.warning && (
@@ -244,7 +245,7 @@ function EnsembleCalculator() {
                   <div className="flex-1 h-2 rounded-full bg-border/20 overflow-hidden">
                     <div className="h-2 rounded-full bg-primary/70" style={{ width: `${weight * 100}%` }} />
                   </div>
-                  <span className="text-xs text-muted-foreground w-10 text-right">{(weight * 100).toFixed(1)}%</span>
+                  <span className="text-xs text-muted-foreground w-10 text-right">{num((weight * 100), 1)}%</span>
                 </div>
               ))}
             </div>

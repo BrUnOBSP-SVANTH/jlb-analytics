@@ -5,7 +5,7 @@ import { useState } from "react";
 import { Link } from "wouter";
 import { Calculator, Zap, Info, Check, BookmarkPlus, Sparkles, RefreshCw } from "lucide-react";
 import { calcEV, calcKelly } from "@/components/marketDetail/utils";
-import { pct, pp } from "@shared/formato";
+import { pct, pp, num } from "@shared/formato";
 import { Explain } from "@/components/marketDetail/Explain";
 import { addPrediction } from "@/lib/predictions";
 import { awardPoints } from "@/lib/userProgress";
@@ -121,7 +121,7 @@ export function EdgeCalculator({ marketProb, marketId, question }: { marketProb:
         <div className={`p-3 rounded-lg border ${evNeutral ? "border-border/20 bg-secondary/10" : hasValue ? "border-positive/20 bg-positive/5" : "border-negative/20 bg-negative/5"}`}>
           <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-1">Valor Esperado (EV)</p>
           <p className={`text-xl font-mono font-bold ${evNeutral ? "text-muted-foreground" : hasValue ? "text-positive" : "text-negative"}`}>
-            {evNeutral ? "0.0" : `${ev >= 0 ? "+" : ""}${(ev * 100).toFixed(1)}`}%
+            {evNeutral ? "0.0" : `${ev >= 0 ? "+" : ""}${num((ev * 100), 1)}`}%
           </p>
           <p className="text-[11px] text-muted-foreground mt-0.5">por real na posição</p>
         </div>
@@ -139,7 +139,7 @@ export function EdgeCalculator({ marketProb, marketId, question }: { marketProb:
         </div>
         <div className="p-3 rounded-lg border border-gold/20 bg-gold/5">
           <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-1">Kelly Completo</p>
-          <p className="text-xl font-mono font-bold text-gold">{(kelly * 100).toFixed(1)}%</p>
+          <p className="text-xl font-mono font-bold text-gold">{num((kelly * 100), 1)}%</p>
           <p className="text-[11px] text-muted-foreground mt-0.5">da banca</p>
         </div>
         <div className="p-3 rounded-lg border border-gold/10 bg-gold/[0.03]">
@@ -147,7 +147,7 @@ export function EdgeCalculator({ marketProb, marketId, question }: { marketProb:
               institucional de que a JLB não recomenda posições. Descreve a mesma
               escolha sem virar conselho. */}
           <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-1">½ Kelly (mais conservador)</p>
-          <p className="text-xl font-mono font-bold text-gold/70">{(halfKelly * 100).toFixed(1)}%</p>
+          <p className="text-xl font-mono font-bold text-gold/70">{num((halfKelly * 100), 1)}%</p>
           <p className="text-[11px] text-muted-foreground mt-0.5">da banca</p>
         </div>
       </div>
@@ -209,10 +209,10 @@ export function EdgeCalculator({ marketProb, marketId, question }: { marketProb:
           <Info className="w-3 h-3" />Como foi calculado
         </summary>
         <div className="mt-2 p-3 rounded-lg bg-obsidian/40 border border-border/20 space-y-1.5 text-xs text-muted-foreground font-mono">
-          <p>Odds justas = 1 ÷ {marketProb.toFixed(2)} = {(1 / marketProb).toFixed(2)}x</p>
-          <p>b (ganho líquido) = {(1 / marketProb).toFixed(2)} − 1 = {(1 / marketProb - 1).toFixed(2)}</p>
-          <p>EV = {yourProb.toFixed(2)} × {(1 / marketProb - 1).toFixed(2)} − {(1 - yourProb).toFixed(2)} = {ev.toFixed(3)}</p>
-          <p>Kelly = (b×p − q) ÷ b = {kelly.toFixed(3)}</p>
+          <p>Odds justas = 1 ÷ {num(marketProb, 2)} = {num((1 / marketProb), 2)}x</p>
+          <p>b (ganho líquido) = {num((1 / marketProb), 2)} − 1 = {num((1 / marketProb - 1), 2)}</p>
+          <p>EV = {num(yourProb, 2)} × {num((1 / marketProb - 1), 2)} − {num((1 - yourProb), 2)} = {num(ev, 3)}</p>
+          <p>Kelly = (b×p − q) ÷ b = {num(kelly, 3)}</p>
         </div>
       </details>
     </div>

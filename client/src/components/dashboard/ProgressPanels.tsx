@@ -201,7 +201,7 @@ export function BehavioralMetrics({ userLevel }: { userLevel: number }) {
             <p className="text-xl font-bold font-mono mt-0.5 text-muted-foreground">—</p>
           ) : (
             <p className={`text-xl font-bold font-mono mt-0.5 ${brierSkill > 0.15 ? "text-positive" : brierSkill > 0 ? "text-warning" : "text-negative"}`}>
-              {brierSkill >= 0 ? "+" : ""}{brierSkill.toFixed(3)}
+              {brierSkill >= 0 ? "+" : ""}{num(brierSkill, 3)}
             </p>
           )}
           <p className="text-xs text-muted-foreground">
@@ -214,7 +214,7 @@ export function BehavioralMetrics({ userLevel }: { userLevel: number }) {
             <p className="text-xl font-bold font-mono mt-0.5 text-muted-foreground">—</p>
           ) : (
             <p className={`text-xl font-bold font-mono mt-0.5 ${Math.abs(overconfidence) < 0.05 ? "text-positive" : Math.abs(overconfidence) < 0.15 ? "text-warning" : "text-negative"}`}>
-              {overconfidence >= 0 ? "+" : ""}{(overconfidence * 100).toFixed(1)}%
+              {overconfidence >= 0 ? "+" : ""}{num((overconfidence * 100), 1)}%
             </p>
           )}
           <p className="text-xs text-muted-foreground">

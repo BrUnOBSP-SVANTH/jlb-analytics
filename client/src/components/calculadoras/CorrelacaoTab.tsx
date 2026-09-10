@@ -7,6 +7,7 @@ import { GitCompare, AlertTriangle, Info } from "lucide-react";
 import AnimatedSection from "@/components/AnimatedSection";
 import { stocks, calculateCorrelation, CHART_COLORS, CHART_TOOLTIP_STYLE, CHART_TICK_STYLE } from "@/lib/data";
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, Legend } from "recharts";
+import { num } from "@shared/formato";
 
 interface HistoryPoint { t: number; close: number }
 
@@ -125,12 +126,12 @@ export function CorrelacaoTab() {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="glass-card rounded-xl p-5 text-center">
                 <p className="text-xs text-muted-foreground uppercase tracking-wider">Correlação (r)</p>
-                <p className={`text-3xl font-mono font-bold mt-2 ${corrColor}`}>{result.correlation.toFixed(3)}</p>
+                <p className={`text-3xl font-mono font-bold mt-2 ${corrColor}`}>{num(result.correlation, 3)}</p>
                 <p className="text-xs text-muted-foreground mt-1">{corrLabel}</p>
               </div>
               <div className="glass-card rounded-xl p-5 text-center">
                 <p className="text-xs text-muted-foreground uppercase tracking-wider">Covariância (amostral)</p>
-                <p className="text-3xl font-mono font-bold text-foreground mt-2">{result.covariance.toFixed(2)}</p>
+                <p className="text-3xl font-mono font-bold text-foreground mt-2">{num(result.covariance, 2)}</p>
                 <p className="text-xs text-muted-foreground mt-1">{result.n} meses de dados</p>
               </div>
               <div className="glass-card rounded-xl p-5 text-center">
@@ -157,7 +158,7 @@ export function CorrelacaoTab() {
                   <XAxis dataKey="month" axisLine={false} tickLine={false} tick={CHART_TICK_STYLE} />
                   <YAxis yAxisId="left" axisLine={false} tickLine={false} tick={CHART_TICK_STYLE} />
                   <YAxis yAxisId="right" orientation="right" axisLine={false} tickLine={false} tick={CHART_TICK_STYLE} />
-                  <Tooltip contentStyle={CHART_TOOLTIP_STYLE} formatter={(v: number) => v.toFixed(2)} />
+                  <Tooltip contentStyle={CHART_TOOLTIP_STYLE} formatter={(v: number) => num(v, 2)} />
                   <Legend />
                   <Line yAxisId="left" type="monotone" dataKey={asset1} stroke={CHART_COLORS.secondary} strokeWidth={2} dot={false} />
                   <Line yAxisId="right" type="monotone" dataKey={asset2} stroke={CHART_COLORS.primary} strokeWidth={2} dot={false} />

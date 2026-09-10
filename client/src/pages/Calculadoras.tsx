@@ -67,7 +67,7 @@ export default function Calculadoras() {
       <ToolIntro icon={Calculator}
         tagline="Descubra se uma posição vale a pena matematicamente antes de entrar."
         description="O Valor Esperado (EV) responde: se você tomasse esta posição mil vezes, lucraria ou perderia? Uma posição pode ter 70% de chance de dar certo e ainda assim ser um mau negócio — depende da odd. Use no Polymarket comparando a probabilidade do mercado com a sua estimativa."
-        example="Odd 1.8 com 60% de chance real → EV = +8% por posição. Matematicamente favorável no longo prazo."
+        example="Odd 1,8 com 60% de chance real → EV de +8% por posição. Matematicamente favorável no longo prazo."
         accuracy={{ label: "Precisão", value: "100% (matemático)", color: "text-positive border-positive/30 bg-positive/10" }} />
     ),
     overround: (

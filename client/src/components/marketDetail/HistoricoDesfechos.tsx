@@ -29,6 +29,7 @@ import AnimatedSection from "@/components/AnimatedSection";
 import { LineChart } from "lucide-react";
 import { type MarketBasic } from "@/components/marketDetail/types";
 import { Explain } from "@/components/marketDetail/Explain";
+import { num } from "@shared/formato";
 
 const MAX_LINHAS = 5;
 const W = 720, H = 220, PAD_ESQ = 4, PAD_DIR = 128, PAD_V = 12;
@@ -152,7 +153,7 @@ export function HistoricoDesfechos({ market }: { market: MarketBasic }) {
 
             {series.map((s) => {
               const d = s.pontos
-                .map((pt, i) => `${i === 0 ? "M" : "L"}${emX(pt.t).toFixed(1)},${emY(pt.p).toFixed(1)}`)
+                .map((pt, i) => `${i === 0 ? "M" : "L"}${num(emX(pt.t), 1)},${num(emY(pt.p), 1)}`)
                 .join(" ");
               const fim = s.pontos[s.pontos.length - 1];
               return (

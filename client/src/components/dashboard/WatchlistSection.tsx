@@ -7,6 +7,7 @@ import { Link } from "wouter";
 import { Bookmark, Bell, ArrowRight, ExternalLink, Trash2 } from "lucide-react";
 import { loadWatchlist, removeFromWatchlist, cycleAlertThreshold, type WatchlistItem } from "@/lib/watchlist";
 import { usePushNotifications, syncPushWatchlist } from "@/hooks/usePushNotifications";
+import { num } from "@shared/formato";
 
 export default function WatchlistSection() {
   const [items, setItems] = useState<WatchlistItem[]>(() => loadWatchlist());
@@ -96,7 +97,7 @@ export default function WatchlistSection() {
                   </span>
                   {delta !== null && Math.abs(delta) >= 0.5 && (
                     <span className={`text-[11px] font-mono font-semibold ${delta > 0 ? "text-positive" : "text-negative"}`}>
-                      {delta > 0 ? "+" : ""}{delta.toFixed(1)}pp desde salvo
+                      {delta > 0 ? "+" : ""}{num(delta, 1)}pp desde salvo
                     </span>
                   )}
                 </div>
@@ -104,7 +105,7 @@ export default function WatchlistSection() {
 
               {displayPct !== null && (
                 <div className="shrink-0 text-right">
-                  <p className={`text-sm font-mono font-bold ${probColor}`}>{displayPct.toFixed(1)}%</p>
+                  <p className={`text-sm font-mono font-bold ${probColor}`}>{num(displayPct, 1)}%</p>
                   <p className="text-[11px] text-muted-foreground">{liveProb !== null ? "ao vivo" : "salvo"}</p>
                 </div>
               )}

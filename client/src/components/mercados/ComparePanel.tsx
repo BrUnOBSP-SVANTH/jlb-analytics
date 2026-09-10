@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { Scale, Link2, X as CloseX } from "lucide-react";
 import { type TrendingItem, CATEGORY_LABELS, formatVolume } from "@/lib/trending";
 import { SourceBadge } from "@/components/mercados/cards";
+import { num } from "@shared/formato";
 
 export function ComparePanel({ items, onClear }: { items: TrendingItem[]; onClear: () => void }) {
   const [a, b] = items;
@@ -19,7 +20,7 @@ export function ComparePanel({ items, onClear }: { items: TrendingItem[]; onClea
     if (volA > 0 && volB > 0) {
       const ratio = Math.max(volA, volB) / Math.min(volA, volB);
       if (ratio >= 2)
-        parts.push(`${volA > volB ? a.source === "polymarket" ? "Polymarket" : "Kalshi" : b.source === "polymarket" ? "Polymarket" : "Kalshi"} tem ${ratio.toFixed(0)}× mais volume`);
+        parts.push(`${volA > volB ? a.source === "polymarket" ? "Polymarket" : "Kalshi" : b.source === "polymarket" ? "Polymarket" : "Kalshi"} tem ${num(ratio, 0)}× mais volume`);
     }
     const probA = a.yesProb ?? 0.5;
     const probB = b.yesProb ?? 0.5;

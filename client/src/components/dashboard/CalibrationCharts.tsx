@@ -10,6 +10,7 @@ import {
 import { BarChart2, TrendingUp } from "lucide-react";
 import { calibrationBuckets, type StoredPrediction, type CalibrationSnapshot } from "@/lib/predictions";
 import { CHART_COLORS, CHART_TOOLTIP_STYLE, CHART_TICK_STYLE } from "@/lib/data";
+import { num } from "@shared/formato";
 
 export function CalibrationChart({ predictions }: { predictions: StoredPrediction[] }) {
   const buckets = calibrationBuckets(predictions);
@@ -112,7 +113,7 @@ export function CalibrationTrend({ history }: { history: CalibrationSnapshot[] }
           <span className={`text-xs font-mono font-bold px-2 py-0.5 rounded-full ${
             improving ? "text-positive bg-positive/10" : "text-negative bg-negative/10"
           }`}>
-            {improving ? "▼" : "▲"} {Math.abs(brierDelta).toFixed(3)} Brier
+            {improving ? "▼" : "▲"} {num(Math.abs(brierDelta), 3)} Brier
           </span>
         )}
       </div>
@@ -139,7 +140,7 @@ export function CalibrationTrend({ history }: { history: CalibrationSnapshot[] }
           <YAxis
             domain={[0, 0.4]} tick={CHART_TICK_STYLE}
             axisLine={false} tickLine={false}
-            tickFormatter={(v) => v.toFixed(2)}
+            tickFormatter={(v) => num(v, 2)}
           />
           <Tooltip
             contentStyle={CHART_TOOLTIP_STYLE}

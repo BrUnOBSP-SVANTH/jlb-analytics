@@ -24,7 +24,7 @@ import {
 } from "@/lib/predictions";
 import { apiFetch } from "@/lib/api";
 import { awardPoints, loadProgress, niveisConcluidos } from "@/lib/userProgress";
-import { plural } from "@shared/formato";
+import { plural, num } from "@shared/formato";
 import { pullProgress } from "@/lib/progressSync";
 import { pullFromSupabase, pushToSupabase, syncOne, deleteOne } from "@/lib/predictionsSync";
 import ContaTabs from "@/components/ContaTabs";
@@ -576,7 +576,7 @@ export default function Dashboard() {
           <p className={`text-2xl font-bold font-mono ${
             bs === null ? "text-muted-foreground" : bs < 0.1 ? "text-positive" : bs < 0.25 ? "text-warning" : "text-negative"
           }`}>
-            {bs === null ? "—" : bs.toFixed(3)}
+            {num(bs, 3)}
           </p>
           <p className="text-[11px] text-muted-foreground">
             {bs === null ? "Resolva previsões" : bs < 0.25 ? "Melhor que baseline" : "A melhorar"}
@@ -593,7 +593,7 @@ export default function Dashboard() {
           <p className={`text-2xl font-bold font-mono ${
             ss === null ? "text-muted-foreground" : ss > 0.2 ? "text-positive" : ss > 0 ? "text-warning" : "text-negative"
           }`}>
-            {ss === null ? "—" : (ss >= 0 ? "+" : "") + ss.toFixed(2)}
+            {ss === null ? "—" : `${ss >= 0 ? "+" : ""}${num(ss, 2)}`}
           </p>
           <p className="text-[11px] text-muted-foreground">
             {ss === null ? "Resolva previsões" : ss > 0.2 ? "Excelente" : ss > 0 ? "Acima da baseline" : "Abaixo da baseline"}

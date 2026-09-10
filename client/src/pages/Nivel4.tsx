@@ -13,6 +13,7 @@ import { awardPoints } from "@/lib/userProgress";
 import { useSEO } from "@/hooks/useSEO";
 import LevelNav from "@/components/LevelNav";
 import PageHeader from "@/components/PageHeader";
+import { num } from "@shared/formato";
 
 interface ProspectResult { ev_objective: number; subjective_value: number; gap: number; loss_aversion_lambda: number; signal: string; bias_diagnosis: string; explanation: string; }
 interface BrierResult { brier_score: number; skill_score: number; resolution: number; reliability: number; n: number; stable: boolean; signal: string; explanation: string; calibration_by_decile?: { confidence_range: string; avg_confidence: number; actual_accuracy: number; n: number; calibration_error: number }[]; }
@@ -72,13 +73,13 @@ function ProspectCalculator() {
             <div className="text-center p-3 rounded-lg bg-secondary/30">
               <div className="text-xs text-muted-foreground">EV objetivo</div>
               <div className={`text-lg font-bold ${data.ev_objective >= 0 ? "text-positive" : "text-negative"}`}>
-                R$ {data.ev_objective >= 0 ? "+" : ""}{data.ev_objective.toFixed(2)}
+                R$ {data.ev_objective >= 0 ? "+" : ""}{num(data.ev_objective, 2)}
               </div>
             </div>
             <div className="text-center p-3 rounded-lg bg-secondary/30">
               <div className="text-xs text-muted-foreground">Valor subjetivo</div>
               <div className={`text-lg font-bold ${data.subjective_value >= 0 ? "text-positive" : "text-negative"}`}>
-                {data.subjective_value >= 0 ? "+" : ""}{data.subjective_value.toFixed(2)}
+                {data.subjective_value >= 0 ? "+" : ""}{num(data.subjective_value, 2)}
               </div>
             </div>
           </div>
@@ -135,14 +136,14 @@ function BrierCalculator() {
             <div className="p-3 rounded-lg bg-secondary/30">
               <div className="text-xs text-muted-foreground">Brier Score</div>
               <div className={`text-xl font-bold ${data.brier_score < 0.2 ? "text-positive" : data.brier_score < 0.3 ? "text-warning" : "text-negative"}`}>
-                {data.brier_score.toFixed(4)}
+                {num(data.brier_score, 4)}
               </div>
               <div className="text-xs text-muted-foreground">(0 = perfeito, 1 = péssimo)</div>
             </div>
             <div className="p-3 rounded-lg bg-secondary/30">
               <div className="text-xs text-muted-foreground">Skill Score</div>
               <div className={`text-xl font-bold ${data.skill_score > 0.15 ? "text-positive" : data.skill_score > 0 ? "text-warning" : "text-negative"}`}>
-                {data.skill_score >= 0 ? "+" : ""}{data.skill_score.toFixed(4)}
+                {data.skill_score >= 0 ? "+" : ""}{num(data.skill_score, 4)}
               </div>
               <div className="text-xs text-muted-foreground">{data.skill_score > 0 ? "melhor que baseline" : "pior que chutar 50%"}</div>
             </div>
@@ -199,7 +200,7 @@ function GamblerCalculator() {
           <div className="grid grid-cols-3 gap-2 text-center text-xs">
             <div><div className="text-muted-foreground">Maior run</div><div className="font-bold text-foreground">{data.max_run}</div></div>
             <div><div className="text-muted-foreground">Runs reais</div><div className="font-bold text-foreground">{data.n_runs}</div></div>
-            <div><div className="text-muted-foreground">Runs esperados</div><div className="font-bold text-foreground">{data.expected_runs.toFixed(1)}</div></div>
+            <div><div className="text-muted-foreground">Runs esperados</div><div className="font-bold text-foreground">{num(data.expected_runs, 1)}</div></div>
           </div>
           <ExplanationBox text={data.explanation} />
         </div>

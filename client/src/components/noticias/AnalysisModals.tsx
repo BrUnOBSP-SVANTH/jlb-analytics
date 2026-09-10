@@ -13,6 +13,7 @@ import { useModalA11y } from "@/hooks/useModalA11y";
 import { type Article, timeAgoISO } from "@/lib/noticiasShared";
 import { maybeAuthGate } from "@/lib/upgrade";
 import { apiFetch } from "@/lib/api";
+import { num } from "@shared/formato";
 
 
 // ── Article Cross-Reference types ─────────────────────────────────────────
@@ -70,7 +71,7 @@ function ProbCompare({ marketProb, jlbProb }: { marketProb: number; jlbProb: num
             className={`absolute top-1/2 -translate-y-1/2 text-[11px] font-bold ${diffColor}`}
             style={{ left: diff >= 0 ? "50%" : "auto", right: diff < 0 ? "50%" : "auto" }}
           >
-            {diff >= 0 ? "+" : ""}{diff.toFixed(0)}pp
+            {diff >= 0 ? "+" : ""}{num(diff, 0)}pp
           </div>
         </div>
       </div>

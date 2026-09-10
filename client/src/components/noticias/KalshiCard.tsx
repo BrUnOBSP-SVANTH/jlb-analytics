@@ -10,6 +10,7 @@ import { CategoryBadge } from "@/components/noticias/cards";
 import { addPrediction } from "@/lib/predictions";
 import { awardPoints } from "@/lib/userProgress";
 import { track } from "@/lib/analytics";
+import { num } from "@shared/formato";
 
 export function KalshiCard({ market }: { market: KalshiMarket }) {
   const [translation, setTranslation] = useState<string | null>(null);
@@ -121,7 +122,7 @@ export function KalshiCard({ market }: { market: KalshiMarket }) {
           <div className="flex items-center justify-between">
             <p className="text-[11px] font-semibold text-foreground uppercase tracking-wide">Minha estimativa (SIM)</p>
             <span className={`text-xs font-mono font-bold ${(userProb - market.yesProb) > 3 ? "text-positive" : (userProb - market.yesProb) < -3 ? "text-negative" : "text-muted-foreground"}`}>
-              Edge: {(userProb - market.yesProb) >= 0 ? "+" : ""}{(userProb - market.yesProb).toFixed(0)}pp
+              Edge: {(userProb - market.yesProb) >= 0 ? "+" : ""}{num((userProb - market.yesProb), 0)}pp
             </span>
           </div>
           <div className="space-y-1">

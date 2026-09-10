@@ -10,6 +10,7 @@
 import { useEffect, useState } from "react";
 import { Layers } from "lucide-react";
 import { buscarJson } from "@/lib/api";
+import { num } from "@shared/formato";
 
 interface ProviderRow {
   provider: string;
@@ -105,7 +106,7 @@ export function ProviderBreakdown() {
                     thin ? "text-muted-foreground" : beats ? "text-positive" : "text-negative"
                   }`}>
                     {r.skillVsMarket !== null
-                      ? `${r.skillVsMarket > 0 ? "+" : ""}${(r.skillVsMarket * 100).toFixed(1)}%`
+                      ? `${r.skillVsMarket > 0 ? "+" : ""}${num((r.skillVsMarket * 100), 1)}%`
                       : "—"}
                   </td>
                 </tr>

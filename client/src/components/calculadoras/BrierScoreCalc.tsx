@@ -5,7 +5,7 @@ import { useState, useMemo } from "react";
 import { Target } from "lucide-react";
 import { CalcCard, FormulaBox, ResultBox, InsightBox, inputClass } from "@/components/calculadoras/CalcPrimitives";
 import { BRIER_SUPERFORECASTER, BRIER_DO_CHUTE, FONTE_SUPERFORECASTER } from "@shared/referencias";
-import { plural } from "@shared/formato";
+import { plural, num } from "@shared/formato";
 
 interface Prediction { prob: number; outcome: 0 | 1 }
 
@@ -62,7 +62,7 @@ export function BrierScoreCalc() {
                 </select>
                 <div className="flex items-center gap-1">
                   <span className={`text-xs font-mono ${Math.pow(p.prob / 100 - p.outcome, 2) < 0.1 ? "text-positive" : "text-negative"}`}>
-                    {Math.pow(p.prob / 100 - p.outcome, 2).toFixed(3)}
+                    {num(Math.pow(p.prob / 100 - p.outcome, 2), 3)}
                   </span>
                   <button onClick={() => removePred(i)} className="text-muted-foreground hover:text-negative text-xs px-1">×</button>
                 </div>
@@ -77,11 +77,11 @@ export function BrierScoreCalc() {
 
         <div className="space-y-4">
           <ResultBox big label="Brier Score — sua nota de calibração"
-            value={brierScore.toFixed(3)}
+            value={num(brierScore, 3)}
             color={brierScore < 0.20 ? "text-positive" : brierScore < 0.25 ? "text-warning" : "text-negative"}
             hint="mede se, quando você diz “70%”, acontece mesmo ~70% das vezes. MENOR é melhor: 0 = perfeito, 0,25 = igual a chutar 50%." />
           <ResultBox label="Skill Score" termo="skill"
-            value={`${(skillScore * 100).toFixed(0)}%`}
+            value={`${num((skillScore * 100), 0)}%`}
             color={isSkilled ? "text-positive" : "text-negative"}
             hint={isSkilled ? "acima de 0% = você é melhor que quem só chuta 50%" : "abaixo de 0% = pior que chutar 50%"} />
 
@@ -96,7 +96,7 @@ export function BrierScoreCalc() {
                 "< 0.05 — Superforecasters", enquanto outra tela dizia 0.10 e uma
                 terceira, 0.14. O 0,05 não aparece em nenhuma publicação do GJP. */}
             {[
-              [`< ${BRIER_SUPERFORECASTER.toFixed(2)}`, `Superforecasters — ${FONTE_SUPERFORECASTER}`],
+              [`< ${num(BRIER_SUPERFORECASTER, 2)}`, `Superforecasters — ${FONTE_SUPERFORECASTER}`],
               ["< 0.15", "Forecaster experiente"],
               ["< 0.20", "Bom usuário de mercado preditivo"],
               ["= 0.25", "Chutar 50% sempre"],

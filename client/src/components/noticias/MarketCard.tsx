@@ -13,6 +13,7 @@ import { addPrediction, edge, kellyFraction, type StoredPrediction } from "@/lib
 import { awardPoints } from "@/lib/userProgress";
 import { track } from "@/lib/analytics";
 import { traduzir, pareceEmPortugues } from "@/lib/traducao";
+import { num } from "@shared/formato";
 
 interface TrackFormProps {
   market: PolyMarket;
@@ -57,18 +58,18 @@ function TrackForm({ market, marketProb, onSaved, onCancel }: TrackFormProps) {
       <div className="grid grid-cols-3 gap-2 text-center">
         <div className="p-2 rounded-lg bg-secondary/30">
           <p className="text-[11px] text-muted-foreground">Mercado</p>
-          <p className="font-mono text-xs font-semibold text-foreground">{marketProb.toFixed(1)}%</p>
+          <p className="font-mono text-xs font-semibold text-foreground">{num(marketProb, 1)}%</p>
         </div>
         <div className="p-2 rounded-lg bg-secondary/30">
           <p className="text-[11px] text-muted-foreground">Edge</p>
           <p className={`font-mono text-xs font-semibold ${edgeColor}`}>
-            {e >= 0 ? "+" : ""}{e.toFixed(1)}pp
+            {e >= 0 ? "+" : ""}{num(e, 1)}pp
           </p>
         </div>
         <div className="p-2 rounded-lg bg-secondary/30">
           <p className="text-[11px] text-muted-foreground">Kelly</p>
           <p className="font-mono text-xs font-semibold text-gold">
-            {kf > 0 ? `${(kf * 100).toFixed(1)}%` : "—"}
+            {kf > 0 ? `${num((kf * 100), 1)}%` : "—"}
           </p>
         </div>
       </div>
@@ -176,7 +177,7 @@ export function MarketCard({ market, savedIds, onSaved, highlight = false, indic
         ) : null; })()}
         {market.weekPriceChange !== undefined && market.weekPriceChange !== 0 && (
           <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-semibold border ${market.weekPriceChange > 0 ? "text-positive bg-positive/10 border-positive/20" : "text-negative bg-negative/10 border-negative/20"}`}>
-            {market.weekPriceChange > 0 ? "▲" : "▼"} {Math.abs(market.weekPriceChange * 100).toFixed(1)}pp semana
+            {market.weekPriceChange > 0 ? "▲" : "▼"} {num(Math.abs(market.weekPriceChange * 100), 1)}pp semana
           </span>
         )}
       </div>

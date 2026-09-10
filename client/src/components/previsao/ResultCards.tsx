@@ -10,6 +10,7 @@ import {
   AlertTriangle, ArrowUpDown,
 } from "lucide-react";
 import type { PredictResult } from "./types";
+import { num } from "@shared/formato";
 
 const EXPERTISE_CONFIG = {
   leigo:        { label: "Linguagem acessível",  color: "bg-positive/10 text-positive border-positive/20",  icon: "🟢" },
@@ -314,7 +315,7 @@ export function SuperforecasterCard({ result }: { result: PredictResult }) {
                   </div>
                   <div className={`text-center px-3 py-1 rounded-lg ${adjustment >= 0 ? "bg-positive/10 text-positive" : "bg-negative/10 text-negative"}`}>
                     <p className="text-xs">Ajuste</p>
-                    <p className="text-sm font-mono font-bold">{adjustment >= 0 ? "+" : ""}{adjustment.toFixed(1)}pp</p>
+                    <p className="text-sm font-mono font-bold">{adjustment >= 0 ? "+" : ""}{num(adjustment, 1)}pp</p>
                   </div>
                   <div className="text-[11px] text-muted-foreground">=</div>
                   <div className="text-center">

@@ -20,7 +20,7 @@
  */
 import { useState, useEffect } from "react";
 import AnimatedSection from "@/components/AnimatedSection";
-import { pct, plural } from "@shared/formato";
+import { pct, plural, num } from "@shared/formato";
 import { TrendingUp, TrendingDown, Minus, Info, BarChart3, Check, Target } from "lucide-react";
 
 interface TrackRecord {
@@ -75,7 +75,7 @@ function SkillBadge({ value }: { value: number | null }) {
   const Icon = bom ? TrendingUp : TrendingDown;
   return (
     <span className={`inline-flex items-center gap-1 font-semibold ${bom ? "text-positive" : "text-negative"}`}>
-      <Icon className="w-3.5 h-3.5" aria-hidden="true" />{bom ? "+" : "−"}{Math.abs(value * 100).toFixed(0)}%
+      <Icon className="w-3.5 h-3.5" aria-hidden="true" />{bom ? "+" : "−"}{num(Math.abs(value * 100), 0)}%
     </span>
   );
 }

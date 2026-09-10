@@ -10,6 +10,7 @@ import {
   CheckCircle, AlertCircle, ChevronUp, ChevronDown, BookOpen,
 } from "lucide-react";
 import AnimatedSection from "@/components/AnimatedSection";
+import { num } from "@shared/formato";
 
 interface ModelGuide {
   id: string;
@@ -101,7 +102,7 @@ const MODELS: ModelGuide[] = [
       "Para identificar áreas onde você sistemicamente erra (viés de confiança)",
     ],
     howItWorks: "Para cada previsão, calcula (sua_prob − resultado)². Médio ao longo de muitas previsões. Um forecaster que diz 70% em algo que acontece 70% das vezes tem BS próximo de 0.21 — melhor que quem diz 90% e erra frequentemente.",
-    accuracy: `Benchmark: superforecasters do GJP ficam em torno de ${BRIER_SUPERFORECASTER.toFixed(2)}`,
+    accuracy: `Benchmark: superforecasters do GJP ficam em torno de ${num(BRIER_SUPERFORECASTER, 2)}`,
     accuracyColor: "text-neon-blue border-neon-blue/30 bg-neon-blue/10",
     limitacao: "Requer muitas previsões para ser estatisticamente significativo (mínimo 30). Com poucas previsões, o BS pode variar por sorte.",
     polymarketUso: "O Polymarket publica o preço histórico de cada mercado antes do resultado. Você pode comparar: se o mercado tinha 70% e você tinha 80% em um evento que aconteceu, quem teve menor BS estava mais calibrado.",

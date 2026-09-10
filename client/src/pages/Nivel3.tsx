@@ -13,6 +13,7 @@ import { awardPoints } from "@/lib/userProgress";
 import { useSEO } from "@/hooks/useSEO";
 import LevelNav from "@/components/LevelNav";
 import PageHeader from "@/components/PageHeader";
+import { num } from "@shared/formato";
 
 interface TaylorResult { selic_observed: number; taylor_implied: number; divergence_pp: number; signal: string; explanation: string; }
 interface PoissonResult { p_home_win: number; p_draw: number; p_away_win: number; lambda_home: number; lambda_away: number; top_scores: { score: string; probability: number }[]; explanation: string; }
@@ -80,11 +81,11 @@ function TaylorCalculator() {
       {data && (
         <div className="grid grid-cols-3 gap-4 text-center">
           <div><div className="text-xs text-muted-foreground">Selic real</div><div className="text-lg font-bold text-foreground">{data.selic_observed}%</div></div>
-          <div><div className="text-xs text-muted-foreground">Taylor implícito</div><div className="text-lg font-bold text-primary">{data.taylor_implied.toFixed(2)}%</div></div>
+          <div><div className="text-xs text-muted-foreground">Taylor implícito</div><div className="text-lg font-bold text-primary">{num(data.taylor_implied, 2)}%</div></div>
           <div>
             <div className="text-xs text-muted-foreground">Desvio</div>
             <div className={`text-lg font-bold ${data.divergence_pp > 0 ? "text-negative" : "text-positive"}`}>
-              {data.divergence_pp > 0 ? "+" : ""}{data.divergence_pp.toFixed(2)} pp
+              {data.divergence_pp > 0 ? "+" : ""}{num(data.divergence_pp, 2)} pp
             </div>
           </div>
           <ExplanationBox text={data.explanation} />
@@ -139,15 +140,15 @@ function PoissonCalculator() {
           <div className="grid grid-cols-3 gap-2 text-center">
             <div className="p-2 rounded-lg bg-positive/10">
               <div className="text-xs text-muted-foreground">Casa</div>
-              <div className="text-lg font-bold text-positive">{(data.p_home_win * 100).toFixed(1)}%</div>
+              <div className="text-lg font-bold text-positive">{num((data.p_home_win * 100), 1)}%</div>
             </div>
             <div className="p-2 rounded-lg bg-muted/20">
               <div className="text-xs text-muted-foreground">Empate</div>
-              <div className="text-lg font-bold text-foreground">{(data.p_draw * 100).toFixed(1)}%</div>
+              <div className="text-lg font-bold text-foreground">{num((data.p_draw * 100), 1)}%</div>
             </div>
             <div className="p-2 rounded-lg bg-negative/10">
               <div className="text-xs text-muted-foreground">Visitante</div>
-              <div className="text-lg font-bold text-negative">{(data.p_away_win * 100).toFixed(1)}%</div>
+              <div className="text-lg font-bold text-negative">{num((data.p_away_win * 100), 1)}%</div>
             </div>
           </div>
           <div>
@@ -155,7 +156,7 @@ function PoissonCalculator() {
             <div className="flex flex-wrap gap-2">
               {data.top_scores.map((s) => (
                 <span key={s.score} className="px-2 py-1 rounded bg-secondary/50 text-xs">
-                  {s.score} <strong>{(s.probability * 100).toFixed(1)}%</strong>
+                  {s.score} <strong>{num((s.probability * 100), 1)}%</strong>
                 </span>
               ))}
             </div>
@@ -200,8 +201,8 @@ function GarchCalculator() {
       {data && (
         <div className="space-y-2">
           <div className="grid grid-cols-2 gap-4 text-center">
-            <div><div className="text-xs text-muted-foreground">Vol. diária</div><div className="text-xl font-bold text-foreground">{data.vol_daily_pct.toFixed(2)}%</div></div>
-            <div><div className="text-xs text-muted-foreground">Vol. anual</div><div className="text-xl font-bold text-foreground">{data.vol_annual_pct.toFixed(1)}%</div></div>
+            <div><div className="text-xs text-muted-foreground">Vol. diária</div><div className="text-xl font-bold text-foreground">{num(data.vol_daily_pct, 2)}%</div></div>
+            <div><div className="text-xs text-muted-foreground">Vol. anual</div><div className="text-xl font-bold text-foreground">{num(data.vol_annual_pct, 1)}%</div></div>
           </div>
           <WarnBox text={data.warning} />
           <ExplanationBox text={data.explanation} />
@@ -235,7 +236,7 @@ function EnsoCalculator() {
           onChange={(e) => setOni(e.target.value)} className="w-full accent-primary" />
         <div className="flex justify-between text-xs text-muted-foreground mt-0.5">
           <span>−3 (La Niña forte)</span>
-          <span className="font-medium text-foreground">{parseFloat(oni).toFixed(1)}</span>
+          <span className="font-medium text-foreground">{num(parseFloat(oni), 1)}</span>
           <span>+3 (El Niño forte)</span>
         </div>
       </div>
@@ -306,11 +307,11 @@ function EloCalculator() {
           <div className="grid grid-cols-2 gap-3 text-center">
             <div className="p-3 rounded-lg bg-secondary/30">
               <div className="text-xs text-muted-foreground">P(A vence)</div>
-              <div className={`text-2xl font-bold ${data.p_a_wins >= 0.5 ? "text-primary" : "text-muted-foreground"}`}>{(data.p_a_wins * 100).toFixed(1)}%</div>
+              <div className={`text-2xl font-bold ${data.p_a_wins >= 0.5 ? "text-primary" : "text-muted-foreground"}`}>{num((data.p_a_wins * 100), 1)}%</div>
             </div>
             <div className="p-3 rounded-lg bg-secondary/30">
               <div className="text-xs text-muted-foreground">P(B vence)</div>
-              <div className={`text-2xl font-bold ${data.p_b_wins > 0.5 ? "text-primary" : "text-muted-foreground"}`}>{(data.p_b_wins * 100).toFixed(1)}%</div>
+              <div className={`text-2xl font-bold ${data.p_b_wins > 0.5 ? "text-primary" : "text-muted-foreground"}`}>{num((data.p_b_wins * 100), 1)}%</div>
             </div>
           </div>
           <ExplanationBox text={data.explanation} />

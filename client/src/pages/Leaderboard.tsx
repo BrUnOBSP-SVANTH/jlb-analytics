@@ -47,7 +47,7 @@ function ScoreBadge({ bs }: { bs: number | null }) {
   const label = bs < 0.10 ? "Elite" : bs < 0.15 ? "Calibrado" : bs < 0.20 ? "Intermediário" : "Iniciante";
   return (
     <div className="text-right">
-      <p className={`text-sm font-mono font-bold ${color}`}>{bs.toFixed(3)}</p>
+      <p className={`text-sm font-mono font-bold ${color}`}>{num(bs, 3)}</p>
       <p className={`text-[11px] ${color} opacity-70`}>{label}</p>
     </div>
   );
@@ -62,7 +62,7 @@ function SkillBar({ ss }: { ss: number }) {
         <div className={`h-full rounded-full ${color}`} style={{ width: `${pct}%` }} />
       </div>
       <span className={`text-[11px] font-mono ${ss > 0 ? "text-positive" : "text-muted-foreground"}`}>
-        {ss >= 0 ? "+" : ""}{(ss * 100).toFixed(0)}%
+        {ss >= 0 ? "+" : ""}{num((ss * 100), 0)}%
       </span>
     </div>
   );
@@ -108,7 +108,7 @@ function DuelRanking() {
               {r.isIA && <span className="text-[11px] font-semibold px-1.5 py-0.5 rounded bg-neon-blue/10 text-neon-blue border border-neon-blue/20 shrink-0">IA</span>}
             </div>
             <span className={`text-xs font-mono font-bold text-right ${r.avgBrier < 0.18 ? "text-positive" : r.avgBrier < 0.25 ? "text-gold" : "text-muted-foreground"}`}>
-              {r.avgBrier.toFixed(3)}
+              {num(r.avgBrier, 3)}
             </span>
             <span className="text-xs font-mono text-right text-muted-foreground">
               <span className="text-positive">{r.wins}</span>-{r.losses}-{r.ties}

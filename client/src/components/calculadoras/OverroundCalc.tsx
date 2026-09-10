@@ -4,6 +4,7 @@
 import { useState } from "react";
 import { Percent } from "lucide-react";
 import { CalcCard, FormulaBox, ResultBox, InsightBox, inputClass, labelClass } from "@/components/calculadoras/CalcPrimitives";
+import { num } from "@shared/formato";
 
 export function OverroundCalc() {
   const [odds, setOdds] = useState<string[]>(["1.90", "1.90"]);
@@ -54,14 +55,14 @@ export function OverroundCalc() {
             <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-2">Probabilidades implícitas</p>
             {parsed.map((o, i) => (
               <div key={i} className="flex justify-between text-xs">
-                <span className="text-muted-foreground">Odd {o.toFixed(2)}</span>
+                <span className="text-muted-foreground">Odd {num(o, 2)}</span>
                 <span className="font-mono text-foreground">{o > 0 ? (impliedProbs[i] * 100).toFixed(1) : "—"}%</span>
               </div>
             ))}
             <div className="border-t border-border/20 mt-1 pt-1 flex justify-between text-xs">
               <span className="text-muted-foreground font-medium">Total</span>
               <span className={`font-mono font-bold ${totalImplied > 1.001 ? "text-negative" : "text-positive"}`}>
-                {(totalImplied * 100).toFixed(2)}%
+                {num((totalImplied * 100), 2)}%
               </span>
             </div>
           </div>
@@ -69,11 +70,11 @@ export function OverroundCalc() {
 
         <div className="space-y-4">
           <ResultBox big label="Overround — o que a casa cobra"
-            value={`${overround.toFixed(1)}%`}
+            value={`${num(overround, 1)}%`}
             color={overround > 5 ? "text-negative" : overround > 2 ? "text-warning" : "text-positive"}
             hint="quanto a casa embutiu nas odds pra lucrar sempre. Quanto MENOR, melhor pra você — Polymarket/Kalshi ~0–3%, casas esportivas 5–10%." />
           <ResultBox label="Margem da casa"
-            value={`${margin.toFixed(1)}%`}
+            value={`${num(margin, 1)}%`}
             color={margin > 5 ? "text-negative" : margin > 2 ? "text-warning" : "text-positive"}
             hint="a fatia do total movimentado que vira lucro garantido da casa" />
 
@@ -85,7 +86,7 @@ export function OverroundCalc() {
             <p className="text-[11px] text-muted-foreground uppercase tracking-wider">Fair odds (sem margem)</p>
             {fairOdds.map((fo, i) => (
               <div key={i} className="flex justify-between text-xs">
-                <span className="text-muted-foreground">Odd {i + 1} (original: {parsed[i].toFixed(2)})</span>
+                <span className="text-muted-foreground">Odd {i + 1} (original: {num(parsed[i], 2)})</span>
                 <span className="font-mono text-neon-blue">{fo > 0 ? fo.toFixed(3) : "—"}</span>
               </div>
             ))}

@@ -13,6 +13,7 @@ import {
   Trophy, Brain, RefreshCw, ChevronDown, ChevronUp,
   ExternalLink, Info, TrendingUp, Thermometer, ArrowLeft,
 } from "lucide-react";
+import { num } from "@shared/formato";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -326,9 +327,9 @@ function ChartTooltip({ active, payload }: CustomTooltipProps) {
       <p className="font-semibold text-foreground">{d.team.flag} {d.team.name}</p>
       <p className="text-muted-foreground">{CONF_LABEL[d.team.confederation]}</p>
       <div className="space-y-0.5 pt-1 border-t border-border/20">
-        <p>Campeão: <span className="font-mono text-gold font-bold">{d.champProb.toFixed(1)}%</span></p>
-        <p>Finalista: <span className="font-mono text-foreground">{d.finalProb.toFixed(1)}%</span></p>
-        <p>Semifinal: <span className="font-mono text-foreground">{d.sfProb.toFixed(1)}%</span></p>
+        <p>Campeão: <span className="font-mono text-gold font-bold">{num(d.champProb, 1)}%</span></p>
+        <p>Finalista: <span className="font-mono text-foreground">{num(d.finalProb, 1)}%</span></p>
+        <p>Semifinal: <span className="font-mono text-foreground">{num(d.sfProb, 1)}%</span></p>
       </div>
     </div>
   );
@@ -466,9 +467,9 @@ export default function KlementSection({ onClose }: { onClose: () => void }) {
                 <p className="text-xs text-gold/70 uppercase tracking-wide font-semibold">Favorito desta simulação (pré-Copa)</p>
                 <p className="text-xl font-bold text-foreground">{winnerTeam.flag} {winnerTeam.name}</p>
                 <p className="text-sm text-muted-foreground">
-                  <span className="font-mono text-gold font-bold">{winner.champProb.toFixed(1)}%</span>
+                  <span className="font-mono text-gold font-bold">{num(winner.champProb, 1)}%</span>
                   {" "}de chance de campeão
-                  {" "}· Final: <span className="font-mono">{winner.finalProb.toFixed(1)}%</span>
+                  {" "}· Final: <span className="font-mono">{num(winner.finalProb, 1)}%</span>
                 </p>
               </div>
             </div>
@@ -565,13 +566,13 @@ export default function KlementSection({ onClose }: { onClose: () => void }) {
                           </td>
                           <td className="px-3 py-2 text-right">
                             <span className={`font-mono font-bold ${r.champProb >= 10 ? "text-gold" : r.champProb >= 5 ? "text-foreground" : r.champProb >= 1 ? "text-foreground/80" : "text-muted-foreground"}`}>
-                              {r.champProb.toFixed(1)}%
+                              {num(r.champProb, 1)}%
                             </span>
                           </td>
-                          <td className="px-3 py-2 text-right font-mono text-foreground/80">{r.finalProb.toFixed(1)}%</td>
-                          <td className="px-3 py-2 text-right font-mono text-muted-foreground hidden sm:table-cell">{r.sfProb.toFixed(1)}%</td>
-                          <td className="px-3 py-2 text-right font-mono text-muted-foreground hidden md:table-cell">{r.strength.toFixed(3)}</td>
-                          <td className="px-3 py-2 text-right text-muted-foreground hidden lg:table-cell">${(t.gdpPerCapita / 1000).toFixed(0)}k</td>
+                          <td className="px-3 py-2 text-right font-mono text-foreground/80">{num(r.finalProb, 1)}%</td>
+                          <td className="px-3 py-2 text-right font-mono text-muted-foreground hidden sm:table-cell">{num(r.sfProb, 1)}%</td>
+                          <td className="px-3 py-2 text-right font-mono text-muted-foreground hidden md:table-cell">{num(r.strength, 3)}</td>
+                          <td className="px-3 py-2 text-right text-muted-foreground hidden lg:table-cell">${num((t.gdpPerCapita / 1000), 0)}k</td>
                           <td className={`px-3 py-2 text-right font-mono hidden lg:table-cell ${tempBad ? "text-negative/70" : "text-positive/70"}`}>{t.avgTemp}°C</td>
                           <td className="px-3 py-2 text-right font-mono text-muted-foreground hidden lg:table-cell">{t.fifaPoints}</td>
                         </tr>

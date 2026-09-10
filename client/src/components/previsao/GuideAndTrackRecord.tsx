@@ -40,7 +40,7 @@ export function SuperforecasterGuide() {
           <div className="px-5 pb-5 space-y-3 border-t border-border/20">
             <p className="text-xs text-muted-foreground mt-4">
               Superforecasters do {FONTE_SUPERFORECASTER} sustentam Brier Score em torno de{" "}
-              <strong className="text-foreground">{BRIER_SUPERFORECASTER.toFixed(2)}</strong> — melhor que
+              <strong className="text-foreground">{num(BRIER_SUPERFORECASTER, 2)}</strong> — melhor que
               analistas de inteligência com acesso a material sigiloso. A nossa IA aplica esse mesmo
               protocolo em cada análise.
             </p>
@@ -168,11 +168,11 @@ export function AiTrackRecord() {
         {/* Calibração fina (rigor: Brier Score) */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <div className="text-center">
-            <p className="text-2xl font-mono font-bold text-gold">{data.aiBrier?.toFixed(3)}</p>
+            <p className="text-2xl font-mono font-bold text-gold">{num(data.aiBrier, 3)}</p>
             <p className="text-[11px] text-muted-foreground mt-0.5">Brier da IA</p>
           </div>
           <div className="text-center">
-            <p className="text-2xl font-mono font-bold text-muted-foreground">{data.marketBrier?.toFixed(3)}</p>
+            <p className="text-2xl font-mono font-bold text-muted-foreground">{num(data.marketBrier, 3)}</p>
             <p className="text-[11px] text-muted-foreground mt-0.5">Brier do mercado</p>
           </div>
           {/* O rótulo era "Bateu o mercado" — as MESMAS palavras que a tela de

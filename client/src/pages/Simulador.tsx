@@ -27,7 +27,7 @@ import {
   Area,
 } from "recharts";
 import { TrendingUp, Activity, Target, Dice5, type LucideIcon } from "lucide-react";
-import { real, reaisExatos, pct } from "@shared/formato";
+import { real, reaisExatos, pct, num } from "@shared/formato";
 import LaboratorioTabs from "@/components/LaboratorioTabs";
 import { useSEO } from "@/hooks/useSEO";
 
@@ -176,8 +176,8 @@ function EVSimulator() {
 
             <Slider id="ev-prob" label="Sua chance real de ganhar" value={prob} min={1} max={99} step={0.5} onChange={setProb} format={(v) => `${v}%`}
               hint="A chance que VOCÊ acredita ser a real — não a que a casa oferece." />
-            <Slider id="ev-odd" label="Odd decimal oferecida" value={odd} min={1.1} max={5} step={0.05} onChange={setOdd} format={(v) => v.toFixed(2)}
-              hint={`Quanto o mercado paga: odd 2.0 dobra a posição. Ela embute ${(100 / odd).toFixed(0)}% de chance.`} />
+            <Slider id="ev-odd" label="Odd decimal oferecida" value={odd} min={1.1} max={5} step={0.05} onChange={setOdd} format={(v) => num(v, 2)}
+              hint={`Quanto o mercado paga: odd 2,0 dobra a posição. Ela embute ${num((100 / odd), 0)}% de chance.`} />
             <div>
               <label className={labelClass} htmlFor="ev-stake">Valor por posição (R$)</label>
               <input id="ev-stake" type="number" min={1} step={10} value={stake}
@@ -199,7 +199,7 @@ function EVSimulator() {
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <ResultStat big label="EV por posição" value={`${isPositive ? "+" : ""}${reaisExatos(evPerBet)}`} tone={isPositive ? "positive" : "negative"} hint="quanto você ganha (ou perde) EM MÉDIA por posição, no longo prazo" />
                 <ResultStat label={`P&L após ${nBets}`} value={`${finalPnL >= 0 ? "+" : ""}${real(finalPnL)}`} tone={finalPnL >= 0 ? "positive" : "negative"} hint="o que deu NESTA amostra (toque 🎲 pra outra)" />
-                <ResultStat label="Você ganhou" value={`${(winRate * 100).toFixed(0)}%`} tone="blue" hint={`das ${nBets} rodadas — você previu ${prob}%`} />
+                <ResultStat label="Você ganhou" value={`${num((winRate * 100), 0)}%`} tone="blue" hint={`das ${nBets} rodadas — você previu ${prob}%`} />
               </div>
             </div>
 
@@ -212,7 +212,7 @@ function EVSimulator() {
                   <XAxis dataKey="n" axisLine={false} tickLine={false} minTickGap={32} tick={{ ...CHART_TICK_STYLE, fontSize: 11 }} label={{ value: "rodadas", position: "insideBottomRight", offset: -4, style: { fontSize: 11, fill: CHART_COLORS.muted } }} />
                   <YAxis axisLine={false} tickLine={false} tick={{ ...CHART_TICK_STYLE, fontSize: 11 }}
                     tickFormatter={formatAxisBRL} />
-                  <Tooltip contentStyle={CHART_TOOLTIP_STYLE} formatter={(v: number, name: string) => [`R$ ${v.toFixed(0)}`, name]} />
+                  <Tooltip contentStyle={CHART_TOOLTIP_STYLE} formatter={(v: number, name: string) => [`R$ ${num(v, 0)}`, name]} />
                   <Legend />
                   <ReferenceLine y={0} stroke={CHART_COLORS.muted} strokeDasharray="3 3" />
                   <Line type="monotone" dataKey="EV_esperado" name="EV esperado" stroke={CHART_COLORS.secondary} strokeWidth={2} dot={false} strokeDasharray="5 3" />
@@ -296,7 +296,7 @@ function KellySimulator() {
 
             <Slider id="k-prob" label="Sua chance real de ganhar" value={prob} min={1} max={99} step={0.5} onChange={setProb} format={(v) => `${v}%`}
               hint="Sua estimativa honesta de acertar." />
-            <Slider id="k-odd" label="Odd decimal" value={odd} min={1.1} max={5} step={0.05} onChange={setOdd} format={(v) => v.toFixed(2)}
+            <Slider id="k-odd" label="Odd decimal" value={odd} min={1.1} max={5} step={0.05} onChange={setOdd} format={(v) => num(v, 2)}
               hint="O retorno pago. Junto com a chance, define o tamanho ideal da posição." />
             <Slider id="k-nbets" label="Número de rodadas" value={nBets} min={50} max={500} step={25} onChange={setNBets}
               hint="Quantas rodadas na sequência." />
@@ -304,9 +304,9 @@ function KellySimulator() {
 
             <div className="p-3 rounded-lg bg-obsidian/50 border border-border/20 space-y-2">
               {[
-                ["Kelly completo", `${(kelly * 100).toFixed(1)}% do bankroll`],
-                ["½ Kelly", `${(halfKelly * 100).toFixed(1)}% do bankroll`],
-                ["Overbet (2× Kelly)", `${(Math.min(kelly * 2, 0.99) * 100).toFixed(1)}% do bankroll`],
+                ["Kelly completo", `${num((kelly * 100), 1)}% do bankroll`],
+                ["½ Kelly", `${num((halfKelly * 100), 1)}% do bankroll`],
+                ["Overbet (2× Kelly)", `${num((Math.min(kelly * 2, 0.99) * 100), 1)}% do bankroll`],
               ].map(([l, v]) => (
                 <div key={l as string} className="flex justify-between text-xs">
                   <span className="text-muted-foreground">{l}</span>
@@ -364,7 +364,7 @@ function KellySimulator() {
                   <XAxis dataKey="n" axisLine={false} tickLine={false} minTickGap={32} tick={{ ...CHART_TICK_STYLE, fontSize: 11 }} />
                   <YAxis axisLine={false} tickLine={false} tick={{ ...CHART_TICK_STYLE, fontSize: 11 }}
                     tickFormatter={formatAxisBRL} />
-                  <Tooltip contentStyle={CHART_TOOLTIP_STYLE} formatter={(v: number, name: string) => [`R$ ${v.toFixed(2)}`, name]} />
+                  <Tooltip contentStyle={CHART_TOOLTIP_STYLE} formatter={(v: number, name: string) => [`R$ ${num(v, 2)}`, name]} />
                   <Legend />
                   <Area type="monotone" dataKey="Kelly" stroke={CHART_COLORS.primary} strokeWidth={2} fill="url(#kg1)" dot={false} />
                   <Area type="monotone" dataKey="½ Kelly" stroke={CHART_COLORS.tertiary} strokeWidth={2} fill="url(#kg2)" dot={false} />
@@ -474,8 +474,8 @@ function CalibracaoSimulator() {
             <div className={`rounded-xl p-4 border ${finalBS < 0.15 ? "border-positive/30 bg-positive/[0.04]" : finalBS < 0.25 ? "border-gold/30 bg-gold/[0.04]" : "border-negative/30 bg-negative/[0.04]"}`}>
               <p className={`text-sm font-bold mb-3 ${bsClass.color}`}>Nota do forecaster: {bsClass.label}</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <ResultStat big label="Brier Score" value={finalBS.toFixed(3)} tone={finalBS < 0.15 ? "positive" : finalBS < 0.25 ? "gold" : "negative"} hint="erro médio da calibração — MENOR é melhor (0 = perfeito, 0,25 = igual a chutar)" />
-                <ResultStat label="Skill Score" value={`${(finalSS * 100).toFixed(0)}%`} tone={finalSS > 0 ? "positive" : "negative"} hint="o quanto você é melhor que chutar 50%. Acima de 0 já é habilidade real" />
+                <ResultStat big label="Brier Score" value={num(finalBS, 3)} tone={finalBS < 0.15 ? "positive" : finalBS < 0.25 ? "gold" : "negative"} hint="erro médio da calibração — MENOR é melhor (0 = perfeito, 0,25 = igual a chutar)" />
+                <ResultStat label="Skill Score" value={`${num((finalSS * 100), 0)}%`} tone={finalSS > 0 ? "positive" : "negative"} hint="o quanto você é melhor que chutar 50%. Acima de 0 já é habilidade real" />
               </div>
             </div>
 
@@ -503,7 +503,7 @@ function CalibracaoSimulator() {
                 <LineChart data={decilData}>
                   <XAxis dataKey="decil" axisLine={false} tickLine={false} tick={{ ...CHART_TICK_STYLE, fontSize: 11 }} />
                   <YAxis axisLine={false} tickLine={false} tick={{ ...CHART_TICK_STYLE, fontSize: 11 }} domain={[0, 100]} tickFormatter={(v: number) => `${v}%`} />
-                  <Tooltip contentStyle={CHART_TOOLTIP_STYLE} formatter={(v: number, name: string) => [`${v.toFixed(1)}%`, name]} />
+                  <Tooltip contentStyle={CHART_TOOLTIP_STYLE} formatter={(v: number, name: string) => [`${num(v, 1)}%`, name]} />
                   <Legend />
                   <ReferenceLine
                     segment={[{ x: "0–10%", y: 5 }, { x: "90–100%", y: 95 }]}

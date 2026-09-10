@@ -18,6 +18,7 @@ import {
   retornoSeAcertar, lucroSeAcertar, precoDoLado, oddsDecimais,
   validarAposta, reais, APOSTA_MINIMA, type Lado,
 } from "@shared/banca";
+import { num } from "@shared/formato";
 
 const VALORES_RAPIDOS = [25, 50, 100, 250];
 
@@ -188,7 +189,7 @@ export function NovaApostaModal({
                   <p className="text-[11px] text-positive/80 uppercase tracking-wider mb-1">Se você acertar</p>
                   <p className="text-lg font-mono font-bold text-positive tabular-nums">{reais(conta.retorno)}</p>
                   <p className="text-[11px] text-muted-foreground mt-0.5">
-                    lucro de {reais(conta.lucro)} · paga {conta.odds.toFixed(2)}×
+                    lucro de {reais(conta.lucro)} · paga {num(conta.odds, 2)}×
                   </p>
                 </div>
                 <div className="p-3 rounded-xl border border-negative/25 bg-negative/5">

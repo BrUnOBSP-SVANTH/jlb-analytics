@@ -4,6 +4,7 @@
 import { useState, useMemo } from "react";
 import { Calculator } from "lucide-react";
 import { CalcCard, FormulaBox, ResultBox, InsightBox, Field, inputClass, labelClass } from "@/components/calculadoras/CalcPrimitives";
+import { num } from "@shared/formato";
 
 interface Outcome { prob: number; payout: number }
 
@@ -50,7 +51,7 @@ export function ValorEsperado() {
 
           <div className="space-y-2">
             <p className={labelClass}>Cenários</p>
-            <p className="text-[11px] text-muted-foreground/80 leading-snug">Probabilidade = a chance REAL que você acredita · Odd = quanto recebe de volta (1.8 = 1,8× a posição).</p>
+            <p className="text-[11px] text-muted-foreground/80 leading-snug">Probabilidade = a chance REAL que você acredita · Odd = quanto recebe de volta (1,8 devolve 1,8× a posição).</p>
             {outcomes.map((o, i) => (
               <div key={i} className="flex gap-2 items-end">
                 <div className="flex-1">
@@ -80,26 +81,26 @@ export function ValorEsperado() {
 
           {probWarning && (
             <div className="p-3 rounded-lg bg-warning/10 border border-warning/20">
-              <p className="text-xs text-warning">Soma das probabilidades: {totalProb.toFixed(1)}% (deveria ser 100%)</p>
+              <p className="text-xs text-warning">Soma das probabilidades: {num(totalProb, 1)}% (deveria ser 100%)</p>
             </div>
           )}
 
-          <FormulaBox formula="E[X] = Σ pᵢ × (oddᵢ − 1)" legend="oddᵢ = retorno total (ex: 1.8 = lucro de 80%)" />
+          <FormulaBox formula="E[X] = Σ pᵢ × (oddᵢ − 1)" legend="oddᵢ = retorno total (ex.: 1,8 é lucro de 80%)" />
         </div>
 
         <div className="space-y-4">
           <ResultBox big label="Valor Esperado por posição" termo="ev"
-            value={`${isPositive ? "+" : ""}R$ ${evReais.toFixed(2)}`}
+            value={`${isPositive ? "+" : ""}R$ ${num(evReais, 2)}`}
             color={evColor}
             hint="Se você fizesse esta posição muitas vezes, ganharia (ou perderia) isso EM MÉDIA por vez."
             sub={`por R$ ${stake} na posição`} />
           <div className="grid grid-cols-2 gap-3">
             <ResultBox label="ROI esperado" termo="roi"
-              value={`${isPositive ? "+" : ""}${roi.toFixed(1)}%`}
+              value={`${isPositive ? "+" : ""}${num(roi, 1)}%`}
               color={evColor}
               hint="retorno médio sobre o que você põe" />
             <ResultBox label="EV por R$ 1" termo="ev"
-              value={`${isPositive ? "+" : ""}R$ ${ev.toFixed(3)}`}
+              value={`${isPositive ? "+" : ""}R$ ${num(ev, 3)}`}
               color={evColor}
               hint="pra comparar posições de tamanhos diferentes" />
           </div>
@@ -121,7 +122,7 @@ export function ValorEsperado() {
             <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-1">Probabilidade implícita da odd</p>
             {outcomes.map((o, i) => (
               <div key={i} className="flex justify-between text-xs mt-1">
-                <span className="text-muted-foreground">Cenário {i + 1} (odd {o.payout.toFixed(2)})</span>
+                <span className="text-muted-foreground">Cenário {i + 1} (odd {num(o.payout, 2)})</span>
                 <span className="font-mono text-foreground">{o.payout > 0 ? (100 / o.payout).toFixed(1) : "—"}%</span>
               </div>
             ))}

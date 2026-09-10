@@ -8,6 +8,7 @@ import {
   Trophy, BarChart2,
 } from "lucide-react";
 import type { StoredPrediction } from "@/lib/predictions";
+import { num } from "@shared/formato";
 
 export function PredictionRow({
   pred,
@@ -24,7 +25,7 @@ export function PredictionRow({
   const savedDate = new Date(pred.savedAt).toLocaleDateString("pt-BR", { day: "2-digit", month: "short" });
 
   function handleShare() {
-    const text = `Previsão JLB Analytics\n📊 ${pred.question}\n🎯 Minha estimativa: ${pred.userProb}% | Mercado: ${pred.marketProb.toFixed(1)}% | Edge: ${edgePp >= 0 ? "+" : ""}${edgePp.toFixed(1)}pp\n${window.location.origin}/previsao`;
+    const text = `Previsão JLB Analytics\n📊 ${pred.question}\n🎯 Minha estimativa: ${pred.userProb}% | Mercado: ${num(pred.marketProb, 1)}% | Edge: ${edgePp >= 0 ? "+" : ""}${num(edgePp, 1)}pp\n${window.location.origin}/previsao`;
     navigator.clipboard.writeText(text).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
@@ -57,15 +58,15 @@ export function PredictionRow({
               Você: <span className="text-gold font-semibold">{pred.userProb}%</span>
             </span>
             <span className="text-[11px] font-mono">
-              Mercado: <span className="text-muted-foreground">{pred.marketProb.toFixed(1)}%</span>
+              Mercado: <span className="text-muted-foreground">{num(pred.marketProb, 1)}%</span>
             </span>
             <span className={`text-[11px] font-mono font-semibold ${edgeColor}`}>
-              Edge: {edgePp >= 0 ? "+" : ""}{edgePp.toFixed(1)}pp
+              Edge: {edgePp >= 0 ? "+" : ""}{num(edgePp, 1)}pp
             </span>
             {pred.resolved && pred.brierScore !== null && (
               <span className="text-[11px] font-mono">
                 BS: <span className={pred.brierScore < 0.1 ? "text-positive" : pred.brierScore < 0.25 ? "text-warning" : "text-negative"}>
-                  {pred.brierScore.toFixed(3)}
+                  {num(pred.brierScore, 3)}
                 </span>
               </span>
             )}
@@ -225,7 +226,7 @@ export function UserVsMarket({ preds }: { preds: StoredPrediction[] }) {
             </div>
             <div>
               <p className={`text-[11px] font-semibold ${calibPercentile >= 70 ? "text-positive" : calibPercentile >= 40 ? "text-gold" : "text-foreground"}`}>{calibLabel}</p>
-              <p className="text-[11px] text-muted-foreground">Brier médio: {avgBrier.toFixed(3)} · percentil estimado vs. forecasters globais</p>
+              <p className="text-[11px] text-muted-foreground">Brier médio: {num(avgBrier, 3)} · percentil estimado vs. forecasters globais</p>
             </div>
           </div>
         )}
@@ -256,7 +257,7 @@ export function UserVsMarket({ preds }: { preds: StoredPrediction[] }) {
                     <div className={`h-full rounded-full ${bs < 0.1 ? "bg-positive" : bs < 0.2 ? "bg-warning" : "bg-negative"}`}
                       style={{ width: `${barW}%` }} />
                   </div>
-                  <span className={`text-[11px] font-mono font-bold ${color} w-12 text-right`}>{bs.toFixed(3)}</span>
+                  <span className={`text-[11px] font-mono font-bold ${color} w-12 text-right`}>{num(bs, 3)}</span>
                   <span className="text-[11px] text-gold">{"★".repeat(stars)}</span>
                   <span className="text-[11px] text-muted-foreground">({count})</span>
                 </div>

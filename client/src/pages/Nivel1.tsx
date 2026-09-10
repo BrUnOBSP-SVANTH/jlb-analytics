@@ -14,6 +14,7 @@ import { awardPoints } from "@/lib/userProgress";
 import { useSEO } from "@/hooks/useSEO";
 import LevelNav from "@/components/LevelNav";
 import PageHeader from "@/components/PageHeader";
+import { num } from "@shared/formato";
 
 // ─── Tipos de resposta da API ─────────────────────────────────────────────────
 interface EVResult {
@@ -139,14 +140,14 @@ function EVCalculator() {
             <span className="text-xs text-muted-foreground">Valor Esperado</span>
             <div className="flex items-center gap-2">
               <span className={`text-lg font-bold ${data.signal === "positive" ? "text-positive" : data.signal === "negative" ? "text-negative" : "text-foreground"}`}>
-                R$ {data.value >= 0 ? "+" : ""}{data.value.toFixed(2)}
+                R$ {data.value >= 0 ? "+" : ""}{num(data.value, 2)}
               </span>
               <SignalBadge signal={data.signal} />
             </div>
           </div>
           <div className="flex justify-between text-xs text-muted-foreground">
             <span>Desvio padrão</span>
-            <span>± {data.std.toFixed(4)}</span>
+            <span>± {num(data.std, 4)}</span>
           </div>
           <ExplanationBox text={data.explanation} />
         </div>
@@ -210,7 +211,7 @@ function HouseEdgeCalculator() {
           <div className="flex items-center justify-between">
             <span className="text-xs text-muted-foreground">Margem da casa</span>
             <div className="flex items-center gap-2">
-              <span className="text-xl font-bold text-negative">{data.margin_pct.toFixed(2)}%</span>
+              <span className="text-xl font-bold text-negative">{num(data.margin_pct, 2)}%</span>
               <SignalBadge signal={data.signal} />
             </div>
           </div>
@@ -226,7 +227,7 @@ function HouseEdgeCalculator() {
                 <div key={i} className="flex justify-between text-xs">
                   <span className="text-muted-foreground">{labels[i] ?? `R${i+1}`}</span>
                   <span className="text-foreground">
-                    Implícita: <strong>{(imp * 100).toFixed(1)}%</strong> → Justa: <strong>{(data.fair_probs[i] * 100).toFixed(1)}%</strong>
+                    Implícita: <strong>{num((imp * 100), 1)}%</strong> → Justa: <strong>{num((data.fair_probs[i] * 100), 1)}%</strong>
                   </span>
                 </div>
               ))}
@@ -274,7 +275,7 @@ function BayesCalculator() {
               className="w-full accent-primary"
             />
             <div className="flex justify-between text-xs text-muted-foreground mt-0.5">
-              <span>0%</span><span className="font-medium text-foreground">{(parseFloat(value) * 100).toFixed(0)}%</span><span>100%</span>
+              <span>0%</span><span className="font-medium text-foreground">{num((parseFloat(value) * 100), 0)}%</span><span>100%</span>
             </div>
           </div>
         ))}
@@ -296,23 +297,23 @@ function BayesCalculator() {
           </div>
           <div className="flex items-center gap-3">
             <div className="text-center">
-              <div className="text-lg font-bold text-foreground">{(data.prior * 100).toFixed(1)}%</div>
+              <div className="text-lg font-bold text-foreground">{num((data.prior * 100), 1)}%</div>
               <div className="text-xs text-muted-foreground">Antes</div>
             </div>
             <div className="flex-1 h-0.5 bg-border/30 relative">
               <div className={`absolute right-0 text-xs font-bold ${data.delta > 0 ? "text-positive" : "text-negative"}`}>
-                {data.delta > 0 ? "+" : ""}{(data.delta * 100).toFixed(1)} pp
+                {data.delta > 0 ? "+" : ""}{num((data.delta * 100), 1)} pp
               </div>
             </div>
             <div className="text-center">
               <div className={`text-lg font-bold ${data.signal === "positive" ? "text-positive" : data.signal === "negative" ? "text-negative" : "text-foreground"}`}>
-                {(data.posterior * 100).toFixed(1)}%
+                {num((data.posterior * 100), 1)}%
               </div>
               <div className="text-xs text-muted-foreground">Depois</div>
             </div>
           </div>
           <div className="text-xs text-muted-foreground">
-            Fator de Bayes: <span className="text-foreground font-medium">{data.bayes_factor === Infinity ? "∞" : data.bayes_factor.toFixed(2)}×</span>
+            Fator de Bayes: <span className="text-foreground font-medium">{data.bayes_factor === Infinity ? "∞" : num(data.bayes_factor, 2)}×</span>
             {" "}— {data.bayes_factor > 10 ? "evidência forte" : data.bayes_factor > 3 ? "evidência moderada" : "evidência fraca"}
           </div>
           <ExplanationBox text={data.explanation} />
@@ -344,7 +345,7 @@ export default function Nivel1() {
         <AlertCircle className="w-4 h-4 text-warning shrink-0 mt-0.5" />
         <div className="text-xs text-muted-foreground leading-relaxed">
           <strong className="text-foreground">Antes de usar qualquer calculadora:</strong>{" "}
-          odds decimais já embutem a margem da casa. Uma odd de 2.00 não significa 50% de probabilidade real —
+          odds decimais já embutem a margem da casa. Uma odd de 2,00 não significa 50% de probabilidade real —
           significa que a casa estima a probabilidade real em algo menor que 50% e cobra a diferença.
           A Calculadora de Margem abaixo torna isso visível.
         </div>

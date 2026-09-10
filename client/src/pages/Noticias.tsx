@@ -19,6 +19,7 @@ import { type Article, type PolyMarket, type KalshiMarket, type RedditPost, days
 import { ArticleDetailModal } from "@/components/noticias/AnalysisModals";
 import { loadPredictions, type StoredPrediction } from "@/lib/predictions";
 import { useSEO } from "@/hooks/useSEO";
+import { num } from "@shared/formato";
 
 // ── Articles ───────────────────────────────────────────────────────────────
 
@@ -259,10 +260,10 @@ export default function Noticias() {
               <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">{recentSaves[0].question}</p>
               <p className="text-xs text-muted-foreground">
                 Sua estimativa: <span className="font-mono text-foreground">{recentSaves[0].userProb}%</span>
-                {" "}· Mercado: <span className="font-mono">{recentSaves[0].marketProb.toFixed(1)}%</span>
+                {" "}· Mercado: <span className="font-mono">{num(recentSaves[0].marketProb, 1)}%</span>
                 {" "}· Edge: <span className={`font-mono ${recentSaves[0].userProb - recentSaves[0].marketProb > 0 ? "text-positive" : "text-negative"}`}>
                   {recentSaves[0].userProb - recentSaves[0].marketProb > 0 ? "+" : ""}
-                  {(recentSaves[0].userProb - recentSaves[0].marketProb).toFixed(1)}pp
+                  {num((recentSaves[0].userProb - recentSaves[0].marketProb), 1)}pp
                 </span>
               </p>
             </div>

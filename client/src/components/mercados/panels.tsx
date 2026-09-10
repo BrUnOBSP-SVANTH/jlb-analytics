@@ -13,6 +13,7 @@ import { awardPoints } from "@/lib/userProgress";
 import { maybeAuthGate } from "@/lib/upgrade";
 import { VolumeTrend } from "@/components/mercados/cards";
 import { apiFetch } from "@/lib/api";
+import { num } from "@shared/formato";
 
 function calcEV(yourProb: number, marketProb: number): number {
   if (marketProb <= 0 || marketProb >= 1) return 0;
@@ -63,25 +64,25 @@ function EdgeCalculator({ marketProb }: { marketProb: number }) {
         <div className={`p-2.5 rounded-lg border ${evNeutral ? "border-border/20 bg-secondary/10" : hasValue ? "border-positive/20 bg-positive/5" : "border-negative/20 bg-negative/5"}`}>
           <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-1">Valor Esperado (EV)</p>
           <p className={`text-base font-mono font-bold ${evNeutral ? "text-muted-foreground" : hasValue ? "text-positive" : "text-negative"}`}>
-            {evNeutral ? "0.0" : `${ev >= 0 ? "+" : ""}${(ev * 100).toFixed(1)}`}%
+            {evNeutral ? "0.0" : `${ev >= 0 ? "+" : ""}${num((ev * 100), 1)}`}%
           </p>
           <p className="text-[11px] text-muted-foreground mt-0.5">por real na posição</p>
         </div>
         <div className={`p-2.5 rounded-lg border ${edge > 0 ? "border-neon-blue/20 bg-neon-blue/5" : "border-border/20 bg-secondary/10"}`}>
           <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-1">Edge vs Mercado</p>
           <p className={`text-base font-mono font-bold ${edge > 0 ? "text-neon-blue" : "text-muted-foreground"}`}>
-            {edge >= 0 ? "+" : ""}{(edge * 100).toFixed(1)}pp
+            {edge >= 0 ? "+" : ""}{num((edge * 100), 1)}pp
           </p>
           <p className="text-[11px] text-muted-foreground mt-0.5">Mercado: {Math.round(marketProb * 100)}% | Você: {yourPct}%</p>
         </div>
         <div className="p-2.5 rounded-lg border border-gold/20 bg-gold/5">
           <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-1">Kelly Completo</p>
-          <p className="text-base font-mono font-bold text-gold">{(kelly * 100).toFixed(1)}%</p>
+          <p className="text-base font-mono font-bold text-gold">{num((kelly * 100), 1)}%</p>
           <p className="text-[11px] text-muted-foreground mt-0.5">da banca</p>
         </div>
         <div className="p-2.5 rounded-lg border border-gold/10 bg-gold/[0.03]">
           <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-1">½ Kelly (recomendado)</p>
-          <p className="text-base font-mono font-bold text-gold/70">{(halfKelly * 100).toFixed(1)}%</p>
+          <p className="text-base font-mono font-bold text-gold/70">{num((halfKelly * 100), 1)}%</p>
           <p className="text-[11px] text-muted-foreground mt-0.5">da banca</p>
         </div>
       </div>
@@ -89,7 +90,7 @@ function EdgeCalculator({ marketProb }: { marketProb: number }) {
         <Zap className={`w-3 h-3 shrink-0 ${hasValue ? "text-positive" : "text-muted-foreground"}`} />
         <p className="text-[11px] leading-relaxed">
           {hasValue
-            ? `Valor positivo detectado. Com ½ Kelly: arrisque ${(halfKelly * 100).toFixed(1)}% da banca. EV de longo prazo: ${(ev * 100).toFixed(1)}% por posição.`
+            ? `Valor positivo detectado. Com ½ Kelly: arrisque ${num((halfKelly * 100), 1)}% da banca. EV de longo prazo: ${num((ev * 100), 1)}% por posição.`
             : evNeutral
             ? "EV zero — sua estimativa coincide com o preço do mercado. Não há vantagem matemática de nenhum lado."
             : "Sem valor com esta estimativa — o mercado está pagando menos do que sua probabilidade justifica. Reduza o tamanho ou reavalie."}
@@ -100,10 +101,10 @@ function EdgeCalculator({ marketProb }: { marketProb: number }) {
           <Info className="w-3 h-3" />Como foi calculado
         </summary>
         <div className="mt-2 p-2.5 rounded-lg bg-obsidian/40 border border-border/20 space-y-1.5 text-[11px] text-muted-foreground font-mono">
-          <p>Odds justas = 1 ÷ {marketProb.toFixed(2)} = {(1/marketProb).toFixed(2)}x</p>
-          <p>b (ganho líquido) = {(1/marketProb).toFixed(2)} − 1 = {(1/marketProb - 1).toFixed(2)}</p>
-          <p>EV = {yourProb.toFixed(2)} × {(1/marketProb - 1).toFixed(2)} − {(1-yourProb).toFixed(2)} = {ev.toFixed(3)}</p>
-          <p>Kelly = (b×p − q) ÷ b = {kelly.toFixed(3)}</p>
+          <p>Odds justas = 1 ÷ {num(marketProb, 2)} = {num((1/marketProb), 2)}x</p>
+          <p>b (ganho líquido) = {num((1/marketProb), 2)} − 1 = {num((1/marketProb - 1), 2)}</p>
+          <p>EV = {num(yourProb, 2)} × {num((1/marketProb - 1), 2)} − {num((1-yourProb), 2)} = {num(ev, 3)}</p>
+          <p>Kelly = (b×p − q) ÷ b = {num(kelly, 3)}</p>
         </div>
       </details>
     </div>
@@ -191,7 +192,7 @@ export function MarketAnalysis({ item }: { item: TrendingItem }) {
                     style={{ width: `${Math.min(100, Math.abs(ev) * 200)}%` }} />
                 </div>
                 <span className={`text-[11px] font-mono w-16 text-right ${hasVal ? "text-positive" : "text-negative/70"}`}>
-                  EV {ev >= 0 ? "+" : ""}{(ev * 100).toFixed(1)}%
+                  EV {ev >= 0 ? "+" : ""}{num((ev * 100), 1)}%
                 </span>
               </div>
             );

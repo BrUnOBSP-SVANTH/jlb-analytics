@@ -13,7 +13,7 @@ import ContaTabs from "@/components/ContaTabs";
 import AnimatedSection from "@/components/AnimatedSection";
 import { useSEO } from "@/hooks/useSEO";
 import { useAuth } from "@/contexts/AuthContext";
-import { plural } from "@shared/formato";
+import { plural, num } from "@shared/formato";
 import { loadProgress, niveisConcluidos, faltamParaDestravar, NIVEIS_PARA_DESTRAVAR, type ActivityType } from "@/lib/userProgress";
 import { loadPredictions, meanBrierScore, skillScore } from "@/lib/predictions";
 import { pullFromSupabase } from "@/lib/predictionsSync";
@@ -400,7 +400,7 @@ export default function Perfil() {
                             <span>Real: <span className={pred.outcome ? "text-positive font-semibold" : "text-negative font-semibold"}>{pred.outcome ? "SIM" : "NÃO"}</span></span>
                           )}
                           {pred.brierScore !== null && (
-                            <span>Brier: {pred.brierScore.toFixed(3)}</span>
+                            <span>Brier: {num(pred.brierScore, 3)}</span>
                           )}
                           <span>{fmtDate(pred.savedAt)}</span>
                           {pred.resolved && pred.resolutionSource && (

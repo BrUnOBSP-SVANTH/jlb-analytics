@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { useSEO } from "@/hooks/useSEO";
 import PageHeader from "@/components/PageHeader";
+import { num } from "@shared/formato";
 
 interface FeedItem {
   source: "polymarket" | "kalshi";
@@ -40,7 +41,7 @@ function MovementChip({ delta }: { delta: number | null }) {
   const Icon = up ? TrendingUp : TrendingDown;
   return (
     <span className={`inline-flex items-center gap-1 text-[11px] font-semibold ${up ? "text-positive" : "text-negative"}`}>
-      <Icon className="w-3 h-3" />{up ? "+" : ""}{delta.toFixed(1)} pts / 7d
+      <Icon className="w-3 h-3" />{up ? "+" : ""}{num(delta, 1)} pts / 7d
     </span>
   );
 }
@@ -50,8 +51,8 @@ function prose(it: FeedItem): string {
   const mv = it.delta7d == null || Math.abs(it.delta7d) < 0.5
     ? ""
     : it.delta7d > 0
-      ? `, em alta de ${it.delta7d.toFixed(1)} pts na semana`
-      : `, em queda de ${Math.abs(it.delta7d).toFixed(1)} pts na semana`;
+      ? `, em alta de ${num(it.delta7d, 1)} pts na semana`
+      : `, em queda de ${num(Math.abs(it.delta7d), 1)} pts na semana`;
   return `há ${it.prob}% de chance${mv}, segundo o mercado preditivo`;
 }
 

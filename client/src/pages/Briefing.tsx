@@ -16,6 +16,7 @@ import { track } from "@/lib/analytics";
 import AnaliseTabs from "@/components/AnaliseTabs";
 import PageHeader from "@/components/PageHeader";
 import { useSEO } from "@/hooks/useSEO";
+import { num } from "@shared/formato";
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 
@@ -110,7 +111,7 @@ function QuickPredict({ market, marketProb }: { market: string; marketProb: numb
       <div className="flex items-center justify-between">
         <p className="text-[11px] font-semibold text-foreground uppercase tracking-wide">Minha estimativa</p>
         <span className={`text-xs font-mono font-bold ${edgeColor}`}>
-          Edge: {edge >= 0 ? "+" : ""}{edge.toFixed(0)}pp
+          Edge: {edge >= 0 ? "+" : ""}{num(edge, 0)}pp
         </span>
       </div>
       <div className="space-y-1">
@@ -207,7 +208,7 @@ function ExpiringPredictions({ preds }: { preds: StoredPrediction[] }) {
                 <div className="flex items-center gap-3 mt-1">
                   <span className="text-[11px] text-muted-foreground">{age} dias atrás</span>
                   <span className="text-[11px] font-mono text-gold">{p.userProb}% SIM</span>
-                  <span className="text-[11px] text-muted-foreground">Mercado: {p.marketProb.toFixed(1)}%</span>
+                  <span className="text-[11px] text-muted-foreground">Mercado: {num(p.marketProb, 1)}%</span>
                 </div>
               </div>
             </div>

@@ -4,7 +4,7 @@
 import { useState } from "react";
 import { TrendingUp } from "lucide-react";
 import { CalcCard, FormulaBox, ResultBox, InsightBox, Field, inputClass } from "@/components/calculadoras/CalcPrimitives";
-import { reaisExatos } from "@shared/formato";
+import { reaisExatos, num } from "@shared/formato";
 
 export function KellyCalc() {
   const [prob, setProb] = useState(55);
@@ -48,10 +48,10 @@ export function KellyCalc() {
           <div className="p-3 rounded-lg bg-obsidian/50 border border-border/20 space-y-1">
             <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-1">Decomposição</p>
             {[
-              ["Prob. implícita da odd", `${(impliedProb * 100).toFixed(1)}%`, false],
-              ["Sua estimativa", `${prob.toFixed(1)}%`, false],
-              ["Edge (vantagem)", `${(edge * 100).toFixed(2)}%`, true],
-              ["Retorno líquido (b)", `${(b * 100).toFixed(1)}%`, false],
+              ["Prob. implícita da odd", `${num((impliedProb * 100), 1)}%`, false],
+              ["Sua estimativa", `${num(prob, 1)}%`, false],
+              ["Edge (vantagem)", `${num((edge * 100), 2)}%`, true],
+              ["Retorno líquido (b)", `${num((b * 100), 1)}%`, false],
             ].map(([l, v, colored]) => (
               <div key={l as string} className="flex justify-between text-xs">
                 <span className="text-muted-foreground">{l}</span>
@@ -67,22 +67,22 @@ export function KellyCalc() {
               <p className="text-sm font-semibold text-negative">EV negativo — Kelly = 0%</p>
               <p className="text-xs text-muted-foreground mt-1">
                 Com esta probabilidade e odd, o Kelly recomenda não entrar.
-                A odd implica {(impliedProb * 100).toFixed(1)}% mas você estima {prob}%.
+                A odd implica {num((impliedProb * 100), 1)}% mas você estima {prob}%.
               </p>
             </div>
           ) : (
             <>
               <ResultBox big label="½ Kelly — quanto pôr"
-                value={`${(halfKelly * 100).toFixed(1)}%`}
+                value={`${num((halfKelly * 100), 1)}%`}
                 color="text-positive"
                 hint={`Aplique esta fração da banca — ${reaisExatos(halfStake)}. É o padrão de quem faz isso a sério: cresce quase igual ao Kelly cheio, com muito menos risco.`} />
               <div className="grid grid-cols-2 gap-3">
                 <ResultBox label="Kelly completo" termo="kelly"
-                  value={`${(kelly * 100).toFixed(1)}%`}
+                  value={`${num((kelly * 100), 1)}%`}
                   color="text-gold"
-                  hint={`o máximo matemático (R$ ${kellyStake.toFixed(0)}) — mais volátil`} />
+                  hint={`o máximo matemático (R$ ${num(kellyStake, 0)}) — mais volátil`} />
                 <ResultBox label="¼ Kelly (cauteloso)"
-                  value={`${(quarterKelly * 100).toFixed(1)}%`}
+                  value={`${num((quarterKelly * 100), 1)}%`}
                   color="text-neon-blue"
                   hint="quando você não tem certeza da sua estimativa" />
               </div>

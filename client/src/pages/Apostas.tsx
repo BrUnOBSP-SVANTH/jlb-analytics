@@ -24,6 +24,7 @@ import { CompactRow } from "@/components/mercados/CompactRow";
 import { LoadingSkeleton } from "@/components/mercados/LoadingSkeleton";
 import { DivergencesSection } from "@/components/mercados/DivergencesSection";
 import { casaBusca } from "@/lib/marketSearch";
+import { num } from "@shared/formato";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -112,7 +113,7 @@ export default function Apostas() {
   // Mostra toast quando chega alerta WS para item da watchlist
   useEffect(() => {
     if (!latestAlert) return;
-    const dir = latestAlert.delta > 0 ? `+${latestAlert.delta.toFixed(1)}pp ↑` : `${latestAlert.delta.toFixed(1)}pp ↓`;
+    const dir = latestAlert.delta > 0 ? `+${num(latestAlert.delta, 1)}pp ↑` : `${num(latestAlert.delta, 1)}pp ↓`;
     const shortTitle = latestAlert.title.slice(0, 65) + (latestAlert.title.length > 65 ? "…" : "");
     toast(`⚡ Watchlist: ${dir}`, { description: shortTitle, duration: 8000 });
   }, [latestAlert]);
@@ -156,7 +157,7 @@ export default function Apostas() {
       const watchAlerts = updateWatchlistProbs(watchedInView.map((i) => ({ id: i.id, prob: i.yesProb! })));
       if (silent) {
         watchAlerts.forEach((a) => {
-          const dir = a.delta > 0 ? `+${a.delta.toFixed(1)}pp ↑` : `${a.delta.toFixed(1)}pp ↓`;
+          const dir = a.delta > 0 ? `+${num(a.delta, 1)}pp ↑` : `${num(a.delta, 1)}pp ↓`;
           const shortTitle = a.title.slice(0, 65) + (a.title.length > 65 ? "…" : "");
           toast(`🔔 Watchlist: ${dir}`, { description: shortTitle, duration: 8000 });
           sendMarketNotification(`🔔 Watchlist: ${dir}`, shortTitle);

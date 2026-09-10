@@ -6,6 +6,7 @@
 import { useState, useEffect, useRef, useId } from "react";
 import type { DynamicBadge, Source } from "@/lib/trending";
 import { historicoDoToken, type PontoPreco } from "@/lib/historicoPreco";
+import { num } from "@shared/formato";
 
 // ─── Sparkline ───────────────────────────────────────────────────────────────
 
@@ -84,7 +85,7 @@ export function ProbSparkline({ tokenIds, marketId, source }: {
   const emY = (p: number) => H - PAD - ((p - minP) / range) * (H - PAD * 2);
 
   const coords = pts.map((h, i) => ({ x: emX(i), y: emY(h.p) }));
-  const linha = coords.map((c, i) => `${i === 0 ? "M" : "L"}${c.x.toFixed(1)},${c.y.toFixed(1)}`).join(" ");
+  const linha = coords.map((c, i) => `${i === 0 ? "M" : "L"}${num(c.x, 1)},${num(c.y, 1)}`).join(" ");
   // Área = a linha fechada até a base. É o que transforma um risco solto em
   // gráfico: dá volume e deixa claro de que lado está o preenchimento.
   const area = `${linha} L${W},${H} L0,${H} Z`;
@@ -181,7 +182,7 @@ export function VolumeTrend({ volume, volume24h }: { volume?: number; volume24h?
   const isStrong = ratio > 0.2;
   return (
     <span className={`text-[11px] font-mono ${isStrong ? "text-positive" : "text-muted-foreground"}`}
-      title={`${(ratio * 100).toFixed(0)}% do volume total nas últimas 24h`}>
+      title={`${num((ratio * 100), 0)}% do volume total nas últimas 24h`}>
       {isStrong ? "↑↑" : "↑"}
     </span>
   );

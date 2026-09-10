@@ -16,6 +16,7 @@ import {
   Swords, LogIn, Plus, RefreshCw, Clock, Trophy, X,
   ChevronRight, Shield, Scale, Info,
 } from "lucide-react";
+import { num } from "@shared/formato";
 
 // ── Tipos ──────────────────────────────────────────────────────────────────
 
@@ -553,11 +554,11 @@ export default function Duelos() {
                         <div className="mt-3 pt-3 border-t border-border/15 grid grid-cols-2 gap-3 text-center">
                           <div>
                             <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-0.5">Seu Brier</p>
-                            <p className={`text-lg font-mono font-bold ${d.won ? "text-positive" : "text-foreground"}`}>{myBrier.toFixed(3)}</p>
+                            <p className={`text-lg font-mono font-bold ${d.won ? "text-positive" : "text-foreground"}`}>{num(myBrier, 3)}</p>
                           </div>
                           <div>
                             <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-0.5">Brier de {vsName}</p>
-                            <p className="text-lg font-mono font-bold text-muted-foreground">{theirBrier.toFixed(3)}</p>
+                            <p className="text-lg font-mono font-bold text-muted-foreground">{num(theirBrier, 3)}</p>
                           </div>
                         </div>
                       )}

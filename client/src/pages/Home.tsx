@@ -5,7 +5,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/lib/supabase";
-import { dolar } from "@shared/formato";
+import { dolar, reaisExatos, num } from "@shared/formato";
 import { buscarJson } from "@/lib/api";
 import { getMarkets, getAllMarkets } from "@/lib/marketsCache";
 import { useSEO } from "@/hooks/useSEO";
@@ -329,7 +329,7 @@ export default function Home() {
               <>
                 <span className="flex items-center gap-1.5">
                   <span className="text-[11px] font-bold text-muted-foreground uppercase">Selic</span>
-                  <strong className="text-foreground font-mono">{macro.selic.toFixed(2)}%</strong>
+                  <strong className="text-foreground font-mono">{num(macro.selic, 2)}%</strong>
                 </span>
                 <span className="hidden sm:inline text-border/60">·</span>
               </>
@@ -338,16 +338,21 @@ export default function Home() {
               <>
                 <span className="flex items-center gap-1.5">
                   <span className="text-[11px] font-bold text-muted-foreground uppercase">IPCA</span>
-                  <strong className="text-foreground font-mono">{macro.ipca.toFixed(2)}%</strong>
+                  <strong className="text-foreground font-mono">{num(macro.ipca, 2)}%</strong>
                 </span>
                 <span className="hidden sm:inline text-border/60">·</span>
               </>
             )}
+            {/* HOME-05: saía como "R$5.10" — ponto decimal e sem espaço, num
+                indicador em reais. O briefing do mesmo dia escrevia "R$ 5,09": a
+                diferença de centavo é o horário da leitura (as duas telas leem
+                /api/rates em momentos diferentes), mas a de PONTUAÇÃO era erro.
+                Com o horário ao lado, a diferença deixa de parecer contradição. */}
             {macro.usdBrl != null && (
               <>
-                <span className="flex items-center gap-1.5">
+                <span className="flex items-center gap-1.5" title={`Leitura de ${new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}`}>
                   <span className="text-[11px] font-bold text-muted-foreground uppercase">USD/BRL</span>
-                  <strong className="text-foreground font-mono">R${macro.usdBrl.toFixed(2)}</strong>
+                  <strong className="text-foreground font-mono">{reaisExatos(macro.usdBrl)}</strong>
                 </span>
                 <span className="hidden sm:inline text-border/60">·</span>
               </>
