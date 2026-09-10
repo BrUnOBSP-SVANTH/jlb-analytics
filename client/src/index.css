@@ -177,8 +177,17 @@
   * {
     @apply border-border outline-ring/50;
   }
+  /* TRV-15 + HOME-06: o link "Pular para o conteúdo" e as âncoras funcionavam,
+     mas o alvo aterrissava ATRÁS do header de 85px — o usuário chegava no lugar
+     certo e via a seção anterior. `scroll-padding-top` desconta o header.
+
+     E o `smooth` fica dentro de `no-preference`: rolagem animada é justamente o
+     que enjoa quem pediu menos movimento. */
   html {
-    scroll-behavior: smooth;
+    scroll-padding-top: 96px;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    html { scroll-behavior: smooth; }
   }
   body {
     @apply bg-background text-foreground;
@@ -293,6 +302,22 @@
   /* Em tela larga tudo cabe: a máscara só cortaria conteúdo à toa. */
   @media (min-width: 768px) {
     .rolagem-lateral { -webkit-mask-image: none; mask-image: none; }
+  }
+
+  /* ── ALVO DE TOQUE ────────────────────────────────────────────────────────
+     A auditoria mediu 60 elementos interativos: 56 abaixo de 44px na menor
+     dimensão e 41 abaixo de 32px. O botão "Buscar" tinha 26px de altura.
+
+     44×44 é o mínimo da WCAG 2.5.5; a 2.5.8 aceita 24×24 como piso absoluto.
+     Não é detalhe de acessibilidade formal: num celular, alvo de 26px é o que
+     faz a pessoa errar o botão e sair da conta sem querer (era literalmente o
+     caso do "sair" no header mobile).
+
+     A área cresce por padding, não por tamanho de fonte — o botão continua
+     parecendo do mesmo tamanho, só fica mais fácil de acertar. */
+  .alvo-toque {
+    min-height: 44px;
+    min-width: 44px;
   }
 
   /* Seleção de texto com o dourado da marca */

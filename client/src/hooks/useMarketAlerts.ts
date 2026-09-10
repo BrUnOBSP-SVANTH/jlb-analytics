@@ -7,6 +7,7 @@
  */
 
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { filtrarAlertas, MAX_ALERTAS } from "@/lib/alertas";
 
 export interface MarketAlert {
   id: string;
@@ -28,20 +29,24 @@ interface WsMarketAlertsPayload {
 }
 
 const RECONNECT_DELAY = 7_000;
-const MAX_ALERTS = 50;
-const HISTORY_KEY = "jlb_alert_history_v1";
+// v2: a chave subiu de versão junto com a régua de `lib/alertas` — a lista
+// antiga guardava 50 itens com duplicatas e mercados liquidados dentro, e
+// reaproveitá-la manteria o badge cravado em "9+" mesmo com o bug corrigido.
+const HISTORY_KEY = "jlb_alert_history_v2";
 const LAST_READ_KEY = "jlb_alert_last_read";
-const MAX_STORED = 50;
 
 function loadStoredAlerts(): MarketAlert[] {
   try {
     const raw = localStorage.getItem(HISTORY_KEY);
-    return raw ? JSON.parse(raw) as MarketAlert[] : [];
+    // Passa pela mesma régua na leitura: o que foi gravado antes de a regra
+    // existir não pode voltar como ruído ao recarregar a página.
+    return raw ? filtrarAlertas(JSON.parse(raw) as MarketAlert[]) : [];
   } catch { return []; }
 }
 
 function saveAlerts(alerts: MarketAlert[]) {
-  localStorage.setItem(HISTORY_KEY, JSON.stringify(alerts.slice(0, MAX_STORED)));
+  try { localStorage.setItem(HISTORY_KEY, JSON.stringify(alerts.slice(0, MAX_ALERTAS))); }
+  catch { /* navegador sem storage: o sino ainda funciona nesta sessão */ }
 }
 
 function getLastReadTime(): number {
@@ -84,11 +89,14 @@ export function useMarketAlerts(watchlistIds?: Set<string>) {
           if (incoming.length === 0) return;
 
           setAlerts((prev) => {
-            const next = [...incoming, ...prev].slice(0, MAX_ALERTS);
+            const next = filtrarAlertas([...incoming, ...prev]);
             saveAlerts(next);
             return next;
           });
-          setLatestAlert(incoming[0]);
+          // O toast só aparece para o que sobreviveu à régua: alerta de mercado
+          // já liquidado interrompia o usuário para não dizer nada.
+          const primeiro = filtrarAlertas(incoming)[0];
+          if (primeiro) setLatestAlert(primeiro);
         } catch { /* ignore malformed */ }
       };
 
