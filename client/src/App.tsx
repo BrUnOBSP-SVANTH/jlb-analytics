@@ -102,8 +102,17 @@ function Router() {
               <Route path="/nivel/3"      component={Nivel3} />
               <Route path="/nivel/4"      component={Nivel4} />
               <Route path="/nivel/5"      component={Nivel5} />
-              <Route path="/apostas/:id"  component={MarketDetail} />
-              <Route path="/apostas"      component={Apostas} />
+              {/* NEG-01: a rota canônica é /mercados.
+                  Os Termos dizem "não somos uma casa de apostas" e a rota
+                  principal do site era /apostas — com "Aposte dinheiro
+                  fictício", "½ Kelly (RECOMENDADO)" e comparação nominal com
+                  uma casa de apostas. A auditoria apontou o risco: com a Lei
+                  14.790/2023 e as regras de publicidade de apostas no Brasil, a
+                  ambiguidade traz exposição regulatória, de meio de pagamento e
+                  de loja de aplicativos.
+                  O produto é educação quantitativa, e agora a URL diz isso. */}
+              <Route path="/mercados/:id" component={MarketDetail} />
+              <Route path="/mercados"     component={Apostas} />
               <Route path="/simulador"    component={Simulador} />
               <Route path="/noticias"     component={Noticias} />
               <Route path="/calculadoras" component={Calculadoras} />
@@ -120,7 +129,11 @@ function Router() {
               <Route path="/termos"       component={Termos} />
               <Route path="/privacidade"  component={Privacidade} />
               {/* Redirects backward compat */}
-              {["/mercado","/mercados"].map(p => <Route key={p} path={p}>{() => { window.location.replace("/apostas"); return null; }}</Route>)}
+              {/* /apostas continua funcionando: link já compartilhado não pode
+                  morrer numa troca de nome nossa. Inclui o detalhe do mercado,
+                  que é o link que as pessoas mandam por mensagem. */}
+              <Route path="/apostas/:id">{(p) => { window.location.replace(`/mercados/${p.id}`); return null; }}</Route>
+              {["/apostas","/mercado"].map(p => <Route key={p} path={p}>{() => { window.location.replace("/mercados"); return null; }}</Route>)}
               {["/minha-conta"].map(p => <Route key={p} path={p}>{() => { window.location.replace("/dashboard"); return null; }}</Route>)}
               {/* Backtester e a TELA do Cérebro foram retirados do site (mantido o motor do Cérebro nos bastidores). Redireciona links antigos. */}
               {["/laboratorio","/backtester"].map(p => <Route key={p} path={p}>{() => { window.location.replace("/calculadoras"); return null; }}</Route>)}

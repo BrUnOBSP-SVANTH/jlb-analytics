@@ -77,7 +77,7 @@ export function Footer() {
             <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Mercados & Dados</h4>
             <div className="space-y-1.5">
               {[
-                { label: "Mercados Ao Vivo", href: "/apostas"  },
+                { label: "Mercados Ao Vivo", href: "/mercados"  },
                 { label: "Análise de Mercados", href: "/noticias" },
                 { label: "Briefing IA",     href: "/briefing" },
               ].map((l) => (

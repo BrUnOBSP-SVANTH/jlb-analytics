@@ -271,7 +271,7 @@ export default function Sobre() {
                   Começar Nível 1 <ArrowRight className="w-4 h-4" aria-hidden="true" />
                 </span>
               </Link>
-              <Link href="/apostas">
+              <Link href="/mercados">
                 <span className="inline-flex items-center gap-2 px-7 py-3 rounded-lg border border-border/50 text-foreground font-medium hover:bg-secondary/30 transition-colors">
                   Ver Mercados ao Vivo <Map className="w-4 h-4" aria-hidden="true" />
                 </span>

@@ -14,7 +14,21 @@ function telas(dir = SRC, saida: string[] = []): string[] {
   return saida;
 }
 
-const ARQUIVOS = telas().map((f) => ({ caminho: relative(SRC, f), texto: readFileSync(f, "utf-8") }));
+/**
+ * Comentário fora, antes de casar padrão.
+ *
+ * Este teste procura o texto que o defeito produzia — e o comentário que explica
+ * a correção CITA esse mesmo texto, para quem ler o código saber o que foi
+ * consertado. Sem tirar os comentários, cada correção bem documentada faz o lint
+ * acusar a si mesmo. Já aconteceu três vezes nesta base.
+ */
+const semComentarios = (t: string) =>
+  t.replace(/\/\*[\s\S]*?\*\//g, " ").replace(/^\s*\/\/.*$/gm, " ");
+
+const ARQUIVOS = telas().map((f) => ({
+  caminho: relative(SRC, f),
+  texto: semComentarios(readFileSync(f, "utf-8")),
+}));
 
 /**
  * Lint de copy — o que a auditoria de 09/09/2026 encontrou impresso em produção.

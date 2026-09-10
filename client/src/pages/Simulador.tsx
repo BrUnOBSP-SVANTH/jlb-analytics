@@ -27,6 +27,7 @@ import {
   Area,
 } from "recharts";
 import { TrendingUp, Activity, Target, Dice5, type LucideIcon } from "lucide-react";
+import { real, reaisExatos, pct } from "@shared/formato";
 import LaboratorioTabs from "@/components/LaboratorioTabs";
 import { useSEO } from "@/hooks/useSEO";
 
@@ -90,7 +91,9 @@ function ResultStat({ label, value, tone = "neutral", hint, big }: {
   return (
     <div className="glass-card rounded-xl p-4">
       <p className="text-[11px] uppercase tracking-wider text-muted-foreground mb-1">{label}</p>
-      <p className={`${big ? "text-4xl" : "text-2xl"} font-mono font-bold tabular-nums leading-none ${color}`}>{value}</p>
+      {/* SIM-03: sem `whitespace-nowrap` o "+R$" quebrava para uma linha e o
+          número ficava sozinho na outra. */}
+      <p className={`${big ? "text-4xl" : "text-2xl"} font-mono font-bold tabular-nums leading-none whitespace-nowrap ${color}`}>{value}</p>
       {hint && <p className="text-[11px] text-muted-foreground mt-1.5 leading-snug">{hint}</p>}
     </div>
   );
@@ -107,6 +110,9 @@ function Reroll({ onClick }: { onClick: () => void }) {
   );
 }
 const rollSeed = () => Math.floor(Math.random() * 100000) + 1;
+
+/** A banca de onde toda simulação parte. Estava escrita à mão em quatro lugares. */
+const BANCA_INICIAL = 1000;
 
 // ─── Seeded PRNG (LCG) — determinístico para o mesmo seed ─────────────────
 function makePRNG(seed: number) {
@@ -191,8 +197,8 @@ function EVSimulator() {
                 {isPositive ? "✓ Posição de valor — o EV está a seu favor" : "✗ Cilada — o EV está contra você"}
               </p>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <ResultStat big label="EV por posição" value={`${isPositive ? "+" : ""}R$ ${evPerBet.toFixed(2)}`} tone={isPositive ? "positive" : "negative"} hint="quanto você ganha (ou perde) EM MÉDIA por posição, no longo prazo" />
-                <ResultStat label={`P&L após ${nBets}`} value={`${finalPnL >= 0 ? "+" : ""}R$ ${finalPnL.toFixed(0)}`} tone={finalPnL >= 0 ? "positive" : "negative"} hint="o que deu NESTA amostra (toque 🎲 pra outra)" />
+                <ResultStat big label="EV por posição" value={`${isPositive ? "+" : ""}${reaisExatos(evPerBet)}`} tone={isPositive ? "positive" : "negative"} hint="quanto você ganha (ou perde) EM MÉDIA por posição, no longo prazo" />
+                <ResultStat label={`P&L após ${nBets}`} value={`${finalPnL >= 0 ? "+" : ""}${real(finalPnL)}`} tone={finalPnL >= 0 ? "positive" : "negative"} hint="o que deu NESTA amostra (toque 🎲 pra outra)" />
                 <ResultStat label="Você ganhou" value={`${(winRate * 100).toFixed(0)}%`} tone="blue" hint={`das ${nBets} rodadas — você previu ${prob}%`} />
               </div>
             </div>
@@ -241,12 +247,12 @@ function KellySimulator() {
     const halfKelly = kelly / 2;
     const overbet = Math.min(kelly * 2, 0.99);
 
-    let bkFull = 1000;
-    let bkHalf = 1000;
-    let bkOver = 1000;
+    let bkFull = BANCA_INICIAL;
+    let bkHalf = BANCA_INICIAL;
+    let bkOver = BANCA_INICIAL;
 
     const data: { n: number; Kelly: number; "½ Kelly": number; Overbet: number }[] = [
-      { n: 0, Kelly: 1000, "½ Kelly": 1000, Overbet: 1000 },
+      { n: 0, Kelly: BANCA_INICIAL, "½ Kelly": BANCA_INICIAL, Overbet: BANCA_INICIAL },
     ];
 
     for (let i = 1; i <= nBets; i++) {
@@ -315,15 +321,28 @@ function KellySimulator() {
             <div className="rounded-xl p-4 border border-neon-blue/25 bg-neon-blue/[0.04]">
               <p className="text-sm font-bold text-neon-blue mb-3">
                 {kelly > 0
-                  ? `A matemática diz: aposte ${(halfKelly * 100).toFixed(1)}% do bankroll por vez (½ Kelly — o equilíbrio seguro).`
-                  : "Sem vantagem aqui (Kelly = 0) — a matemática manda NÃO entrar."}
+                  ? `A matemática diz: aplique ${pct(halfKelly * 100, 1)} da banca por vez (½ Kelly — o equilíbrio entre crescer e não quebrar).`
+                  : "Sem vantagem aqui (Kelly = 0) — a matemática manda ficar de fora."}
               </p>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <ResultStat big label="½ Kelly (seguro)" value={`R$ ${last["½ Kelly"].toFixed(0)}`} tone="positive" hint="banca final operando com disciplina" />
-                <ResultStat label="Kelly completo" value={`R$ ${last.Kelly.toFixed(0)}`} tone="gold" hint="ótimo na teoria, porém mais volátil" />
-                <ResultStat label="Overbet (2× Kelly)" value={`R$ ${last.Overbet.toFixed(0)}`} tone="negative" hint="apostou demais → tende à ruína" />
+                {/* SIM-01: o tom vinha FIXO em "positive", então a banca final
+                    aparecia em verde mesmo quando terminava abaixo dos R$ 1.000
+                    iniciais — um banner de sucesso sobre um prejuízo. A lição
+                    inteira desta tela é que EV positivo pode terminar no
+                    vermelho; pintar tudo de verde apaga exatamente isso. */}
+                <ResultStat big label="½ Kelly (mais conservador)" value={real(last["½ Kelly"])}
+                  tone={last["½ Kelly"] >= BANCA_INICIAL ? "positive" : "negative"}
+                  hint="banca final operando com disciplina" />
+                <ResultStat label="Kelly completo" value={real(last.Kelly)}
+                  tone={last.Kelly >= BANCA_INICIAL ? "gold" : "negative"}
+                  hint="ótimo na teoria, porém mais volátil" />
+                <ResultStat label="Overbet (2× Kelly)" value={real(last.Overbet)}
+                  tone={last.Overbet >= BANCA_INICIAL ? "gold" : "negative"}
+                  hint="arriscou demais → tende à ruína" />
               </div>
-              <p className="text-[11px] text-muted-foreground mt-2">Todas começaram em R$ 1.000 · toque 🎲 pra outra sequência.</p>
+              <p className="text-[11px] text-muted-foreground mt-2">
+                Todas começaram em {real(BANCA_INICIAL)} · toque 🎲 para outra sequência.
+              </p>
             </div>
 
             <div className="glass-card rounded-xl p-5">

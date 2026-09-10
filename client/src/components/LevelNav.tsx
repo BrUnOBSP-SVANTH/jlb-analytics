@@ -48,7 +48,7 @@ export default function LevelNav({ current }: { current: number }) {
             (Brier Score) contra o mercado real. É assim que se descobre se você tem vantagem de verdade.
           </p>
           <div className="flex gap-2 flex-wrap">
-            <Link href="/apostas">
+            <Link href="/mercados">
               <span className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-gold text-on-accent text-xs font-semibold hover:opacity-90 transition-opacity cursor-pointer">
                 <Target className="w-3.5 h-3.5" aria-hidden="true" /> Fazer minha primeira previsão
               </span>

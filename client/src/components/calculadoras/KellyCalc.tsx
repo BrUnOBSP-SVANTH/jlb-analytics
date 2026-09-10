@@ -4,6 +4,7 @@
 import { useState } from "react";
 import { TrendingUp } from "lucide-react";
 import { CalcCard, FormulaBox, ResultBox, InsightBox, Field, inputClass } from "@/components/calculadoras/CalcPrimitives";
+import { reaisExatos } from "@shared/formato";
 
 export function KellyCalc() {
   const [prob, setProb] = useState(55);
@@ -74,7 +75,7 @@ export function KellyCalc() {
               <ResultBox big label="½ Kelly — quanto pôr"
                 value={`${(halfKelly * 100).toFixed(1)}%`}
                 color="text-positive"
-                hint={`Aposte esta fração do bankroll — R$ ${halfStake.toFixed(0)}. É o padrão dos profissionais: cresce quase igual ao Kelly cheio, com muito menos risco.`} />
+                hint={`Aplique esta fração da banca — ${reaisExatos(halfStake)}. É o padrão de quem faz isso a sério: cresce quase igual ao Kelly cheio, com muito menos risco.`} />
               <div className="grid grid-cols-2 gap-3">
                 <ResultBox label="Kelly completo" termo="kelly"
                   value={`${(kelly * 100).toFixed(1)}%`}

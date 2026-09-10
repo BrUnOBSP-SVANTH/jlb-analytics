@@ -425,7 +425,7 @@ export default function Briefing() {
                     Ver todos os mercados <ArrowRight className="w-3 h-3" />
                   </span>
                 </Link>
-                <Link href="/apostas">
+                <Link href="/mercados">
                   <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors">
                     Tendências de Mercados <ArrowRight className="w-3 h-3" />
                   </span>

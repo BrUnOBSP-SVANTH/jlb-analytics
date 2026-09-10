@@ -120,7 +120,7 @@ export default function Educacao() {
               Aposta <span className="text-negative">≠</span> Investimento
             </h2>
             <p className="text-sm text-muted-foreground max-w-2xl leading-relaxed">
-              Apostar no achismo é imposto sobre a esperança: a casa embute a margem dela em cada odd, e a emoção faz o resto.
+              Decidir no achismo é imposto sobre a esperança: quem monta o mercado embute a margem dele em cada preço, e a emoção faz o resto.
               Investir é o oposto — você só entra quando a <strong className="text-foreground">probabilidade real</strong> está do seu lado,
               com <strong className="text-foreground">valor esperado positivo</strong> e disciplina. Este site inteiro existe para te levar de um lado ao outro.
             </p>
@@ -130,7 +130,7 @@ export default function Educacao() {
             <div className="p-5 sm:p-6 bg-background/40">
               <div className="flex items-center gap-2 mb-3">
                 <TrendingDown className="w-4 h-4 text-negative" />
-                <h3 className="font-semibold text-foreground text-sm">Apostar no achismo</h3>
+                <h3 className="font-semibold text-foreground text-sm">Decidir no achismo</h3>
               </div>
               <ul className="space-y-2 text-xs text-muted-foreground">
                 {[
@@ -323,7 +323,7 @@ export default function Educacao() {
       {/* CTA */}
       <section className="text-center py-8 border-t border-border/30">
         <p className="text-muted-foreground text-sm mb-6 max-w-xl mx-auto">
-          O melhor momento para começar foi quando você fez sua primeira aposta sem calcular o EV.
+          O melhor momento para começar foi na primeira vez que você decidiu sem calcular o EV.
           O segundo melhor momento é agora.
         </p>
         <Link href="/nivel/1">

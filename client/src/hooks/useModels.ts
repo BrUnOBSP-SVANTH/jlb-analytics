@@ -5,7 +5,7 @@
  */
 
 import { useState, useCallback } from "react";
-import { loadProgress } from "@/lib/userProgress";
+import { niveisConcluidos, concluirNivel } from "@/lib/userProgress";
 
 type ModelState<T> = {
   data: T | null;
@@ -13,24 +13,49 @@ type ModelState<T> = {
   error: string | null;
 };
 
-/** Deriva o nível de acesso do Python a partir dos pontos acumulados.
- *  Níveis 1-3 são abertos (min 3). Nível 4 → 50 pts. Nível 5 → 100 pts. */
-function userLevelFromPoints(): number {
+/**
+ * Nível de acesso do motor Python, derivado dos níveis CONCLUÍDOS.
+ *
+ * Era derivado dos pontos, e ponto vinha de visitar página: quem abrisse as
+ * cinco aulas somava 50 e destravava o nível 4 sem ter resolvido nada
+ * (NVL-01). O gate agora usa a mesma régua que a tela mostra.
+ */
+function nivelDeAcesso(): number {
   try {
-    const { totalPoints } = loadProgress();
-    if (totalPoints >= 100) return 5;
-    if (totalPoints >= 50)  return 4;
+    const feitos = niveisConcluidos().length;
+    if (feitos >= 4) return 5;
+    if (feitos >= 3) return 4;
     return 3; // mínimo 3 — níveis 1, 2 e 3 são sempre acessíveis
   } catch {
     return 3;
   }
 }
 
+/**
+ * De qual nível é este exercício? O endpoint carrega o número: `/api/level3/…`.
+ *
+ * É o único ponto do site por onde TODOS os exercícios das cinco aulas passam —
+ * por isso a conclusão é marcada aqui, e não espalhada por cinco páginas com
+ * dezenas de botões, onde alguém esqueceria um e o nível nunca fecharia.
+ */
+function nivelDoEndpoint(endpoint: string): number | null {
+  const m = /\/level([1-5])\//.exec(endpoint);
+  return m ? Number(m[1]) : null;
+}
+
+const NOME_DO_NIVEL: Record<number, string> = {
+  1: "Resolveu um exercício do Nível 1 — Fundamentos",
+  2: "Resolveu um exercício do Nível 2 — Leitura de Dados",
+  3: "Resolveu um exercício do Nível 3 — Modelos Básicos",
+  4: "Resolveu um exercício do Nível 4 — Vieses",
+  5: "Resolveu um exercício do Nível 5 — Análise Integrada",
+};
+
 const OFFLINE_MSG =
   "Serviço de cálculo indisponível no momento. Tente novamente em instantes.";
 
 export function useModels() {
-  const userLevel = userLevelFromPoints();
+  const userLevel = nivelDeAcesso();
 
   async function callModel<T>(
     endpoint: string,
@@ -102,6 +127,14 @@ export function useModelCall<T>(endpoint: string) {
       setState({ data: null, loading: true, error: null });
       const { data, error } = await callModel<T>(endpoint, body);
       setState({ data, loading: false, error });
+
+      // Exercício resolvido — só quando o cálculo VOLTOU. Erro de rede não é
+      // aprendizado, e marcar na tentativa traria de volta o defeito que esta
+      // mudança conserta: progresso por clique.
+      if (data && !error) {
+        const nivel = nivelDoEndpoint(endpoint);
+        if (nivel) concluirNivel(nivel, NOME_DO_NIVEL[nivel]);
+      }
       return { data, error };
     },
     [endpoint, callModel],

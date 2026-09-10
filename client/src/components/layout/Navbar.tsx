@@ -60,7 +60,7 @@ const NAV_GROUPS: NavGroup[] = [
     id: "mercados",
     label: "Mercados",
     children: [
-      { label: "Mercados Ao Vivo",     href: "/apostas",   icon: Flame,     desc: "Preços em tempo real", badge: "AO VIVO" },
+      { label: "Mercados Ao Vivo",     href: "/mercados",   icon: Flame,     desc: "Preços em tempo real", badge: "AO VIVO" },
       { label: "Análise de Mercados",  href: "/noticias",  icon: Newspaper, desc: "Mercados cruzados com notícias" },
       { label: "Banca Simulada",       href: "/portfolio", icon: Wallet,    desc: "Dinheiro fictício, mercado real", badge: "NOVO" },
     ],
@@ -109,7 +109,7 @@ const NAV_GROUPS: NavGroup[] = [
 // Atalhos do menu mobile: ali os dropdowns nascem fechados, então a fileira de
 // pílulas é o caminho curto — não uma segunda navegação como era no desktop.
 const ATALHOS_MOBILE = [
-  { label: "Mercados",   href: "/apostas"    },
+  { label: "Mercados",   href: "/mercados"    },
   { label: "Análise",    href: "/noticias"   },
   { label: "Previsão IA",href: "/previsao"   },
   { label: "Dashboard",  href: "/dashboard"  },

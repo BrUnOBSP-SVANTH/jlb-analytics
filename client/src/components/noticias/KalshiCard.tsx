@@ -65,7 +65,7 @@ export function KalshiCard({ market }: { market: KalshiMarket }) {
 
       {/* Title */}
       <div>
-        <Link href={`/apostas/kalshi-${market.ticker}`}>
+        <Link href={`/mercados/kalshi-${market.ticker}`}>
           <p className="text-sm font-medium text-foreground leading-snug line-clamp-3 hover:text-gold transition-colors cursor-pointer">{market.title}</p>
         </Link>
         {translation && <p className="text-xs text-gold/80 mt-1 leading-snug italic">{translation}</p>}
@@ -169,7 +169,7 @@ export function KalshiCard({ market }: { market: KalshiMarket }) {
       </div>
 
       {/* Analisar → tela de detalhe dedicada */}
-      <Link href={`/apostas/kalshi-${market.ticker}`}>
+      <Link href={`/mercados/kalshi-${market.ticker}`}>
         <span className="w-full flex items-center justify-center gap-1.5 py-1.5 rounded-lg border border-border/20 text-[11px] text-muted-foreground hover:text-gold hover:border-gold/20 transition-colors cursor-pointer">
           <Zap className="w-3 h-3" />
           Analisar mercado

@@ -44,7 +44,7 @@ export function DivergencesSection() {
             </p>
             {divs.map((d) => {
               const slug = d.marketId.replace(/^(poly-|kalshi-)/, "");
-              const href = d.source === "kalshi" ? `/apostas/kalshi-${slug}` : `/apostas/poly-${slug}`;
+              const href = d.source === "kalshi" ? `/mercados/kalshi-${slug}` : `/mercados/poly-${slug}`;
               return (
                 <Link key={d.marketId} href={href}>
                   <div className="flex items-center gap-3 p-2.5 rounded-lg bg-secondary/20 border border-border/15 hover:border-gold/30 transition-colors cursor-pointer">

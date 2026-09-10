@@ -12,7 +12,8 @@ import ContaTabs from "@/components/ContaTabs";
 import AnimatedSection from "@/components/AnimatedSection";
 import { useSEO } from "@/hooks/useSEO";
 import { useAuth } from "@/contexts/AuthContext";
-import { loadProgress, UNLOCK_THRESHOLDS, type ActivityType } from "@/lib/userProgress";
+import { plural } from "@shared/formato";
+import { loadProgress, niveisConcluidos, faltamParaDestravar, NIVEIS_PARA_DESTRAVAR, type ActivityType } from "@/lib/userProgress";
 import { loadPredictions, meanBrierScore, skillScore } from "@/lib/predictions";
 import { pullFromSupabase } from "@/lib/predictionsSync";
 import { pullProgress } from "@/lib/progressSync";
@@ -54,6 +55,7 @@ const ACTIVITY_META: Record<ActivityType, { label: string; icon: typeof Zap; col
   calculator_used:     { label: "Calculadora usada",      icon: Calculator,  color: "text-gold" },
   market_analyzed:     { label: "Mercado analisado com IA", icon: Brain,     color: "text-purple-400" },
   level_visited:       { label: "Nível visitado",         icon: BookOpen,    color: "text-primary" },
+  exercise_done:       { label: "Exercício resolvido",     icon: CheckCircle, color: "text-positive" },
   first_login:         { label: "Primeiro acesso",        icon: Star,        color: "text-gold" },
   duel_won:            { label: "Duelo vencido",          icon: Star,        color: "text-positive" },
 };
@@ -141,9 +143,12 @@ export default function Perfil() {
   const mb = meanBrierScore(predictions);
   const avgBrier = mb !== null ? mb.toFixed(3) : null;
 
-  // Points towards next unlock
-  const nextUnlock = [4, 5].find((lvl) => progress.totalPoints < (UNLOCK_THRESHOLDS[lvl] ?? 0));
-  const nextThreshold = nextUnlock ? UNLOCK_THRESHOLDS[nextUnlock] : null;
+  // O próximo nível a destravar — agora por NÍVEIS CONCLUÍDOS, não por saldo de
+  // pontos. Com pontos, o nível 5 abria para quem nunca resolveu um exercício.
+  const concluidos = niveisConcluidos().length;
+  const nextUnlock = [4, 5].find((lvl) => concluidos < (NIVEIS_PARA_DESTRAVAR[lvl] ?? 0));
+  const nextThreshold = nextUnlock ? NIVEIS_PARA_DESTRAVAR[nextUnlock] : null;
+  const faltamNiveis = nextUnlock ? faltamParaDestravar(nextUnlock) : 0;
 
   // Joined date from Supabase user metadata
   const joinedAt = user.created_at ? fmtDate(user.created_at) : "—";
@@ -216,14 +221,20 @@ export default function Perfil() {
                 <Trophy className="w-4 h-4 text-gold" />
                 <h2 className="font-semibold text-[var(--titulo)]">Progresso de Desbloqueio</h2>
               </div>
+              {/* NVL-01: era "acumule pontos". Pontos vinham de visitar página,
+                  então o nível 5 abria para quem não tinha resolvido nada. Agora
+                  a barra mede o que o Dashboard chama de "concluído": exercício
+                  resolvido. As duas telas passam a dizer a mesma coisa. */}
               <p className="text-xs text-muted-foreground">
-                Acumule pontos usando calculadoras, fazendo previsões e explorando os níveis.
-                Sem pagamento — só prática.
+                Cada nível abre quando você <span className="text-foreground">resolve um exercício</span> dos
+                anteriores. Sem pagamento — e sem atalho por clique.
               </p>
-              <PointsBar points={progress.totalPoints} target={nextThreshold} />
+              <PointsBar points={concluidos} target={nextThreshold} />
               <p className="text-xs text-muted-foreground text-center">
-                Faltam <span className="font-bold text-foreground">{nextThreshold - progress.totalPoints} pontos</span> para
-                desbloquear o <span className="font-bold text-primary">Nível {nextUnlock}</span>
+                {faltamNiveis === 0
+                  ? <>O <span className="font-bold text-primary">Nível {nextUnlock}</span> já está liberado.</>
+                  : <>Falta {plural(faltamNiveis, "resolver um exercício", "resolver exercícios em mais níveis")} para
+                    abrir o <span className="font-bold text-primary">Nível {nextUnlock}</span>.</>}
               </p>
             </div>
           </AnimatedSection>
@@ -324,7 +335,7 @@ export default function Perfil() {
               <div className="text-center py-8 space-y-2">
                 <Target className="w-8 h-8 mx-auto text-muted-foreground" />
                 <p className="text-sm text-muted-foreground">Nenhuma previsão ainda.</p>
-                <Link href="/apostas">
+                <Link href="/mercados">
                   <span className="text-xs text-primary hover:underline">
                     Registre sua primeira previsão em Mercados →
                   </span>

@@ -118,7 +118,7 @@ function LiveMarketCard({ market }: { market: LiveMarket }) {
 
   // Com id → abre a tela dedicada /apostas/poly-<id>, igual às abas Apostas e Notícias.
   return market.id ? (
-    <Link href={`/apostas/poly-${market.id}`} className="flex-shrink-0 group rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40">
+    <Link href={`/mercados/poly-${market.id}`} className="flex-shrink-0 group rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40">
       {inner}
     </Link>
   ) : (
@@ -285,7 +285,7 @@ export default function Home() {
               sem chute, sem achismo. E a gente mostra o histórico <strong className="text-foreground/80">completo</strong>, inclusive quando erra.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-              <Link href="/apostas" onClick={() => track("cta_click", { id: "home_hero_mercados" })}>
+              <Link href="/mercados" onClick={() => track("cta_click", { id: "home_hero_mercados" })}>
                 <span className="inline-flex items-center gap-2 px-6 py-3.5 rounded-xl bg-primary text-primary-foreground font-semibold hover:opacity-90 transition-opacity">
                   Explorar Mercados ao Vivo <ArrowRight className="w-4 h-4" aria-hidden="true" />
                 </span>
@@ -402,7 +402,7 @@ export default function Home() {
                 Mercados em destaque
               </span>
             </div>
-            <Link href="/apostas">
+            <Link href="/mercados">
               <span className="text-xs text-primary hover:underline flex items-center gap-1">
                 Ver todos <ArrowRight className="w-3 h-3" aria-hidden="true" />
               </span>

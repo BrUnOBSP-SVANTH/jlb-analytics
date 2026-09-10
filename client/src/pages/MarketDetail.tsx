@@ -54,7 +54,7 @@ export default function MarketDetail() {
       <div className="container py-6 space-y-6">
         {/* Back link */}
         <AnimatedSection delay={0}>
-          <Link href="/apostas">
+          <Link href="/mercados">
             <span className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer">
               <ChevronLeft className="w-4 h-4" />
               Voltar para mercados

@@ -176,7 +176,7 @@ export function MarketCard({ market, savedIds, onSaved, highlight = false, indic
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           {/* Título clicável → tela de detalhe (coeso com a tela de Apostas) */}
-          <Link href={`/apostas/poly-${market.id}`}>
+          <Link href={`/mercados/poly-${market.id}`}>
             <p className="text-sm font-medium text-foreground leading-snug line-clamp-3 hover:text-gold transition-colors cursor-pointer">
               {market.question}
             </p>
@@ -264,7 +264,7 @@ export function MarketCard({ market, savedIds, onSaved, highlight = false, indic
 
       {/* Analisar → tela de detalhe dedicada (stats, consenso, histórico, IA + notícias) */}
       {prices && (
-        <Link href={`/apostas/poly-${market.id}`}>
+        <Link href={`/mercados/poly-${market.id}`}>
           <span className="w-full flex items-center justify-center gap-1.5 py-1.5 rounded-lg border border-border/20 text-[11px] text-muted-foreground hover:text-gold hover:border-gold/20 transition-colors cursor-pointer">
             <Zap className="w-3 h-3" />
             Analisar mercado

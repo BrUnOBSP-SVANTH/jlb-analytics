@@ -216,7 +216,7 @@ export function NovaApostaModal({
                 onClick={() => onApostar(escolhido, lado, valor)}
                 disabled={!conta.validacao.ok}
                 className="w-full py-2.5 rounded-lg text-sm font-semibold bg-primary text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed">
-                Apostar {reais(valor)} em {lado === "sim" ? "VAI ACONTECER" : "NÃO VAI ACONTECER"}
+                Aplicar {reais(valor)} em {lado === "sim" ? "VAI ACONTECER" : "NÃO VAI ACONTECER"}
               </button>
             </>
           )}

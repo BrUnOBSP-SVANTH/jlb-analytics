@@ -23,7 +23,8 @@ import {
   type CalibrationSnapshot,
 } from "@/lib/predictions";
 import { apiFetch } from "@/lib/api";
-import { awardPoints, loadProgress } from "@/lib/userProgress";
+import { awardPoints, loadProgress, niveisConcluidos } from "@/lib/userProgress";
+import { plural } from "@shared/formato";
 import { pullProgress } from "@/lib/progressSync";
 import { pullFromSupabase, pushToSupabase, syncOne, deleteOne } from "@/lib/predictionsSync";
 import ContaTabs from "@/components/ContaTabs";
@@ -75,7 +76,7 @@ function GuestView() {
               <LogIn className="w-4 h-4" aria-hidden="true" /> Entrar / Criar conta
             </span>
           </Link>
-          <Link href="/apostas">
+          <Link href="/mercados">
             <span className="flex items-center justify-center gap-2 w-full px-6 py-2.5 rounded-lg border border-border/50 text-foreground text-sm hover:bg-secondary/30 transition-colors">
               Explorar Mercados <ArrowRight className="w-4 h-4" aria-hidden="true" />
             </span>
@@ -531,6 +532,10 @@ export default function Dashboard() {
 
   // Pontos sincronizados: pull no mount + reage a ganhos e ao sync cross-device.
   const [userPoints, setUserPoints] = useState(() => loadProgress().totalPoints);
+  // O nível de verdade: quantos níveis têm exercício resolvido. Os três
+  // primeiros são sempre abertos, então o piso é 3.
+  const feitos = niveisConcluidos().length;
+  const nivelAtual = feitos >= 4 ? 5 : feitos >= 3 ? 4 : 3;
   useEffect(() => {
     if (!user) return;
     const refresh = () => setUserPoints(loadProgress().totalPoints);
@@ -617,7 +622,9 @@ export default function Dashboard() {
           </div>
           <p className="text-2xl font-bold font-mono text-gold">{userPoints}</p>
           <p className="text-[11px] text-muted-foreground">
-            {userPoints >= 100 ? "Nível 5 desbloqueado" : userPoints >= 50 ? "Nível 4 desbloqueado" : `${50 - Math.min(userPoints, 50)} pts p/ Nível 4`}
+            {feitos >= 4 ? "Nível 5 liberado"
+              : feitos >= 3 ? "Nível 4 liberado"
+              : `${plural(3 - feitos, "nível a concluir", "níveis a concluir")} para o Nível 4`}
           </p>
         </div>
       </div>
@@ -626,8 +633,12 @@ export default function Dashboard() {
       <div className="grid gap-6 lg:grid-cols-2">
         <LevelMap userPoints={userPoints} />
         <div className="space-y-6">
-          <QuickActions userLevel={userPoints >= 100 ? 5 : userPoints >= 50 ? 4 : 3} />
-          <BehavioralMetrics userLevel={userPoints >= 100 ? 5 : userPoints >= 50 ? 4 : 3} />
+          {/* DSH-01: o nível vinha de PONTOS, e ponto vinha de abrir página.
+              A tela anunciava "Todos os níveis concluídos" para quem tinha 0
+              previsões resolvidas e a conquista "Visitou o Nível 1" ainda
+              bloqueada logo ao lado. Agora vem de exercício resolvido. */}
+          <QuickActions userLevel={nivelAtual} />
+          <BehavioralMetrics userLevel={nivelAtual} />
         </div>
       </div>
 

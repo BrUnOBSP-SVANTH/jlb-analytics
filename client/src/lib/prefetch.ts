@@ -5,7 +5,7 @@
  * Os specifiers batem com os de App.tsx (mesmo módulo → mesmo chunk, sem duplicar).
  */
 const importers: Record<string, () => Promise<unknown>> = {
-  "/apostas": () => import("@/pages/Apostas"),
+  "/mercados": () => import("@/pages/Apostas"),
   "/noticias": () => import("@/pages/Noticias"),
   "/previsao": () => import("@/pages/Previsao"),
   "/dashboard": () => import("@/pages/Dashboard"),

@@ -388,7 +388,7 @@ export default function Previsao() {
                       : `A IA vê ${result.confidenceMedium > anchorMarket.prob ? "MAIS" : "MENOS"} chance que o mercado: ${result.confidenceMedium}% contra ${anchorMarket.prob}% (${result.confidenceMedium > anchorMarket.prob ? "+" : ""}${result.confidenceMedium - anchorMarket.prob} pontos de diferença).`}
                   </p>
                   <div className="flex items-center gap-4 flex-wrap">
-                    <Link href={`/apostas/${anchorMarket.id}`}>
+                    <Link href={`/mercados/${anchorMarket.id}`}>
                       <div className="text-center cursor-pointer group">
                         <p className="text-[11px] text-muted-foreground uppercase">Mercado</p>
                         <p className="text-2xl font-mono font-bold text-foreground group-hover:text-primary transition-colors">{anchorMarket.prob}%</p>
@@ -439,7 +439,7 @@ export default function Previsao() {
                   </p>
                   <div className="space-y-2">
                     {related.map((m) => (
-                      <Link key={m.id} href={`/apostas/${m.id}`}>
+                      <Link key={m.id} href={`/mercados/${m.id}`}>
                         <div className="flex items-center gap-3 p-3 rounded-lg bg-secondary/20 border border-border/15 hover:border-primary/30 transition-colors cursor-pointer">
                           <div className="flex-1 min-w-0">
                             <p className="text-xs font-medium text-foreground truncate">{m.title}</p>

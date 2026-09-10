@@ -58,7 +58,7 @@ export default function WatchlistSection() {
           <span className="text-[11px] text-muted-foreground flex items-center gap-1">
             <Bell className="w-3 h-3" />clique no sino para ajustar alerta
           </span>
-          <Link href="/apostas">
+          <Link href="/mercados">
             <span className="text-xs text-gold hover:underline flex items-center gap-1">
               Adicionar <ArrowRight className="w-3 h-3" />
             </span>
@@ -75,7 +75,7 @@ export default function WatchlistSection() {
           const delta = (liveProb !== null && savedProb !== null) ? liveProb - savedProb : null;
           const threshold = item.alertThreshold ?? 5;
           // Polymarket/Kalshi têm tela dedicada (/apostas/:id); Reddit não — fica só título.
-          const detailHref = item.source === "polymarket" || item.source === "kalshi" ? `/apostas/${item.id}` : null;
+          const detailHref = item.source === "polymarket" || item.source === "kalshi" ? `/mercados/${item.id}` : null;
 
           return (
             <div key={item.id} className="flex items-center gap-3 p-3 rounded-lg border border-border/30 bg-secondary/10">

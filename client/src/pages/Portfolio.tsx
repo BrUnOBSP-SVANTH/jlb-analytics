@@ -40,7 +40,7 @@ type Aba = "abertas" | "fechadas";
 export default function Portfolio() {
   useSEO(
     "Banca Simulada",
-    "Aposte dinheiro fictício em mercados reais do Polymarket e Kalshi e veja quanto ganharia ou perderia. Sem dinheiro real.",
+    "Teste suas estimativas com dinheiro fictício em mercados reais do Polymarket e Kalshi, e veja quanto teria ganhado ou perdido. Nenhum dinheiro real envolvido.",
   );
   const { user, loading: carregandoAuth } = useAuth();
   const [apostas, setApostas] = useState<ApostaBanca[]>([]);
@@ -98,7 +98,7 @@ export default function Portfolio() {
         <MercadosTabs />
         <PageHeader
           title="Banca Simulada"
-          subtitle="Aposte dinheiro fictício em mercados reais e veja quanto ganharia — ou perderia."
+          subtitle="Teste suas estimativas com dinheiro fictício em mercados reais e veja quanto teria ganhado — ou perdido."
           badge="Simulação"
         />
         <div className="container py-16">
@@ -127,7 +127,7 @@ export default function Portfolio() {
       <MercadosTabs />
       <PageHeader
         title="Banca Simulada"
-        subtitle="Aposte dinheiro fictício em mercados reais do Polymarket e Kalshi. O resultado vem da liquidação oficial — não de chute nosso."
+        subtitle="Teste suas estimativas com dinheiro fictício em mercados reais do Polymarket e Kalshi. O resultado vem da liquidação oficial — não de chute nosso."
         badge="Simulação"
       />
 
@@ -268,7 +268,7 @@ export default function Portfolio() {
               onClick={() => setModalAberto(true)}
               className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity"
             >
-              <Plus className="w-4 h-4" /> Fazer a primeira aposta
+              <Plus className="w-4 h-4" aria-hidden="true" /> Registrar a primeira posição
             </button>
           </div>
         )}
@@ -311,7 +311,7 @@ export default function Portfolio() {
             <div className="flex items-center justify-center gap-3 flex-wrap">
               <Link href="/calculadoras"><span className="text-xs text-primary hover:underline">Calculadoras de EV e Kelly</span></Link>
               <Link href="/previsao"><span className="text-xs text-primary hover:underline">Previsão guiada por IA</span></Link>
-              <Link href="/apostas"><span className="text-xs text-primary hover:underline">Ver mercados ao vivo</span></Link>
+              <Link href="/mercados"><span className="text-xs text-primary hover:underline">Ver mercados ao vivo</span></Link>
             </div>
           </div>
         )}

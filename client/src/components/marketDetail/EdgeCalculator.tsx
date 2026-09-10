@@ -5,6 +5,7 @@ import { useState } from "react";
 import { Link } from "wouter";
 import { Calculator, Zap, Info, Check, BookmarkPlus, Sparkles, RefreshCw } from "lucide-react";
 import { calcEV, calcKelly } from "@/components/marketDetail/utils";
+import { pct, pp } from "@shared/formato";
 import { Explain } from "@/components/marketDetail/Explain";
 import { addPrediction } from "@/lib/predictions";
 import { awardPoints } from "@/lib/userProgress";
@@ -25,6 +26,11 @@ interface ExplainResult {
 
 export function EdgeCalculator({ marketProb, marketId, question }: { marketProb: number; marketId: string; question: string }) {
   const [yourPct, setYourPct] = useState(Math.round(marketProb * 100));
+  // DET-03: o slider nasce NO preço do mercado, então o EV nasce em ~0 — e um
+  // arredondamento para cima bastava para a tela anunciar "Valor positivo
+  // detectado" e sugerir ½ Kelly antes de o usuário fazer qualquer coisa.
+  // Enquanto ninguém mover o controle, não há comparação a declarar.
+  const [mexeu, setMexeu] = useState(false);
   const [saved, setSaved] = useState(false);
   const [explain, setExplain] = useState<ExplainResult | null>(null);
   const [loadingExplain, setLoadingExplain] = useState(false);
@@ -68,9 +74,23 @@ export function EdgeCalculator({ marketProb, marketId, question }: { marketProb:
   const kelly = calcKelly(yourProb, marketProb);
   const halfKelly = kelly / 2;
   const edge = yourProb - marketProb;
-  const hasValue = ev > 0;
-  // EV que arredonda para 0.0% é neutro — "+0.0%" pintado de vermelho contradiz o próprio sinal
-  const evNeutral = Math.abs(ev * 100) < 0.05;
+
+  /**
+   * Limiar que separa vantagem de ruído de arredondamento (DET-02, DET-03).
+   *
+   * O slider anda de 1 em 1 ponto e o preço do mercado tem casas decimais, então
+   * a MENOR diferença possível já produz um EV positivo minúsculo. A auditoria
+   * fotografou "EDGE VS MERCADO +0,5 pp" logo acima de "Mercado: 53% | Você:
+   * 53%" — a tela se contradizendo na mesma linha, porque um número aparecia
+   * arredondado e o outro não.
+   *
+   * Meio ponto percentual é menos que a resolução do próprio controle. Abaixo
+   * disso não há o que declarar.
+   */
+  const LIMIAR_PP = 0.005;
+  const temVantagem = mexeu && ev > 0 && Math.abs(edge) >= LIMIAR_PP;
+  const evNeutral = !mexeu || Math.abs(edge) < LIMIAR_PP;
+  const hasValue = temVantagem;
 
   return (
     <div className="space-y-3">
@@ -90,7 +110,7 @@ export function EdgeCalculator({ marketProb, marketId, question }: { marketProb:
         </div>
         <input
           type="range" min={1} max={99} value={yourPct}
-          onChange={(e) => setYourPct(Number(e.target.value))}
+          onChange={(e) => { setYourPct(Number(e.target.value)); setMexeu(true); }}
           className="w-full h-2 rounded-full accent-primary cursor-pointer"
         />
         <div className="flex justify-between text-[11px] text-muted-foreground mt-0.5">
@@ -108,10 +128,13 @@ export function EdgeCalculator({ marketProb, marketId, question }: { marketProb:
         <div className={`p-3 rounded-lg border ${edge > 0 ? "border-neon-blue/20 bg-neon-blue/5" : "border-border/20 bg-secondary/10"}`}>
           <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-1">Edge vs Mercado</p>
           <p className={`text-xl font-mono font-bold ${edge > 0 ? "text-neon-blue" : "text-muted-foreground"}`}>
-            {edge >= 0 ? "+" : ""}{(edge * 100).toFixed(1)}pp
+            {Math.abs(edge) < LIMIAR_PP ? "0,0 pp" : pp(edge * 100)}
           </p>
+          {/* DET-02: os três números com a MESMA precisão. Antes o mercado
+              aparecia arredondado (53%) ao lado de um edge calculado sobre o
+              valor cheio (52,5%), e o card lia "+0,5 pp" com dois 53% embaixo. */}
           <p className="text-[11px] text-muted-foreground mt-0.5">
-            Mercado: {Math.round(marketProb * 100)}% | Você: {yourPct}%
+            Mercado {pct(marketProb * 100, 1)} · você {pct(yourPct, 1)}
           </p>
         </div>
         <div className="p-3 rounded-lg border border-gold/20 bg-gold/5">
@@ -120,7 +143,10 @@ export function EdgeCalculator({ marketProb, marketId, question }: { marketProb:
           <p className="text-[11px] text-muted-foreground mt-0.5">da banca</p>
         </div>
         <div className="p-3 rounded-lg border border-gold/10 bg-gold/[0.03]">
-          <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-1">½ Kelly (recomendado)</p>
+          {/* DET-04: era "(recomendado)", que colide frontalmente com o aviso
+              institucional de que a JLB não recomenda posições. Descreve a mesma
+              escolha sem virar conselho. */}
+          <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-1">½ Kelly (mais conservador)</p>
           <p className="text-xl font-mono font-bold text-gold/70">{(halfKelly * 100).toFixed(1)}%</p>
           <p className="text-[11px] text-muted-foreground mt-0.5">da banca</p>
         </div>
@@ -128,11 +154,13 @@ export function EdgeCalculator({ marketProb, marketId, question }: { marketProb:
       <div className={`flex items-center gap-2 p-3 rounded-lg ${hasValue ? "bg-positive/10 border border-positive/20" : "bg-secondary/20 border border-border/20"}`}>
         <Zap className={`w-4 h-4 shrink-0 ${hasValue ? "text-positive" : "text-muted-foreground"}`} />
         <p className="text-xs leading-relaxed">
-          {hasValue
-            ? `Valor positivo detectado. Com ½ Kelly: arrisque ${(halfKelly * 100).toFixed(1)}% da banca. EV de longo prazo: ${(ev * 100).toFixed(1)}% por posição.`
+          {!mexeu
+            ? "Mova o controle para comparar a sua estimativa com o preço do mercado."
+            : hasValue
+            ? `Sua estimativa implica valor esperado positivo. Com ½ Kelly isso daria ${pct(halfKelly * 100, 1)} da banca, e ${pct(ev * 100, 1)} de retorno esperado por posição no longo prazo.`
             : evNeutral
-            ? "EV zero — sua estimativa coincide com o preço do mercado. Não há vantagem matemática de nenhum lado."
-            : "Sem valor com esta estimativa — o mercado está pagando menos do que sua probabilidade justifica. Reduza o tamanho ou reavalie."}
+            ? "Sua estimativa coincide com o preço do mercado. Não há vantagem matemática de nenhum lado."
+            : "Com esta estimativa não há valor esperado positivo — o mercado paga menos do que a sua probabilidade justificaria."}
         </p>
       </div>
 

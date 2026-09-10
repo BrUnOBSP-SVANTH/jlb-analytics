@@ -5,7 +5,7 @@ import { Link, useLocation } from "wouter";
 import { Flame, Newspaper, Wallet } from "lucide-react";
 
 const TABS = [
-  { href: "/apostas",  label: "Mercados Ao Vivo",    icon: Flame,     badge: "AO VIVO" },
+  { href: "/mercados",  label: "Mercados Ao Vivo",    icon: Flame,     badge: "AO VIVO" },
   { href: "/noticias", label: "Análise de Mercados", icon: Newspaper },
   { href: "/portfolio", label: "Banca Simulada", icon: Wallet, badge: "NOVO" },
 ];
@@ -18,7 +18,7 @@ export default function MercadosTabs() {
       <div className="container">
         <div className="flex items-center gap-0 h-11 overflow-x-auto scrollbar-none rolagem-lateral">
           {TABS.map((t) => {
-            const active = location === t.href || (t.href === "/apostas" && location.startsWith("/apostas/"));
+            const active = location === t.href || (t.href === "/mercados" && location.startsWith("/mercados/"));
             const Icon = t.icon;
             return (
               <Link key={t.href} href={t.href}>
