@@ -15,7 +15,7 @@ import { addToWatchlist, removeFromWatchlist, loadWatchlist, updateWatchlistProb
 import { useMarketAlerts } from "@/hooks/useMarketAlerts";
 import { syncPushWatchlist } from "@/hooks/usePushNotifications";
 import {
-  type TrendingItem, type CategoryFilter, CATEGORY_LABELS, formatVolume, fetchRedditSub, fetchPolymarketSports, fetchManifold, fetchKalshi, REDDIT_SUBS,
+  type TrendingItem, type CategoryFilter, CATEGORY_LABELS, formatVolume, fetchRedditSub, fetchPolymarketSports, fetchManifold, fetchKalshi, intercalarPorFonte, REDDIT_SUBS,
 } from "@/lib/trending";
 import { SourceBadge, BADGE_CONFIG } from "@/components/mercados/cards";
 import { TrendingCard } from "@/components/mercados/TrendingCard";
@@ -198,7 +198,13 @@ export default function Apostas() {
       const polyItems     = (poly.status     === "fulfilled" ? poly.value     : []).sort((a, b) => b.score - a.score).slice(0, 120);
       const kalshiItems   = (kalshi.status   === "fulfilled" ? kalshi.value   : []).sort((a, b) => b.score - a.score).slice(0, 100);
       const manifoldItems = (manifold.status === "fulfilled" ? manifold.value : []).sort((a, b) => b.score - a.score).slice(0, 30);
-      const all = [...redditItems, ...polyItems, ...kalshiItems, ...manifoldItems].sort((a, b) => b.score - a.score);
+      // MKT-05: `sort` é ESTÁVEL e as três fontes empatam em score 100, então a
+      // ordem desta concatenação virava a ordem da TELA — 20 de 20 cards eram
+      // Polymarket, embaixo de um subtítulo que promete "Reddit · Polymarket ·
+      // Kalshi". `intercalarPorFonte` faz o rodízio depois de ordenar.
+      const all = intercalarPorFonte(
+        [...redditItems, ...polyItems, ...kalshiItems, ...manifoldItems].sort((a, b) => b.score - a.score),
+      );
 
       const ok = buildAndSet(all, silent);
       if (!ok && !silent) {
@@ -522,11 +528,19 @@ export default function Apostas() {
           </div>
         </AnimatedSection>
 
+        {/* MKT-07: a mensagem de erro existia, o botão de REPETIR não. Sem ele
+            a única saída é recarregar a página inteira — e o erro aqui costuma
+            ser uma fonte lenta que responde na segunda tentativa. */}
         {error && !loading && (
           <AnimatedSection>
-            <div className="mb-5 p-3 rounded-xl border border-warning/20 bg-warning/8 flex gap-3">
+            <div className="mb-5 p-3 rounded-xl border border-warning/20 bg-warning/8 flex gap-3 items-start">
               <AlertCircle className="w-4 h-4 text-warning mt-0.5 shrink-0" aria-hidden="true" />
-              <p className="text-sm text-muted-foreground">{error}</p>
+              <p className="text-sm text-muted-foreground flex-1">{error}</p>
+              <button
+                onClick={() => { void load(false); }}
+                className="alvo-toque shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-warning/40 text-xs font-semibold text-warning hover:bg-warning/10 transition-colors">
+                <RefreshCw className="w-3.5 h-3.5" aria-hidden="true" /> Tentar de novo
+              </button>
             </div>
           </AnimatedSection>
         )}
@@ -658,10 +672,19 @@ export default function Apostas() {
 
         {!loading && filtered.length === 0 && !error && (
           <AnimatedSection>
+            {/* O vazio sugeria a saída em TEXTO ("tente Todos"), sem botão —
+                deixando o trabalho de desfazer o filtro para o usuário. */}
             <div className="text-center py-16">
-              <Flame className="w-10 h-10 mx-auto mb-3 text-muted-foreground/20" aria-hidden="true" />
-              <p className="text-sm font-medium text-foreground/80 mb-1">Nenhum mercado para este filtro</p>
-              <p className="text-xs text-muted-foreground">Tente "Todos" ou outro filtro de categoria</p>
+              <Flame className="w-10 h-10 mx-auto mb-3 text-muted-foreground/40" aria-hidden="true" />
+              <p className="text-sm font-medium text-foreground mb-1">Nenhum mercado com este filtro agora</p>
+              <p className="text-xs text-muted-foreground mb-4">
+                Isso acontece: as fontes têm coberturas diferentes e algumas categorias ficam vazias por horas.
+              </p>
+              <button
+                onClick={() => { setFilter("all"); setCatFilter("all"); }}
+                className="alvo-toque inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-border/40 text-xs font-semibold text-foreground hover:border-primary/40 transition-colors">
+                Ver todos os mercados
+              </button>
             </div>
           </AnimatedSection>
         )}

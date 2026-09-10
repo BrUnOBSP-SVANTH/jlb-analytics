@@ -596,3 +596,51 @@ export async function fetchKalshi(): Promise<TrendingItem[]> {
       .slice(0, 150);
   } catch { return []; }
 }
+
+/**
+ * Intercala as fontes para a visão padrão mostrar a mistura que ela promete.
+ *
+ * O QUE ISTO CONSERTA (MKT-05). A auditoria mediu: `/api/kalshi/markets` devolve
+ * 150 itens (74 KB) e `/api/manifold/markets` 36 (33 KB) a cada carregamento, e
+ * NADA disso entrava na visão "Todos" — 20 de 20 cards eram Polymarket, embaixo
+ * de um subtítulo que diz "Reddit · Polymarket · Kalshi". Pagava-se a banda sem
+ * entregar o conteúdo.
+ *
+ * A causa não era filtro: era desempate. As três fontes têm fórmulas de `score`
+ * que TETAM em 100, e mercado grande de qualquer bolsa chega lá. Com dezenas de
+ * empates em 100, quem decide é a ordem do array — e `sort` em JavaScript é
+ * ESTÁVEL, então a ordem de concatenação (`[...poly, ...kalshi, ...manifold]`)
+ * virava a ordem da tela. Uma decisão de produto tomada por acidente numa linha
+ * de concatenação.
+ *
+ * A régua aqui: dentro de cada fonte a ordem de `score` manda (é o que faz o
+ * mercado relevante subir); ENTRE as fontes, rodízio. Quem tem menos itens
+ * simplesmente sai do rodízio quando acaba, sem deixar buraco.
+ */
+export function intercalarPorFonte(itens: TrendingItem[]): TrendingItem[] {
+  const porFonte = new Map<Source, TrendingItem[]>();
+  for (const it of itens) {
+    if (!porFonte.has(it.source)) porFonte.set(it.source, []);
+    porFonte.get(it.source)!.push(it);
+  }
+
+  // Uma fonte só (ou nenhuma): não há o que intercalar.
+  if (porFonte.size <= 1) return itens;
+
+  // Fonte com mais itens começa o rodízio — assim a lista não abre com a fonte
+  // que tem três mercados e some.
+  const filas = Array.from(porFonte.values()).sort((a, b) => b.length - a.length);
+
+  const saida: TrendingItem[] = [];
+  let indice = 0;
+  while (saida.length < itens.length) {
+    let colocouAlgum = false;
+    for (const fila of filas) {
+      if (indice < fila.length) { saida.push(fila[indice]); colocouAlgum = true; }
+    }
+    // Todas as filas acabaram — sai em vez de girar para sempre.
+    if (!colocouAlgum) break;
+    indice++;
+  }
+  return saida;
+}
