@@ -70,7 +70,12 @@ const MODELS: ModelGuide[] = [
     accuracy: "~100% (matemático)",
     accuracyColor: "text-positive border-positive/30 bg-positive/10",
     limitacao: "Overround baixo não significa que o mercado está precificado corretamente — só que a margem da casa é pequena. Você ainda precisa estimar melhor que o consenso.",
-    polymarketUso: "Polymarket e Kalshi têm overround de ~1-3% (taxa de protocolo). Casas esportivas tradicionais cobram bem mais — de 5% a 10%. Comparar a probabilidade implícita das duas fontes mostra o tamanho da margem que cada uma embute.",
+    // CAL-04: aqui havia "Polymarket e Kalshi têm overround de ~1-3% (taxa de
+    // protocolo)" — um número específico sobre a taxa de terceiros, que muda
+    // por plataforma e por produto e que não temos como conferir daqui.
+    // O que ensina de verdade, e é auditável pelo próprio leitor: como MEDIR o
+    // overround a partir dos preços que ele está vendo na tela.
+    polymarketUso: "Some as probabilidades de todos os desfechos do mesmo mercado. O quanto passar de 100% é o overround daquele mercado, agora — você acabou de medir a margem embutida sem precisar acreditar em ninguém. Compare o mesmo evento em duas plataformas e a diferença aparece.",
     steps: [
       "1. Colete as odds de todos os resultados possíveis (ex: 1.90 / 1.90)",
       "2. Calcule 1/odd para cada resultado",
@@ -145,6 +150,35 @@ const MODELS: ModelGuide[] = [
       ["f* > 25%", "Suspeite da sua estimativa — improvável em mercados eficientes"],
     ],
   },
+  {
+    // CAL-02: a tela tem uma aba "Correlação" e o guia não a mencionava — o
+    // usuário abria uma calculadora sem nenhuma explicação por trás.
+    id: "correlacao",
+    icon: TrendingUp,
+    name: "Correlação de Pearson",
+    tagline: "Duas posições que sobem e descem juntas não são duas apostas",
+    whenToUse: [
+      "Antes de abrir uma segunda posição parecida com a primeira",
+      "Para descobrir se a sua carteira está concentrada sem você perceber",
+      "Para checar se um ativo protege o outro de verdade",
+    ],
+    howItWorks: "Mede, de −1 a +1, o quanto duas séries andam juntas. +1 = sobem e descem exatamente juntas; 0 = uma não diz nada sobre a outra; −1 = quando uma sobe, a outra desce. Duas posições com correlação alta são, na prática, a MESMA aposta com dois nomes — e o risco soma em vez de se diluir.",
+    accuracy: "Fórmula fechada, sem estimativa: o valor é o que os dados dizem",
+    accuracyColor: "text-neon-blue border-neon-blue/30 bg-neon-blue/10",
+    limitacao: "Correlação não é causa, e só enxerga relação LINEAR: duas séries podem estar fortemente ligadas de forma curva e dar correlação perto de zero. Também muda com o tempo — a de crise não é a de calmaria.",
+    polymarketUso: "Dois mercados sobre a mesma eleição, ou sobre o mesmo time, tendem a resolver juntos. Se você abriu posição nos dois achando que diversificou, dobrou a exposição ao mesmo evento.",
+    steps: [
+      "1. Pegue as séries de preço dos dois ativos no mesmo período",
+      "2. Calcule a correlação (a aba Correlação faz isso com dados reais)",
+      "3. Acima de 0,7, trate as duas posições como uma só ao dimensionar",
+      "4. Repita de tempos em tempos: a correlação não é fixa",
+    ],
+    benchmarks: [
+      ["|r| < 0,3", "Fraca — as duas posições são de fato independentes"],
+      ["0,3–0,7", "Moderada — parte do risco é compartilhada"],
+      ["> 0,7", "Forte — na prática é a mesma aposta, some as exposições"],
+    ],
+  },
 ];
 
 function ModelCard({ model }: { model: ModelGuide }) {
@@ -155,17 +189,22 @@ function ModelCard({ model }: { model: ModelGuide }) {
     <AnimatedSection>
       <div className="glass-card rounded-xl overflow-hidden">
         <div className="p-5">
-          <div className="flex items-start justify-between gap-3 mb-3">
-            <div className="flex items-center gap-3">
+          {/* O selo tinha `shrink-0` numa fileira sem quebra: ele não cedia
+              espaço e passava POR CIMA do nome do modelo — medido em 390px e em
+              1150px, "Critério de Kelly" e "Crescimento ótimo provado…" no mesmo
+              retângulo. `flex-wrap` deixa o selo cair para a linha de baixo
+              quando não cabe, que é o que ele deveria ter feito desde sempre. */}
+          <div className="flex items-start justify-between gap-3 mb-3 flex-wrap">
+            <div className="flex items-center gap-3 min-w-0 flex-1">
               <div className="w-9 h-9 rounded-lg bg-primary/15 flex items-center justify-center shrink-0">
-                <Icon className="w-4 h-4 text-primary" />
+                <Icon className="w-4 h-4 text-primary" aria-hidden="true" />
               </div>
-              <div>
+              <div className="min-w-0">
                 <h2 className="font-semibold text-foreground text-sm">{model.name}</h2>
                 <p className="text-xs text-muted-foreground">{model.tagline}</p>
               </div>
             </div>
-            <span className={`shrink-0 text-[11px] font-semibold px-2 py-0.5 rounded-full border ${model.accuracyColor}`}>
+            <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full border ${model.accuracyColor}`}>
               {model.accuracy}
             </span>
           </div>

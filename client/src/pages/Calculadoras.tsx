@@ -34,7 +34,15 @@ const CALC_LABELS: Partial<Record<CalcTab, string>> = {
 
 export default function Calculadoras() {
   useSEO("Calculadoras Quantitativas", "Valor Esperado, Critério de Kelly, Overround e Brier Score — calculadoras educacionais com dados reais para operar com método.");
-  const [tab, setTab] = useState<CalcTab>("guia");
+  /**
+   * CAL-01: a tela chamada "Calculadoras" abria na aba "guia" — texto sobre os
+   * modelos, sem nenhuma calculadora à vista. Quem chega pelo menu clicando em
+   * "Calculadoras" espera calcular, e o guia continua a um clique de distância.
+   *
+   * O Valor Esperado é a primeira porque é o conceito que o site inteiro usa e
+   * o primeiro do Nível 1.
+   */
+  const [tab, setTab] = useState<CalcTab>("ev");
   const awardedTabs = useRef<Set<CalcTab>>(new Set());
 
   function switchTab(next: CalcTab) {

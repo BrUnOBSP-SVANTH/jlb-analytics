@@ -17,8 +17,10 @@ import { chromium } from "@playwright/test";
 const BASE = process.env.JLB_URL ?? "http://localhost:3001";
 
 const ROTAS = [
-  "/", "/apostas", "/noticias", "/portfolio", "/previsao", "/briefing",
-  "/track-record", "/dashboard", "/perfil", "/leaderboard", "/duelos",
+  // `/mercados` é a canônica desde a decisão de posicionamento (NEG-01);
+  // `/apostas` continua na lista de propósito, para o redirect ser testado.
+  "/", "/mercados", "/apostas", "/noticias", "/portfolio", "/previsao", "/briefing",
+  "/track-record", "/dashboard", "/perfil", "/leaderboard", "/duelos", "/planos",
   "/educacao", "/nivel/1", "/nivel/2", "/nivel/3", "/nivel/4", "/nivel/5",
   "/simulador", "/calculadoras", "/sobre", "/imprensa", "/termos",
   "/privacidade", "/login", "/rota-que-nao-existe",
@@ -101,6 +103,49 @@ for (const rota of ROTAS) {
       for (let i = 1; i < hs.length; i++) if (hs[i] - hs[i - 1] > 1) saltos.push(`h${hs[i - 1]}→h${hs[i]}`);
       return { invisiveis, saltos, h1: hs.filter((x) => x === 1).length };
     });
+    /**
+     * TEXTO SOBREPOSTO. Dois blocos de texto ocupando o mesmo retângulo é
+     * sempre defeito de layout — foi o achado PRV-01 (a linha de subtítulo
+     * desenhada por cima do "1. QUAL ÁREA VOCÊ QUER ANALISAR?").
+     *
+     * Ignora o que fica por cima DE PROPÓSITO: modal, banner fixo e tooltip.
+     * Sem isso o teste acusa o tour de boas-vindas e o aviso de cookies em
+     * todas as rotas — foi o que a primeira versão devolveu.
+     */
+    const colisoes = await p.evaluate(() => {
+      const foraDoFluxo = (el) => {
+        for (let n = el; n && n !== document.body; n = n.parentElement) {
+          const pos = getComputedStyle(n).position;
+          if (pos === "fixed" || pos === "sticky") return true;
+          if (n.getAttribute("role") === "dialog") return true;
+        }
+        return false;
+      };
+      const alvos = [...document.querySelectorAll("p,h1,h2,h3,span,li")].filter((e) => {
+        if (e.children.length > 0 || foraDoFluxo(e)) return false;
+        if ((e.textContent ?? "").trim().length < 10) return false;
+        const cs = getComputedStyle(e);
+        if (cs.display === "none" || cs.visibility === "hidden" || parseFloat(cs.opacity) < 0.2) return false;
+        const b = e.getBoundingClientRect();
+        return b.width > 30 && b.height > 8;
+      }).map((e) => ({ el: e, b: e.getBoundingClientRect(), t: (e.textContent ?? "").trim().slice(0, 32) }));
+
+      const fora = [];
+      for (let i = 0; i < alvos.length; i++) for (let j = i + 1; j < alvos.length; j++) {
+        // Irmãos do MESMO pai são trechos inline da mesma frase (um título em
+        // duas cores, um trecho em negrito): eles dividem a linha de propósito e
+        // seus retângulos se sobrepõem por definição. Foi o falso positivo que a
+        // primeira versão devolveu no título da /imprensa.
+        if (alvos[i].el.parentElement === alvos[j].el.parentElement) continue;
+        const a = alvos[i].b, c = alvos[j].b;
+        const ox = Math.min(a.right, c.right) - Math.max(a.left, c.left);
+        const oy = Math.min(a.bottom, c.bottom) - Math.max(a.top, c.top);
+        if (ox > 20 && oy > 6) fora.push(`"${alvos[i].t}" × "${alvos[j].t}"`);
+      }
+      return fora.slice(0, 2);
+    });
+    if (colisoes.length > 0) achados.push(`TEXTO SOBREPOSTO: ${colisoes.join(" | ")}`);
+
     if (a11y.invisiveis > 0) achados.push(`CONTEÚDO INVISÍVEL: ${a11y.invisiveis} blocos com opacidade baixa`);
     if (a11y.saltos.length > 0) achados.push(`SALTO DE TÍTULO: ${a11y.saltos.join(", ")}`);
     if (a11y.h1 === 0) achados.push("SEM H1: a página não tem título principal");
