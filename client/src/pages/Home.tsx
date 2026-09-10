@@ -172,14 +172,23 @@ const SOCIAL_PROOF = [
 
 // ── Main ───────────────────────────────────────────────────────────────────
 
-const ONBOARDING_KEY = "jlb_onboarding_v1";
+/**
+ * A faixa de boas-vindas da home — NÃO é o tour do site.
+ *
+ * Chamava-se `jlb_onboarding_v1` e o tour chama-se `jlb_onboarding_v3`: dois
+ * recursos diferentes com nomes que parecem versões um do outro. Foi assim que
+ * a auditoria encontrou `v2` e `v3` convivendo (TRV-04) e foi assim que a
+ * limpeza de chaves antigas quase apagou uma chave VIVA. O nome agora diz o que
+ * a chave guarda.
+ */
+const CHAVE_FAIXA_BOAS_VINDAS = "jlb_faixa_boas_vindas";
 
 export default function Home() {
   useSEO("Preveja melhor, decida com método", "Educação quantitativa para mercados preditivos: aprenda a pensar em probabilidades e meça sua própria calibração. Polymarket e Kalshi ao vivo, método Superforecaster, e um histórico auditável — inclusive quando erramos.");
   const [markets, setMarkets] = useState<LiveMarket[]>([]);
   const [marketsLoading, setMarketsLoading] = useState(true);
   const [showBanner, setShowBanner] = useState(() => {
-    try { return !localStorage.getItem(ONBOARDING_KEY); } catch { return false; }
+    try { return !localStorage.getItem(CHAVE_FAIXA_BOAS_VINDAS); } catch { return false; }
   });
   const [briefing, setBriefing] = useState<DailyBriefing | null>(null);
   const [briefingExpanded, setBriefingExpanded] = useState(false);
@@ -188,7 +197,7 @@ export default function Home() {
   const statsRef = useRef(false);
 
   function dismissBanner() {
-    try { localStorage.setItem(ONBOARDING_KEY, "1"); } catch { /* ignore */ }
+    try { localStorage.setItem(CHAVE_FAIXA_BOAS_VINDAS, "1"); } catch { /* ignore */ }
     setShowBanner(false);
   }
 

@@ -50,6 +50,16 @@ export default function ChatWidget() {
     return !v;
   });
 
+  // NAV-02: `Escape` não fechava o widget de chat — era um dos três overlays
+  // que a auditoria testou e nenhum fechava. Quem navega por teclado ficava
+  // preso: para sair era preciso achar o botão com o mouse.
+  useEffect(() => {
+    if (!open) return;
+    const aoTeclar = (e: KeyboardEvent) => { if (e.key === "Escape") setOpen(false); };
+    document.addEventListener("keydown", aoTeclar);
+    return () => document.removeEventListener("keydown", aoTeclar);
+  }, [open]);
+
   return (
     <>
       {(open || loaded) && (

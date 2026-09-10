@@ -79,10 +79,25 @@ describe("dourado dos títulos", () => {
 describe("fonte de display", () => {
   it("não é mais a face padrão de site gerado por IA", () => {
     // Outfit/Inter/Space Grotesk são as três faces que aparecem em todo site
-    // feito às pressas. Continuam na lista como RESERVA, nunca como escolha.
+    // feito às pressas. Fraunces é a escolha, e é a primeira da pilha.
     const linha = css.match(/--font-display:[^;]+;/)?.[0] ?? "";
     expect(linha).toMatch(/Fraunces/);
-    expect(linha.indexOf("Fraunces")).toBeLessThan(linha.indexOf("Outfit"));
+    expect(linha.indexOf("Fraunces")).toBeLessThan(linha.indexOf("serif"));
+  });
+
+  it("três famílias, um papel cada — não cinco", () => {
+    // TRV-03: a auditoria contou CINCO famílias baixadas e três usadas. Playfair
+    // Display estava declarada e não aparecia em tela nenhuma; Outfit era só
+    // reserva de Fraunces — duas serifadas display para o mesmo papel. Medido
+    // depois: 548K de woff2 viraram 400K.
+    // Sem comentário: o texto que explica a remoção CITA "Playfair Display", e
+    // sem tirá-lo o teste acusa a própria documentação da correção. É a quarta
+    // vez que isto morde nesta base — todo teste que varre fonte precisa disto.
+    const main = readFileSync(join(SRC, "main.tsx"), "utf-8")
+      .replace(/\/\*[\s\S]*?\*\//g, " ").replace(/^\s*\/\/.*$/gm, " ");
+    const familias = main.match(/@fontsource-variable\/[a-z-]+/g) ?? [];
+    expect(familias).toHaveLength(3);
+    expect(main).not.toMatch(/playfair/i);
   });
 
   it("tem fallback real, e não só a família genérica", () => {

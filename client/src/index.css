@@ -68,8 +68,10 @@
      editorial de contraste alto, com eixo `wonk` que da personalidade aos
      titulos: conversa com a seriedade de dado financeiro sem ficar dura.
      Outfit fica na lista como reserva, e nao como escolha. */
-  --font-display: 'Fraunces Variable', 'Outfit Variable', Georgia, serif;
-  --font-serif: 'Playfair Display Variable', Georgia, serif;
+  --font-display: 'Fraunces Variable', Georgia, serif;
+  /* Sem Playfair: era a quinta família baixada e não aparecia em tela nenhuma
+     (TRV-03). Quem precisar de serifada usa a display, que já é uma. */
+  --font-serif: 'Fraunces Variable', Georgia, serif;
   --font-mono: 'JetBrains Mono Variable', ui-monospace, monospace;
 }
 
