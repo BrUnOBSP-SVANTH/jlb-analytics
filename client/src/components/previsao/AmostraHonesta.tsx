@@ -13,6 +13,7 @@
 import { useEffect, useState } from "react";
 import { ClipboardList } from "lucide-react";
 import { buscarJson } from "@/lib/api";
+import { num } from "@shared/formato";
 
 interface Dados {
   available: boolean;
@@ -36,11 +37,8 @@ export function AmostraHonesta() {
   const pct = Math.round(((d.resolvidos ?? 0) / d.total) * 100);
 
   return (
-    <div className="rounded-2xl border border-border/30 bg-secondary/5 p-5">
-      <div className="flex items-center gap-2 mb-1.5">
-        <ClipboardList className="w-4 h-4 text-gold shrink-0" />
-        <h3 className="text-sm font-bold text-foreground">Mostramos só as que acertamos?</h3>
-      </div>
+    <section>
+      <h2 className="text-lg font-display font-semibold text-[var(--titulo)] mb-1">Mostramos só as que acertamos?</h2>
       <p className="text-xs text-muted-foreground leading-relaxed mb-4">
         Não — e aqui está como conferir. Registramos a previsão <strong className="text-foreground">antes</strong>{" "}
         de o mercado resolver e nunca reescrevemos o passado. As que ainda não resolveram vão entrar
@@ -48,15 +46,15 @@ export function AmostraHonesta() {
       </p>
 
       <div className="flex items-baseline gap-2 mb-1">
-        <span className="font-mono text-2xl font-bold text-foreground tabular-nums">{d.resolvidos}</span>
-        <span className="text-xs text-muted-foreground">de {d.total} previsões já foram pontuadas</span>
+        <span className="font-mono text-2xl font-bold text-foreground tabular-nums">{num(d.resolvidos)}</span>
+        <span className="text-xs text-muted-foreground">de {num(d.total)} previsões já foram pontuadas</span>
       </div>
       {/* A barra torna a proporção imediata: o pedaço claro é o que ainda vai contar. */}
       <div className="h-2 rounded-full bg-secondary/50 overflow-hidden mb-2">
         <div className="h-full bg-gold/60" style={{ width: `${pct}%` }} />
       </div>
       <p className="text-[11px] text-muted-foreground/80 mb-4">
-        <strong className="text-foreground/90">{d.emAberto}</strong> ainda em aberto, esperando o resultado oficial.
+        <strong className="text-foreground/90">{num(d.emAberto)}</strong> ainda em aberto, esperando o resultado oficial.
       </p>
 
       {d.perfilComparavel !== null && (
@@ -66,19 +64,19 @@ export function AmostraHonesta() {
             {d.perfilComparavel ? (
               <>
                 Sim. Medimos o quanto cada mercado já é “decidido” — um a 50% é uma moeda, um a 95% é
-                quase certeza. As resolvidas ficam a {d.dificuldadeResolvidos} pontos do meio e as em
-                aberto a {d.dificuldadeAbertos}. Perfis parecidos, ou seja, não resolveram só as fáceis.
+                quase certeza. As resolvidas ficam a {num(d.dificuldadeResolvidos, 1)} pontos do meio e as em
+                aberto a {num(d.dificuldadeAbertos, 1)}. Perfis parecidos, ou seja, não resolveram só as fáceis.
               </>
             ) : (
               <>
-                Não exatamente: as resolvidas ficam a {d.dificuldadeResolvidos} pontos do meio e as em
-                aberto a {d.dificuldadeAbertos}. A diferença é grande o bastante para que o placar de
+                Não exatamente: as resolvidas ficam a {num(d.dificuldadeResolvidos, 1)} pontos do meio e as em
+                aberto a {num(d.dificuldadeAbertos, 1)}. A diferença é grande o bastante para que o placar de
                 hoje talvez não represente o conjunto todo — e preferimos avisar.
               </>
             )}
           </p>
         </div>
       )}
-    </div>
+    </section>
   );
 }

@@ -57,11 +57,8 @@ export function Evolucao() {
   if (comAmostra.length === 0) return null;
 
   return (
-    <div className="rounded-2xl border border-border/30 bg-secondary/5 p-5">
-      <div className="flex items-center gap-2 mb-1.5">
-        <TrendingUp className="w-4 h-4 text-gold shrink-0" />
-        <h3 className="text-sm font-bold text-foreground">Estamos melhorando com o tempo?</h3>
-      </div>
+    <section>
+      <h2 className="text-lg font-display font-semibold text-[var(--titulo)] mb-1">Estamos melhorando com o tempo?</h2>
       <p className="text-xs text-muted-foreground leading-relaxed mb-4">
         {VEREDITO[d.tendencia ?? "sem-dados"]}
       </p>
@@ -100,6 +97,6 @@ export function Evolucao() {
           entram nesta linha do tempo.</>
         )}
       </p>
-    </div>
+    </section>
   );
 }

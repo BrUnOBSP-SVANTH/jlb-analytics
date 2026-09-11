@@ -61,11 +61,8 @@ export function ProviderBreakdown() {
   if (!rows || rows.length === 0) return null;
 
   return (
-    <div className="panel p-5">
-      <div className="flex items-center gap-2 mb-1.5">
-        <Layers className="w-4 h-4 text-neon-blue shrink-0" />
-        <p className="text-sm font-semibold text-foreground">De qual modelo veio cada número</p>
-      </div>
+    <section>
+      <h2 className="text-lg font-display font-semibold text-[var(--titulo)] mb-1">De qual modelo veio cada número</h2>
       <p className="text-xs text-muted-foreground leading-relaxed mb-4">
         Nossa IA usa uma cadeia de provedores: quando um falha (crédito, cota, instabilidade), o
         seguinte responde. Como os modelos têm qualidades diferentes, mostramos a fatia de cada um
@@ -135,6 +132,6 @@ export function ProviderBreakdown() {
         tratamos como ruído, não evidência. As fatias saem da mesma leitura da manchete
         (1 previsão por mercado), então elas somam exatamente o total.
       </p>
-    </div>
+    </section>
   );
 }

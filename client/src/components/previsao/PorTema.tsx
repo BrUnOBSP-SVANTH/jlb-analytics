@@ -62,11 +62,8 @@ export function PorTema() {
   if (comVeredito.length === 0) return null;
 
   return (
-    <div className="rounded-2xl border border-border/30 bg-secondary/5 p-5">
-      <div className="flex items-center gap-2 mb-1.5">
-        <Layers className="w-4 h-4 text-gold shrink-0" />
-        <h3 className="text-sm font-bold text-foreground">Onde acertamos mais — e onde temos pouca prova</h3>
-      </div>
+    <section>
+      <h2 className="text-lg font-display font-semibold text-[var(--titulo)] mb-1">Onde acertamos mais — e onde temos pouca prova</h2>
       <p className="text-xs text-muted-foreground leading-relaxed mb-4">
         Nossa taxa de acerto por assunto, ao lado da do mercado. A margem diz quanto o número pode
         variar por sorte da amostra: quanto mais previsões no tema, mais estreita ela fica.
@@ -108,6 +105,6 @@ export function PorTema() {
           que não sabemos a publicar porcentagem que a amostra não sustenta.
         </p>
       )}
-    </div>
+    </section>
   );
 }

@@ -40,11 +40,8 @@ export function CurvaCalibracao() {
   if (comAmostra.length === 0) return null;
 
   return (
-    <div className="rounded-2xl border border-border/30 bg-secondary/5 p-5">
-      <div className="flex items-center gap-2 mb-1.5">
-        <Target className="w-4 h-4 text-gold shrink-0" />
-        <h3 className="text-sm font-bold text-foreground">Quando dizemos 70%, acontece quanto?</h3>
-      </div>
+    <section>
+      <h2 className="text-lg font-display font-semibold text-[var(--titulo)] mb-1">Quando dizemos 70%, acontece quanto?</h2>
       <p className="text-xs text-muted-foreground leading-relaxed mb-4">
         Esta é a nossa <Termo nome="calibracao">calibração</Termo>: se prometemos 70% e a coisa acontece
         perto de 70% das vezes, acertamos o tom. Cada faixa tem a própria margem, porque faixa com
@@ -88,6 +85,6 @@ export function CurvaCalibracao() {
         “No alvo” quer dizer que o que prometemos cabe dentro da margem do que aconteceu.
         As faixas fora do alvo ficam aqui à vista — mostrar onde erramos é o que dá valor ao resto.
       </p>
-    </div>
+    </section>
   );
 }
