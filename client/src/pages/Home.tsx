@@ -88,21 +88,28 @@ function MarketCardSkeleton() {
 
 function LiveMarketCard({ market }: { market: LiveMarket }) {
   const pct = Math.round(market.yesProb * 100);
-  const probColor = pct >= 70 ? "text-positive" : pct >= 40 ? "text-warning" : "text-negative";
-  const barColor = pct >= 70 ? "bg-positive" : pct >= 40 ? "bg-warning" : "bg-negative";
 
+  /**
+   * A probabilidade era colorida por faixa — verde acima de 70, dourado no
+   * meio, vermelho abaixo de 40 — e a barra junto. Cinco cards na fileira
+   * viravam cinco cores diferentes.
+   *
+   * Duas razões para o neutro. A cor gastava no dado que a BARRA já conta, e o
+   * site usa verde e vermelho para dizer "subiu" e "caiu": pintar 19% de
+   * vermelho sugere queda quando é só uma chance baixa. E a lista de
+   * /mercados passou a falar essa língua — número neutro, largura como
+   * medida —, então a home precisa falar a mesma.
+   */
   const inner = (
-    <div className="w-[200px] h-full p-4 rounded-xl border border-border/30 bg-secondary/10 group-hover:border-primary/40 transition-colors space-y-2">
-      <div className="flex items-center gap-1.5 mb-0.5">
-        <span className="text-[11px] font-bold px-1.5 py-0.5 rounded bg-neon-blue/10 text-neon-blue">
-          Polymarket
-        </span>
-      </div>
-      <p className="text-xs font-medium text-foreground leading-snug line-clamp-3 group-hover:text-gold transition-colors">
+    <div className="w-[200px] h-full p-4 rounded-xl border border-border/30 group-hover:border-primary/40 transition-colors space-y-2">
+      <p className="text-[0.8125rem] text-muted-foreground">Polymarket</p>
+      <p className="text-xs text-foreground leading-snug line-clamp-3 group-hover:text-primary transition-colors">
         {market.question}
       </p>
       <div className="flex items-end justify-between pt-1">
-        <span className={`text-2xl font-bold font-mono ${probColor}`}>{pct}%</span>
+        <span className="text-2xl font-mono font-semibold tabular-nums text-foreground">
+          {pct}<span className="text-xs align-top text-muted-foreground">%</span>
+        </span>
         {/* Dividia por mil UMA vez e parava: US$ 1,27 bilhão saía como
             "$1273912k" nos cards em destaque (HOME-01). */}
         {market.volume > 0 && (
@@ -111,8 +118,8 @@ function LiveMarketCard({ market }: { market: LiveMarket }) {
           </span>
         )}
       </div>
-      <div className="w-full h-1 bg-secondary/30 rounded-full overflow-hidden">
-        <div className={`h-full rounded-full ${barColor}`} style={{ width: `${pct}%` }} />
+      <div className="w-full h-1 bg-secondary/40 rounded-full overflow-hidden">
+        <div className="h-full rounded-full bg-[var(--extensao)]" style={{ width: `${pct}%` }} />
       </div>
     </div>
   );
@@ -129,12 +136,24 @@ function LiveMarketCard({ market }: { market: LiveMarket }) {
 
 // ── Constants ──────────────────────────────────────────────────────────────
 
+/**
+ * Os cinco níveis.
+ *
+ * Eram CINCO CORES diferentes — verde, dourado, amarelo, roxo e azul — uma para
+ * cada card da mesma grade. Cinco cores não distinguem cinco níveis: elas só
+ * pintam a fileira, e gastam num enfeite a paleta que o site usa para dizer
+ * coisas (verde sobe, vermelho desce, dourado é a marca).
+ *
+ * A única coisa que o leitor precisa saber olhando essa fileira é o que já está
+ * aberto e o que ainda não está. É isso que o desenho passa a dizer, e a borda
+ * tracejada diz sozinha, sem gastar cor.
+ */
 const LEVELS = [
-  { n: 1, title: "Fundamentos",       href: "/nivel/1", icon: GraduationCap, color: "text-positive",   border: "border-positive/20",    bg: "bg-positive/5",    badge: "Grátis" },
-  { n: 2, title: "Leitura de Dados",  href: "/nivel/2", icon: BarChart3,     color: "text-primary",    border: "border-primary/20",     bg: "bg-primary/5",     badge: "Grátis" },
-  { n: 3, title: "Modelos Básicos",   href: "/nivel/3", icon: TrendingUp,    color: "text-level3", border: "border-level3/20",  bg: "bg-level3/5",  badge: "Grátis" },
-  { n: 4, title: "Vieses",            href: "/nivel/4", icon: Brain,         color: "text-level4", border: "border-level4/20",  bg: "bg-level4/5",  badge: "50 pts" },
-  { n: 5, title: "Integrado",         href: "/nivel/5", icon: GitMerge,      color: "text-neon-blue",  border: "border-neon-blue/20",   bg: "bg-neon-blue/5",   badge: "100 pts" },
+  { n: 1, title: "Fundamentos",      href: "/nivel/1", icon: GraduationCap, aberto: true,  nota: "aberto" },
+  { n: 2, title: "Leitura de dados", href: "/nivel/2", icon: BarChart3,     aberto: true,  nota: "aberto" },
+  { n: 3, title: "Modelos básicos",  href: "/nivel/3", icon: TrendingUp,    aberto: true,  nota: "aberto" },
+  { n: 4, title: "Vieses",           href: "/nivel/4", icon: Brain,         aberto: false, nota: "conclua 3 níveis" },
+  { n: 5, title: "Integrado",        href: "/nivel/5", icon: GitMerge,      aberto: false, nota: "conclua 4 níveis" },
 ];
 
 const HOW_IT_WORKS = [
@@ -376,38 +395,11 @@ export default function Home() {
         <CalibrationTest />
       </section>
 
-      {/* ── Onboarding Banner ── */}
-      {showBanner && (
-        <section className="px-4 py-3 bg-neon-blue/5 border-y border-neon-blue/20" aria-label="Bem-vindo">
-          <div className="max-w-5xl mx-auto flex items-center justify-between gap-4 flex-wrap">
-            <div className="flex items-center gap-3">
-              {/* Sem o ícone genérico dentro do quadradinho arredondado — o
-                  padrão que está em todo site feito às pressas. A marca da casa
-                  já diz do que se trata, e diz que é NOSSO. */}
-              <MarcaProbabilidade className="text-primary shrink-0" size={26} />
-              <div>
-                {/* Fala do que a pessoa vai SABER FAZER, não do estado dela.
-                    "Novo por aqui?" cabe em qualquer site; isto aqui, não. */}
-                <p className="text-sm font-semibold text-foreground">Nunca calculou uma chance na mão?</p>
-                <p className="text-xs text-muted-foreground">O Nível 1 é gratuito e ensina em menos de 10 minutos — sem fórmula decorada, com um mercado de verdade na tela.</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2 shrink-0">
-              <Link href="/nivel/1" onClick={() => track("cta_click", { id: "home_banner_nivel1" })}>
-                <span className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-neon-blue/15 border border-neon-blue/30 text-neon-blue text-xs font-semibold hover:bg-neon-blue/25 transition-colors">
-                  Começar pelo Nível 1 <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
-                </span>
-              </Link>
-              <button
-                onClick={dismissBanner}
-                aria-label="Fechar"
-                className="p-1.5 rounded-lg text-muted-foreground hover:text-muted-foreground hover:bg-secondary/30 transition-colors">
-                <X className="w-3.5 h-3.5" aria-hidden="true" />
-              </button>
-            </div>
-          </div>
-        </section>
-      )}
+      {/* HOME-07: aqui ficava uma faixa "Nunca calculou uma chance na mão?"
+          com o botão "Começar pelo Nível 1" — o MESMO destino do CTA secundário
+          do hero, três telas acima, e a terceira chamada para lá na mesma
+          dobra. Três convites competindo não convidam três vezes mais: eles se
+          anulam, e ainda interrompiam a passagem do quiz para os mercados. */}
 
       {/* ── Live Markets Strip ── */}
       <section className="py-8 px-4 border-y border-border/20 bg-secondary/5" aria-label="Mercados em destaque">
@@ -415,7 +407,7 @@ export default function Home() {
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <span className="w-1.5 h-1.5 rounded-full bg-positive animate-pulse" aria-hidden="true" />
-              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              <span className="text-sm text-muted-foreground">
                 Mercados em destaque
               </span>
             </div>
@@ -455,7 +447,7 @@ export default function Home() {
                   <Newspaper className="w-3.5 h-3.5 text-gold" aria-hidden="true" />
                 </div>
                 <div className="min-w-0 text-left">
-                  <p className="text-[11px] font-semibold uppercase tracking-wider text-gold mb-0.5">
+                  <p className="text-[0.8125rem]  text-gold mb-0.5">
                     Briefing do Dia{briefing.cached ? "" : " — gerado agora"}
                   </p>
                   <p className="text-sm font-medium text-foreground truncate">{briefing.headline}</p>
@@ -472,14 +464,14 @@ export default function Home() {
 
                 {briefing.macroNote && (
                   <div className="px-3 py-2 rounded-lg bg-secondary/20 border border-border/20">
-                    <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">Macro</p>
+                    <p className="text-[0.8125rem] text-muted-foreground  mb-1">Macro</p>
                     <p className="text-xs text-foreground">{briefing.macroNote}</p>
                   </div>
                 )}
 
                 {briefing.marketHighlights?.length > 0 && (
                   <div>
-                    <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">Destaques</p>
+                    <p className="text-[0.8125rem] text-muted-foreground  mb-2">Destaques</p>
                     <div className="space-y-2">
                       {briefing.marketHighlights.map((h, i) => (
                         <div key={i} className="flex items-start gap-2.5 p-2.5 rounded-lg bg-secondary/10 border border-border/15">
@@ -499,13 +491,13 @@ export default function Home() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {briefing.watchToday && (
                     <div className="p-3 rounded-lg bg-neon-blue/5 border border-neon-blue/15">
-                      <p className="text-[11px] font-semibold text-neon-blue uppercase tracking-wider mb-1">Fique de olho</p>
+                      <p className="text-[0.8125rem] text-neon-blue  mb-1">Fique de olho</p>
                       <p className="text-xs text-foreground">{briefing.watchToday}</p>
                     </div>
                   )}
                   {briefing.calibrationTip && (
                     <div className="p-3 rounded-lg bg-positive/5 border border-positive/15">
-                      <p className="text-[11px] font-semibold text-positive uppercase tracking-wider mb-1">Dica de calibração</p>
+                      <p className="text-[0.8125rem] text-positive  mb-1">Dica de calibração</p>
                       <p className="text-xs text-foreground">{briefing.calibrationTip}</p>
                     </div>
                   )}
@@ -535,17 +527,20 @@ export default function Home() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {HOW_IT_WORKS.map((item) => {
               const Icon = item.icon;
+              // O número FICA: "veja → calcule → melhore" é uma sequência de
+              // verdade, e aí numerar informa. O que sai é o tratamento de marca
+              // d'água solta no canto — ele agora estrutura a linha do título,
+              // em vez de flutuar sobre a borda do card.
               return (
-                <div key={item.step} className="relative p-6 rounded-2xl border border-border/30 bg-secondary/5 text-center">
-                  {/* Numeral decorativo (marca d'água) — fora da árvore de acessibilidade */}
-                  <span aria-hidden="true" className="absolute -top-3 left-5 text-[11px] font-bold font-mono text-muted-foreground tracking-widest">
-                    {item.step}
-                  </span>
-                  <div className={`w-12 h-12 rounded-2xl ${item.bg} flex items-center justify-center mx-auto mb-4`}>
-                    <Icon className={`w-6 h-6 ${item.color}`} aria-hidden="true" />
+                <div key={item.step} className="p-6 rounded-2xl border border-border/30">
+                  <div className="flex items-center gap-2.5 mb-3">
+                    <span className="font-mono text-sm tabular-nums text-muted-foreground" aria-hidden="true">
+                      {item.step.replace("#", "")}
+                    </span>
+                    <Icon className="w-4 h-4 text-primary shrink-0" aria-hidden="true" />
                   </div>
-                  <h3 className="font-bold text-foreground mb-2">{item.title}</h3>
-                  <p className="text-xs text-muted-foreground leading-relaxed">{item.desc}</p>
+                  <h3 className="text-base font-semibold text-foreground mb-2">{item.title}</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">{item.desc}</p>
                 </div>
               );
             })}
@@ -568,17 +563,17 @@ export default function Home() {
               const Icon = level.icon;
               return (
                 <Link key={level.n} href={level.href} onClick={() => track("cta_click", { id: "home_nivel_card", nivel: level.n })}>
-                  <div className={`p-4 rounded-xl border ${level.border} ${level.bg} hover:opacity-80 transition-opacity cursor-pointer text-center`}>
-                    <div className="w-9 h-9 rounded-lg bg-background/60 flex items-center justify-center mx-auto mb-3">
-                      <Icon className={`w-4 h-4 ${level.color}`} aria-hidden="true" />
+                  <div className={`h-full p-4 rounded-xl border transition-colors cursor-pointer ${
+                    level.aberto
+                      ? "border-border/40 hover:border-primary/40"
+                      : "border-dashed border-border/50 hover:border-border/80"
+                  }`}>
+                    <div className="flex items-center gap-2.5 mb-2.5">
+                      <span className="font-mono text-[0.8125rem] tabular-nums text-muted-foreground">{level.n}</span>
+                      <Icon className={`w-4 h-4 shrink-0 ${level.aberto ? "text-primary" : "text-muted-foreground"}`} aria-hidden="true" />
                     </div>
-                    <p className="text-[11px] font-semibold text-muted-foreground mb-0.5">Nível {level.n}</p>
-                    <p className="text-xs font-bold text-foreground leading-snug">{level.title}</p>
-                    <span className={`inline-block mt-2 text-[11px] px-2 py-0.5 rounded-full ${
-                      level.badge === "Grátis" ? "bg-positive/10 text-positive" : "bg-gold/10 text-gold"
-                    }`}>
-                      {level.badge}
-                    </span>
+                    <p className="text-sm text-foreground leading-snug">{level.title}</p>
+                    <p className="text-[0.8125rem] text-muted-foreground mt-1.5">{level.nota}</p>
                   </div>
                 </Link>
               );
@@ -605,9 +600,7 @@ export default function Home() {
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-2">
-                  <span className="text-xs font-semibold uppercase tracking-widest text-neon-blue">Método Superforecaster</span>
-                  <span className="w-1 h-1 rounded-full bg-muted-foreground/30" aria-hidden="true" />
-                  <span className="text-xs text-muted-foreground">{MODEL_COUNT} modelos econométricos</span>
+                  <span className="text-sm text-neon-blue">Método dos Superforecasters</span>
                 </div>
                 <h2 className="text-xl md:text-2xl font-bold text-[var(--titulo)] mb-2">Previsão Guiada por IA</h2>
                 <p className="text-sm text-muted-foreground leading-relaxed max-w-xl">
@@ -615,13 +608,18 @@ export default function Home() {
                   decomposição de Fermi, ajuste de visão interna e calibração. A IA escolhe o modelo certo,
                   cruza notícias reais e mostra todo o raciocínio passo a passo.
                 </p>
-                <div className="flex flex-wrap gap-2 mt-3">
-                  {["Base Rate", "Fermi", "Taylor", "GARCH", "Elo", "Bayes", "+11"].map((m) => (
-                    <span key={m} className="px-2 py-0.5 rounded-md text-[11px] font-mono bg-secondary/50 text-muted-foreground border border-border/30">
-                      {m}
-                    </span>
-                  ))}
-                </div>
+                {/* Aqui havia sete chips em mono — "Base Rate", "Fermi",
+                    "Taylor", "GARCH", "Elo", "Bayes", "+11" — sem contexto
+                    nenhum, para um leitor que veio aprender o que é
+                    probabilidade. Nome de modelo não prova competência para
+                    quem não conhece o modelo; ele só avisa que o assunto não é
+                    para ele. O que prova é o número, e ele está a um clique. */}
+                <p className="text-sm text-muted-foreground mt-3">
+                  {MODEL_COUNT} modelos, e a IA escolhe qual cabe em cada pergunta —{" "}
+                  <Link href="/track-record" className="text-gold hover:underline">
+                    com o acerto de cada um publicado
+                  </Link>.
+                </p>
               </div>
               <Link href="/previsao" className="shrink-0">
                 <span className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-neon-blue/10 border border-neon-blue/30 text-neon-blue text-sm font-medium hover:bg-neon-blue/20 transition-colors whitespace-nowrap">
@@ -636,13 +634,21 @@ export default function Home() {
       {/* ── Social Proof ── */}
       <section className="py-12 px-4 border-t border-border/20 bg-secondary/5">
         <div className="max-w-5xl mx-auto">
-          <p className="text-center text-xs text-muted-foreground uppercase tracking-wider mb-8">
-            Por que decidir no achismo custa caro — números reais
+          {/* Era um eyebrow em caixa alta. Virou o título que ele já queria ser. */}
+          <h2 className="text-center text-xl font-display font-semibold text-[var(--titulo)] mb-2">
+            Decidir no achismo custa caro
+          </h2>
+          <p className="text-center text-sm text-muted-foreground mb-8">
+            Três números de fontes públicas, com a fonte ao lado de cada um.
           </p>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
             {SOCIAL_PROOF.map((stat) => (
               <div key={stat.value} className="p-6 rounded-xl border border-border/20 text-center">
-                <div className="text-3xl font-bold text-negative font-mono mb-2">{stat.value}</div>
+                {/* Era `text-negative`. O vermelho aqui é o mesmo da queda de
+                    preço nos gráficos e no movimento dos cards — gastá-lo em
+                    estatística de contexto tira dele o significado onde ele
+                    significa alguma coisa. O número já é grande. */}
+                <div className="text-3xl font-mono font-semibold text-foreground mb-2">{stat.value}</div>
                 <p className="text-xs text-muted-foreground leading-snug">{stat.label}</p>
                 <p className="text-[11px] text-muted-foreground mt-1">{stat.source}</p>
               </div>
@@ -662,7 +668,7 @@ export default function Home() {
       {stats && (stats.articles > 0 || stats.markets > 0) && (
         <section className="py-10 px-4 border-t border-border/20">
           <div className="max-w-5xl mx-auto">
-            <p className="text-center text-xs text-muted-foreground uppercase tracking-wider mb-6 flex items-center justify-center gap-2">
+            <p className="text-center text-sm text-muted-foreground mb-6 flex items-center justify-center gap-2">
               <span className="w-1.5 h-1.5 rounded-full bg-positive animate-pulse" />
               Plataforma em tempo real
             </p>
