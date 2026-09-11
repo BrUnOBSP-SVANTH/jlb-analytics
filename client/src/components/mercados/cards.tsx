@@ -321,13 +321,17 @@ export function MultiOutcomePills({ outcomes }: { outcomes: { label: string; pro
   const leaderPct = Math.round(leader.prob * 100);
   return (
     <div className="w-full space-y-2">
-      {/* Líder = protagonista: número grande e cor semântica, para qualquer card
-          multi-desfecho liderar com uma probabilidade (não só os binários). */}
+      {/* MKT-14: a ordem de leitura era INVERTIDA dentro do mesmo card — no
+          topo o número vinha antes do nome ("19% Alexandria Ocasio-Cortez") e
+          nas linhas de baixo o nome vinha antes do número ("Jon Ossoff … 16%").
+          O olho tem que refazer o caminho no meio do card.
+          Uma direção só: nome à esquerda, número à direita, inclusive no líder —
+          que continua protagonista pelo TAMANHO, não pela posição. */}
       <div className="flex items-center gap-3">
+        <span className="text-sm text-foreground leading-snug min-w-0 flex-1 truncate" title={leader.label}>{leader.label}</span>
         <span className={`font-mono font-bold leading-none tabular-nums shrink-0 ${leaderPct >= 50 ? "text-positive" : "text-primary"}`} style={{ fontSize: "2.25rem" }}>
           {leaderPct}<span className="text-sm align-top leading-none">%</span>
         </span>
-        <span className="text-xs text-foreground/80 leading-snug min-w-0 truncate" title={leader.label}>{leader.label}</span>
       </div>
       {/* Demais desfechos — compactos, legíveis (foreground/70, não muted) */}
       <div className="space-y-1">

@@ -193,14 +193,19 @@ export default function Leaderboard() {
 
   return (
     <div>
+      {/* LDR-04: as abas ficavam DEPOIS do cabeçalho aqui e ANTES nas outras
+          duas telas da mesma família (Dashboard e Perfil) — quem alterna entre
+          elas vê a barra pular de lugar. A ordem agora é a mesma das três, e a
+          mesma da família de Mercados. */}
+      <ContaTabs />
       <PageHeader
+      compacto
         title="Leaderboard"
         subtitle="Ranking público de calibração — os forecasters mais precisos da plataforma, por Brier Score."
         badge="Comunidade"
       />
 
       <div className="container py-10 space-y-8 max-w-4xl mx-auto">
-        <ContaTabs />
 
         {/* Benchmarks */}
         <AnimatedSection>

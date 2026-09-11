@@ -97,6 +97,7 @@ export default function Portfolio() {
       <div>
         <MercadosTabs />
         <PageHeader
+      compacto
           title="Banca Simulada"
           subtitle="Teste suas estimativas com dinheiro fictício em mercados reais e veja quanto teria ganhado — ou perdido."
           badge="Simulação"

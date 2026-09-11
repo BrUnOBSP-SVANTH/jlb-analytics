@@ -14,9 +14,22 @@ interface Props {
   image?: string;
   /** Valor 0-100 que acende o indicador na grade. Opcional. */
   probability?: number;
+  /**
+   * Versão enxuta, para TELA DE TRABALHO (DSH-07).
+   *
+   * A auditoria apontou "hero de marketing dentro de uma tela de aplicação": o
+   * Dashboard, que a pessoa abre para consultar os próprios números, começava
+   * com o mesmo tratamento de uma landing page — 56px de respiro vertical e uma
+   * grade decorativa antes de qualquer dado. Numa tela de conversão isso
+   * convida; numa de trabalho, atrasa.
+   *
+   * A grade sai (é enfeite, e o `aria-hidden` já dizia isso) e o respiro cai
+   * pela metade. O título e o badge continuam iguais.
+   */
+  compacto?: boolean;
 }
 
-export default function PageHeader({ title, subtitle, badge, image, probability }: Props) {
+export default function PageHeader({ title, subtitle, badge, image, probability, compacto = false }: Props) {
   return (
     <section className="relative overflow-hidden border-b border-border/20">
       {/* Background image */}
@@ -28,6 +41,7 @@ export default function PageHeader({ title, subtitle, badge, image, probability 
       )}
 
       {/* Probability grid — linhas verticais a cada 25% */}
+      {!compacto && (
       <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
         {[25, 50, 75].map((pct) => (
           <div
@@ -62,11 +76,12 @@ export default function PageHeader({ title, subtitle, badge, image, probability 
           </div>
         )}
       </div>
+      )}
 
       {/* Thin gold top accent line */}
       <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-gold/40 to-transparent" />
 
-      <div className="container relative py-10 md:py-14">
+      <div className={`container relative ${compacto ? "py-6 md:py-7" : "py-10 md:py-14"}`}>
         <div className="max-w-3xl">
           {badge && (
             <div

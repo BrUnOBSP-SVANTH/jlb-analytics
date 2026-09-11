@@ -558,6 +558,7 @@ export default function Dashboard() {
     <div>
     <ContaTabs />
     <PageHeader
+      compacto
       badge={`${userPoints} pts`}
       title="Dashboard"
       subtitle="Suas previsões, calibração vs. mercado e evolução como forecaster."

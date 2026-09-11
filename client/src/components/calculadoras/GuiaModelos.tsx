@@ -39,7 +39,7 @@ const MODELS: ModelGuide[] = [
       "Para calcular retorno esperado de uma estratégia ao longo do tempo",
     ],
     howItWorks: "EV = Σ (probabilidade × retorno). Se a soma dos resultados esperados for positiva, a posição tem vantagem matemática. A chave é que sua estimativa de probabilidade precisa ser mais precisa que a do mercado.",
-    accuracy: "~100% (matemático)",
+    accuracy: "Fórmula fechada — não há erro de estimativa",
     accuracyColor: "text-positive border-positive/30 bg-positive/10",
     limitacao: "O resultado depende 100% da qualidade da sua estimativa de probabilidade. Se você subestima ou superestima, o EV calculado é enganoso.",
     polymarketUso: "No Polymarket, o preço de mercado (ex: 0.65) é a probabilidade implícita. Se você acha que a chance real é 75%, o EV = 0.75×(1/0.65 − 1) − 0.25 > 0.",
@@ -68,7 +68,7 @@ const MODELS: ModelGuide[] = [
       "Para calcular a odd 'fair' sem a comissão da casa",
     ],
     howItWorks: "A soma das probabilidades implícitas de todas as odds deveria ser 100% se não houvesse margem. Quando passa de 100%, o excesso é o overround — o lucro garantido da casa independente do resultado.",
-    accuracy: "~100% (matemático)",
+    accuracy: "Fórmula fechada — não há erro de estimativa",
     accuracyColor: "text-positive border-positive/30 bg-positive/10",
     limitacao: "Overround baixo não significa que o mercado está precificado corretamente — só que a margem da casa é pequena. Você ainda precisa estimar melhor que o consenso.",
     // CAL-04: aqui havia "Polymarket e Kalshi têm overround de ~1-3% (taxa de

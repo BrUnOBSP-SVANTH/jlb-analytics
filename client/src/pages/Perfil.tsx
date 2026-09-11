@@ -191,6 +191,7 @@ export default function Perfil() {
     <div>
       <ContaTabs />
       <PageHeader
+      compacto
         title="Meu Perfil"
         subtitle="Seu progresso, histórico de previsões e conquistas na plataforma."
         badge="Perfil"
