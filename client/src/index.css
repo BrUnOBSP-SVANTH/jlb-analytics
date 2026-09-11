@@ -136,6 +136,14 @@
      Estes tokens são para TEXTO e ícone pequeno. Fundo de selo e barra de
      gráfico continuam usando o acento cheio, onde a área grande resolve a
      leitura. No escuro eles são o próprio acento. */
+  /* A EXTENSÃO DA LINHA na lista de mercados — o fundo cuja largura É a
+     probabilidade (ver components/mercados/MercadoLinha.tsx).
+
+     Calibrado para ser lido como QUANTIDADE, não como seleção: precisa ser
+     visível o bastante para o olho descer pela borda direita e enxergar a
+     distribuição do catálogo, e discreto o bastante para o texto por cima não
+     perder contraste. No escuro isso é um degrau acima da superfície do card. */
+  --extensao: oklch(0.315 0.018 278);
   --gold-legivel: oklch(0.82 0.12 85);
   --positivo-legivel: oklch(0.72 0.19 155);
   --negativo-legivel: oklch(0.70 0.19 25);
@@ -193,6 +201,9 @@
 
   /* As mesmas cores, uma volta mais escuras: é isto que faltava (TRV-07).
      Medidas contra --background (oklch 0.975) para ficarem acima de 4,5:1. */
+  /* No claro a mesma leitura pede o caminho oposto: um degrau ABAIXO do papel,
+     senão a barra desapareceria no branco. */
+  --extensao: oklch(0.885 0.012 88);
   --gold-legivel: oklch(0.50 0.11 76);
   --positivo-legivel: oklch(0.48 0.15 155);
   --negativo-legivel: oklch(0.50 0.19 27);

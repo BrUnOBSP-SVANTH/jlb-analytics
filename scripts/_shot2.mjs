@@ -1,0 +1,15 @@
+import { chromium } from "@playwright/test";
+const [rota, nome, largura, tema] = [process.argv[2], process.argv[3], Number(process.argv[4] ?? 1400), process.argv[5]];
+const b = await chromium.launch();
+const ctx = await b.newContext({ viewport: { width: largura, height: 1100 } });
+const p = await ctx.newPage();
+if (tema === "claro") await ctx.addInitScript(() => localStorage.setItem("jlb-theme", "light"));
+await p.goto("http://localhost:3001" + rota, { waitUntil: "domcontentloaded", timeout: 45000 });
+await p.getByRole("button", { name: "Aceitar a medição" }).click({ timeout: 2500 }).catch(() => {});
+await p.getByText("Pular tour").click({ timeout: 3000 }).catch(() => {});
+await p.waitForTimeout(7000);
+await p.evaluate((t) => { if (t === "claro") document.documentElement.classList.add("light"); }, tema);
+await p.waitForTimeout(600);
+await p.screenshot({ path: `C:/Users/vitor/AppData/Local/Temp/shot/${nome}.png`, clip: { x: 0, y: 0, width: largura, height: Math.min(1600, await p.evaluate(() => document.documentElement.scrollHeight)) } });
+console.log(`${nome}.png`);
+await b.close();

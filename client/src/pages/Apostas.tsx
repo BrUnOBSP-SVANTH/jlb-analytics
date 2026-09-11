@@ -20,7 +20,7 @@ import {
 import { SourceBadge, BADGE_CONFIG } from "@/components/mercados/cards";
 import { TrendingCard } from "@/components/mercados/TrendingCard";
 import { ComparePanel } from "@/components/mercados/ComparePanel";
-import { CompactRow } from "@/components/mercados/CompactRow";
+import { MercadoLinha, EixoDeProbabilidade } from "@/components/mercados/MercadoLinha";
 import { LoadingSkeleton } from "@/components/mercados/LoadingSkeleton";
 import { DivergencesSection } from "@/components/mercados/DivergencesSection";
 import { casaBusca } from "@/lib/marketSearch";
@@ -36,7 +36,7 @@ import { num } from "@shared/formato";
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 type Filter = "all" | "reddit" | "polymarket" | "kalshi" | "manifold";
-type ViewMode = "grid" | "list" | "compact";
+type ViewMode = "grid" | "list";
 type SortBy = "trending" | "volume" | "prob_asc" | "prob_desc" | "newest";
 
 const SORT_OPTIONS: { id: SortBy; label: string }[] = [
@@ -84,7 +84,7 @@ export default function Apostas() {
   const [catFilter, setCatFilter]   = useState<CategoryFilter>(() => (localStorage.getItem("apostas_catFilter") as CategoryFilter) ?? "all");
   // NEG-04: "tem alguma coisa daqui?" é a pergunta mais óbvia de quem chega.
   const [soBrasil, setSoBrasil] = useState(false);
-  const [viewMode, setViewMode]     = useState<ViewMode>(() => (localStorage.getItem("apostas_viewMode") as ViewMode) ?? "grid");
+  const [viewMode, setViewMode]     = useState<ViewMode>(() => (localStorage.getItem("apostas_viewMode") as ViewMode) ?? "list");
   const [sortBy, setSortBy]         = useState<SortBy>(() => (localStorage.getItem("apostas_sortBy") as SortBy) ?? "trending");
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [compareMap, setCompareMap] = useState<Map<string, TrendingItem>>(new Map());
@@ -293,6 +293,28 @@ export default function Apostas() {
     return () => clearInterval(timer);
   }, [load]);
 
+  /**
+   * Ligar/desligar o acompanhamento. Estava escrito por extenso em três lugares
+   * (grade, lista e compacta) — três cópias da mesma regra é três regras que por
+   * acaso coincidem hoje.
+   */
+  const alternarWatchlist = useCallback((i: TrendingItem) => {
+    if (watchedSet.has(i.id)) {
+      removeFromWatchlist(i.id);
+      setWatchedSet((prev) => { const s = new Set(prev); s.delete(i.id); return s; });
+      toast("Removido da watchlist");
+      return;
+    }
+    addToWatchlist({
+      id: i.id, title: i.title,
+      source: i.source as "polymarket" | "kalshi" | "reddit",
+      yesProb: i.yesProb, externalUrl: i.externalUrl, category: i.normalizedCategory,
+    });
+    void syncPushWatchlist();
+    setWatchedSet((prev) => new Set(prev).add(i.id));
+    toast("Adicionado à watchlist", { description: "Aparece no seu Dashboard." });
+  }, [watchedSet]);
+
   const bySource = useMemo(
     () => filter === "all" ? items : items.filter((i) => i.source === filter),
     [items, filter]
@@ -371,46 +393,44 @@ export default function Apostas() {
       {/* ── Page header — Polymarket style: tight, number-forward ── */}
       <div className="border-b border-border/30 bg-obsidian/40">
         <div className="container py-6">
-          <div className="flex items-end justify-between gap-4 flex-wrap">
-            <div>
-              <div className="flex items-center gap-2 mb-1">
-                <span className="w-2 h-2 rounded-full bg-positive animate-pulse" aria-hidden="true" />
-                <span className="text-[11px] font-mono text-positive/80 uppercase tracking-widest">Ao vivo</span>
-              </div>
-              <h1 className="text-2xl font-display font-bold text-[var(--titulo)]">Mercados em Hype</h1>
-              <p className="text-sm text-muted-foreground mt-1">
-                Reddit · Polymarket · Kalshi — atualização automática a cada 3 minutos
+          <div className="flex items-end justify-between gap-6 flex-wrap">
+            <div className="min-w-0">
+              {/* "Em Hype" era jargão, e em inglês. O que esta tela é: o que os
+                  mercados estão precificando agora. */}
+              <h1 className="text-2xl font-display font-bold text-[var(--titulo)]">Mercados ao vivo</h1>
+              <p className="text-sm text-muted-foreground mt-1 max-w-xl">
+                O que Polymarket, Kalshi e Manifold estão precificando agora, com a nossa leitura ao lado.
               </p>
             </div>
-            {/* MKT-04: o número grande é o RESULTADO DO FILTRO, não o tamanho do
-                catálogo. Com Kalshi selecionado ele continuava marcando 300
-                enquanto as categorias somavam 60 — quem lê conclui que o filtro
-                não funcionou. Quando há filtro ativo, o total do catálogo vai
-                junto, em letra menor, porque a informação é útil e não conflita. */}
+
+            {/* Os três blocos em caixa alta ("MERCADOS / ATUALIZADO / PRÓXIMA")
+                viraram uma frase. Eram rótulo de sistema com moldura de card, o
+                tratamento de dashboard genérico: três números boxeados no canto,
+                nenhum deles a resposta de uma pergunta que alguém tenha feito.
+                Uma frase diz a mesma coisa e cabe numa linha. */}
             {!loading && items.length > 0 && (
-              <div className="flex items-center gap-3 flex-wrap">
-                <div className="px-3 py-1.5 rounded-lg bg-secondary/30 border border-border/30 text-center">
-                  <p className="text-[11px] text-muted-foreground uppercase tracking-wider">Mercados</p>
-                  <p className="text-lg font-mono font-bold text-foreground">{filtered.length}</p>
-                  {filtered.length !== items.length && (
-                    <p className="text-[11px] text-muted-foreground">de {items.length}</p>
-                  )}
-                </div>
-                <div className="px-3 py-1.5 rounded-lg bg-secondary/30 border border-border/30 text-center">
-                  <p className="text-[11px] text-muted-foreground uppercase tracking-wider">Atualizado</p>
-                  {/* aria-live: a lista se atualiza sozinha a cada 3 minutos e nada
-                      anunciava isso a quem usa leitor de tela (TRV-14). */}
-                  <p className="text-sm font-mono text-foreground" aria-live="polite">
-                    {lastUpdated?.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) ?? "—"}
-                  </p>
-                </div>
-                <div className="px-3 py-1.5 rounded-lg bg-secondary/30 border border-border/30 text-center">
-                  <p className="text-[11px] text-muted-foreground uppercase tracking-wider">Próxima</p>
-                  <p className="text-sm font-mono font-bold text-foreground">
+              <p className="text-[0.8125rem] text-muted-foreground flex items-center gap-2 shrink-0">
+                <span className="w-1.5 h-1.5 rounded-full bg-positive animate-pulse" aria-hidden="true" />
+                <span>
+                  <span className="font-mono tabular-nums text-foreground">{filtered.length}</span>
+                  {filtered.length !== items.length && <> de <span className="font-mono tabular-nums">{items.length}</span></>}
+                  {" "}mercados
+                </span>
+                <span aria-hidden="true">·</span>
+                {/* aria-live: a lista se atualiza sozinha a cada 3 minutos e nada
+                    anunciava isso a quem usa leitor de tela (TRV-14). */}
+                <span aria-live="polite">
+                  {lastUpdated
+                    ? <>atualizado {lastUpdated.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}</>
+                    : "atualizando"}
+                </span>
+                <span aria-hidden="true">·</span>
+                <span>
+                  próxima em <span className="font-mono tabular-nums">
                     {Math.floor(countdown / 60)}:{String(countdown % 60).padStart(2, "0")}
-                  </p>
-                </div>
-              </div>
+                  </span>
+                </span>
+              </p>
             )}
           </div>
         </div>
@@ -477,24 +497,27 @@ export default function Apostas() {
               ))}
             </div>
 
-            {/* Search */}
-            <div className="relative">
-              <input
-                ref={searchRef}
-                type="search"
-                aria-label="Buscar mercados"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Buscar mercados… (/ para focar)"
-                className="w-full sm:w-72 pl-8 pr-3 py-1.5 rounded-lg text-xs bg-secondary/30 border border-border/30 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/40"
-              />
-              <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
-              </svg>
-            </div>
-
-            {/* Row 2: sort + view + actions */}
+            {/* Fileira 2: busca, ordenação e modo — juntas. Eram TRÊS fileiras
+                de controle antes do primeiro mercado da tela. */}
             <div className="flex items-center gap-2 flex-wrap">
+              {/* Busca */}
+              <div className="relative">
+                <input
+                  ref={searchRef}
+                  type="search"
+                  aria-label="Buscar mercados"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Buscar mercados… (/ para focar)"
+                  className="w-full sm:w-72 pl-8 pr-3 py-1.5 rounded-lg text-xs bg-secondary/30 border border-border/30 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/40"
+                />
+                <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
+                </svg>
+              </div>
+
+
+
               {/* Sort */}
               <div className="flex items-center gap-1 bg-secondary/30 rounded-lg p-0.5 border border-border/20">
                 <ArrowUpDown className="w-3 h-3 text-muted-foreground ml-2 shrink-0" aria-hidden="true" />
@@ -523,10 +546,7 @@ export default function Apostas() {
                   className={`p-1.5 rounded-md transition-colors ${viewMode === "list" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
                   <List className="w-3.5 h-3.5" aria-hidden="true" />
                 </button>
-                <button onClick={() => setViewMode("compact")} title="Compacto"
-                  className={`p-1.5 rounded-md transition-colors ${viewMode === "compact" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
-                  <AlignJustify className="w-3.5 h-3.5" aria-hidden="true" />
-                </button>
+
               </div>
 
               <div className="flex items-center gap-1.5 ml-auto">
@@ -582,105 +602,25 @@ export default function Apostas() {
         )}
 
         {/* ── Market list view (Kalshi-inspired table) ── */}
+        {/* ── A LISTA (padrão) ──
+            Substitui a tabela e o modo compacto, que eram a mesma informação em
+            duas densidades e nenhuma das duas desenhada. Ver
+            components/mercados/MercadoLinha.tsx para a decisão que carrega o
+            desenho: a linha É a barra. */}
         {!loading && viewMode === "list" && filtered.length > 0 && (
-          <AnimatedSection>
-            <div className="glass-card rounded-xl overflow-hidden mb-6">
-              {/* Table header */}
-              <div className="grid grid-cols-[1fr_64px] sm:grid-cols-[1fr_80px_90px_90px_100px] gap-3 sm:gap-4 px-4 py-2.5 border-b border-border/30 bg-secondary/10">
-                <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Mercado</p>
-                <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider text-right">SIM</p>
-                <p className="hidden sm:block text-[11px] font-semibold text-muted-foreground uppercase tracking-wider text-right">Volume</p>
-                <p className="hidden sm:block text-[11px] font-semibold text-muted-foreground uppercase tracking-wider text-right">Hype</p>
-                <p className="hidden sm:block text-[11px] font-semibold text-muted-foreground uppercase tracking-wider text-right">Fonte</p>
-              </div>
-              {/* Rows */}
-              <div className="divide-y divide-border/20">
-                {filtered.slice(0, visibleCount).map((item) => {
-                  const pct = item.yesProb !== undefined ? parseFloat((item.yesProb * 100).toFixed(1)) : null;
-                  const pctColor = pct === null ? "text-muted-foreground" : pct >= 70 ? "text-positive" : pct <= 30 ? "text-negative" : "text-gold";
-                  return (
-                    <div key={item.id} className="grid grid-cols-[1fr_64px] sm:grid-cols-[1fr_80px_90px_90px_100px] gap-3 sm:gap-4 px-4 py-3 hover:bg-secondary/10 transition-colors items-center">
-                      {/* Title */}
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2 mb-0.5">
-                          {item.badge && (
-                            <span className={`text-[11px] font-bold px-1.5 py-0.5 rounded-full border ${BADGE_CONFIG[item.badge].cls}`}>
-                              {BADGE_CONFIG[item.badge].label}
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-sm font-medium text-foreground line-clamp-1">{item.title}</p>
-                        {item.parsedOutcomes && (
-                          <p className="text-[11px] text-muted-foreground mt-0.5">{item.parsedOutcomes.length} resultados</p>
-                        )}
-                      </div>
-                      {/* Prob */}
-                      <div className="text-right">
-                        {pct !== null ? (
-                          <>
-                            <p className={`text-base font-mono font-bold ${pctColor}`}>{pct}%</p>
-                            <p className="text-[11px] text-muted-foreground">SIM</p>
-                          </>
-                        ) : (
-                          <p className="text-sm text-muted-foreground">—</p>
-                        )}
-                      </div>
-                      {/* Volume */}
-                      <div className="hidden sm:block text-right">
-                        <p className="text-sm font-mono text-foreground">{item.volume ? formatVolume(item.volume) : "—"}</p>
-                        {item.volume24h && <p className="text-[11px] text-neon-blue">{formatVolume(item.volume24h)} 24h</p>}
-                      </div>
-                      {/* Hype bar */}
-                      <div className="hidden sm:flex items-center justify-end gap-1.5">
-                        <div className="w-16 h-1.5 bg-secondary/40 rounded-full overflow-hidden">
-                          <div className={`h-full rounded-full ${item.score >= 70 ? "bg-positive" : item.score >= 40 ? "bg-gold" : "bg-primary/50"}`}
-                            style={{ width: `${item.score}%` }} />
-                        </div>
-                        <span className="text-[11px] font-mono text-muted-foreground w-8 text-right">{Math.round(item.score)}%</span>
-                      </div>
-                      {/* Source + link */}
-                      <div className="hidden sm:flex items-center justify-end gap-1.5">
-                        <SourceBadge source={item.source} subreddit={item.subreddit} />
-                        <a href={item.externalUrl} target="_blank" rel="noopener noreferrer"
-                          className="p-1 rounded text-muted-foreground hover:text-primary transition-colors">
-                          <ExternalLink className="w-3 h-3" aria-hidden="true" />
-                        </a>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </AnimatedSection>
-        )}
-
-        {/* ── Compact view ── */}
-        {!loading && viewMode === "compact" && filtered.length > 0 && (
-          <AnimatedSection>
-            <div className="glass-card rounded-xl overflow-hidden mb-6">
-              {filtered.slice(0, visibleCount).map((item) => (
-                <CompactRow
-                  key={item.id}
-                  item={item}
-                  onCompare={toggleCompare}
-                  inCompare={compareMap.has(item.id)}
-                  onWatch={(i) => {
-                    if (watchedSet.has(i.id)) {
-                      removeFromWatchlist(i.id);
-                      setWatchedSet((prev) => { const s = new Set(prev); s.delete(i.id); return s; });
-                      toast("Removido da watchlist");
-                    } else {
-                      addToWatchlist({ id: i.id, title: i.title, source: i.source as "polymarket" | "kalshi" | "reddit", yesProb: i.yesProb, externalUrl: i.externalUrl, category: i.normalizedCategory });
-                      void syncPushWatchlist();
-                      setWatchedSet((prev) => new Set(prev).add(i.id));
-                      toast("Adicionado à watchlist", { description: "Visível no Dashboard." });
-                    }
-                  }}
-                  watched={watchedSet.has(item.id)}
-                />
-              ))}
-            </div>
-          </AnimatedSection>
+          <div className="relative rounded-xl border border-border/30 overflow-hidden mb-8 bg-background">
+            <EixoDeProbabilidade />
+            {filtered.slice(0, visibleCount).map((item) => (
+              <MercadoLinha
+                key={item.id}
+                item={item}
+                onCompare={toggleCompare}
+                inCompare={compareMap.has(item.id)}
+                onWatch={alternarWatchlist}
+                watched={watchedSet.has(item.id)}
+              />
+            ))}
+          </div>
         )}
 
         {/* ── Grid view ── */}
@@ -700,9 +640,11 @@ export default function Apostas() {
 
         {/* ── Infinite scroll sentinel ── */}
         {!loading && filtered.length > visibleCount && (
-          <div ref={sentinelRef} className="flex justify-center items-center gap-2 py-6 text-xs text-muted-foreground">
-            <RefreshCw className="w-3.5 h-3.5 animate-spin" aria-hidden="true" />
-            Carregando mais · {filtered.length - visibleCount} restantes
+          /* O spinner girava para sempre: ele não está carregando nada — está
+             esperando você rolar até ele. Movimento permanente sem processo por
+             trás lê como travado, e ensina a ignorar spinner de verdade. */
+          <div ref={sentinelRef} className="flex justify-center py-8 text-[0.8125rem] text-muted-foreground">
+            mais {filtered.length - visibleCount} {filtered.length - visibleCount === 1 ? "mercado" : "mercados"} abaixo
           </div>
         )}
 
@@ -725,9 +667,10 @@ export default function Apostas() {
           </AnimatedSection>
         )}
 
-        {!loading && filtered.length > 0 && (viewMode === "list" || viewMode === "compact") && (
+        {!loading && filtered.length > 0 && viewMode === "list" && (
           <p className="text-xs text-muted-foreground text-center mb-4">
-            {filtered.length} mercados · Clique nos cards (modo grade) para análise completa e calculadora de edge
+            A barra é a chance que o mercado dá ao desfecho principal. Clique no título para abrir o
+            mercado, ou na seta para ver a nossa análise sem sair da lista.
           </p>
         )}
 

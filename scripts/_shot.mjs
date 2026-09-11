@@ -1,0 +1,15 @@
+import { chromium } from "@playwright/test";
+const rota = process.argv[2] ?? "/";
+const nome = process.argv[3] ?? "tela";
+const largura = Number(process.argv[4] ?? 1400);
+const b = await chromium.launch();
+const ctx = await b.newContext({ viewport: { width: largura, height: 1100 }, deviceScaleFactor: 1 });
+const p = await ctx.newPage();
+await p.goto("http://localhost:3001" + rota, { waitUntil: "domcontentloaded", timeout: 45000 });
+await p.getByRole("button", { name: "Aceitar a medição" }).click({ timeout: 2500 }).catch(() => {});
+await p.getByText("Pular tour").click({ timeout: 3000 }).catch(() => {});
+await p.waitForTimeout(8000);
+await p.screenshot({ path: `C:/Users/vitor/AppData/Local/Temp/shot/${nome}.png`, fullPage: true });
+const alt = await p.evaluate(() => document.documentElement.scrollHeight);
+console.log(`${nome}.png — ${largura}x${alt}`);
+await b.close();
