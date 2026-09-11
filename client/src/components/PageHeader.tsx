@@ -99,15 +99,26 @@ export default function PageHeader({ title, subtitle, badge, image, probability,
             className="text-3xl md:text-[2.6rem] font-display font-bold leading-tight animate-in fade-in slide-in-from-bottom-4 duration-500"
             style={{ animationDelay: "80ms", animationFillMode: "backwards" }}
           >
-            {/* Split title into two gradients: first word gold, rest white */}
+            {/*
+              A primeira palavra sai em dourado — é a assinatura dos títulos da
+              casa. O que faltava era a exceção: em "O que é grátis, e o que o
+              Premium acrescenta" a primeira palavra é a LETRA "O", e a tela
+              mostrava um O dourado gigante sozinho antes do resto em branco.
+
+              A regra passa a ser por TAMANHO e não por contagem de palavras:
+              o dourado pega palavras até juntar um pedaço que se sustente
+              sozinho. Artigo e preposição nunca ficam pendurados.
+            */}
             {(() => {
-              const words = title.split(" ");
+              const palavras = title.split(" ");
+              let corte = 1;
+              while (corte < palavras.length && palavras.slice(0, corte).join(" ").length < 4) corte++;
+              const destaque = palavras.slice(0, corte).join(" ");
+              const resto = palavras.slice(corte).join(" ");
               return (
                 <>
-                  <span className="text-gradient-gold">{words[0]}</span>
-                  {words.length > 1 && (
-                    <span className="text-foreground"> {words.slice(1).join(" ")}</span>
-                  )}
+                  <span className="text-gradient-gold">{destaque}</span>
+                  {resto && <span className="text-foreground"> {resto}</span>}
                 </>
               );
             })()}

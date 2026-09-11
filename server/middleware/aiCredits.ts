@@ -21,9 +21,12 @@ import { log } from "../lib/log.ts";
 const SUPABASE_URL = process.env.SUPABASE_URL ?? process.env.VITE_SUPABASE_URL ?? "";
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY ?? "";
 
-/** Cota mensal do plano grátis. ÚNICA fonte de verdade — o display (/api/ai/credits)
- *  importa daqui; duplicar a constante já causou a UI mostrar 30 e bloquear em 4. */
-export const FREE_LIMIT = 4;
+/** Cota mensal do plano grátis. A constante mora em `shared/planos.ts` porque a
+ *  página /planos ANUNCIA este número para quem ainda não pagou: servidor e
+ *  vitrine precisam do mesmo símbolo. Duplicá-la já fez a UI mostrar 30
+ *  enquanto o servidor bloqueava em 4. */
+export { COTA_GRATIS_MENSAL as FREE_LIMIT } from "../../shared/planos.ts";
+import { COTA_GRATIS_MENSAL as FREE_LIMIT } from "../../shared/planos.ts";
 
 /**
  * O reset mensal no banco é um trigger BEFORE UPDATE — só dispara quando o
