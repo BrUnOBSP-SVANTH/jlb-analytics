@@ -33,10 +33,25 @@ const OBSOLETAS = [
   "jlb_onboarding_v2",
   // Histórico de alertas antes da régua de dedup (ver lib/alertas.ts).
   "jlb_alert_history_v1",
-  // Histórico de calibração: passou a ser recalculado no servidor a partir das
-  // previsões da conta (server/lib/calibracaoUsuario.ts).
-  "jlb_calibration_history_v1",
 ];
+
+/*
+ * ⚠️ `jlb_calibration_history_v1` JÁ ESTEVE nesta lista, e não podia.
+ *
+ * A justificativa parecia boa: o histórico de calibração passou a ser
+ * recalculado no servidor (`/api/ai/user-calibration-history`). Só que o
+ * Dashboard mantém a série local DE PROPÓSITO, e diz por quê no próprio
+ * código: ela serve quem não está logado e cobre a rede fora do ar — melhor a
+ * série antiga do aparelho do que um gráfico vazio.
+ *
+ * Como `limparChavesAntigas()` roda em `main.tsx` a cada carga, ANTES do React
+ * montar, o efeito era: `saveCalibrationSnapshot()` gravava, a próxima abertura
+ * do site apagava, e o gráfico de quem não tem conta nunca tinha dado. Um
+ * defeito silencioso — nada quebra, o gráfico só nasce vazio para sempre.
+ *
+ * É exatamente contra isto que a regra acima existe. O teste ao lado agora a
+ * verifica sozinho, em vez de confiar em quem escreve a lista.
+ */
 
 export function limparChavesAntigas(): void {
   try {
