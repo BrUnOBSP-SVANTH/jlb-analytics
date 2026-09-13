@@ -1,9 +1,29 @@
 /**
  * OnboardingTour — JLB Analytics
  * Tour de onboarding exibido uma única vez por dispositivo.
+ *
+ * ⚠️ O BUG QUE ESTE ARQUIVO CAUSOU, E QUE NÃO PODE VOLTAR.
+ *
+ * Ele é montado em `App.tsx` como IRMÃO do `<Router/>`, então renderiza em
+ * TODAS as rotas — inclusive `/login`, que fica fora do Layout. O painel é um
+ * `fixed inset-0` com fundo escuro: numa primeira visita, ele cobria a tela de
+ * login inteira e ENGOLIA todos os cliques. O botão "Entrar" continuava ali,
+ * visível e habilitado, e o clique nunca chegava nele.
+ *
+ * O sintoma para quem usa o site é o pior possível: "fiz login e não conclui".
+ * Não há erro no console, nada falha, nenhuma requisição sai — porque o clique
+ * nunca aconteceu. Medido em produção com navegador de verdade: o
+ * `elementFromPoint` no centro do botão devolvia a barra de navegação do tour.
+ *
+ * E não foi pego pela varredura porque o painel não tinha `role="dialog"` — a
+ * varredura pula elementos `fixed` e diálogos justamente para não acusar modal
+ * como "texto sobreposto". Agora tem o papel certo, e o teste ao lado prende a
+ * regra: o tour NÃO renderiza nas rotas de autenticação.
  */
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { useLocation } from "wouter";
 import { MODEL_COUNT } from "@/lib/brand";
+import { useModalA11y } from "@/hooks/useModalA11y";
 import { TrendingUp, Flame, Brain, Target, BookOpen, Search, X } from "lucide-react";
 
 const STEPS = [
@@ -53,7 +73,18 @@ const STEPS = [
 
 const STORAGE_KEY = "jlb_onboarding_v3";
 
+/**
+ * Rotas onde o tour NUNCA aparece.
+ *
+ * O critério não é "página importante": é página cujo único trabalho é um
+ * formulário que a pessoa veio completar. Cobrir isso com um convite de boas-
+ * vindas não atrasa a tarefa — impede a tarefa. Quem chega em `/login` já sabe
+ * o que quer; o tour espera a pessoa sair dali.
+ */
+const ROTAS_SEM_TOUR = ["/login", "/reset-password"];
+
 export default function OnboardingTour() {
+  const [rota] = useLocation();
   const [visible, setVisible] = useState(() => {
     try {
       return localStorage.getItem(STORAGE_KEY) == null;
@@ -61,12 +92,26 @@ export default function OnboardingTour() {
       return false;
     }
   });
-  const [step, setStep] = useState(0);
 
   function dismiss() {
     try { localStorage.setItem(STORAGE_KEY, "done"); } catch { /* private browsing */ }
     setVisible(false);
   }
+
+  // A decisão de aparecer é SÓ daqui. O painel vive num componente separado
+  // porque `useModalA11y` precisa montar junto com ele — pendurar o Escape num
+  // modal invisível sequestraria a tecla do resto do site.
+  if (!visible) return null;
+  if (ROTAS_SEM_TOUR.some((r) => rota === r || rota.startsWith(r + "/"))) return null;
+  return <PainelDoTour onDismiss={dismiss} />;
+}
+
+function PainelDoTour({ onDismiss }: { onDismiss: () => void }) {
+  const [step, setStep] = useState(0);
+  const painel = useRef<HTMLDivElement>(null);
+  // Escape fecha, Tab não escapa para o fundo, e o foco volta para quem abriu.
+  useModalA11y(onDismiss, painel);
+  const dismiss = onDismiss;
 
   function handleNext() {
     if (step < STEPS.length - 1) {
@@ -80,15 +125,18 @@ export default function OnboardingTour() {
     if (step > 0) setStep((s) => s - 1);
   }
 
-  if (!visible) return null;
-
   const current = STEPS[step];
   const Icon = current.icon;
   const isLast = step === STEPS.length - 1;
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="relative max-w-md w-full glass-card rounded-2xl p-8">
+    <div
+      className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="tour-titulo"
+    >
+      <div ref={painel} tabIndex={-1} className="relative max-w-md w-full glass-card rounded-2xl p-8">
         {/* Skip button */}
         <button
           onClick={dismiss}
@@ -105,7 +153,7 @@ export default function OnboardingTour() {
         </div>
 
         {/* Title */}
-        <h2 className="text-xl font-bold text-center mb-2 text-[var(--titulo)]">{current.title}</h2>
+        <h2 id="tour-titulo" className="text-xl font-bold text-center mb-2 text-[var(--titulo)]">{current.title}</h2>
 
         {/* Description */}
         <p className="text-sm text-center text-foreground/80 mb-2">{current.description}</p>

@@ -63,6 +63,75 @@ for (const rota of ROTAS) {
 
   try {
     await p.goto(BASE + rota, { waitUntil: "domcontentloaded", timeout: 60_000 });
+
+    /**
+     * ⚠️ A ORDEM DESTE BLOCO É O CONSERTO, e ela custou o pior bug que este
+     * site já teve em produção.
+     *
+     * As dispensas logo abaixo ("Pular tour", "Aceitar a medição") existem para
+     * o cromo não atrapalhar as outras medições. Só que elas rodavam PRIMEIRO —
+     * e com isso a varredura media um estado que NENHUM visitante de primeira
+     * viagem vê. O tour de boas-vindas cobria o formulário de `/login` inteiro,
+     * ninguém conseguia entrar no site, e a varredura dava 27/27 telas limpas
+     * todos os dias, porque clicava em "Pular tour" antes de olhar.
+     *
+     * Então a checagem de clique acontece AQUI, com a página exatamente como
+     * ela chega para quem abre o site pela primeira vez.
+     */
+    await p.waitForTimeout(2500);
+    /**
+     * FORMULÁRIO COBERTO — o detector que faltava, e que custou caro.
+     *
+     * O bloco de TEXTO SOBREPOSTO lá embaixo ignora de propósito o que é `fixed`
+     * ou `role=dialog`: modal por cima de texto é o comportamento correto de um
+     * modal. Essa régua estava certa para texto e ERRADA para formulário. O tour
+     * de boas-vindas renderizava em `/login` (é irmão do `<Router/>` em App.tsx,
+     * e `/login` fica fora do Layout) e cobria o formulário inteiro. Não dava
+     * nem para digitar o e-mail. Ninguém conseguia entrar no site, e não havia
+     * um único erro no console — porque o clique nunca chegava a acontecer.
+     *
+     * A régua é estreita de propósito, e é por isso que não tem falso positivo:
+     * um formulário é a razão de existir da página que o contém. Se ao ABRIR a
+     * página ele já está coberto, a página não pode cumprir a própria função.
+     * Não existe modal legítimo que nasça por cima de um formulário — os que
+     * nascem sozinhos são cromo (tour, aviso de cookies), e cromo não tem o
+     * direito de bloquear a tarefa que a pessoa veio fazer.
+     *
+     * ⚠️ NÃO filtre por `disabled`. A primeira versão filtrava, e não acusou
+     * nada: o botão "Entrar" nasce desabilitado enquanto o e-mail está vazio —
+     * exatamente o estado em que a página abre.
+     */
+    const bloqueados = await p.evaluate(() => {
+      const fora = [];
+      for (const form of document.querySelectorAll("form")) {
+        const cs = getComputedStyle(form);
+        if (cs.display === "none" || cs.visibility === "hidden") continue;
+        const campos = [...form.querySelectorAll("input, textarea, select, button")].filter((c) => {
+          const s2 = getComputedStyle(c);
+          if (s2.display === "none" || s2.visibility === "hidden") return false;
+          const r = c.getBoundingClientRect();
+          return r.width > 8 && r.height > 8 &&
+                 r.x >= 0 && r.y >= 0 && r.right <= innerWidth && r.bottom <= innerHeight;
+        });
+        if (campos.length === 0) continue;
+        // Coberto quando NENHUM campo visível do formulário é alcançável: um
+        // campo isolado atrás de um tooltip é ruído; o formulário inteiro
+        // inalcançável é a página quebrada.
+        const alcancavel = campos.some((c) => {
+          const r = c.getBoundingClientRect();
+          const topo = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2);
+          return topo && (topo === c || c.contains(topo) || form.contains(topo));
+        });
+        if (alcancavel) continue;
+        const r = campos[0].getBoundingClientRect();
+        const topo = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2);
+        const quem = topo?.closest("[role=dialog]") ?? topo;
+        fora.push(`${campos.length} campos inalcançáveis, cobertos por <${quem?.tagName.toLowerCase()} class="${String(quem?.className).slice(0, 56)}">`);
+      }
+      return fora.slice(0, 2);
+    });
+    if (bloqueados.length > 0) achados.push(`FORMULÁRIO COBERTO: ${bloqueados.join(" | ")}`);
+
     await p.getByText("Pular tour").click({ timeout: 4000 }).catch(() => {});
     // Aceita a medição para não deixar o aviso cobrindo a tela nas checagens.
     await p.getByRole("button", { name: "Aceitar a medição" }).click({ timeout: 3000 }).catch(() => {});
