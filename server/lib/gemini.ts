@@ -85,8 +85,26 @@ export function shouldFallback(err: unknown): boolean {
   return /credit balance|rate_limit|429|529|overloaded|HTTP 5\d\d|timeout|timed out|aborted/i.test(msg);
 }
 
+/**
+ * O motivo legível de uma falha de provedor.
+ *
+ * A mensagem crua da Anthropic é `Claude HTTP 400: {"type":"error","error":
+ * {"type":"invalid_request_error","message":"Your credit balance is too low…"}}`.
+ * O log cortava em 90 caracteres e imprimia "…invalid_request_error","message":
+ * "Your c" — parava EXATAMENTE antes do motivo. E `invalid_request_error` é o
+ * mesmo tipo devolvido para id de modelo inválido, que seria bug de código; só
+ * a frase distingue um do outro. Em 14/09 foi preciso uma chamada à parte para
+ * descobrir que era crédito.
+ */
+export function motivoDaFalha(err: unknown): string {
+  const msg = err instanceof Error ? err.message : String(err);
+  const interno = msg.match(/"message"\s*:\s*"((?:[^"\\]|\\.)*)"/)?.[1];
+  const status = msg.match(/HTTP (\d{3})/)?.[1];
+  if (interno) return `${status ? `HTTP ${status}: ` : ""}${interno}`.slice(0, 180);
+  return msg.slice(0, 180);
+}
+
 /** Log padronizado — o fallback precisa ser VISÍVEL, não silencioso. */
 export function logFallback(where: string, err: unknown): void {
-  const msg = err instanceof Error ? err.message : String(err);
-  log.warn(`[ai-fallback] ${where}: Anthropic falhou (${msg.slice(0, 90)}) → tentando Gemini`);
+  log.warn(`[ai-fallback] ${where}: Anthropic falhou (${motivoDaFalha(err)}) → tentando Gemini`);
 }

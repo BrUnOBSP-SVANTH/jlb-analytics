@@ -16,6 +16,7 @@
 // API compatível com a da OpenAI (/chat/completions), o que torna este arquivo
 // trivial perto do gemini.ts.
 import { log } from "./log.ts";
+import { motivoDaFalha } from "./gemini.ts";
 
 const GROQ_KEY = () => process.env.GROQ_API_KEY ?? "";
 // Override via GROQ_MODEL. Padrão escolhido por TESTE na conta real (2026-08-29),
@@ -80,6 +81,5 @@ export async function callGroq(opts: {
 
 /** Log padronizado — o 2º fallback também precisa ser VISÍVEL, não silencioso. */
 export function logGroqFallback(where: string, err: unknown): void {
-  const msg = err instanceof Error ? err.message : String(err);
-  log.warn(`[ai-fallback] ${where}: Gemini também falhou (${msg.slice(0, 90)}) → tentando Groq`);
+  log.warn(`[ai-fallback] ${where}: Gemini também falhou (${motivoDaFalha(err)}) → tentando Groq`);
 }

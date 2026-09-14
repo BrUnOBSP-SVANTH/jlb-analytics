@@ -71,7 +71,17 @@ Rules:
 
 JSON only: {"query1":"...","query2":"..."}`;
   try {
-    const raw = await callClaude({ model: "claude-haiku-4-5-20251001", maxTokens: 130, messages: [{ role: "user", content: prompt }], timeoutMs: 5_000 });
+    /**
+     * 8 s, e não 5. O prazo de 5 s foi medido contra o Claude Haiku (~1 s). Com o
+     * Anthropic sem crédito, quem responde é o Gemini gratuito — e esta chamada
+     * sai EM PARALELO com a do Cérebro (cerebro.ts, 8 s), disputando a mesma cota.
+     * No `pnpm qualidade` de 14/09 a de 5 s estourou nas duas análises em que
+     * concorreu, e a de 8 s passou nas duas. Isolado, o Gemini responde este
+     * pedido em 0,8–1,4 s; o que estoura é a espera na fila, não a geração.
+     * Quando estourava, o Groq cobria — mas cada análise esperava 5 s a mais e a
+     * cota do Gemini era gasta numa resposta que ninguém usava.
+     */
+    const raw = await callClaude({ model: "claude-haiku-4-5-20251001", maxTokens: 130, messages: [{ role: "user", content: prompt }], timeoutMs: 8_000 });
     const parsed = extractJson(raw) as { query1?: string; query2?: string };
     return { query1: parsed.query1 ?? "", query2: parsed.query2 ?? "", isBR };
   } catch { return { query1: "", query2: "", isBR }; }

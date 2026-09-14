@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach } from "vitest";
-import { shouldFallback, geminiEnabled } from "./gemini.ts";
+import { shouldFallback, geminiEnabled, motivoDaFalha } from "./gemini.ts";
 
 /**
  * O coração anti-queda: shouldFallback decide QUANDO trocar Anthropic → Gemini.
@@ -55,5 +55,24 @@ describe("geminiEnabled — inerte sem chave", () => {
     expect(geminiEnabled()).toBe(false);
     process.env.GEMINI_API_KEY = "test-key";
     expect(geminiEnabled()).toBe(true);
+  });
+});
+
+describe("motivoDaFalha — o log precisa dizer POR QUE caiu", () => {
+  it("extrai a frase da Anthropic em vez de cortar antes dela", () => {
+    // Mensagem REAL de 14/09. O corte antigo em 90 caracteres imprimia
+    // '..."message":"Your c' e parava exatamente antes do motivo.
+    const real = new Error('Claude HTTP 400: {"type":"error","error":{"type":"invalid_request_error","message":"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."}}');
+    const m = motivoDaFalha(real);
+    expect(m).toMatch(/^HTTP 400: Your credit balance is too low/);
+    expect(m).not.toMatch(/invalid_request_error/);
+  });
+
+  it("mensagem sem JSON passa inteira (até o limite)", () => {
+    expect(motivoDaFalha(new Error("The operation was aborted due to timeout"))).toBe("The operation was aborted due to timeout");
+  });
+
+  it("aceita o que não é Error", () => {
+    expect(motivoDaFalha("anthropic circuit open")).toBe("anthropic circuit open");
   });
 });
