@@ -12,7 +12,7 @@ import { AuthProvider } from "./contexts/AuthContext";
 import Layout from "./components/Layout";
 import EntradaDePagina from "./components/EntradaDePagina";
 import Home from "./pages/Home";
-import { lazy, Suspense, useLayoutEffect } from "react";
+import { lazy, Suspense, useLayoutEffect, useState } from "react";
 import { usePWA } from "./hooks/usePWA";
 import ProgressSync from "./components/ProgressSync";
 
@@ -69,13 +69,49 @@ function PageLoader() {
   );
 }
 
+/** Guardado no aparelho: quem disse "agora não" não é perguntado de novo. */
+const CHAVE_PWA_DISPENSADO = "jlb_pwa_dispensado";
+
+/**
+ * Convite para instalar o app.
+ *
+ * DOIS DEFEITOS QUE ELE TINHA (14/09/2026):
+ *  1. Não havia como fechar. Só "Instalar" — em todo navegador que aceita
+ *     instalação (o Chrome de desktop inclusive), o banner flutuava sobre o
+ *     conteúdo em toda página, para sempre, até a pessoa instalar.
+ *  2. Ficava fixo a 96px do rodapé, sem saber do aviso de cookies — que tem
+ *     165px no celular. O convite caía EM CIMA do aviso. Agora lê a mesma
+ *     `--folga-inferior` que o botão do chat (hooks/useFolgaInferior.ts), e fica
+ *     acima dos dois.
+ */
 function PWAInstallBanner() {
   const { canInstall, install } = usePWA();
-  if (!canInstall) return null;
+  const [dispensado, setDispensado] = useState(() => {
+    try { return localStorage.getItem(CHAVE_PWA_DISPENSADO) === "1"; } catch { return false; }
+  });
+  if (!canInstall || dispensado) return null;
+
+  function agoraNao() {
+    try { localStorage.setItem(CHAVE_PWA_DISPENSADO, "1"); } catch { /* aba privada: vale só nesta visita */ }
+    setDispensado(true);
+  }
+
   return (
-    <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-40 flex items-center gap-3 px-4 py-3 glass-card rounded-xl shadow-lg border border-border/30 text-sm">
-      <span className="text-foreground">Instalar o app JLB no dispositivo?</span>
-      <button onClick={install} className="px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-medium hover:opacity-90 transition-opacity">
+    <div
+      role="region"
+      aria-label="Instalar o app"
+      // 5rem acima do respiro = a altura do botão do chat e um vão, como antes.
+      style={{ bottom: "calc(var(--folga-inferior, 0px) + var(--respiro-flutuante) + 5rem)" }}
+      // Largura cheia com margem no celular, centralizado no desktop. Fundo
+      // SÓLIDO (bg-popover), e não `glass-card`: translúcido, ele deixava o botão
+      // dourado da página aparecer por baixo do texto — em 390px ficava ilegível.
+      className="fixed inset-x-4 sm:inset-x-auto sm:left-1/2 sm:-translate-x-1/2 z-40 flex items-center gap-2 pl-4 pr-2 py-2 rounded-xl border border-border/60 bg-popover shadow-lg transition-[bottom] duration-300"
+    >
+      <span className="flex-1 min-w-0 text-[13px] leading-snug text-foreground">Instalar o app da JLB?</span>
+      <button onClick={agoraNao} className="alvo-toque shrink-0 whitespace-nowrap px-3 rounded-lg text-xs font-medium text-muted-foreground hover:text-foreground transition-colors">
+        Agora não
+      </button>
+      <button onClick={install} className="alvo-toque shrink-0 whitespace-nowrap px-4 rounded-lg bg-primary text-primary-foreground text-xs font-semibold hover:opacity-90 transition-opacity">
         Instalar
       </button>
     </div>
