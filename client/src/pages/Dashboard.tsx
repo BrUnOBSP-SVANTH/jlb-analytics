@@ -24,7 +24,7 @@ import {
 } from "@/lib/predictions";
 import { apiFetch } from "@/lib/api";
 import { awardPoints, loadProgress, niveisConcluidos } from "@/lib/userProgress";
-import { plural, num } from "@shared/formato";
+import { num } from "@shared/formato";
 import { pullProgress } from "@/lib/progressSync";
 import { pullFromSupabase, pushToSupabase, syncOne, deleteOne } from "@/lib/predictionsSync";
 import ContaTabs from "@/components/ContaTabs";
@@ -535,10 +535,9 @@ export default function Dashboard() {
 
   // Pontos sincronizados: pull no mount + reage a ganhos e ao sync cross-device.
   const [userPoints, setUserPoints] = useState(() => loadProgress().totalPoints);
-  // O nível de verdade: quantos níveis têm exercício resolvido. Os três
-  // primeiros são sempre abertos, então o piso é 3.
-  const feitos = niveisConcluidos().length;
-  const nivelAtual = feitos >= 4 ? 5 : feitos >= 3 ? 4 : 3;
+  // Níveis com exercício resolvido. É progresso, não chave: nenhum nível é
+  // trancado (auditoria de 14/09, item 4).
+  const feitos = niveisConcluidos();
   useEffect(() => {
     if (!user) return;
     const refresh = () => setUserPoints(loadProgress().totalPoints);
@@ -626,23 +625,21 @@ export default function Dashboard() {
           </div>
           <p className="text-2xl font-bold font-mono text-gold">{userPoints}</p>
           <p className="text-[11px] text-muted-foreground">
-            {feitos >= 4 ? "Nível 5 liberado"
-              : feitos >= 3 ? "Nível 4 liberado"
-              : `${plural(3 - feitos, "nível a concluir", "níveis a concluir")} para o Nível 4`}
+            {feitos.length} de 5 níveis concluídos
           </p>
         </div>
       </div>
 
       {/* Main grid */}
       <div className="grid gap-6 lg:grid-cols-2">
-        <LevelMap userPoints={userPoints} />
+        <LevelMap feitos={feitos} />
         <div className="space-y-6">
           {/* DSH-01: o nível vinha de PONTOS, e ponto vinha de abrir página.
               A tela anunciava "Todos os níveis concluídos" para quem tinha 0
               previsões resolvidas e a conquista "Visitou o Nível 1" ainda
               bloqueada logo ao lado. Agora vem de exercício resolvido. */}
-          <QuickActions userLevel={nivelAtual} />
-          <BehavioralMetrics userLevel={nivelAtual} />
+          <QuickActions feitos={feitos} />
+          <BehavioralMetrics />
         </div>
       </div>
 

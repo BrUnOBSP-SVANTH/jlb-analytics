@@ -14,14 +14,14 @@ import AnimatedSection from "@/components/AnimatedSection";
 import { useSEO } from "@/hooks/useSEO";
 import { useAuth } from "@/contexts/AuthContext";
 import { plural, num } from "@shared/formato";
-import { loadProgress, niveisConcluidos, faltamParaDestravar, NIVEIS_PARA_DESTRAVAR, type ActivityType } from "@/lib/userProgress";
+import { loadProgress, niveisConcluidos, type ActivityType } from "@/lib/userProgress";
 import { loadPredictions, meanBrierScore, skillScore } from "@/lib/predictions";
 import { pullFromSupabase } from "@/lib/predictionsSync";
 import { pullProgress } from "@/lib/progressSync";
 import {
   LogIn, Star, Trophy, Target, CheckCircle, X as XIcon,
   Zap, Calculator, Brain, BarChart2, TrendingUp, ArrowRight,
-  Calendar, Clock, BookOpen, Lock,
+  Calendar, Clock, BookOpen,
 } from "lucide-react";
 import { BadgesSection, type BadgeContext } from "@/components/perfil/badges";
 import { PremiumUpgrade } from "@/components/perfil/PremiumUpgrade";
@@ -62,11 +62,11 @@ const ACTIVITY_META: Record<ActivityType, { label: string; icon: typeof Zap; col
 };
 
 const LEVELS = [
-  { n: 1, title: "Fundamentos",        href: "/nivel/1", requires: 0   },
-  { n: 2, title: "Leitura de Dados",   href: "/nivel/2", requires: 0   },
-  { n: 3, title: "Modelos Básicos",    href: "/nivel/3", requires: 0   },
-  { n: 4, title: "Vieses e Psicologia", href: "/nivel/4", requires: 50 },
-  { n: 5, title: "Análise Integrada",  href: "/nivel/5", requires: 100 },
+  { n: 1, title: "Fundamentos",         href: "/nivel/1" },
+  { n: 2, title: "Leitura de Dados",    href: "/nivel/2" },
+  { n: 3, title: "Modelos Básicos",     href: "/nivel/3" },
+  { n: 4, title: "Vieses e Psicologia", href: "/nivel/4" },
+  { n: 5, title: "Análise Integrada",   href: "/nivel/5" },
 ];
 
 
@@ -152,12 +152,13 @@ export default function Perfil() {
   const mb = meanBrierScore(predictions);
   const avgBrier = mb !== null ? mb.toFixed(3) : null;
 
-  // O próximo nível a destravar — agora por NÍVEIS CONCLUÍDOS, não por saldo de
-  // pontos. Com pontos, o nível 5 abria para quem nunca resolveu um exercício.
-  const concluidos = niveisConcluidos().length;
-  const nextUnlock = [4, 5].find((lvl) => concluidos < (NIVEIS_PARA_DESTRAVAR[lvl] ?? 0));
-  const nextThreshold = nextUnlock ? NIVEIS_PARA_DESTRAVAR[nextUnlock] : null;
-  const faltamNiveis = nextUnlock ? faltamParaDestravar(nextUnlock) : 0;
+  // Níveis com exercício resolvido. É PROGRESSO, e não chave: nenhum nível é
+  // trancado (auditoria de 14/09, item 4). Este mesmo arquivo chegou a ter três
+  // regras ao mesmo tempo — uma barra dizendo "abre por exercício", um mapa que
+  // trancava por PONTOS com link para "#", e páginas de nível que abriam para
+  // qualquer um.
+  const feitos = niveisConcluidos();
+  const concluidos = feitos.length;
 
   // Joined date from Supabase user metadata
   const joinedAt = user.created_at ? fmtDate(user.created_at) : "—";
@@ -242,27 +243,24 @@ export default function Perfil() {
         <PremiumUpgrade userId={user.id} userEmail={user.email ?? ""} />
 
         {/* ── Points + Unlock Progress ── */}
-        {nextThreshold && (
+        {concluidos < 5 && (
           <AnimatedSection>
             <div className="glass-card rounded-2xl p-6 space-y-4">
               <div className="flex items-center gap-2">
                 <Trophy className="w-4 h-4 text-gold" />
-                <h2 className="font-semibold text-[var(--titulo)]">Progresso de Desbloqueio</h2>
+                <h2 className="font-semibold text-[var(--titulo)]">Progresso na trilha</h2>
               </div>
               {/* NVL-01: era "acumule pontos". Pontos vinham de visitar página,
                   então o nível 5 abria para quem não tinha resolvido nada. Agora
                   a barra mede o que o Dashboard chama de "concluído": exercício
                   resolvido. As duas telas passam a dizer a mesma coisa. */}
               <p className="text-xs text-muted-foreground">
-                Cada nível abre quando você <span className="text-foreground">resolve um exercício</span> dos
-                anteriores. Sem pagamento — e sem atalho por clique.
+                Um nível conta como concluído quando você <span className="text-foreground">resolve um exercício</span> dele.
+                Os cinco estão abertos desde o começo — a ordem é só uma sugestão.
               </p>
-              <PointsBar points={concluidos} target={nextThreshold} />
+              <PointsBar points={concluidos} target={5} />
               <p className="text-xs text-muted-foreground text-center">
-                {faltamNiveis === 0
-                  ? <>O <span className="font-bold text-primary">Nível {nextUnlock}</span> já está liberado.</>
-                  : <>Falta {plural(faltamNiveis, "resolver um exercício", "resolver exercícios em mais níveis")} para
-                    abrir o <span className="font-bold text-primary">Nível {nextUnlock}</span>.</>}
+                {plural(concluidos, "nível concluído", "níveis concluídos")} de 5.
               </p>
             </div>
           </AnimatedSection>
@@ -279,30 +277,23 @@ export default function Perfil() {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-5 gap-3">
               {LEVELS.map((lvl) => {
-                const unlocked = progress.totalPoints >= lvl.requires;
-                const visited = progress.oneTimeDone.includes(`level_visited_${lvl.n}`);
+                // Concluído = exercício resolvido, a mesma régua do Dashboard. Antes
+                // era "visitou a página" e o nível trancava por pontos.
+                const feito = feitos.includes(lvl.n);
                 return (
-                  <Link key={lvl.n} href={unlocked ? lvl.href : "#"}>
+                  <Link key={lvl.n} href={lvl.href}>
                     <div className={`p-4 rounded-xl border text-center transition-colors ${
-                      unlocked
-                        ? visited
-                          ? "border-positive/30 bg-positive/5 hover:border-positive/50"
-                          : "border-primary/20 bg-primary/5 hover:border-primary/40"
-                        : "border-border/20 bg-secondary/10 opacity-60 cursor-not-allowed"
+                      feito
+                        ? "border-positive/30 bg-positive/5 hover:border-positive/50"
+                        : "border-primary/20 bg-primary/5 hover:border-primary/40"
                     }`}>
                       <div className="flex items-center justify-center mb-2">
-                        {unlocked
-                          ? visited
-                            ? <CheckCircle className="w-5 h-5 text-positive" />
-                            : <ArrowRight className="w-5 h-5 text-primary" />
-                          : <Lock className="w-5 h-5 text-muted-foreground" />
-                        }
+                        {feito
+                          ? <CheckCircle className="w-5 h-5 text-positive" aria-label="Concluído" />
+                          : <ArrowRight className="w-5 h-5 text-primary" />}
                       </div>
                       <p className="text-xs font-semibold text-foreground">Nível {lvl.n}</p>
                       <p className="text-[11px] text-muted-foreground mt-0.5">{lvl.title}</p>
-                      {!unlocked && (
-                        <p className="text-[11px] text-gold mt-1">{lvl.requires} pts</p>
-                      )}
                     </div>
                   </Link>
                 );
@@ -496,8 +487,7 @@ export default function Perfil() {
             </div>
             <div className="mt-2 p-3 rounded-lg bg-primary/5 border border-primary/10">
               <p className="text-xs text-muted-foreground text-center">
-                <span className="font-semibold text-primary">50 pts</span> desbloqueiam o Nível 4 ·{" "}
-                <span className="font-semibold text-primary">100 pts</span> desbloqueiam o Nível 5
+                Pontos contam o seu ritmo na plataforma — não trancam nem abrem nível nenhum.
               </p>
             </div>
           </div>

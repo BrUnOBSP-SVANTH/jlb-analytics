@@ -554,8 +554,8 @@ export default function Home() {
           <div className="text-center mb-10">
             <h2 className="text-2xl md:text-3xl font-bold text-[var(--titulo)] mb-3">5 Níveis de Conhecimento</h2>
             <p className="text-sm text-muted-foreground max-w-lg mx-auto">
-              Do básico ao avançado, no seu ritmo.
-              Níveis 1–3 são gratuitos. Níveis 4–5 desbloqueiam conforme você usa.
+              Do básico ao avançado, no seu ritmo — e os cinco são gratuitos. A ordem é uma
+              sugestão: os Níveis 4 e 5 rendem mais depois dos três primeiros.
             </p>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">

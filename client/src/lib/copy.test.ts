@@ -100,6 +100,19 @@ describe("o site escreve em português do Brasil", () => {
   });
 });
 
+describe("o que é grátis é dito de um jeito só", () => {
+  it("nenhuma tela anuncia nível trancado", () => {
+    // Auditoria de 14/09/2026, item 4. O site dizia três coisas: a home,
+    // "Níveis 1–3 são gratuitos. Níveis 4–5 desbloqueiam conforme você usa";
+    // /sobre, "Premium: Níveis 4–5"; /planos, "tudo grátis, Premium é só a cota
+    // de IA". Na prática nenhum nível checava nada. A regra que vale é a de
+    // /planos — e a frase que a contradiz não volta sem este teste gritar.
+    expect(ocorrencias(/N[íi]veis\s*1\s*[–-]\s*[23]\s*(são\s*)?(gratuitos|grátis)/i)).toEqual([]);
+    expect(ocorrencias(/(desbloque|destrav)\w*[^.]{0,40}N[íi]ve(l|is)\s*[1-5]|N[íi]ve(l|is)\s*[1-5][^.]{0,40}(desbloque|destrav)/i)).toEqual([]);
+    expect(ocorrencias(/Dispon[íi]vel (no|a partir do) N[íi]vel|N[íi]vel \d+ (liberado|bloqueado)/i)).toEqual([]);
+  });
+});
+
 describe("o vocabulário de engenharia não vaza para a tela", () => {
   it("não fala em cache, snapshot nem fallback com o usuário", () => {
     // "Cache — atualizado hoje", "snapshot de mercados há 16min",

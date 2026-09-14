@@ -6,10 +6,9 @@
 import { Link } from "wouter";
 import {
   GraduationCap, BarChart3, TrendingUp, Brain, GitMerge,
-  ArrowRight, Lock, CheckCircle, BookOpen, Star,
+  ArrowRight, CheckCircle, BookOpen, Star,
   Scale, TrendingDown, Target,
 } from "lucide-react";
-import { isLevelUnlocked } from "@/lib/userProgress";
 import { VERBETES } from "@/lib/glossario";
 import { useSEO } from "@/hooks/useSEO";
 import PageHeader from "@/components/PageHeader";
@@ -18,9 +17,6 @@ const LEVELS = [
   {
     n: 1,
     title: "Fundamentos",
-    free: true,
-    badge: "Grátis",
-    pts: 0,
     href: "/nivel/1",
     icon: GraduationCap,
     color: "text-positive",
@@ -32,9 +28,6 @@ const LEVELS = [
   {
     n: 2,
     title: "Leitura de Dados",
-    free: true,
-    badge: "Grátis",
-    pts: 0,
     href: "/nivel/2",
     icon: BarChart3,
     color: "text-primary",
@@ -46,9 +39,6 @@ const LEVELS = [
   {
     n: 3,
     title: "Modelos Básicos",
-    free: true,
-    badge: "Grátis",
-    pts: 0,
     href: "/nivel/3",
     icon: TrendingUp,
     color: "text-level3",
@@ -60,9 +50,7 @@ const LEVELS = [
   {
     n: 4,
     title: "Vieses e Psicologia",
-    free: false,
-    badge: "50 pts",
-    pts: 50,
+    sugestao: "Rende mais depois dos Níveis 1–3",
     href: "/nivel/4",
     icon: Brain,
     color: "text-level4",
@@ -74,9 +62,7 @@ const LEVELS = [
   {
     n: 5,
     title: "Análise Integrada",
-    free: false,
-    badge: "100 pts",
-    pts: 100,
+    sugestao: "Rende mais depois dos Níveis 1–4",
     href: "/nivel/5",
     icon: GitMerge,
     color: "text-neon-blue",
@@ -187,10 +173,17 @@ export default function Educacao() {
           <GraduationCap className="w-5 h-5 text-primary" />
           Mapa de Progressão
         </h2>
+        {/* Nenhum nível é trancado (auditoria de 14/09, item 4). Havia um cadeado
+            com "50 pts" nos Níveis 4 e 5 que não trancava nada — o link abria o
+            nível do mesmo jeito — enquanto a home dizia "desbloqueiam conforme
+            você usa" e /planos dizia "tudo grátis". A ordem virou sugestão
+            escrita, e o grátis é dito uma vez aqui, não repetido em cada linha. */}
+        <p className="-mt-3 mb-6 text-sm text-muted-foreground">
+          Os cinco níveis são gratuitos e estão abertos desde o começo. A ordem é a que rende mais.
+        </p>
         <div className="space-y-4">
           {LEVELS.map((level, idx) => {
             const Icon = level.icon;
-            const isUnlocked = level.free || isLevelUnlocked(level.n);
             return (
               <div key={level.n} className="relative">
                 {/* Linha conectora */}
@@ -207,12 +200,8 @@ export default function Educacao() {
                         <div className="flex items-center gap-2 flex-wrap mb-2">
                           <span className="text-xs text-muted-foreground font-medium">Nível {level.n}</span>
                           <span className="font-bold text-foreground">{level.title}</span>
-                          {level.free ? (
-                            <span className="px-1.5 py-0.5 rounded text-xs bg-positive/10 text-positive border border-positive/20 font-medium">Grátis</span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs bg-gold/10 text-gold border border-gold/20 font-medium">
-                              <Star className="w-2.5 h-2.5" />{level.badge}
-                            </span>
+                          {"sugestao" in level && level.sugestao && (
+                            <span className="text-[11px] text-muted-foreground">· {level.sugestao}</span>
                           )}
                         </div>
 
@@ -236,16 +225,8 @@ export default function Educacao() {
                       </div>
 
                       <Link href={level.href}>
-                        <span className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium shrink-0 transition-opacity hover:opacity-80 ${
-                          isUnlocked
-                            ? "bg-primary text-primary-foreground"
-                            : "bg-secondary/50 text-muted-foreground border border-border/50"
-                        }`}>
-                          {isUnlocked ? (
-                            <><ArrowRight className="w-3.5 h-3.5" />Acessar</>
-                          ) : (
-                            <><Lock className="w-3.5 h-3.5" />{level.pts} pts</>
-                          )}
+                        <span className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium shrink-0 transition-opacity hover:opacity-80 bg-primary text-primary-foreground">
+                          <ArrowRight className="w-3.5 h-3.5" />Acessar
                         </span>
                       </Link>
                     </div>

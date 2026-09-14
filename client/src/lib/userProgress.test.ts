@@ -1,8 +1,6 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import {
-  loadProgress, concluirNivel, niveisConcluidos, isLevelUnlocked,
-  faltamParaDestravar, NIVEIS_PARA_DESTRAVAR, awardPoints,
-} from "./userProgress.ts";
+import * as progresso from "./userProgress.ts";
+import { loadProgress, concluirNivel, niveisConcluidos, awardPoints } from "./userProgress.ts";
 
 /** localStorage de mentira: estes testes são sobre a REGRA, não sobre o navegador. */
 function limpar() {
@@ -39,7 +37,6 @@ describe("nível concluído = exercício resolvido", () => {
     awardPoints("level_visited", "Visitou o Nível 2", "level_visited_2");
     awardPoints("level_visited", "Visitou o Nível 3", "level_visited_3");
     expect(niveisConcluidos()).toEqual([]);
-    expect(isLevelUnlocked(4)).toBe(false);
   });
 
   it("resolver um exercício conclui o nível", () => {
@@ -57,29 +54,16 @@ describe("nível concluído = exercício resolvido", () => {
     expect(loadProgress().totalPoints).toBe(pontosDepoisDoPrimeiro);
   });
 
-  it("os três primeiros níveis são sempre abertos", () => {
-    for (const n of [1, 2, 3]) expect(isLevelUnlocked(n)).toBe(true);
+  it("dá para concluir o Nível 5 sem ter feito os anteriores", () => {
+    // A ordem é sugestão, não cadeado (auditoria de 14/09, item 4): quem já
+    // domina o básico começa por onde quiser, e o que resolveu conta.
+    concluirNivel(5, "x");
+    expect(niveisConcluidos()).toEqual([5]);
   });
 
-  it("o nível 4 abre com três concluídos; o 5, com quatro", () => {
-    expect(NIVEIS_PARA_DESTRAVAR[4]).toBe(3);
-    expect(NIVEIS_PARA_DESTRAVAR[5]).toBe(4);
-
-    concluirNivel(1, "x"); concluirNivel(2, "x");
-    expect(isLevelUnlocked(4)).toBe(false);
-    expect(faltamParaDestravar(4)).toBe(1);
-
-    concluirNivel(3, "x");
-    expect(isLevelUnlocked(4)).toBe(true);
-    expect(isLevelUnlocked(5)).toBe(false);
-
-    concluirNivel(4, "x");
-    expect(isLevelUnlocked(5)).toBe(true);
-  });
-
-  it("nenhum saldo de pontos abre um nível", () => {
+  it("nenhum saldo de pontos conclui um nível", () => {
     // O caminho antigo, testado de propósito: mesmo com pontos de sobra, sem
-    // exercício resolvido não há nível liberado.
+    // exercício resolvido não há nível concluído.
     //
     // O saldo entra direto porque `awardPoints` tem teto diário (3 previsões por
     // dia) — acumular 100 por ali levaria semanas, que é justamente o motivo de
@@ -89,8 +73,7 @@ describe("nível concluído = exercício resolvido", () => {
       totalPoints: 250, activities: [], dailyCounts: {}, oneTimeDone: [], levelsCompleted: [],
     }));
     expect(loadProgress().totalPoints).toBeGreaterThan(100);
-    expect(isLevelUnlocked(4)).toBe(false);
-    expect(isLevelUnlocked(5)).toBe(false);
+    expect(niveisConcluidos()).toEqual([]);
   });
 
   it("progresso gravado antes da mudança não vira conclusão retroativa", () => {
@@ -100,13 +83,23 @@ describe("nível concluído = exercício resolvido", () => {
       totalPoints: 120, activities: [], dailyCounts: {}, oneTimeDone: [],
     }));
     expect(loadProgress().levelsCompleted).toEqual([]);
-    expect(isLevelUnlocked(5)).toBe(false);
   });
 
   it("nível fora de 1–5 é ignorado", () => {
     concluirNivel(0, "x");
     concluirNivel(9, "x");
     expect(niveisConcluidos()).toEqual([]);
+  });
+
+  it("não existe mais regra de destravar nível", () => {
+    // Existiam `NIVEIS_PARA_DESTRAVAR`, `isLevelUnlocked` e
+    // `faltamParaDestravar` — e nenhuma página de nível os consultava. Três
+    // telas mostravam cadeado, /nivel/5 abria para qualquer um e /planos dizia
+    // "tudo grátis". Se a regra voltar, que volte com o gate de verdade e com
+    // este teste mudado de propósito, não por import esquecido.
+    expect(Object.keys(progresso)).not.toContain("isLevelUnlocked");
+    expect(Object.keys(progresso)).not.toContain("faltamParaDestravar");
+    expect(Object.keys(progresso)).not.toContain("NIVEIS_PARA_DESTRAVAR");
   });
 
   it("devolve os níveis em ordem, mesmo se concluídos fora dela", () => {

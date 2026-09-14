@@ -9,17 +9,23 @@ import { num, plural } from "@shared/formato";
 import { MIN_AMOSTRA } from "@shared/referencias";
 import { MODEL_COUNT } from "@/lib/brand";
 import {
-  GraduationCap, BarChart3, TrendingUp, Brain, GitMerge, Lock,
+  GraduationCap, BarChart3, TrendingUp, Brain, GitMerge, CheckCircle,
   ArrowRight, AlertCircle, Activity, Trophy, Target, Sparkles,
 } from "lucide-react";
 import { loadPredictions, meanBrierScore } from "@/lib/predictions";
 
+/**
+ * Nenhum nível é trancado (auditoria de 14/09, item 4). Este mapa trancava os
+ * Níveis 4 e 5 por PONTOS (50 e 100) com cadeado, enquanto a página do nível
+ * abria para qualquer um e /planos dizia "tudo grátis". Concluído = exercício
+ * resolvido, a mesma régua de `niveisConcluidos`.
+ */
 const LEVELS = [
-  { n: 1, title: "Fundamentos",        href: "/nivel/1", icon: GraduationCap, color: "text-positive",   requires: 0   },
-  { n: 2, title: "Leitura de Dados",   href: "/nivel/2", icon: BarChart3,     color: "text-primary",    requires: 0   },
-  { n: 3, title: "Modelos Básicos",    href: "/nivel/3", icon: TrendingUp,    color: "text-level3", requires: 0   },
-  { n: 4, title: "Vieses e Psicologia", href: "/nivel/4", icon: Brain,        color: "text-level4", requires: 50  },
-  { n: 5, title: "Análise Integrada",  href: "/nivel/5", icon: GitMerge,      color: "text-neon-blue",  requires: 100 },
+  { n: 1, title: "Fundamentos",         href: "/nivel/1", icon: GraduationCap, color: "text-positive" },
+  { n: 2, title: "Leitura de Dados",    href: "/nivel/2", icon: BarChart3,     color: "text-primary" },
+  { n: 3, title: "Modelos Básicos",     href: "/nivel/3", icon: TrendingUp,    color: "text-level3" },
+  { n: 4, title: "Vieses e Psicologia", href: "/nivel/4", icon: Brain,         color: "text-level4" },
+  { n: 5, title: "Análise Integrada",   href: "/nivel/5", icon: GitMerge,      color: "text-neon-blue" },
 ];
 
 const MATURITY_LABELS = [
@@ -30,7 +36,7 @@ const MATURITY_LABELS = [
   "Expert — calibração estável, referência metodológica",
 ];
 
-export function LevelMap({ userPoints }: { userPoints: number }) {
+export function LevelMap({ feitos }: { feitos: number[] }) {
   return (
     <div className="glass-card rounded-xl p-6 space-y-4">
       <div className="flex items-center justify-between">
@@ -38,30 +44,26 @@ export function LevelMap({ userPoints }: { userPoints: number }) {
           <GraduationCap className="w-4 h-4 text-primary" />
           Mapa de Progressão
         </h3>
-        <span className="text-xs text-gold font-bold">{userPoints} pts</span>
+        <span className="text-xs text-muted-foreground">{feitos.length} de 5 concluídos</span>
       </div>
       <div className="space-y-2">
         {LEVELS.map((level) => {
           const Icon = level.icon;
-          const unlocked = userPoints >= level.requires;
+          const feito = feitos.includes(level.n);
           return (
-            <Link key={level.n} href={unlocked ? level.href : "/perfil"}>
+            <Link key={level.n} href={level.href}>
               <div className={`flex items-center gap-3 p-3 rounded-lg border transition-colors cursor-pointer
-                ${unlocked ? "border-primary/20 bg-primary/5 hover:border-primary/40" : "border-border/20 bg-secondary/5 opacity-60"}`}>
-                <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${unlocked ? "bg-primary/10" : "bg-secondary/30"}`}>
-                  {unlocked
-                    ? <Icon className={`w-4 h-4 ${level.color}`} />
-                    : <Lock className="w-4 h-4 text-muted-foreground" />
-                  }
+                ${feito ? "border-positive/25 bg-positive/5 hover:border-positive/45" : "border-primary/20 bg-primary/5 hover:border-primary/40"}`}>
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-primary/10">
+                  <Icon className={`w-4 h-4 ${level.color}`} aria-hidden="true" />
                 </div>
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
                     <span className="text-xs text-muted-foreground">Nível {level.n}</span>
-                    {!unlocked && level.requires > 0 && (
-                      <span className="text-xs text-gold font-medium">{level.requires} pts</span>
-                    )}
-                    {unlocked && level.requires > 0 && (
-                      <span className="text-xs text-positive font-medium">Desbloqueado</span>
+                    {feito && (
+                      <span className="inline-flex items-center gap-1 text-xs text-positive font-medium">
+                        <CheckCircle className="w-3 h-3" aria-hidden="true" /> Concluído
+                      </span>
                     )}
                   </div>
                   <p className="text-sm font-medium text-foreground">{level.title}</p>
@@ -78,7 +80,7 @@ export function LevelMap({ userPoints }: { userPoints: number }) {
 
 // ── Behavioral Metrics ─────────────────────────────────────────────────────
 
-export function BehavioralMetrics({ userLevel }: { userLevel: number }) {
+export function BehavioralMetrics() {
   // Calcula métricas reais a partir das previsões resolvidas
   const allPreds = loadPredictions();
   const resolved = allPreds.filter((p) => p.resolved && p.outcome !== null);
@@ -113,32 +115,9 @@ export function BehavioralMetrics({ userLevel }: { userLevel: number }) {
 
   const stage = maturityScore <= 1 ? 0 : maturityScore <= 2 ? 1 : maturityScore <= 3 ? 2 : maturityScore <= 4 ? 3 : 4;
 
-  if (userLevel < 4) {
-    return (
-      <div className="glass-card rounded-xl p-6 space-y-3">
-        <h3 className="font-semibold text-foreground flex items-center gap-2">
-          <Brain className="w-4 h-4 text-purple-400" />
-          Métricas Comportamentais
-        </h3>
-        <div className="flex items-start gap-3 p-3 rounded-lg bg-secondary/30 border border-border/30">
-          <Lock className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
-          <div>
-            <p className="text-sm text-foreground font-medium">Disponível no Nível 4</p>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              <Termo nome="brier">Brier Score</Termo>, índice de excesso de confiança e aversão à perda
-              aparecem a partir do Nível 4.
-            </p>
-          </div>
-        </div>
-        <Link href="/nivel/4">
-          <span className="inline-flex items-center gap-2 text-xs text-primary hover:underline">
-            Ir para Nível 4 <ArrowRight className="w-3 h-3" />
-          </span>
-        </Link>
-      </div>
-    );
-  }
-
+  // Sem cadeado "Disponível no Nível 4" (auditoria de 14/09, item 4): estas são
+  // as métricas das SUAS previsões — o Brier já aparece no topo do Dashboard
+  // para todo mundo. O que decide se há o que mostrar é ter previsão resolvida.
   /**
    * DSH-05: sem previsão resolvida, esta tela era uma PAREDE DE TRAVESSÕES —
    * quatro cards de métrica com "—" e uma barra de progresso em zero. O usuário
@@ -151,7 +130,7 @@ export function BehavioralMetrics({ userLevel }: { userLevel: number }) {
     return (
       <div className="glass-card rounded-xl p-6 space-y-3">
         <h3 className="font-semibold text-foreground flex items-center gap-2">
-          <Brain className="w-4 h-4 text-purple-400" aria-hidden="true" />
+          <Brain className="w-4 h-4 text-level4" aria-hidden="true" />
           Métricas Comportamentais
         </h3>
         <p className="text-sm text-muted-foreground leading-relaxed">
@@ -176,7 +155,7 @@ export function BehavioralMetrics({ userLevel }: { userLevel: number }) {
   return (
     <div className="glass-card rounded-xl p-6 space-y-5">
       <h3 className="font-semibold text-foreground flex items-center gap-2">
-        <Brain className="w-4 h-4 text-purple-400" aria-hidden="true" />
+        <Brain className="w-4 h-4 text-level4" aria-hidden="true" />
         Métricas Comportamentais
       </h3>
       <div className="p-4 rounded-xl border border-primary/20 bg-primary/5">
@@ -256,10 +235,11 @@ export function BehavioralMetrics({ userLevel }: { userLevel: number }) {
 
 // ── Quick Actions ──────────────────────────────────────────────────────────
 
-export function QuickActions({ userLevel }: { userLevel: number }) {
-  const nextLevel = Math.min(userLevel + 1, 5);
-  const nextLevelData = LEVELS[nextLevel - 1];
-  const NextIcon = nextLevelData.icon;
+export function QuickActions({ feitos }: { feitos: number[] }) {
+  // O próximo é o primeiro nível ainda sem exercício resolvido — não "o de cima
+  // do atual", que mandava para o Nível 4 quem ainda não tinha feito o 1.
+  const nextLevelData = LEVELS.find((l) => !feitos.includes(l.n));
+  const NextIcon = nextLevelData?.icon;
 
   return (
     <div className="glass-card rounded-xl p-6 space-y-4">
@@ -268,12 +248,12 @@ export function QuickActions({ userLevel }: { userLevel: number }) {
         Próximas Ações
       </h3>
       <div className="space-y-2">
-        {userLevel < 5 ? (
+        {nextLevelData && NextIcon ? (
           <Link href={nextLevelData.href}>
             <div className="flex items-center gap-3 p-3 rounded-lg border border-primary/30 bg-primary/5 hover:bg-primary/10 transition-colors cursor-pointer">
               <NextIcon className={`w-4 h-4 ${nextLevelData.color}`} />
               <div className="flex-1">
-                <p className="text-sm font-medium text-foreground">Avançar para Nível {nextLevel}</p>
+                <p className="text-sm font-medium text-foreground">Continuar no Nível {nextLevelData.n}</p>
                 <p className="text-xs text-muted-foreground">{nextLevelData.title}</p>
               </div>
               <ArrowRight className="w-3.5 h-3.5 text-muted-foreground" />

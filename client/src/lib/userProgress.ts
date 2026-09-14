@@ -5,7 +5,6 @@
  * Supabase, via lib/progressSync.ts — pull no login, push com debounce). O
  * localStorage aqui é cache offline e fonte local enquanto não há sessão.
  * ⚠️ Visitante NÃO logado acumula só no navegador — por design: sem conta, sem nuvem.
- * Pontos desbloqueiam níveis 4 e 5 — sem pagamento.
  *
  * ⚠️ MUDANÇA DE REGRA (auditoria de 09/09/2026 — NVL-01, DSH-01, PRF-02).
  *
@@ -22,8 +21,14 @@
  * A regra agora:
  *  - um nível conta como concluído quando um EXERCÍCIO dele foi resolvido
  *    (`levelsCompleted`), não quando a página foi aberta;
- *  - visitar continua valendo ponto, mas pouco, e não desbloqueia nada;
- *  - níveis 4 e 5 abrem por níveis concluídos, não por saldo de pontos.
+ *  - visitar continua valendo ponto, mas pouco, e não conclui nada.
+ *
+ * ⚠️ E NENHUM NÍVEL É TRANCADO (auditoria de 14/09/2026, item 4). Existiam
+ * `NIVEIS_PARA_DESTRAVAR`, `isLevelUnlocked` e `faltamParaDestravar`, e com
+ * eles telas que anunciavam cadeado — mas nenhuma página de nível checava nada,
+ * e /nivel/5 abria para qualquer um. O site dizia três coisas diferentes sobre o
+ * que é grátis. Os três símbolos saíram: níveis concluídos são PROGRESSO, não
+ * chave. O que o Premium muda é só a cota de IA (ver /planos).
  *
  * Atividades que geram pontos (com limites diários):
  *  - prediction_made      → +5  (máx 3/dia)
@@ -91,17 +96,6 @@ const DAILY_LIMITS: Partial<Record<ActivityType, number>> = {
   market_analyzed: 3,
 };
 
-/**
- * Quantos níveis ANTERIORES precisam estar concluídos para o nível abrir.
- *
- * Trocou o limiar de pontos: com pontos, o nível 5 abria para quem nunca tinha
- * resolvido um exercício. Agora a chave é a mesma coisa que o Dashboard chama de
- * "concluído", então a tela e o cadeado nunca discordam.
- */
-export const NIVEIS_PARA_DESTRAVAR: Record<number, number> = {
-  4: 3,
-  5: 4,
-};
 
 // ── Storage ───────────────────────────────────────────────────────────────────
 
@@ -212,18 +206,6 @@ export function awardPoints(
 /** Os níveis com pelo menos um exercício resolvido, em ordem. */
 export function niveisConcluidos(): number[] {
   return [...(loadProgress().levelsCompleted ?? [])].sort((a, b) => a - b);
-}
-
-export function isLevelUnlocked(level: number): boolean {
-  const exigidos = NIVEIS_PARA_DESTRAVAR[level];
-  if (!exigidos) return true; // níveis 1, 2 e 3 são sempre abertos
-  return niveisConcluidos().length >= exigidos;
-}
-
-/** Quantos níveis ainda faltam concluir para destravar este. */
-export function faltamParaDestravar(level: number): number {
-  const exigidos = NIVEIS_PARA_DESTRAVAR[level] ?? 0;
-  return Math.max(0, exigidos - niveisConcluidos().length);
 }
 
 /**

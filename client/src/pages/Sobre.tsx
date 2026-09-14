@@ -176,8 +176,8 @@ export default function Sobre() {
                 <span className="text-sm font-semibold text-foreground">Freemium</span>
               </div>
               <p className="text-xs text-muted-foreground leading-relaxed">
-                Níveis 1–3, calculadoras e simuladores gratuitos. Sem cadastro necessário para explorar.
-                Conversão por valor demonstrado — não por paywall.
+                Os cinco níveis da trilha, calculadoras, simuladores, Banca Simulada e Track Record —
+                grátis. Sem cadastro para explorar.
               </p>
             </div>
             <div className="glass-card rounded-xl p-5 border border-gold/20">
@@ -188,8 +188,8 @@ export default function Sobre() {
                 <span className="text-sm font-semibold text-foreground">Premium</span>
               </div>
               <p className="text-xs text-muted-foreground leading-relaxed">
-                Níveis 4–5, análises IA ilimitadas, histórico de previsões na nuvem e
-                relatórios de calibração exportáveis.
+                Tira o limite mensal de análises de IA, e só isso. A IA, o Track Record e os erros
+                publicados são os mesmos para quem paga e para quem não paga.
               </p>
             </div>
             <div className="glass-card rounded-xl p-5 border border-neon-blue/20">

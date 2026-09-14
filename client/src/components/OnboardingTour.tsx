@@ -53,7 +53,7 @@ const STEPS = [
     iconColor: "text-neon-blue",
     title: "5 Níveis de Educação",
     description: "Do Valor Esperado à Divergência Modelo vs. Mercado — no seu ritmo.",
-    detail: "Níveis 1-3 gratuitos. Cada nível tem calculadoras interativas com dados reais.",
+    detail: "Os cinco níveis são gratuitos. Cada um tem calculadoras interativas com dados reais.",
   },
   {
     icon: Target,
