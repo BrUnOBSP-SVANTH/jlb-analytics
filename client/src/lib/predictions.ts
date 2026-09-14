@@ -174,46 +174,71 @@ export interface ResolutionSuggestion {
  *   2. Fallback só para os sem resultado oficial: preço extremo ao vivo (inferred),
  *      apresentado como sugestão para o usuário confirmar.
  */
+/** Formato de ticker do Kalshi: "KXUCL-27-BAR", "KXFEDDECISION-25OCT-H0". */
+const TICKER_KALSHI = /^[A-Z0-9]+(?:-[A-Z0-9.]+)+$/;
+
+/**
+ * O id que o /api/settlements precisa consultar para resolver ESTA previsão.
+ *
+ *  · Binária (sem desfecho): o próprio mercado, como sempre.
+ *  · Desfecho do KALSHI: cada desfecho de um evento do Kalshi é um mercado com
+ *    ticker e liquidação próprios — o vencedor liquida SIM, os demais NÃO. O
+ *    `outcomeId` gravado JÁ é esse ticker, então `kalshi-<outcomeId>` responde
+ *    exatamente "este desfecho aconteceu?". Só vale se tiver formato de ticker:
+ *    quando o cache antigo não trazia o ticker, o id caiu no rótulo
+ *    ("Barcelona"), e rótulo não liquida nada.
+ *  · Desfecho do POLYMARKET: o id é token de negociação (CLOB), sem mercado
+ *    próprio para liquidar por aqui → `null`, resolve à mão.
+ *
+ * ⚠️ O que isto NUNCA pode fazer: devolver o id do MERCADO para uma previsão de
+ * desfecho. O settlement do mercado é o SIM/NÃO do LÍDER — aplicado ao "Aston
+ * Villa" gravaria o resultado do Barcelona: Brier errado, marcado como oficial.
+ */
+export function idDeLiquidacao(p: StoredPrediction): string | null {
+  if (!p.marketId.startsWith("poly-") && !p.marketId.startsWith("kalshi-")) return null;
+  if (!p.outcomeId) return p.marketId;
+  if (p.marketId.startsWith("kalshi-") && TICKER_KALSHI.test(p.outcomeId)) return `kalshi-${p.outcomeId}`;
+  return null;
+}
+
 export async function detectResolutions(pending: StoredPrediction[]): Promise<ResolutionSuggestion[]> {
-  const realMarketPreds = pending.filter(
-    (p) => (p.marketId.startsWith("poly-") || p.marketId.startsWith("kalshi-"))
-      // ⚠️ Previsão de DESFECHO fica fora das duas resoluções automáticas. O
-      // settlement e o preço ao vivo daqui são UM SIM/NÃO por mercado — o do
-      // desfecho líder. Aplicá-los a uma previsão de "Aston Villa" num mercado de
-      // 12 times gravaria o resultado do Barcelona nela: Brier errado, gravado
-      // como "oficial", sem erro nenhum na tela. Até existir liquidação por
-      // desfecho, ela se resolve à mão — e o título diz qual time é.
-      && !p.outcomeId
-  );
-  if (realMarketPreds.length === 0) return [];
+  const liquidaveis = pending
+    .map((p) => ({ p, id: idDeLiquidacao(p) }))
+    .filter((x): x is { p: StoredPrediction; id: string } => x.id !== null);
+  if (liquidaveis.length === 0) return [];
 
   const suggestions: ResolutionSuggestion[] = [];
-  const settledIds = new Set<string>();
+  const resolvidas = new Set<string>();   // ids de PREVISÃO já resolvidas oficialmente
 
   // ── 1) Resultado OFICIAL em lote (autoritativo) ────────────────────────────
   try {
     const res = await fetch("/api/settlements", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ids: realMarketPreds.map((p) => p.marketId) }),
+      body: JSON.stringify({ ids: Array.from(new Set(liquidaveis.map((x) => x.id))) }),
     });
     if (res.ok) {
       const { settlements } = await res.json() as { settlements: Record<string, boolean> };
-      for (const pred of realMarketPreds) {
-        const outcome = settlements[pred.marketId];
+      for (const { p, id } of liquidaveis) {
+        const outcome = settlements[id];
         if (outcome !== undefined) {
           suggestions.push({
-            prediction: pred, suggestedOutcome: outcome,
+            prediction: p, suggestedOutcome: outcome,
             currentProb: outcome ? 100 : 0, confidence: "alta", resolutionSource: "settled",
           });
-          settledIds.add(pred.marketId);
+          resolvidas.add(p.id);
         }
       }
     }
   } catch { /* segue para o fallback heurístico */ }
 
+  // O fallback por preço só serve à previsão BINÁRIA: o preço ao vivo do mercado
+  // é o do desfecho líder, e inferir por ele o resultado de outro desfecho é o
+  // mesmo erro que o comentário de `idDeLiquidacao` descreve.
+  const realMarketPreds = liquidaveis.map((x) => x.p).filter((p) => !p.outcomeId && !resolvidas.has(p.id));
+
   // ── 2) Fallback: preço extremo ao vivo, só para os sem resultado oficial ────
-  const stillPending = realMarketPreds.filter((p) => !settledIds.has(p.marketId));
+  const stillPending = realMarketPreds;
   if (stillPending.length === 0) return suggestions;
 
   const priceMap = new Map<string, number>(); // marketId → yesProb (0-100)

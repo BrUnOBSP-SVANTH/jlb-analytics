@@ -10,7 +10,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import {
   addPrediction, previsaoDoDesfecho, somaDasEstimativas, tituloComDesfecho,
-  detectResolutions, loadPredictions, type StoredPrediction,
+  detectResolutions, idDeLiquidacao, loadPredictions, type StoredPrediction,
 } from "./predictions";
 import { reconciliar } from "./predictionsSync";
 
@@ -103,6 +103,69 @@ describe("resolução automática — previsão de desfecho fica de fora", () =>
     expect(sugestoes.map((s) => s.prediction.id)).toEqual([binaria.id]);
     // Nem chegou a pedir: o desfecho saiu antes da chamada.
     expect(pedidos).toEqual([[MERCADO]]);
+  });
+});
+
+describe("idDeLiquidacao — qual id resolve ESTA previsão", () => {
+  const p = (x: Partial<StoredPrediction>): StoredPrediction => ({
+    id: "x", marketId: "poly-1", question: "q", marketProb: 50, userProb: 50,
+    savedAt: "2026-09-14T00:00:00.000Z", resolved: false, outcome: null, brierScore: null, ...x,
+  });
+
+  it("binária: o próprio mercado", () => {
+    expect(idDeLiquidacao(p({ marketId: "poly-123" }))).toBe("poly-123");
+    expect(idDeLiquidacao(p({ marketId: "kalshi-KXFED-25OCT-H0" }))).toBe("kalshi-KXFED-25OCT-H0");
+  });
+
+  it("desfecho do Kalshi: o ticker DO DESFECHO, nunca o do mercado", () => {
+    expect(idDeLiquidacao(p({ marketId: "kalshi-KXUCL-27-BAR", outcomeId: "KXUCL-27-ARS" }))).toBe("kalshi-KXUCL-27-ARS");
+  });
+
+  it("desfecho do Kalshi com id que caiu no rótulo: não liquida", () => {
+    expect(idDeLiquidacao(p({ marketId: "kalshi-KXUCL-27-BAR", outcomeId: "Arsenal" }))).toBeNull();
+  });
+
+  it("desfecho do Polymarket (token CLOB) e Manifold: não liquida por aqui", () => {
+    expect(idDeLiquidacao(p({ marketId: "poly-2772176", outcomeId: "7131523460849" }))).toBeNull();
+    expect(idDeLiquidacao(p({ marketId: "manifold-abc" }))).toBeNull();
+  });
+});
+
+describe("resolução automática de desfecho do Kalshi", () => {
+  it("aplica o resultado DO DESFECHO, mesmo com o do líder na mesma resposta", async () => {
+    const doArsenal = addPrediction({
+      marketId: "kalshi-KXUCL-27-BAR", question: "UCL 2027 — Arsenal",
+      marketProb: 14, userProb: 30, outcomeId: "KXUCL-27-ARS", outcomeLabel: "Arsenal",
+    });
+    const pedidos: string[][] = [];
+    const chamadas = vi.fn(async (_url: string, init?: RequestInit) => {
+      pedidos.push((JSON.parse(String(init?.body ?? "{}")) as { ids: string[] }).ids);
+      // O líder (Barcelona) venceu; o Arsenal, não.
+      return new Response(JSON.stringify({ settlements: { "kalshi-KXUCL-27-BAR": true, "kalshi-KXUCL-27-ARS": false } }), { status: 200 });
+    });
+    vi.stubGlobal("fetch", chamadas);
+
+    const [s, ...resto] = await detectResolutions([doArsenal]);
+
+    expect(resto).toEqual([]);
+    expect(s.prediction.id).toBe(doArsenal.id);
+    expect(s.suggestedOutcome).toBe(false);          // o do Arsenal — não o true do líder
+    expect(s.resolutionSource).toBe("settled");
+    expect(pedidos).toEqual([["kalshi-KXUCL-27-ARS"]]);
+  });
+
+  it("desfecho ainda não liquidado não cai na inferência por preço do líder", async () => {
+    const doArsenal = addPrediction({
+      marketId: "kalshi-KXUCL-27-BAR", question: "UCL 2027 — Arsenal",
+      marketProb: 14, userProb: 30, outcomeId: "KXUCL-27-ARS", outcomeLabel: "Arsenal",
+    });
+    const chamadas = vi.fn(async () => new Response(JSON.stringify({ settlements: {} }), { status: 200 }));
+    vi.stubGlobal("fetch", chamadas);
+
+    expect(await detectResolutions([doArsenal])).toEqual([]);
+    // Uma chamada só (settlements). A segunda seria o catálogo ao vivo para
+    // inferir por preço — e o preço ao vivo daqui é o do Barcelona.
+    expect(chamadas).toHaveBeenCalledTimes(1);
   });
 });
 
