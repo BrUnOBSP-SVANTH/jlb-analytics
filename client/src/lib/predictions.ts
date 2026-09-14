@@ -5,6 +5,7 @@
  */
 
 import { getAllMarkets } from "./marketsCache";
+import { idDeLiquidacao } from "@shared/liquidacao";
 
 export type ResolutionSource = "settled" | "inferred" | "manual";
 
@@ -174,32 +175,9 @@ export interface ResolutionSuggestion {
  *   2. Fallback só para os sem resultado oficial: preço extremo ao vivo (inferred),
  *      apresentado como sugestão para o usuário confirmar.
  */
-/** Formato de ticker do Kalshi: "KXUCL-27-BAR", "KXFEDDECISION-25OCT-H0". */
-const TICKER_KALSHI = /^[A-Z0-9]+(?:-[A-Z0-9.]+)+$/;
-
-/**
- * O id que o /api/settlements precisa consultar para resolver ESTA previsão.
- *
- *  · Binária (sem desfecho): o próprio mercado, como sempre.
- *  · Desfecho do KALSHI: cada desfecho de um evento do Kalshi é um mercado com
- *    ticker e liquidação próprios — o vencedor liquida SIM, os demais NÃO. O
- *    `outcomeId` gravado JÁ é esse ticker, então `kalshi-<outcomeId>` responde
- *    exatamente "este desfecho aconteceu?". Só vale se tiver formato de ticker:
- *    quando o cache antigo não trazia o ticker, o id caiu no rótulo
- *    ("Barcelona"), e rótulo não liquida nada.
- *  · Desfecho do POLYMARKET: o id é token de negociação (CLOB), sem mercado
- *    próprio para liquidar por aqui → `null`, resolve à mão.
- *
- * ⚠️ O que isto NUNCA pode fazer: devolver o id do MERCADO para uma previsão de
- * desfecho. O settlement do mercado é o SIM/NÃO do LÍDER — aplicado ao "Aston
- * Villa" gravaria o resultado do Barcelona: Brier errado, marcado como oficial.
- */
-export function idDeLiquidacao(p: StoredPrediction): string | null {
-  if (!p.marketId.startsWith("poly-") && !p.marketId.startsWith("kalshi-")) return null;
-  if (!p.outcomeId) return p.marketId;
-  if (p.marketId.startsWith("kalshi-") && TICKER_KALSHI.test(p.outcomeId)) return `kalshi-${p.outcomeId}`;
-  return null;
-}
+// A regra de qual id liquida cada previsão mora em shared/ — o servidor
+// (resolveUserPredictions) aplica a MESMA. Ver o cabeçalho de lá.
+export { idDeLiquidacao } from "@shared/liquidacao";
 
 export async function detectResolutions(pending: StoredPrediction[]): Promise<ResolutionSuggestion[]> {
   const liquidaveis = pending

@@ -15,6 +15,7 @@ import { SUPABASE_URL, SUPABASE_KEY, supaWriteHeaders } from "./supabaseRest.ts"
 import { fetchRealOutcomesBatch } from "./resolveOutcomes.ts";
 import { pushToUser, pushEnabled } from "./push.ts";
 import { log } from "./log.ts";
+import { idDeLiquidacao } from "../../shared/liquidacao.ts";
 
 interface PendingPrediction {
   id: string;
@@ -23,6 +24,8 @@ interface PendingPrediction {
   market_question: string;
   market_prob: number;
   user_prob: number;
+  /** Desfecho analisado em mercado de vários (migration 030). Nulo = binária. */
+  outcome_id: string | null;
 }
 
 /**
@@ -32,10 +35,10 @@ interface PendingPrediction {
 export async function resolveUserPredictions(limit = 200): Promise<{ resolved: number; notified: number }> {
   if (!SUPABASE_URL || !SUPABASE_KEY) return { resolved: 0, notified: 0 };
 
-  let pending: PendingPrediction[] = [];
+  let pending: PendingPrediction[];
   try {
     const r = await fetch(
-      `${SUPABASE_URL}/rest/v1/predictions?resolved=eq.false&select=id,user_id,market_id,market_question,market_prob,user_prob&order=created_at.asc&limit=${limit}`,
+      `${SUPABASE_URL}/rest/v1/predictions?resolved=eq.false&select=id,user_id,market_id,market_question,market_prob,user_prob,outcome_id&order=created_at.asc&limit=${limit}`,
       { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }, signal: AbortSignal.timeout(8_000) },
     );
     if (!r.ok) return { resolved: 0, notified: 0 };
@@ -44,13 +47,29 @@ export async function resolveUserPredictions(limit = 200): Promise<{ resolved: n
 
   if (pending.length === 0) return { resolved: 0, notified: 0 };
 
-  // Um lote por mercado distinto (vários usuários podem ter previsto o mesmo).
-  const uniqueIds = Array.from(new Set(pending.map((p) => p.market_id)));
+  /**
+   * ⚠️ O id que liquida CADA previsão, e não o market_id de todas.
+   *
+   * Até 14/09 este job resolvia tudo pelo market_id. Com previsão de DESFECHO no
+   * banco (migration 030), isso aplicaria o SIM/NÃO do LÍDER a uma previsão de
+   * "Aston Villa" — Brier errado, gravado como oficial, e um push de "✅ Você
+   * acertou" no dia em que o Barcelona fosse campeão. A regra mora em
+   * shared/liquidacao.ts, a MESMA que o cliente aplica: binária pelo mercado,
+   * desfecho do Kalshi pelo ticker do desfecho, desfecho do Polymarket fica
+   * pendente (resolve à mão).
+   */
+  const alvos = pending
+    .map((p) => ({ p, id: idDeLiquidacao({ marketId: p.market_id, outcomeId: p.outcome_id }) }))
+    .filter((x): x is { p: PendingPrediction; id: string } => x.id !== null);
+  if (alvos.length === 0) return { resolved: 0, notified: 0 };
+
+  // Um lote por id distinto (vários usuários podem ter previsto o mesmo).
+  const uniqueIds = Array.from(new Set(alvos.map((x) => x.id)));
   const { outcomes } = await fetchRealOutcomesBatch(uniqueIds);
 
   let resolved = 0, notified = 0;
-  for (const p of pending) {
-    const outcome = outcomes.get(p.market_id);
+  for (const { p, id } of alvos) {
+    const outcome = outcomes.get(id);
     // Sem resultado oficial ainda (ou consulta falhou) → fica pendente, sem chutar.
     if (outcome !== true && outcome !== false) continue;
 
