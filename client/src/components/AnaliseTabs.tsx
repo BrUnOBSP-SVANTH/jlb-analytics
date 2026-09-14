@@ -13,7 +13,7 @@ export default function AnaliseTabs() {
   const [location] = useLocation();
 
   return (
-    <div className="border-b border-border/30 bg-secondary/5 sticky top-14 z-30 backdrop-blur-sm">
+    <div className="barra-abas-fixa">
       <div className="container">
         <div className="flex items-center gap-0 h-11 overflow-x-auto scrollbar-none rolagem-lateral">
           {TABS.map((t) => {

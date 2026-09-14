@@ -3,6 +3,7 @@
  * Extraídos de Apostas.tsx para reduzir o tamanho do arquivo — puramente
  * presentacionais (badges, pills, sparkline, barra de hype, multi-outcome).
  */
+import { linhaSvg } from "@/lib/caminhoSvg";
 import { useState, useEffect, useRef, useId } from "react";
 import { Link } from "wouter";
 import { Languages } from "lucide-react";
@@ -87,7 +88,9 @@ export function ProbSparkline({ tokenIds, marketId, source }: {
   const emY = (p: number) => H - PAD - ((p - minP) / range) * (H - PAD * 2);
 
   const coords = pts.map((h, i) => ({ x: emX(i), y: emY(h.p) }));
-  const linha = coords.map((c, i) => `${i === 0 ? "M" : "L"}${num(c.x, 1)},${num(c.y, 1)}`).join(" ");
+  // `linhaSvg`, e não `num()`: o formatador pt-BR escreve "7,8" e, no atributo
+  // `d`, vírgula separa números — cada ponto virava dois (ver lib/caminhoSvg.ts).
+  const linha = linhaSvg(coords);
   // Área = a linha fechada até a base. É o que transforma um risco solto em
   // gráfico: dá volume e deixa claro de que lado está o preenchimento.
   const area = `${linha} L${W},${H} L0,${H} Z`;
@@ -110,7 +113,8 @@ export function ProbSparkline({ tokenIds, marketId, source }: {
 
   return (
     <div className="flex items-center gap-1.5 mt-1.5" title={`Variação ${displayDays} dias`}>
-      <svg width={W} height={H} className="overflow-visible shrink-0" aria-hidden="true">
+      <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none"
+        className="overflow-visible shrink-0" aria-hidden="true">
         <defs>
           <linearGradient id={`g-${gradId}`} x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor={color} stopOpacity={0.32} />

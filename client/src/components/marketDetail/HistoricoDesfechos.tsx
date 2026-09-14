@@ -24,6 +24,7 @@
  * · SEM SUAVIZAÇÃO, pela mesma razão do minigráfico dos cards: bezier entre
  *   pontos medidos inventa preços que nunca existiram.
  */
+import { linhaSvg } from "@/lib/caminhoSvg";
 import { useEffect, useState } from "react";
 import AnimatedSection from "@/components/AnimatedSection";
 import { LineChart } from "lucide-react";
@@ -152,9 +153,9 @@ export function HistoricoDesfechos({ market }: { market: MarketBasic }) {
             ))}
 
             {series.map((s) => {
-              const d = s.pontos
-                .map((pt, i) => `${i === 0 ? "M" : "L"}${num(emX(pt.t), 1)},${num(emY(pt.p), 1)}`)
-                .join(" ");
+              // `linhaSvg`, e não `num()`: com vírgula decimal cada ponto virava
+              // dois e as séries ficavam espremidas no topo (lib/caminhoSvg.ts).
+              const d = linhaSvg(s.pontos.map((pt) => ({ x: emX(pt.t), y: emY(pt.p) })));
               const fim = s.pontos[s.pontos.length - 1];
               return (
                 <g key={s.label}>

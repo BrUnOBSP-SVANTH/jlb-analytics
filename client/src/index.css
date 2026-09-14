@@ -21,6 +21,24 @@
   min-width: 44px;
 }
 
+/* ── BARRA DE ABAS FIXA (Mercados, Análise, Laboratório, Conta) ──────────────
+   Auditoria de 14/09/2026, item 2 — crítico. As quatro barras repetiam
+   `bg-secondary/5 sticky top-14 backdrop-blur-sm`: fundo a 5% de opacidade com
+   desfoque de 8px, fraco demais — ao rolar, o texto da página passava por baixo
+   e ficava texto sobre texto. E `top-14` são 56px, mas o header tem 57px (h-14
+   + 1px de borda): a barra deslizava 1px por baixo dele.
+   Agora é UM utilitário: fundo 92% opaco, desfoque forte, e o topo lido da
+   altura real do header (medida 57px em 390, 768, 1150 e 1440px). */
+@utility barra-abas-fixa {
+  position: sticky;
+  top: var(--altura-header);
+  z-index: 30;
+  background-color: color-mix(in oklch, var(--background) 92%, transparent);
+  -webkit-backdrop-filter: blur(24px);
+  backdrop-filter: blur(24px);
+  border-bottom: 1px solid color-mix(in oklch, var(--border) 30%, transparent);
+}
+
 @theme inline {
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
@@ -114,6 +132,9 @@
      `--folga-inferior`, que painéis fixos de rodapé publicam
      (hooks/useFolgaInferior.ts). 1rem no celular, 1.5rem a partir de 640px. */
   --respiro-flutuante: 1rem;
+  /* Altura do header fechado: h-14 (56px) + 1px de borda. Quem gruda embaixo
+     dele (barra-abas-fixa) lê daqui — `top-14` deixava 1px de sobreposição. */
+  --altura-header: 57px;
   /* Destaques do tema escuro — os mesmos valores que viviam literais no @theme.
      O tema claro redefine em .light. Ver o aviso no @theme inline. */
   --gold: oklch(0.78 0.12 85);
@@ -566,8 +587,13 @@
   /* Glass card — theme-aware, com sombra em camadas e realce sutil no topo */
   .glass-card {
     background: var(--glass-bg);
-    backdrop-filter: blur(16px) saturate(1.1);
+    /* ⚠️ Prefixada ANTES da padrão. Na ordem inversa o minificador (Lightning
+       CSS) tratava as duas como a mesma propriedade e ficava só com a última —
+       a -webkit-, que o Chrome atual não aplica. Auditoria de 14/09, item 3:
+       backdrop-filter computado "none" em todo .glass-card, o painel do chat e
+       o menu de alertas viravam vidro sem desfoque, com o hero legível através. */
     -webkit-backdrop-filter: blur(16px) saturate(1.1);
+    backdrop-filter: blur(16px) saturate(1.1);
     border: 1px solid var(--glass-border);
     box-shadow: var(--shadow-card);
     transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;

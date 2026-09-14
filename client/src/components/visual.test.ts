@@ -114,9 +114,15 @@ describe("minigráfico dos cards", () => {
     // existiram: a curva estoura acima do máximo e abaixo do mínimo reais entre
     // dois pontos. Num site que promete fidelidade ao dado, isso é caro demais
     // pelo ganho estético. O caminho é só M/L — retas entre pontos medidos.
+    // O traçado passou a vir de lib/caminhoSvg.ts (auditoria de 14/09, item 1:
+    // o gerador antigo usava o formatador pt-BR e cada ponto virava dois). A
+    // regra continua a mesma — só M/L —, verificada onde o caminho é montado.
     const traçado = cards.match(/const linha = [^;]+;/s)?.[0] ?? "";
-    expect(traçado).toMatch(/"M"|"L"/);
-    expect(traçado).not.toMatch(/[CQST]\$\{|bezier|curve/i);
+    expect(traçado).toMatch(/linhaSvg\(/);
+    const gerador = readFileSync(join(SRC, "lib", "caminhoSvg.ts"), "utf-8")
+      .replace(/\/\*[\s\S]*?\*\//g, " ").replace(/^\s*\/\/.*$/gm, " ");
+    expect(gerador).toMatch(/"M"|"L"/);
+    expect(gerador).not.toMatch(/[CQST]\$\{|bezier|curve/i);
   });
 
   it("cada gráfico tem o SEU degradê", () => {
