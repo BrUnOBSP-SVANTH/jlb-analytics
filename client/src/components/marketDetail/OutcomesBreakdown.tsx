@@ -2,6 +2,16 @@
  * OutcomesBreakdown — desfechos possíveis de mercados multi-resultado (negRisk):
  * mostra TODAS as possibilidades com a probabilidade real, como no Polymarket.
  * Extraído de pages/MarketDetail.tsx. Só renderiza quando há >2 desfechos.
+ *
+ * POR QUE AS LINHAS VIRARAM BOTÃO. A Calculadora de Edge lá embaixo tratava
+ * TODO mercado como SIM/NÃO. Num mercado de 12 times, uma estimativa de 19% não
+ * dizia 19% DE QUÊ — e a previsão registrada nascia órfã: não dava para pontuar
+ * (Brier) nem para mostrar no track record, porque ninguém sabia se a aposta era
+ * no Barcelona ou no Aston Villa.
+ *
+ * Esta lista já era o retrato certo do mercado. Faltava ela ser a porta de
+ * entrada da conta: clicar numa linha é escolher o desfecho que a calculadora
+ * analisa.
  */
 import AnimatedSection from "@/components/AnimatedSection";
 import { BarChart2 } from "lucide-react";
@@ -10,9 +20,20 @@ import { Explain } from "@/components/marketDetail/Explain";
 import { Termo } from "@/components/Termo";
 import { pct } from "@shared/formato";
 
-export function OutcomesBreakdown({ market }: { market: MarketBasic }) {
+export function OutcomesBreakdown({
+  market,
+  desfechoSelecionado,
+  onSelecionarDesfecho,
+}: {
+  market: MarketBasic;
+  desfechoSelecionado?: string | null;
+  onSelecionarDesfecho?: (id: string) => void;
+}) {
   const outcomes = market.parsedOutcomes;
   if (!outcomes || outcomes.length <= 2) return null;
+
+  const encerrado = market.closed === true || market.status === "settled" || market.status === "finalized";
+  const clicavel = Boolean(onSelecionarDesfecho) && !encerrado;
 
   /**
    * DET-05: a tela afirmava "somam ~100%" e a decisão do Fed somava 102%.
@@ -55,19 +76,52 @@ export function OutcomesBreakdown({ market }: { market: MarketBasic }) {
             </>
           )}
         </Explain>
-        <div className="space-y-2">
+
+        {clicavel && (
+          <p className="text-xs text-muted-foreground">
+            Clique em qualquer linha para analisar aquele desfecho na calculadora abaixo.
+          </p>
+        )}
+
+        <div className={clicavel ? "-mx-2" : "space-y-2"}>
           {outcomes.map((o) => {
             const valor = Math.round(o.prob * 100);
             const barColor = valor >= 40 ? "bg-positive" : valor >= 15 ? "bg-gold" : "bg-neon-blue/60";
             const txtColor = valor >= 40 ? "text-positive" : valor >= 15 ? "text-gold" : "text-muted-foreground";
-            return (
-              <div key={o.label} className="flex items-center gap-3">
-                <span className="text-xs text-foreground w-40 sm:w-56 shrink-0 truncate" title={o.label}>{o.label}</span>
+            const selecionado = clicavel && o.id === desfechoSelecionado;
+
+            /* O miolo é o mesmo desenho de antes, selecionável ou não — a linha
+               não deve mudar de forma só porque ganhou comportamento. */
+            const linha = (
+              <>
+                <span className="text-xs text-foreground w-40 sm:w-56 shrink-0 truncate text-left" title={o.label}>{o.label}</span>
                 <div className="flex-1 h-2 bg-secondary/40 rounded-full overflow-hidden">
                   <div className={`h-full rounded-full ${barColor} transition-all duration-500`} style={{ width: `${Math.max(1, valor)}%` }} />
                 </div>
                 <span className={`text-sm font-mono font-bold w-11 text-right shrink-0 ${txtColor}`}>{pct(valor)}</span>
-              </div>
+              </>
+            );
+
+            if (!clicavel) {
+              return <div key={o.id} className="flex items-center gap-3">{linha}</div>;
+            }
+
+            return (
+              <button
+                key={o.id}
+                type="button"
+                aria-pressed={selecionado}
+                onClick={() => onSelecionarDesfecho!(o.id)}
+                // `rounded-r-md` e canto esquerdo reto: com `rounded-lg` a borda
+                // de 2px acompanhava o arredondamento e a marca de seleção saía
+                // como um "(" — parecia parêntese, não barra.
+                className={`alvo-toque w-full flex items-center gap-3 px-2 rounded-r-md border-l-2 transition-colors
+                  ${selecionado
+                    ? "border-l-gold bg-gold/[0.07]"
+                    : "border-l-transparent hover:bg-secondary/20"}`}
+              >
+                {linha}
+              </button>
             );
           })}
         </div>

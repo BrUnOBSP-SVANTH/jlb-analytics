@@ -1,7 +1,7 @@
 /**
  * Painéis de análise expansíveis dos cards de Apostas — extraídos de Apostas.tsx.
  * EdgeCalculator, MarketAnalysis (IA + notícias), NewsArticleList e NewsAnalysisPanel.
- * calcEV/calcKelly ficam aqui (usados só por estes painéis).
+ * A conta de EV/Kelly vem de lib/edge.ts — a mesma da tela de detalhe.
  */
 import { useState } from "react";
 import {
@@ -13,30 +13,35 @@ import { awardPoints } from "@/lib/userProgress";
 import { maybeAuthGate } from "@/lib/upgrade";
 import { VolumeTrend } from "@/components/mercados/cards";
 import { apiFetch } from "@/lib/api";
-import { num } from "@shared/formato";
+import { num, pct, pp } from "@shared/formato";
+import { calcularVantagem, precoCalculavel } from "@/lib/edge";
 
-function calcEV(yourProb: number, marketProb: number): number {
-  if (marketProb <= 0 || marketProb >= 1) return 0;
-  const b = 1 / marketProb - 1;
-  return yourProb * b - (1 - yourProb);
-}
-
-function calcKelly(yourProb: number, marketProb: number): number {
-  if (marketProb <= 0 || marketProb >= 1) return 0;
-  const b = 1 / marketProb - 1;
-  return Math.max(0, (b * yourProb - (1 - yourProb)) / b);
-}
+/**
+ * Calculadora compacta do card de /mercados.
+ *
+ * Esta era a TERCEIRA cópia das fórmulas de EV e Kelly, e divergiu da tela de
+ * detalhe como toda cópia diverge: continuava imprimindo o "0.0" literal (com
+ * ponto), nascia no preço arredondado, andava de 1 em 1 ponto — e dizia "½ Kelly
+ * (recomendado)" e "arrisque X% da banca", o conselho de posição que o aviso
+ * institucional diz que a JLB não dá. O DET-04 da auditoria tirou isso da tela
+ * de detalhe e esqueceu esta.
+ *
+ * Agora a conta vem de `lib/edge.ts` (a mesma do detalhe) e o texto segue as
+ * mesmas decisões; só o tamanho é de card.
+ */
+const PASSO_PP = 0.5;
 
 function EdgeCalculator({ marketProb }: { marketProb: number }) {
-  const [yourPct, setYourPct] = useState(Math.round(marketProb * 100));
-  const yourProb = yourPct / 100;
-  const ev = calcEV(yourProb, marketProb);
-  const kelly = calcKelly(yourProb, marketProb);
-  const halfKelly = kelly / 2;
-  const edge = yourProb - marketProb;
-  const hasValue = ev > 0;
-  // EV que arredonda para 0.0% é neutro — "+0.0%" pintado de vermelho contradiz o próprio sinal
-  const evNeutral = Math.abs(ev * 100) < 0.05;
+  // Nasce NO preço exato (encaixado na grade de 0,5 pp), e não no arredondado:
+  // 18,5% virava 19% e o card mostrava meio ponto de vantagem que ninguém pediu.
+  const [estimativaPp, setEstimativaPp] = useState(
+    () => Math.round(Math.min(99, Math.max(1, marketProb * 100)) / PASSO_PP) * PASSO_PP,
+  );
+  const [mexeu, setMexeu] = useState(false);
+  const v = calcularVantagem(estimativaPp / 100, marketProb);
+  const calculavel = precoCalculavel(marketProb);
+  const neutro = !mexeu || v.neutro;
+  const temVantagem = !neutro && v.ev !== null && v.ev > 0;
 
   return (
     <div className="space-y-3">
@@ -45,68 +50,82 @@ function EdgeCalculator({ marketProb }: { marketProb: number }) {
         <p className="text-[11px] font-semibold text-foreground/80 uppercase tracking-wider">Calculadora de Edge</p>
       </div>
       <p className="text-[11px] text-muted-foreground leading-relaxed">
-        Insira sua estimativa de probabilidade. O sistema calcula automaticamente o Valor Esperado e a fração de Kelly recomendada.
+        Diga qual chance você acredita ser a real. A calculadora mostra o Valor Esperado e a fração de Kelly
+        para essa estimativa.
       </p>
       <div>
         <div className="flex justify-between items-center mb-1">
           <span className="text-[11px] text-muted-foreground">Sua estimativa</span>
-          <span className="text-sm font-mono font-bold text-foreground">{yourPct}%</span>
+          <span className="text-sm font-mono font-bold text-foreground tabular-nums">{pct(estimativaPp, 1)}</span>
         </div>
-        <input type="range" min={1} max={99} value={yourPct}
-          onChange={(e) => setYourPct(Number(e.target.value))}
+        <input type="range" min={1} max={99} step={PASSO_PP} value={estimativaPp}
+          aria-label="Sua estimativa, em porcento"
+          onChange={(e) => { setEstimativaPp(Number(e.target.value)); setMexeu(true); }}
           className="w-full h-1.5 rounded-full accent-primary cursor-pointer"
         />
         <div className="flex justify-between text-[11px] text-muted-foreground mt-0.5">
-          <span>1%</span><span>50%</span><span>99%</span>
+          <span>1%</span><span>mercado {pct(marketProb * 100, 1)}</span><span>99%</span>
         </div>
       </div>
-      <div className="grid grid-cols-2 gap-2">
-        <div className={`p-2.5 rounded-lg border ${evNeutral ? "border-border/20 bg-secondary/10" : hasValue ? "border-positive/20 bg-positive/5" : "border-negative/20 bg-negative/5"}`}>
-          <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-1">Valor Esperado (EV)</p>
-          <p className={`text-base font-mono font-bold ${evNeutral ? "text-muted-foreground" : hasValue ? "text-positive" : "text-negative"}`}>
-            {evNeutral ? "0.0" : `${ev >= 0 ? "+" : ""}${num((ev * 100), 1)}`}%
-          </p>
-          <p className="text-[11px] text-muted-foreground mt-0.5">por real na posição</p>
+      {!calculavel ? (
+        <p className="text-[11px] text-muted-foreground leading-relaxed p-2.5 rounded-lg border border-border/20 bg-secondary/10">
+          Preço muito {marketProb < 0.5 ? "baixo" : "alto"} para calcular EV e Kelly com segurança — o resultado seria
+          dominado por arredondamento.
+        </p>
+      ) : (
+        <div className="grid grid-cols-2 gap-2" aria-live="polite">
+          <div className={`p-2.5 rounded-lg border ${neutro ? "border-border/20 bg-secondary/10" : temVantagem ? "border-positive/20 bg-positive/5" : "border-negative/20 bg-negative/5"}`}>
+            <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-1">Valor Esperado (EV)</p>
+            <p className={`text-base font-mono font-bold tabular-nums ${neutro ? "text-muted-foreground" : temVantagem ? "text-positive" : "text-negative"}`}>
+              {neutro ? pct(0, 1) : `${v.ev! >= 0 ? "+" : ""}${num(v.ev! * 100, 1)}%`}
+            </p>
+            <p className="text-[11px] text-muted-foreground mt-0.5">por real na posição</p>
+          </div>
+          <div className={`p-2.5 rounded-lg border ${!neutro && v.edgePp > 0 ? "border-neon-blue/20 bg-neon-blue/5" : "border-border/20 bg-secondary/10"}`}>
+            <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-1">Edge vs Mercado</p>
+            <p className={`text-base font-mono font-bold tabular-nums ${!neutro && v.edgePp > 0 ? "text-neon-blue" : "text-muted-foreground"}`}>
+              {neutro ? "0,0 pp" : pp(v.edgePp)}
+            </p>
+            <p className="text-[11px] text-muted-foreground mt-0.5">Mercado {pct(marketProb * 100, 1)} · você {pct(estimativaPp, 1)}</p>
+          </div>
+          <div className="p-2.5 rounded-lg border border-gold/20 bg-gold/5">
+            <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-1">Kelly Completo</p>
+            <p className="text-base font-mono font-bold text-[var(--gold-legivel)] tabular-nums">{num(v.kellyCheio! * 100, 1)}%</p>
+            <p className="text-[11px] text-muted-foreground mt-0.5">da banca</p>
+          </div>
+          <div className="p-2.5 rounded-lg border border-gold/10 bg-gold/[0.03]">
+            <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-1">½ Kelly (mais conservador)</p>
+            <p className="text-base font-mono font-bold text-[var(--gold-legivel)] tabular-nums">{num(v.kellyMeio! * 100, 1)}%</p>
+            <p className="text-[11px] text-muted-foreground mt-0.5">da banca</p>
+          </div>
         </div>
-        <div className={`p-2.5 rounded-lg border ${edge > 0 ? "border-neon-blue/20 bg-neon-blue/5" : "border-border/20 bg-secondary/10"}`}>
-          <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-1">Edge vs Mercado</p>
-          <p className={`text-base font-mono font-bold ${edge > 0 ? "text-neon-blue" : "text-muted-foreground"}`}>
-            {edge >= 0 ? "+" : ""}{num((edge * 100), 1)}pp
-          </p>
-          <p className="text-[11px] text-muted-foreground mt-0.5">Mercado: {Math.round(marketProb * 100)}% | Você: {yourPct}%</p>
-        </div>
-        <div className="p-2.5 rounded-lg border border-gold/20 bg-gold/5">
-          <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-1">Kelly Completo</p>
-          <p className="text-base font-mono font-bold text-gold">{num((kelly * 100), 1)}%</p>
-          <p className="text-[11px] text-muted-foreground mt-0.5">da banca</p>
-        </div>
-        <div className="p-2.5 rounded-lg border border-gold/10 bg-gold/[0.03]">
-          <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-1">½ Kelly (recomendado)</p>
-          <p className="text-base font-mono font-bold text-gold/70">{num((halfKelly * 100), 1)}%</p>
-          <p className="text-[11px] text-muted-foreground mt-0.5">da banca</p>
-        </div>
-      </div>
-      <div className={`flex items-center gap-2 p-2 rounded-lg ${hasValue ? "bg-positive/10 border border-positive/20" : "bg-secondary/20 border border-border/20"}`}>
-        <Zap className={`w-3 h-3 shrink-0 ${hasValue ? "text-positive" : "text-muted-foreground"}`} />
+      )}
+      <div className={`flex items-center gap-2 p-2 rounded-lg ${temVantagem ? "bg-positive/10 border border-positive/20" : "bg-secondary/20 border border-border/20"}`}>
+        <Zap className={`w-3 h-3 shrink-0 ${temVantagem ? "text-positive" : "text-muted-foreground"}`} />
         <p className="text-[11px] leading-relaxed">
-          {hasValue
-            ? `Valor positivo detectado. Com ½ Kelly: arrisque ${num((halfKelly * 100), 1)}% da banca. EV de longo prazo: ${num((ev * 100), 1)}% por posição.`
-            : evNeutral
-            ? "EV zero — sua estimativa coincide com o preço do mercado. Não há vantagem matemática de nenhum lado."
-            : "Sem valor com esta estimativa — o mercado está pagando menos do que sua probabilidade justifica. Reduza o tamanho ou reavalie."}
+          {!mexeu
+            ? "Sua estimativa está no preço do mercado. Mova o controle para procurar vantagem."
+            : !calculavel
+            ? "Neste preço a conta de EV e Kelly não é confiável — compare pelo edge em pontos percentuais."
+            : temVantagem
+            ? `Sua estimativa implica valor esperado positivo: ${pct(v.ev! * 100, 1)} por posição no longo prazo. Com ½ Kelly, a fração seria ${pct(v.kellyMeio! * 100, 1)} da banca.`
+            : neutro
+            ? "Sua estimativa coincide com o preço do mercado. Não há vantagem matemática de nenhum lado."
+            : "Com esta estimativa não há valor esperado positivo — o mercado paga menos do que a sua probabilidade justificaria."}
         </p>
       </div>
-      <details className="group">
-        <summary className="text-[11px] text-muted-foreground hover:text-muted-foreground cursor-pointer flex items-center gap-1 select-none">
-          <Info className="w-3 h-3" />Como foi calculado
-        </summary>
-        <div className="mt-2 p-2.5 rounded-lg bg-obsidian/40 border border-border/20 space-y-1.5 text-[11px] text-muted-foreground font-mono">
-          <p>Odds justas = 1 ÷ {num(marketProb, 2)} = {num((1/marketProb), 2)}x</p>
-          <p>b (ganho líquido) = {num((1/marketProb), 2)} − 1 = {num((1/marketProb - 1), 2)}</p>
-          <p>EV = {num(yourProb, 2)} × {num((1/marketProb - 1), 2)} − {num((1-yourProb), 2)} = {num(ev, 3)}</p>
-          <p>Kelly = (b×p − q) ÷ b = {num(kelly, 3)}</p>
-        </div>
-      </details>
+      {calculavel && (
+        <details className="group">
+          <summary className="text-[11px] text-muted-foreground hover:text-foreground cursor-pointer flex items-center gap-1 select-none">
+            <Info className="w-3 h-3" />Como foi calculado
+          </summary>
+          <div className="mt-2 p-2.5 rounded-lg bg-obsidian/40 border border-border/20 space-y-1.5 text-[11px] text-muted-foreground font-mono">
+            <p>p (preço) = {num(marketProb, 4)} · q (sua estimativa) = {num(estimativaPp / 100, 4)}</p>
+            <p>EV = q ÷ p − 1 = {num(v.ev!, 3)}</p>
+            <p>Kelly = (q − p) ÷ (1 − p) = {num(v.kellyCheio!, 3)}</p>
+          </div>
+        </details>
+      )}
     </div>
   );
 }
@@ -180,19 +199,20 @@ export function MarketAnalysis({ item }: { item: TrendingItem }) {
       <div>
         <p className="text-[11px] text-muted-foreground mb-2">EV de referência (lado SIM)</p>
         <div className="space-y-1">
-          {[40, 50, 60, 70].map((pct) => {
-            const p = pct / 100;
-            const ev = calcEV(p, prob);
-            const hasVal = ev > 0;
+          {[40, 50, 60, 70].map((estimativa) => {
+            // Mesma conta do resto da tela (lib/edge.ts). Em preço extremo o EV
+            // vem null: a linha diz "—" em vez de desenhar um "+900%" de ruído.
+            const ev = calcularVantagem(estimativa / 100, prob).ev;
+            const hasVal = ev !== null && ev > 0;
             return (
-              <div key={pct} className="flex items-center gap-2">
-                <span className="text-[11px] font-mono text-muted-foreground w-16">Prob {pct}%</span>
+              <div key={estimativa} className="flex items-center gap-2">
+                <span className="text-[11px] font-mono text-muted-foreground w-16">Prob {estimativa}%</span>
                 <div className="flex-1 h-1 bg-secondary/30 rounded-full overflow-hidden">
                   <div className={`h-full rounded-full ${hasVal ? "bg-positive" : "bg-negative/50"}`}
-                    style={{ width: `${Math.min(100, Math.abs(ev) * 200)}%` }} />
+                    style={{ width: `${ev === null ? 0 : Math.min(100, Math.abs(ev) * 200)}%` }} />
                 </div>
-                <span className={`text-[11px] font-mono w-16 text-right ${hasVal ? "text-positive" : "text-negative/70"}`}>
-                  EV {ev >= 0 ? "+" : ""}{num((ev * 100), 1)}%
+                <span className={`text-[11px] font-mono w-16 text-right tabular-nums ${hasVal ? "text-positive" : "text-negative/70"}`}>
+                  {ev === null ? "—" : `EV ${ev >= 0 ? "+" : ""}${num(ev * 100, 1)}%`}
                 </span>
               </div>
             );

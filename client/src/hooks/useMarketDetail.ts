@@ -63,7 +63,7 @@ export function useMarketDetail(marketId: string) {
             volume?: number; volume24h?: number; openInterest?: number;
             closeTime?: string; category?: string; status?: string;
             seriesTicker?: string; eventTicker?: string; externalUrl?: string;
-            outcomes?: { label: string; prob: number }[];
+            outcomes?: { id?: string; label: string; prob: number }[];
           }>("kalshi");
           // ⚠️ SÓ igualdade exata. Havia um `|| m.ticker.includes(rawId)` aqui, e o
           // `.find` avalia o OU por ELEMENTO: bastava um ticker que CONTIVESSE o id
@@ -90,7 +90,11 @@ export function useMarketDetail(marketId: string) {
               source: "kalshi",
               category: found.category,
               status: found.status,
-              parsedOutcomes: found.outcomes,
+              // `id ?? label` é rede, não atalho: mercado Kalshi antigo em cache
+              // ainda vem sem o ticker por desfecho. Sem id nenhum a lista deixaria
+              // de ser clicável; com o rótulo ela funciona e o pior caso é um
+              // histórico que troca de dono se o nome mudar.
+              parsedOutcomes: found.outcomes?.map((o) => ({ ...o, id: o.id ?? o.label })),
             });
           } else {
             // Fora da lista ao vivo — provável mercado resolvido. Busca o mercado único
@@ -134,8 +138,8 @@ export function useMarketDetail(marketId: string) {
             // senão a tela mostra o histórico de um candidato sob o nome de
             // outro — um erro que desenha bonito e mente.
             const desfechos = montarDesfechos(found.outcomes, found.outcomePrices, found.outcomeTokens);
-            const parsedOutcomes = desfechos?.map(({ label, prob }) => ({ label, prob }));
-            const outcomeTokens = desfechos?.map((o) => o.token);
+            const parsedOutcomes = desfechos?.map(({ label, prob, token }) => ({ id: token || label, label, prob }));
+            const outcomeTokens = parsedOutcomes?.map((o) => o.id);
             setMarket({
               id: found.id,
               title: displayTitle,

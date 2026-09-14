@@ -29,21 +29,34 @@ interface DbPrediction {
   outcome: boolean | null;
   resolution_price: number | null;
   resolution_source: string | null;      // migration 018 (auto-heal se ausente)
+  outcome_id?: string | null;            // migration 030 (auto-heal se ausente)
+  outcome_label?: string | null;         // migration 030
   brier_score: number | string | null;   // generated column
   created_at: string;
   resolved_at: string | null;
 }
 
+/** Colunas que chegaram depois da tabela — podem faltar num banco sem a migration. */
+const COLUNAS_OPCIONAIS = ["resolution_source", "outcome_id", "outcome_label"] as const;
+
 /**
- * Upsert com auto-heal: se a coluna resolution_source ainda não existe (migration
- * 018 não aplicada), o PostgREST devolve erro de schema cache — reenviamos SEM o
- * campo. Assim o sync inteiro nunca quebra por causa da coluna nova.
+ * Upsert com auto-heal: se uma coluna nova ainda não existe no banco (migration
+ * não aplicada), o PostgREST devolve erro de schema cache — reenviamos SEM ela.
+ * Assim o sync inteiro nunca quebra por causa de coluna nova.
+ *
+ * Tira SÓ a coluna que o erro nomeia, uma por vez. A versão anterior conhecia
+ * uma coluna só; com três, tirar todas de uma vez apagaria `resolution_source`
+ * num banco que já tem a 018 e só falta a 030.
  */
 async function upsertRows(rows: Array<Record<string, unknown>>): Promise<void> {
-  const { error } = await supabase.from("predictions").upsert(rows, { onConflict: "id" });
-  if (error && /resolution_source|PGRST204|schema cache/i.test(error.message ?? "")) {
-    const stripped = rows.map(({ resolution_source, ...rest }) => { void resolution_source; return rest; });
-    await supabase.from("predictions").upsert(stripped, { onConflict: "id" });
+  let atuais = rows;
+  for (let tentativa = 0; tentativa <= COLUNAS_OPCIONAIS.length; tentativa++) {
+    const { error } = await supabase.from("predictions").upsert(atuais, { onConflict: "id" });
+    if (!error) return;
+    const msg = error.message ?? "";
+    const faltando = COLUNAS_OPCIONAIS.find((c) => msg.includes(c) && c in (atuais[0] ?? {}));
+    if (!faltando) return;          // erro que não é de coluna nova: nada a curar aqui
+    atuais = atuais.map((r) => { const { [faltando]: _fora, ...resto } = r; void _fora; return resto; });
   }
 }
 
@@ -62,6 +75,8 @@ function toDbRow(p: StoredPrediction, userId: string): Omit<DbPrediction, "brier
     outcome: p.outcome,
     resolution_price: p.outcome !== null ? (p.outcome ? 100 : 0) : null,
     resolution_source: p.resolutionSource ?? null,
+    outcome_id: p.outcomeId ?? null,
+    outcome_label: p.outcomeLabel ?? null,
     created_at: p.savedAt,
     resolved_at: p.resolved ? (p.savedAt) : null,
   };
@@ -82,7 +97,48 @@ function fromDbRow(row: DbPrediction): StoredPrediction {
     outcome: row.outcome,
     brierScore: isNaN(bs as number) ? null : bs,
     resolutionSource: (row.resolution_source as ResolutionSource | null) ?? undefined,
+    outcomeId: row.outcome_id ?? undefined,
+    outcomeLabel: row.outcome_label ?? undefined,
   };
+}
+
+// ── Reconciliação (pura, testada) ─────────────────────────────────────────
+
+/**
+ * Junta a foto remota com o que está no aparelho. Exportada para teste: é a
+ * regra que decide o que o usuário PERDE ou não ao abrir o site em outro
+ * aparelho, e antes morava enterrada numa função que chama o Supabase.
+ *
+ * Remoto vence por id, EXCETO onde isso apagaria um fato local:
+ *  · resolução é monotônica — foto remota "pendente" não desfaz uma previsão já
+ *    resolvida aqui (corrida com o settlement oficial);
+ *  · procedência local ('settled'/'manual') fica quando o remoto vem sem ela
+ *    (janela em que o auto-heal gravou sem resolution_source, pré-018);
+ *  · o DESFECHO local nunca é apagado. Num banco sem a migration 030 a linha
+ *    volta sem outcome_id, e "remoto vence" faria a previsão de "Aston Villa"
+ *    virar previsão do mercado inteiro — e a resolução automática aplicaria
+ *    nela o resultado do LÍDER: Brier errado, gravado como oficial.
+ */
+export function reconciliar(remote: StoredPrediction[], local: StoredPrediction[]): StoredPrediction[] {
+  const localById = new Map(local.map((p) => [p.id, p]));
+  const reconciled = remote.map((r) => {
+    const l = localById.get(r.id);
+    if (!l) return r;
+    if (l.resolved && !r.resolved) return l;
+    let out = r;
+    if (out.resolved && !out.resolutionSource && l.resolutionSource) {
+      out = { ...out, resolutionSource: l.resolutionSource };
+    }
+    if (!out.outcomeId && l.outcomeId) {
+      out = { ...out, outcomeId: l.outcomeId, outcomeLabel: l.outcomeLabel };
+    }
+    return out;
+  });
+  const remoteIds = new Set(remote.map((p) => p.id));
+  const localOnly = local.filter((p) => !remoteIds.has(p.id));
+  return [...reconciled, ...localOnly].sort(
+    (a, b) => new Date(b.savedAt).getTime() - new Date(a.savedAt).getTime(),
+  );
 }
 
 // ── Pull from Supabase → merge into localStorage ──────────────────────────
@@ -104,32 +160,7 @@ export async function pullFromSupabase(userId: string): Promise<boolean> {
     if (error || !data) return false;
 
     const remote = (data as DbPrediction[]).map(fromDbRow);
-    const local = loadPredictions();
-    const localById = new Map(local.map((p) => [p.id, p]));
-
-    // Merge por id: remoto vence, EXCETO onde isso reverteria fatos locais.
-    // A resolução é monotônica — uma foto remota 'pendente' nunca deve apagar
-    // uma previsão já resolvida localmente (corrida com o settlement oficial); e a
-    // procedência local ('settled'/'manual') é preservada quando o remoto vier sem
-    // ela (janela em que o auto-heal gravou sem resolution_source, pré-migration 018).
-    const reconciled = remote.map((r) => {
-      const l = localById.get(r.id);
-      if (!l) return r;
-      if (l.resolved && !r.resolved) return l;                       // não reverter resolução local
-      if (r.resolved && !r.resolutionSource && l.resolutionSource) { // preservar procedência local
-        return { ...r, resolutionSource: l.resolutionSource };
-      }
-      return r;
-    });
-
-    const remoteIds = new Set(remote.map((p) => p.id));
-    const localOnly = local.filter((p) => !remoteIds.has(p.id));
-
-    const merged = [...reconciled, ...localOnly].sort(
-      (a, b) => new Date(b.savedAt).getTime() - new Date(a.savedAt).getTime()
-    );
-
-    savePredictions(merged);
+    savePredictions(reconciliar(remote, loadPredictions()));
     return true;
   } catch {
     return false;

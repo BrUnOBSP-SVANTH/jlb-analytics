@@ -331,6 +331,20 @@
     .revelar-pronto { animation: none !important; }
   }
 
+  /* Pulso de seleção: clicar num desfecho da lista rola até a Calculadora de
+     Edge, e o anel dourado diz "este bloco reagiu ao seu clique". Sem ele, o
+     usuário chega a um bloco que parece igual ao de antes e não sabe se a troca
+     aconteceu. Motion que RESPONDE a uma ação — não decoração de entrada. O
+     dourado é o da marca, pelo token; o anel se abre e some em 600ms. */
+  @keyframes pulso-selecao {
+    0%   { box-shadow: 0 0 0 0 color-mix(in oklch, var(--primary) 55%, transparent); }
+    100% { box-shadow: 0 0 0 14px color-mix(in oklch, var(--primary) 0%, transparent); }
+  }
+  .pulso-selecao { animation: pulso-selecao 600ms ease-out; }
+  @media (prefers-reduced-motion: reduce) {
+    .pulso-selecao { animation: none !important; }
+  }
+
   /* ── MINIGRÁFICO DOS CARDS ─────────────────────────────────────────────────
      A linha se desenha da esquerda para a direita ao aparecer, como um preço
      sendo registrado. É o gesto que faz o gráfico parecer vivo em vez de

@@ -2,6 +2,7 @@
  * MarketDetail — JLB Analytics
  * Página de detalhe de mercado: /apostas/:id
  */
+import { useRef, useState } from "react";
 import { useParams, Link } from "wouter";
 import {
   ChevronLeft, BarChart2, TrendingUp, TrendingDown,
@@ -44,6 +45,44 @@ export default function MarketDetail() {
     handleAnalyzeAi,
     chartData, currentProb, probPct, probColor, chartStroke, isResolved,
   } = useMarketDetail(marketId);
+
+  /**
+   * O DESFECHO SOB ANÁLISE, num mercado de vários (Champions: 12 times).
+   *
+   * Mora AQUI, na página, porque dois componentes o mudam — a lista "Desfechos
+   * possíveis" e o seletor dentro da calculadora — e os dois precisam ver a
+   * mesma escolha. `null` = nenhum escolhido; a calculadora analisa o líder.
+   *
+   * Viaja na URL (`?desfecho=<id>`) para o link ser compartilhável: quem manda
+   * "olha a vantagem no Barcelona" manda o Barcelona já selecionado.
+   */
+  const [desfechoSelecionado, setDesfechoSelecionado] = useState<string | null>(() => {
+    try { return new URLSearchParams(window.location.search).get("desfecho"); } catch { return null; }
+  });
+  const calculadora = useRef<HTMLDivElement>(null);
+
+  function selecionarDesfecho(id: string, { rolar }: { rolar: boolean }) {
+    setDesfechoSelecionado(id);
+    // replaceState, e não navegação: trocar de time não é uma página nova, e
+    // empilhar histórico faria o "voltar" do navegador percorrer os 12 times.
+    try {
+      const url = new URL(window.location.href);
+      url.searchParams.set("desfecho", id);
+      window.history.replaceState(window.history.state, "", url);
+    } catch { /* sem URL manipulável: a seleção funciona do mesmo jeito */ }
+
+    // Só a LISTA rola até a calculadora: quem troca pelo seletor já está nela.
+    if (!rolar || !calculadora.current) return;
+    const semMovimento = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+    calculadora.current.scrollIntoView({ behavior: semMovimento ? "auto" : "smooth", block: "center" });
+    if (semMovimento) return;
+    // O pulso diz "este bloco reagiu ao seu clique". Tirar e repor a classe
+    // (com um reflow no meio) reinicia a animação num segundo clique seguido.
+    const el = calculadora.current;
+    el.classList.remove("pulso-selecao");
+    void el.offsetWidth;
+    el.classList.add("pulso-selecao");
+  }
 
   // ── Render ────────────────────────────────────────────────────────────────────
 
@@ -147,7 +186,11 @@ export default function MarketDetail() {
                 história e a lista dá o número exato de agora. */}
             <HistoricoDesfechos market={market} />
 
-            <OutcomesBreakdown market={market} />
+            <OutcomesBreakdown
+              market={market}
+              desfechoSelecionado={desfechoSelecionado ?? market.parsedOutcomes?.[0]?.id ?? null}
+              onSelecionarDesfecho={(id) => selecionarDesfecho(id, { rolar: true })}
+            />
 
             {/* Stats row */}
             <AnimatedSection delay={0.1}>
@@ -494,8 +537,12 @@ export default function MarketDetail() {
 
             {/* Kelly Calculator */}
             <AnimatedSection delay={0.25}>
-              <div className="glass-card rounded-xl p-6">
-                <EdgeCalculator marketProb={market.yesProb} marketId={market.id} question={market.title} />
+              <div ref={calculadora} className="glass-card rounded-xl p-6">
+                <EdgeCalculator
+                  market={market}
+                  desfechoSelecionado={desfechoSelecionado}
+                  onSelecionarDesfecho={(id) => selecionarDesfecho(id, { rolar: false })}
+                />
               </div>
             </AnimatedSection>
           </>

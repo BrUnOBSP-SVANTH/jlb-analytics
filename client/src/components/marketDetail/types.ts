@@ -2,6 +2,15 @@
  * Tipos compartilhados da tela de detalhe de mercado (/apostas/:id).
  * Extraido de pages/MarketDetail.tsx.
  */
+/** Um desfecho de mercado multi-resultado. `prob` vem em 0..1 com a precisão
+ *  ORIGINAL da fonte — arredondar aqui é o que fazia a calculadora ler 19% onde
+ *  o preço praticado era 18,5%, e anunciar edge onde não havia. */
+export interface Desfecho {
+  id: string;
+  label: string;
+  prob: number;
+}
+
 export interface MarketBasic {
   id: string;
   title: string;
@@ -17,9 +26,15 @@ export interface MarketBasic {
   closed?: boolean;   // status real da fonte — fidelidade acima da endDate nominal
   active?: boolean;
   status?: string;    // Kalshi: "active" | "closed" | "settled" | "finalized" | …
-  parsedOutcomes?: { label: string; prob: number }[]; // mercados multi-resultado (negRisk)
-  /** Identificador de cada desfecho, na MESMA ordem de `parsedOutcomes`. É o que
-   *  permite buscar o histórico de preço de cada candidato separadamente. */
+  /**
+   * Mercados multi-resultado (negRisk). `id` é o identificador ESTÁVEL da fonte
+   * (token CLOB no Polymarket, ticker no Kalshi) e viaja junto com o rótulo por
+   * uma razão prática: a previsão registrada guarda o id, não o nome. Nome de
+   * time ou de candidato muda, e um histórico preso ao rótulo muda de dono.
+   */
+  parsedOutcomes?: Desfecho[];
+  /** Os mesmos ids de `parsedOutcomes`, na MESMA ordem — o gráfico de histórico
+   *  consome nesta forma. Derivado da mesma lista, nunca montado à parte. */
   outcomeTokens?: string[];
   resolvedOutcome?: string; // desfecho vencedor quando o mercado já resolveu (SIM/NÃO/rótulo)
 }

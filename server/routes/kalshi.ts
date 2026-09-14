@@ -250,8 +250,11 @@ router.get("/markets", async (req, res) => {
         // cada desfecho com sua prob (yes_sub_title = rótulo). Fiel ao Kalshi, como no Polymarket.
         if (ev.mutually_exclusive && active.length > 2) {
           const mapped = active.map((m) => toMarket(m, ev, active.length));
+          // `id` = o ticker do mercado daquele desfecho. É o identificador
+          // ESTÁVEL, e é o que a previsão registrada guarda: rótulo de time ou
+          // candidato muda ("Barça" → "Barcelona") e levaria o histórico junto.
           const outcomes = active
-            .map((m, i) => ({ label: m.yes_sub_title ?? m.title ?? m.ticker, prob: mapped[i].yesProb / 100 }))
+            .map((m, i) => ({ id: m.ticker, label: m.yes_sub_title ?? m.title ?? m.ticker, prob: mapped[i].yesProb / 100 }))
             .filter((o) => o.label && o.prob > 0.005)
             .sort((a, b) => b.prob - a.prob)
             .slice(0, 12);

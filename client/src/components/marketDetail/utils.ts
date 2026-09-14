@@ -25,14 +25,5 @@ export function formatVolume(v: number): string {
   return dolar(v);
 }
 
-export function calcEV(yourProb: number, marketProb: number): number {
-  if (marketProb <= 0 || marketProb >= 1) return 0;
-  const b = 1 / marketProb - 1;
-  return yourProb * b - (1 - yourProb);
-}
-
-export function calcKelly(yourProb: number, marketProb: number): number {
-  if (marketProb <= 0 || marketProb >= 1) return 0;
-  const b = 1 / marketProb - 1;
-  return Math.max(0, (b * yourProb - (1 - yourProb)) / b);
-}
+// EV e Kelly moravam aqui (calcEV/calcKelly) e em mais dois lugares. Hoje a
+// conta é uma só: client/src/lib/edge.ts. Não recriar.

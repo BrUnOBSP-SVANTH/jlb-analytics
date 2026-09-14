@@ -21,6 +21,66 @@ export interface StoredPrediction {
   // Procedência da resolução: settled = resultado OFICIAL da plataforma;
   // inferred = inferido de preço extremo; manual = o usuário marcou na mão.
   resolutionSource?: ResolutionSource;
+  /**
+   * Mercado com MAIS de dois desfechos: qual deles a previsão analisa.
+   *
+   * Sem isto, uma estimativa de 19% num mercado de 12 times não dizia 19% DE
+   * QUÊ — a previsão nascia órfã, impossível de pontuar com Brier. Com o id,
+   * cada previsão vira um evento binário próprio ("Barcelona campeão? sim/não").
+   *
+   * `outcomeId` é o identificador ESTÁVEL da fonte (token CLOB no Polymarket,
+   * ticker no Kalshi), nunca o rótulo: nome de time muda e levaria o histórico
+   * junto. `outcomeLabel` é só o retrato do nome no momento do registro.
+   * Ausentes (undefined/null) = mercado binário, como sempre foi.
+   */
+  outcomeId?: string | null;
+  outcomeLabel?: string | null;
+}
+
+/**
+ * O título de uma previsão de desfecho: "<pergunta> — <desfecho>".
+ *
+ * Vai no `question` de propósito. Seis telas leem esse campo (log do Dashboard,
+ * Briefing, CSV, texto de compartilhar, conquistas, sugestões de resolução) — e
+ * todas passam a dizer de qual time é a previsão sem ninguém tocar nelas. O id
+ * e o rótulo continuam guardados à parte para identidade.
+ */
+export function tituloComDesfecho(pergunta: string, rotulo: string | null | undefined): string {
+  return rotulo ? `${pergunta} — ${rotulo}` : pergunta;
+}
+
+/**
+ * A previsão MAIS RECENTE do usuário para este desfecho deste mercado.
+ *
+ * Existe para o botão virar "Atualizar previsão": a nova entra como VERSÃO
+ * DATADA e a antiga fica. Calibração se mede pelo que você disse quando disse —
+ * reescrever o passado destruiria o próprio track record que o botão alimenta.
+ */
+export function previsaoDoDesfecho(marketId: string, outcomeId: string): StoredPrediction | null {
+  // A lista é mantida da mais nova para a mais antiga (addPrediction faz unshift).
+  return loadPredictions().find((p) => p.marketId === marketId && p.outcomeId === outcomeId) ?? null;
+}
+
+/**
+ * Soma das estimativas ativas do usuário num mercado de vários desfechos, em
+ * pontos percentuais — contando a que está NA TELA agora no lugar da registrada
+ * para aquele desfecho.
+ *
+ * Só um desfecho pode acontecer, então a soma coerente é no máximo 100. Passar
+ * disso é o erro de calibração mais comum em mercado múltiplo (achar todo time
+ * "mais provável que o mercado diz"), e a tela avisa — sem bloquear.
+ */
+export function somaDasEstimativas(
+  marketId: string,
+  naTela: { outcomeId: string; userProb: number },
+): number {
+  const ultimaPorDesfecho = new Map<string, number>();
+  for (const p of loadPredictions()) {
+    if (p.marketId !== marketId || !p.outcomeId || p.resolved) continue;
+    if (!ultimaPorDesfecho.has(p.outcomeId)) ultimaPorDesfecho.set(p.outcomeId, p.userProb);
+  }
+  ultimaPorDesfecho.set(naTela.outcomeId, naTela.userProb);
+  return Array.from(ultimaPorDesfecho.values()).reduce((soma, v) => soma + v, 0);
 }
 
 export interface CalibrationBucket {
@@ -116,7 +176,14 @@ export interface ResolutionSuggestion {
  */
 export async function detectResolutions(pending: StoredPrediction[]): Promise<ResolutionSuggestion[]> {
   const realMarketPreds = pending.filter(
-    (p) => p.marketId.startsWith("poly-") || p.marketId.startsWith("kalshi-")
+    (p) => (p.marketId.startsWith("poly-") || p.marketId.startsWith("kalshi-"))
+      // ⚠️ Previsão de DESFECHO fica fora das duas resoluções automáticas. O
+      // settlement e o preço ao vivo daqui são UM SIM/NÃO por mercado — o do
+      // desfecho líder. Aplicá-los a uma previsão de "Aston Villa" num mercado de
+      // 12 times gravaria o resultado do Barcelona nela: Brier errado, gravado
+      // como "oficial", sem erro nenhum na tela. Até existir liquidação por
+      // desfecho, ela se resolve à mão — e o título diz qual time é.
+      && !p.outcomeId
   );
   if (realMarketPreds.length === 0) return [];
 
