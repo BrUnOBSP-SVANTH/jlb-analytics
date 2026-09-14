@@ -88,11 +88,84 @@ describe("acentos legíveis nos DOIS temas", () => {
     expect(token("--gold-legivel", "claro")).not.toEqual(token("--gold-legivel", "escuro"));
   });
 
-  it("mede o que a auditoria mediu: o dourado antigo REPROVA no claro", () => {
+  it("mede o que a auditoria mediu: o dourado antigo REPROVA no claro (sanidade da conta)", () => {
     // Guarda-chuva contra falso positivo: se a função de contraste estivesse
     // errada, ela aprovaria o valor que sabidamente falha. O dourado de marca
     // (0.78 0.12 85) sobre o creme foi medido pela auditoria em 1,71:1.
     const antigo: [number, number, number] = [0.78, 0.12, 85];
     expect(contraste(antigo, token("--background", "claro"))).toBeLessThan(2.5);
+  });
+});
+
+/**
+ * AS CORES QUE OS UTILITÁRIOS USAM — o buraco que o bloco acima não cobria.
+ *
+ * Em 14/09/2026 descobrimos, no navegador, que o tema claro inteiro pintava os
+ * destaques do tema ESCURO. `@theme inline` embute o valor literal no
+ * utilitário (`.text-gold{color:#dbb155}`), e as seis sobrescritas de
+ * `--color-*` dentro de `.light` nunca chegavam à tela: texto dourado, verde,
+ * vermelho e de aviso a 1,87–3,56:1. Este arquivo passava o tempo todo, porque
+ * media os tokens `-legivel` — que funcionam — e não os que `text-gold`,
+ * `text-positive` e companhia de fato leem.
+ */
+const DESTAQUES = ["--gold", "--positive", "--negative", "--warning", "--level3", "--level4"];
+
+describe("destaques usados por text-gold, text-positive e cia.", () => {
+  for (const tema of ["escuro", "claro"] as const) {
+    it(`tema ${tema}: passam de ${MINIMO}:1 sobre o fundo E sobre o card`, () => {
+      const superficies = { fundo: token("--background", tema), card: token("--card", tema) };
+      for (const nome of DESTAQUES) {
+        for (const [onde, cor] of Object.entries(superficies)) {
+          const razao = contraste(token(nome, tema), cor);
+          expect(razao, `${nome} sobre ${onde} no tema ${tema}: ${razao.toFixed(2)}:1`).toBeGreaterThanOrEqual(MINIMO);
+        }
+      }
+    });
+  }
+
+  it("texto sobre fundo dourado (text-on-accent) passa nos dois temas", () => {
+    for (const tema of ["escuro", "claro"] as const) {
+      const razao = contraste(token("--on-accent", tema), token("--gold", tema));
+      expect(razao, `on-accent sobre gold no tema ${tema}: ${razao.toFixed(2)}:1`).toBeGreaterThanOrEqual(MINIMO);
+    }
+  });
+});
+
+/**
+ * NENHUMA SOBRESCRITA MORTA. É a checagem que teria pegado o defeito no dia em
+ * que ele nasceu, sem abrir navegador: se o `@theme inline` define `--color-X`
+ * com um valor literal, redefinir `--color-X` dentro de `.light` não tem efeito
+ * nenhum — e parece ter.
+ */
+/** Comentário fora: o comentário que EXPLICA o defeito cita os mesmos nomes de
+ *  token, e sem isto a guarda acusava a própria documentação (aconteceu na
+ *  primeira rodada — é a quinta vez que esse tipo de teste morde nesta base). */
+const cssSemComentarios = css.replace(/\/\*[\s\S]*?\*\//g, "");
+
+function bloco(abertura: string): string[] {
+  const linhas = cssSemComentarios.slice(cssSemComentarios.indexOf(abertura)).split(/\r?\n/);
+  const fim = linhas.findIndex((l, i) => i > 0 && l.startsWith("}"));
+  return linhas.slice(0, fim === -1 ? undefined : fim);
+}
+
+describe("@theme inline × .light", () => {
+  const tema = new Map(
+    bloco("@theme inline {")
+      .map((l) => l.trim())
+      .filter((l) => l.startsWith("--color-"))
+      .map((l) => [l.slice(0, l.indexOf(":")), l.slice(l.indexOf(":") + 1).trim()] as const),
+  );
+
+  it("toda cor que o .light redefine é lida por var() no @theme", () => {
+    const redefinidas = bloco(".light {").map((l) => l.trim()).filter((l) => l.startsWith("--color-"))
+      .map((l) => l.slice(0, l.indexOf(":")));
+    const mortas = redefinidas.filter((nome) => !(tema.get(nome) ?? "").startsWith("var("));
+    expect(mortas, `sobrescritas sem efeito no tema claro: ${mortas.join(", ")}`).toEqual([]);
+  });
+
+  it("os destaques de cada tema chegam aos utilitários por var()", () => {
+    for (const nome of ["gold", "positive", "negative", "warning", "level3", "level4", "on-accent"]) {
+      expect(tema.get(`--color-${nome}`), `--color-${nome} no @theme`).toBe(`var(--${nome});`);
+    }
   });
 });

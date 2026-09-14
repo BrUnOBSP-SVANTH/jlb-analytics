@@ -60,25 +60,36 @@
   --color-sidebar-ring: var(--sidebar-ring);
 
   /* Custom JLB colors */
-  --color-gold: oklch(0.78 0.12 85);
+  /* ⚠️ As cores de destaque apontam para VARIÁVEIS (--gold, --positive…), e não
+     para valores. Com `@theme inline` o Tailwind EMBUTE o valor literal no
+     utilitário: `.text-gold{color:#dbb155}`. Enquanto aqui havia oklch(…) e o
+     tema claro redefinia --color-gold dentro de `.light`, essa redefinição
+     nunca chegava à tela — medido em 14/09/2026 no navegador: com o tema claro
+     aplicado, --color-gold valia oklch(60% .13 78) e `.text-gold` pintava
+     rgb(219,177,85), o dourado do tema ESCURO. As SEIS sobrescritas do .light
+     (gold, positive, negative, warning, level3, level4) estavam mortas, e o tema
+     claro inteiro mostrava os destaques do escuro a 1,87–3,56:1 de contraste.
+     O TRV-07 da auditoria "consertou" um token que nunca era renderizado.
+     Os valores de cada tema moram em :root e em .light. */
+  --color-gold: var(--gold);
   --color-gold-light: oklch(0.85 0.1 85);
   --color-gold-dark: oklch(0.65 0.12 85);
   --color-neon-blue: oklch(0.72 0.18 240);
   --color-neon-blue-light: oklch(0.82 0.14 240);
-  --color-positive: oklch(0.72 0.19 155);
-  --color-negative: oklch(0.65 0.2 25);
+  --color-positive: var(--positive);
+  --color-negative: var(--negative);
   /* warning = status "atenção/mediano" (antes era yellow-500 cru, ilegível no claro).
      Calibrado p/ o dark aqui; reescurecido no .light (como positive/negative). */
-  --color-warning: oklch(0.80 0.15 80);
+  --color-warning: var(--warning);
   /* Identidade dos níveis 3 e 4 (antes yellow-500/purple-400 crus, fracos no
      claro). L1/L2/L5 já usam positive/primary/neon-blue, que adaptam. */
-  --color-level3: oklch(0.80 0.16 90);
-  --color-level4: oklch(0.70 0.17 300);
+  --color-level3: var(--level3);
+  --color-level4: var(--level4);
   /* obsidian = superfície de chrome (adapta ao tema); on-accent = texto sobre dourado (sempre escuro) */
   --color-obsidian: var(--obsidian);
   --color-obsidian-light: oklch(0.18 0.015 260);
   --color-surface: var(--card);
-  --color-on-accent: oklch(0.17 0.012 280);
+  --color-on-accent: var(--on-accent);
 
   --font-sans: 'Inter Tight Variable', system-ui, sans-serif;
   /* FRAUNCES no lugar de Outfit. Outfit e uma das faces que todo site gerado
@@ -103,6 +114,15 @@
      `--folga-inferior`, que painéis fixos de rodapé publicam
      (hooks/useFolgaInferior.ts). 1rem no celular, 1.5rem a partir de 640px. */
   --respiro-flutuante: 1rem;
+  /* Destaques do tema escuro — os mesmos valores que viviam literais no @theme.
+     O tema claro redefine em .light. Ver o aviso no @theme inline. */
+  --gold: oklch(0.78 0.12 85);
+  --positive: oklch(0.72 0.19 155);
+  --negative: oklch(0.65 0.2 25);
+  --warning: oklch(0.80 0.15 80);
+  --level3: oklch(0.80 0.16 90);
+  --level4: oklch(0.70 0.17 300);
+  --on-accent: oklch(0.17 0.012 280);   /* texto sobre fundo dourado */
   --background: oklch(0.155 0.012 280);
   --foreground: oklch(0.94 0.006 250);
   --card: oklch(0.195 0.014 278);
@@ -203,16 +223,25 @@
   --accent-foreground: oklch(0.99 0.003 90);
   --destructive: oklch(0.58 0.21 27);
   --destructive-foreground: oklch(0.99 0 0);
-  /* Status como COR DE TEXTO (herói de probabilidade, badges, rótulos): os
-     --color-positive/negative vivem no @theme, calibrados p/ o dark (0.72/0.65).
-     No card branco eles caíam a ~2:1 (ilegíveis). Escurecidos aqui passam contraste
-     no claro; no dark seguem os brilhos do @theme. (Mid=gold usa text-primary, que já adapta.) */
-  --color-gold: oklch(0.6 0.13 78);      /* = --primary claro: text-gold legível no branco (Consenso, badges) */
-  --color-positive: oklch(0.55 0.17 155);
-  --color-negative: oklch(0.58 0.21 27);
-  --color-warning: oklch(0.60 0.13 72);  /* amber escurecido: text-warning legível no branco */
-  --color-level3: oklch(0.60 0.14 88);   /* amarelo do Nível 3, escurecido p/ o claro */
-  --color-level4: oklch(0.55 0.18 300);  /* roxo do Nível 4, escurecido p/ o claro */
+  /* Destaques como COR DE TEXTO (herói de probabilidade, badges, rótulos).
+     ⚠️ Este comentário dizia que cores redefinidas aqui "passavam contraste no
+     claro". Não passavam: eram sobrescritas de tokens que o @theme inline
+     embute como literal, e o tema claro pintava os valores do escuro. Agora o
+     @theme lê var(--gold) etc., e são os valores ABAIXO que valem. */
+  /* Calibrados em 14/09/2026 para >= 4,6:1 no card branco E no fundo creme
+     (contraste.test.ts mede). Os valores antes escritos aqui nunca chegaram à
+     tela — ver o aviso no @theme inline. O dourado é o mais fundo por decisão do
+     fundador: vale para texto, fundo e borda. */
+  --gold: oklch(0.50 0.11 76);      /* card 6,11 · fundo 5,68 */
+  --positive: oklch(0.51 0.17 155); /* card 5,07 · fundo 4,72 */
+  --negative: oklch(0.57 0.21 27);  /* card 4,96 · fundo 4,62 */
+  --warning: oklch(0.55 0.13 72);   /* card 4,97 · fundo 4,62 */
+  --level3: oklch(0.54 0.14 88);    /* card 5,07 · fundo 4,72 */
+  --level4: oklch(0.55 0.18 300);   /* card 5,27 · fundo 4,90 */
+  /* Texto sobre fundo dourado vira CLARO no tema claro: sobre o dourado mais
+     fundo, o texto escuro caía a 3,13:1; o claro fica em 5,93:1. Todos os 14
+     usos de text-on-accent são sobre bg-gold (conferido). */
+  --on-accent: oklch(0.99 0.004 90);
   --border: oklch(0.9 0.008 88);
   --input: oklch(0.92 0.008 88);
   --ring: oklch(0.6 0.13 78);
@@ -460,7 +489,7 @@
 
   /* Seleção de texto com o dourado da marca */
   ::selection {
-    background: oklch(0.78 0.12 85 / 25%);
+    background: color-mix(in oklch, var(--gold) 25%, transparent);
     color: var(--foreground);
   }
 
@@ -545,7 +574,7 @@
   }
 
   .glass-card:hover {
-    border-color: oklch(0.78 0.12 85 / 35%);
+    border-color: color-mix(in oklch, var(--gold) 35%, transparent);
   }
 
   /* Elevação sutil para cards interativos de lista — feedback tátil de 200ms,
@@ -576,12 +605,12 @@
   }
 
   .glow-gold {
-    box-shadow: 0 0 20px oklch(0.78 0.12 85 / 20%), 0 0 40px oklch(0.78 0.12 85 / 10%);
+    box-shadow: 0 0 20px color-mix(in oklch, var(--gold) 20%, transparent), 0 0 40px color-mix(in oklch, var(--gold) 10%, transparent);
   }
 
   /* Text gradient */
   .text-gradient-gold {
-    background: linear-gradient(135deg, oklch(0.78 0.12 85), oklch(0.85 0.1 85));
+    background: linear-gradient(135deg, var(--gold), color-mix(in oklch, var(--gold) 70%, white));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -651,19 +680,19 @@
     width: 16px;
     height: 16px;
     border-radius: 50%;
-    background: oklch(0.78 0.12 85);
+    background: var(--gold);
     cursor: pointer;
-    box-shadow: 0 0 0 3px oklch(0.78 0.12 85 / 20%);
+    box-shadow: 0 0 0 3px color-mix(in oklch, var(--gold) 20%, transparent);
     transition: box-shadow 0.15s;
   }
   input[type="range"].accent-gold::-webkit-slider-thumb:hover {
-    box-shadow: 0 0 0 5px oklch(0.78 0.12 85 / 30%);
+    box-shadow: 0 0 0 5px color-mix(in oklch, var(--gold) 30%, transparent);
   }
   input[type="range"].accent-gold::-moz-range-thumb {
     width: 16px;
     height: 16px;
     border-radius: 50%;
-    background: oklch(0.78 0.12 85);
+    background: var(--gold);
     cursor: pointer;
     border: none;
   }
@@ -671,7 +700,7 @@
   /* Gold border gradient on focus */
   .focus-gold:focus {
     outline: none;
-    box-shadow: 0 0 0 2px oklch(0.78 0.12 85 / 40%);
+    box-shadow: 0 0 0 2px color-mix(in oklch, var(--gold) 40%, transparent);
   }
 
   /* Probability badge */
