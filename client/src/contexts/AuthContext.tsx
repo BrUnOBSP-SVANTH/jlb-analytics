@@ -46,11 +46,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     // Load existing session on mount
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session);
-      setUser(data.session?.user ?? null);
-      setLoading(false);
-    });
+    supabase.auth.getSession()
+      .then(({ data }) => {
+        setSession(data.session);
+        setUser(data.session?.user ?? null);
+        setLoading(false);
+      })
+      // Sem este catch, uma rejeição (rede fora, renovação de token falhando)
+      // deixava `loading` em true PARA SEMPRE: toda página protegida ficava no
+      // esqueleto, e para quem usa o site isso é "o login não conclui". Sem
+      // sessão legível, o estado honesto é deslogado — a tela oferece entrar.
+      .catch(() => {
+        setSession(null);
+        setUser(null);
+        setLoading(false);
+      });
 
     // Listen for auth state changes (login, logout, token refresh)
     const { data: listener } = supabase.auth.onAuthStateChange((event, newSession) => {
