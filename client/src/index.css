@@ -3,6 +3,24 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* ── ALVO DE TOQUE: 44×44 (WCAG 2.5.5) ──────────────────────────────────────
+   ⚠️ É `@utility`, e não uma classe dentro de `@layer base`, por um defeito
+   medido em 14/09/2026: a regra existia no CSS e NÃO valia em 10 dos 24 usos.
+
+   No Tailwind v4 a CAMADA vence a especificidade. Este arquivo tem, em
+   `@layer components`, um `.flex { min-height: 0; min-width: 0 }` — e
+   `components` vem depois de `base`. Todo botão com `alvo-toque flex` ficava
+   com `min-height: 0px`: as linhas clicáveis dos desfechos mediam 20px de
+   altura com a classe de 44px aplicada. O conserto de alvos de toque da
+   auditoria (TRV-11) passou pelo build, pelo tsc e pelos testes, e não
+   funcionava justamente nos botões com ícone ao lado do texto.
+
+   `@utility` coloca a regra na camada de utilitários, que vence `components`. */
+@utility alvo-toque {
+  min-height: 44px;
+  min-width: 44px;
+}
+
 @theme inline {
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
@@ -400,10 +418,8 @@
 
      A área cresce por padding, não por tamanho de fonte — o botão continua
      parecendo do mesmo tamanho, só fica mais fácil de acertar. */
-  .alvo-toque {
-    min-height: 44px;
-    min-width: 44px;
-  }
+  /* `.alvo-toque` NÃO mora mais aqui — ver o `@utility alvo-toque` no topo do
+     arquivo, e o motivo escrito lá. Não trazer de volta para `@layer base`. */
 
   /* O piso ABSOLUTO da WCAG 2.5.8, para controle que vive apertado dentro de uma
      fileira densa (um "ocultar" no fim de uma linha de chips, um ponto de
