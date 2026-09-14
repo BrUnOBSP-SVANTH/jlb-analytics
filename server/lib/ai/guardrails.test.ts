@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { clampFairValue, quantFairValue, capConfidence, CONFIDENCE_CEILING, semHistoricoInventado } from "./guardrails.ts";
+import { clampFairValue, quantFairValue, capConfidence, CONFIDENCE_CEILING, semHistoricoInventado, alegaHistoricoProprio } from "./guardrails.ts";
 
 describe("clampFairValue — dentro do permitido, passa igual", () => {
   it("não mexe quando a estimativa está a ≤15pp do mercado", () => {
@@ -170,5 +170,32 @@ describe("semHistoricoInventado — dado NOSSO fabricado é o erro mais caro", (
     const normal = "O preço está em 42% e a liquidez é alta. A BBC noticiou em 28/08.";
     expect(semHistoricoInventado(normal, false)).toBe(normal);
     expect(semHistoricoInventado("", false)).toBe("");
+  });
+});
+
+describe("alegaHistoricoProprio — a régua que a auditoria usa é a MESMA do guardrail", () => {
+  it("reconhece as alegações que o guardrail corta", () => {
+    expect(alegaHistoricoProprio("Nosso histórico nesta categoria aponta 62% de acerto.")).toBe(true);
+    expect(alegaHistoricoProprio("Acompanhamos 43 mercados desta área até a liquidação.")).toBe(true);
+    expect(alegaHistoricoProprio("O histórico medido indica viés para o favorito.")).toBe(true);
+  });
+
+  it("NÃO acusa o aviso que o próprio guardrail escreve ao remover a alegação", () => {
+    // O falso positivo de 14/09: a auditoria tinha regex própria e leu este
+    // aviso — escrito pelo conserto — como se fosse o defeito.
+    const texto = "SpaceX planeja o Starship para 2029, mas faltam testes de pouso. Estimamos 15%, abaixo do preço de mercado.";
+    const limpo = semHistoricoInventado(texto + " Nosso histórico mostra 70% de acerto em espaço.", false);
+    expect(limpo).toContain("Ainda não temos histórico próprio publicável nesta área.");
+    expect(alegaHistoricoProprio(limpo)).toBe(false);
+  });
+
+  it("NÃO acusa o aviso curto, quando a alegação era o texto inteiro", () => {
+    const limpo = semHistoricoInventado("Nosso histórico mostra 70% de acerto.", false);
+    expect(alegaHistoricoProprio(limpo)).toBe(false);
+  });
+
+  it("NÃO acusa contagem de mercados que não é nossa nem honestidade sobre a amostra", () => {
+    expect(alegaHistoricoProprio("Há 3 mercados sobre Marte abertos no Kalshi.")).toBe(false);
+    expect(alegaHistoricoProprio("Histórico próprio da categoria ainda em formação.")).toBe(false);
   });
 });

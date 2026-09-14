@@ -20,7 +20,7 @@ import { log } from "../lib/log.ts";
 // Lógica de domínio extraída para módulos de serviço (router fino, comportamento idêntico):
 import { buildDigest, sendWeeklyDigests } from "../lib/ai/digest.ts";
 import { runChat, chatGuards, type ChatRequest } from "../lib/ai/chat.ts";
-import { runMarketAnalysis, ANALYZE_CACHE_KEY, type AnalyzeParams } from "../lib/ai/marketAnalysis.ts";
+import { runMarketAnalysis, ANALYZE_CACHE_KEY, exigirProbabilidade, type AnalyzeParams } from "../lib/ai/marketAnalysis.ts";
 import { serieDoUsuario } from "../lib/calibracaoUsuario.ts";
 import { runModelPredict, PREDICT_CACHE_KEY, type PredictParams } from "../lib/ai/modelPredict.ts";
 import { dailyBriefingHandler } from "../lib/ai/briefing.ts";
@@ -273,7 +273,27 @@ router.post("/chat/feedback", async (req, res) => {
   res.json({ ok: true });
 });
 
-router.post("/analyze", aiCreditsMiddleware, async (req, res) => {
+/**
+ * Recusa entrada inválida ANTES de cobrar a cota.
+ *
+ * A ordem importa: `aiCreditsMiddleware` INCREMENTA o contador do usuário, e a
+ * conta grátis tem 4 análises por mês. Validar dentro da rota — depois da
+ * cobrança — faria uma requisição malformada gastar uma delas e devolver 400.
+ *
+ * O preço fora de 0..1 é o caso que motivou isto: ver `exigirProbabilidade`.
+ */
+function validarEntradaAnalise(req: Request, res: Response, next: NextFunction) {
+  const body = req.body as Partial<AnalyzeParams> | undefined;
+  if (!body?.title) return res.status(400).json({ error: "title required" });
+  try {
+    exigirProbabilidade(body.yesProb);
+  } catch (e) {
+    return res.status(400).json({ error: "yesProb_invalido", message: e instanceof Error ? e.message : String(e) });
+  }
+  next();
+}
+
+router.post("/analyze", validarEntradaAnalise, aiCreditsMiddleware, async (req, res) => {
   try {
     const ip = req.ip ?? "unknown";
     if (isRateLimited(`analyze:${ip}`, 5, 60_000)) {
@@ -300,7 +320,7 @@ router.post("/analyze", aiCreditsMiddleware, async (req, res) => {
 
 // Streaming SSE — emite fases reais (sources → analyzing → result) para o cliente
 // mostrar progresso de verdade em vez de um cronômetro adivinhado.
-router.post("/analyze/stream", aiCreditsMiddleware, async (req, res) => {
+router.post("/analyze/stream", validarEntradaAnalise, aiCreditsMiddleware, async (req, res) => {
   const ip = req.ip ?? "unknown";
   if (isRateLimited(`analyze:${ip}`, 5, 60_000)) {
     return res.status(429).json({ error: "rate_limited", message: "Muitas análises em sequência. Aguarde um momento." });

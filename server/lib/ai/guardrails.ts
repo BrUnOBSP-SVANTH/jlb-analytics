@@ -93,6 +93,21 @@ const ALEGA_HISTORICO_PROPRIO =
   /(nosso|nossa|jlb)[^.!?]{0,40}(hist[óo]rico|base (de dados|propriet[áa]ria)|amostra)|acompanhamos\s+\d+\s+mercados|hist[óo]rico\s+(medido|propriet[áa]rio)/i;
 
 /**
+ * O texto alega histórico PRÓPRIO? A mesma régua que o guardrail aplica.
+ *
+ * Exportada para a auditoria (`pnpm qualidade`) medir com ELA, e não com uma
+ * regex própria. A auditoria tinha a sua — `\d+ mercados|histórico (medido|
+ * próprio)` — e em 14/09 acusou "INVENTOU histórico" num texto que dizia
+ * "(Ainda não temos histórico próprio publicável nesta área.)". Essa frase é
+ * escrita por `semHistoricoInventado` logo abaixo, ao REMOVER uma alegação: o
+ * detector lia o aviso do conserto como se fosse o defeito. Duas réguas para a
+ * mesma regra é o que produz esse tipo de alarme — uma delas sempre envelhece.
+ */
+export function alegaHistoricoProprio(texto: string): boolean {
+  return ALEGA_HISTORICO_PROPRIO.test(texto);
+}
+
+/**
  * Remove alegação de histórico próprio quando ele NÃO EXISTE para aquele mercado.
  *
  * POR QUE EM CÓDIGO, E NÃO SÓ NO PROMPT. O prompt já proíbe. Mesmo assim, na

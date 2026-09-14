@@ -22,6 +22,44 @@ export interface AnalyzeParams {
 }
 export type PhaseEmit = (step: string, data?: Record<string, unknown>) => void;
 
+/** Entrada com preço inválido. As rotas respondem 400 — o erro é de quem chamou. */
+export class ProbabilidadeInvalida extends Error {
+  constructor(recebido: unknown) {
+    const emCem = typeof recebido === "number" && recebido > 1 && recebido <= 100;
+    super(
+      `yesProb deve ser um número entre 0 e 1 (recebido: ${String(recebido)})`
+      + (emCem ? " — parece estar na escala 0–100; divida por 100" : ""),
+    );
+    this.name = "ProbabilidadeInvalida";
+  }
+}
+
+/**
+ * O preço tem que chegar na escala 0..1, ou a análise não roda.
+ *
+ * O QUE ACONTECIA SEM ISTO (14/09). O Kalshi devolve `yesProb` em 0–100, o resto
+ * do site usa 0–1, e o script `pnpm qualidade` passava o número cru. A análise
+ * aceitou 23 como 23 inteiros: a ficha disse "o mercado dá 2300% de chance ao
+ * SIM", "NÃO cotado a -2200%", e a IA escreveu um texto inteiro sobre esse
+ * preço. Pela rota, o resultado ainda iria para um cache de 3 horas servido a
+ * TODOS os usuários daquele mercado.
+ *
+ * Os dois chamadores do site já normalizam (lib/trending.ts e
+ * useMarketDetail.ts), então produção não foi afetada — mas nada impedia o
+ * próximo chamador. Validar na borda transforma um texto absurdo publicado em
+ * um 400 com a causa escrita.
+ *
+ * AUSENTE TAMBÉM É INVÁLIDO. Havia um `yesProb ?? 0.5`: sem preço, a análise
+ * inventava 50% e escrevia "o preço de 50% está dizendo…". É exatamente o
+ * número falso que este site existe para não publicar.
+ */
+export function exigirProbabilidade(yesProb: unknown): number {
+  if (typeof yesProb !== "number" || !Number.isFinite(yesProb) || yesProb < 0 || yesProb > 1) {
+    throw new ProbabilidadeInvalida(yesProb);
+  }
+  return yesProb;
+}
+
 /**
  * Núcleo da análise de mercado — compartilhado por /analyze (JSON) e
  * /analyze/stream (SSE). Emite fases reais via onPhase para o streaming mostrar
@@ -29,11 +67,12 @@ export type PhaseEmit = (step: string, data?: Record<string, unknown>) => void;
  * um cronômetro adivinhado no cliente.
  */
 export async function runMarketAnalysis(p: AnalyzeParams, onPhase: PhaseEmit = () => {}): Promise<Record<string, unknown>> {
-  const { title, yesProb, source, description, marketId, category = "other", closeTime, volume } = p;
+  const { title, source, description, marketId, category = "other", closeTime, volume } = p;
+  const yesProb = exigirProbabilidade(p.yesProb);
   {
     const NEWS_API_KEY = process.env.NEWS_API_KEY ?? "";
     const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY ?? "";
-    const probPct = Math.round((yesProb ?? 0.5) * 100);
+    const probPct = Math.round(yesProb * 100);
     const platformName = source === "kalshi" ? "Kalshi" : "Polymarket";
     const catKey = (category ?? "other").toLowerCase().replace(/[^a-z]/g, "") || "other";
     const catInfo = CATEGORY_BASE_RATES[catKey] ?? CATEGORY_BASE_RATES["other"];
@@ -224,6 +263,10 @@ Os artigos são numerados a partir de [1]. JSON exato (sem markdown):
         if (edgeSignal) edgeSignal = semHistoricoInventado(edgeSignal, fichaTemHistorico);
         if (watchFor) watchFor = semHistoricoInventado(watchFor, fichaTemHistorico);
         if (referenceClass) referenceClass = semHistoricoInventado(referenceClass, fichaTemHistorico);
+        // `biasAlert` também vai para a tela (MarketDetail e os cards de
+        // /mercados) e tinha ficado de fora da lista acima — o mesmo buraco que
+        // `edgeSignal`/`watchFor` já tiveram. Achado em 14/09 lendo o fluxo.
+        if (biasAlert) biasAlert = semHistoricoInventado(biasAlert, fichaTemHistorico);
         keyFactors = keyFactors.filter((f) => semHistoricoInventado(f, fichaTemHistorico) === f);
         if (cenarios) cenarios = {
           sim: semHistoricoInventado(cenarios.sim, fichaTemHistorico),

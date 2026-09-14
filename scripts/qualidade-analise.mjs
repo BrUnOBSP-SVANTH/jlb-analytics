@@ -16,6 +16,7 @@
  */
 import { runMarketAnalysis } from "../server/lib/ai/marketAnalysis.ts";
 import { montarFicha, familiaDaCategoria } from "../server/lib/ai/fichaMercado.ts";
+import { alegaHistoricoProprio } from "../server/lib/ai/guardrails.ts";
 
 const BASE = process.env.JLB_URL ?? "http://localhost:3001";
 
@@ -36,9 +37,15 @@ async function amostra() {
         const titulo = fonte === "polymarket"
           ? (m.eventTitle && m.eventTitle.length > 10 && m.eventTitle !== m.question ? m.eventTitle : m.question ?? "")
           : (m.title ?? "");
-        const prob = fonte === "polymarket"
-          ? (typeof m.yesProb === "number" ? m.yesProb : null)
-          : (typeof m.yesProb === "number" ? m.yesProb : null);
+        // ⚠️ O Kalshi devolve `yesProb` em 0–100; o Polymarket, em 0–1. Os dois
+        // ramos deste ternário eram IDÊNTICOS — a intenção de converter estava
+        // escrita e a conversão, não. Resultado (14/09): todo mercado Kalshi
+        // entrava como "2300% de chance ao SIM", e a auditoria media a qualidade
+        // de textos escritos sobre um preço absurdo. Agora a análise recusa isso
+        // (exigirProbabilidade), então o erro não passaria mais em silêncio.
+        const prob = typeof m.yesProb !== "number"
+          ? null
+          : fonte === "kalshi" ? m.yesProb / 100 : m.yesProb;
         if (!titulo || titulo.length < 10 || prob === null) continue;
         todos.push({
           titulo, prob, fonte,
@@ -92,7 +99,12 @@ for (const [familia, m] of alvos) {
   const texto = [r.analysis, r.contexto, r.edgeSignal, r.watchFor, ...(r.keyFactors ?? [])].filter(Boolean).join(" ");
   const chars = texto.length + (r.cenarios ? r.cenarios.sim.length + r.cenarios.nao.length : 0);
   const caiuNoFallback = /não pôde ser gerada/i.test(String(r.analysis));
-  const citaHistorico = /acompanhamos \d+|\d+ mercados|histórico (medido|próprio)/i.test(texto);
+  // A MESMA régua do guardrail de produção. A regex própria que havia aqui
+  // (`\d+ mercados|histórico (medido|próprio)`) acusou "INVENTOU" num texto que
+  // dizia "(Ainda não temos histórico próprio publicável nesta área.)" — o aviso
+  // que o guardrail escreve AO REMOVER a alegação. Lia o conserto como defeito.
+  const citaHistorico = alegaHistoricoProprio(texto);
+  const frasesQueAlegam = texto.split(/(?<=[.!?])\s+/).filter((f) => alegaHistoricoProprio(f));
 
   linhas.push({
     familia,
@@ -106,6 +118,7 @@ for (const [familia, m] of alvos) {
     citaHistorico,
     // O erro mais grave: falar do "nosso histórico" quando a ficha não tinha.
     inventou: !fichaTemHistorico && citaHistorico,
+    frasesQueAlegam,
     caiuNoFallback,
   });
   process.stdout.write(`  ${familia} ok\n`);
@@ -136,4 +149,9 @@ if (comHist.length > 0) {
 }
 const inventaram = linhas.filter((l) => l.inventou);
 console.log(`INVENTOU histórico     : ${inventaram.length}  ${inventaram.length === 0 ? "✓" : "✗ " + inventaram.map((l) => l.familia).join(", ")}`);
+// Mostra a frase: um "✗" sem o texto obriga alguém a gastar outra análise de IA
+// só para descobrir se a acusação é verdadeira — foi o que aconteceu em 14/09.
+for (const l of inventaram) {
+  for (const f of l.frasesQueAlegam) console.log(`   ${l.familia}: "${f.slice(0, 160)}"`);
+}
 console.log(`caiu no fallback (IA fora): ${linhas.filter((l) => l.caiuNoFallback).length}/${n}`);
