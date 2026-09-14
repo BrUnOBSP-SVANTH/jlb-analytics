@@ -99,6 +99,10 @@
    ─────────────────────────────────────────────────────────────────────────── */
 :root {
   --radius: 0.625rem;
+  /* Distância dos botões flutuantes até a borda inferior — somada à
+     `--folga-inferior`, que painéis fixos de rodapé publicam
+     (hooks/useFolgaInferior.ts). 1rem no celular, 1.5rem a partir de 640px. */
+  --respiro-flutuante: 1rem;
   --background: oklch(0.155 0.012 280);
   --foreground: oklch(0.94 0.006 250);
   --card: oklch(0.195 0.014 278);
@@ -166,6 +170,13 @@
   --positivo-legivel: oklch(0.72 0.19 155);
   --negativo-legivel: oklch(0.70 0.19 25);
   --azul-legivel: oklch(0.75 0.16 240);
+}
+
+/* Depois do :root de propósito: mesma especificidade, vence quem vem depois. */
+/* Respiro maior dos botões flutuantes em tela a partir de 640px (era o
+   `sm:bottom-6` do botão do chat, antes de ele passar a ler a folga). */
+@media (min-width: 640px) {
+  :root { --respiro-flutuante: 1.5rem; }
 }
 
 /* ───────────────────────────────────────────────────────────────────────────

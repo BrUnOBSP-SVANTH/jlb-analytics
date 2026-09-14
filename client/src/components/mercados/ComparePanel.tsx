@@ -1,13 +1,18 @@
 /**
  * ComparePanel — barra fixa de comparacao de 2 mercados. Extraido de pages/Apostas.tsx.
  */
+import { useRef } from "react";
 import { toast } from "sonner";
+import { useFolgaInferior } from "@/hooks/useFolgaInferior";
 import { Scale, Link2, X as CloseX } from "lucide-react";
 import { type TrendingItem, CATEGORY_LABELS, formatVolume } from "@/lib/trending";
 import { SourceBadge } from "@/components/mercados/cards";
 import { num } from "@shared/formato";
 
 export function ComparePanel({ items, onClear }: { items: TrendingItem[]; onClear: () => void }) {
+  const painel = useRef<HTMLDivElement>(null);
+  // Publica a altura para o botão do chat não ficar embaixo da comparação.
+  useFolgaInferior("comparacao", painel);
   const [a, b] = items;
 
   function insight(): string {
@@ -34,7 +39,7 @@ export function ComparePanel({ items, onClear }: { items: TrendingItem[]; onClea
   }
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-border/40 bg-background/95 backdrop-blur-xl shadow-2xl">
+    <div ref={painel} className="fixed bottom-0 left-0 right-0 z-50 border-t border-border/40 bg-background/95 backdrop-blur-xl shadow-2xl">
       <div className="container py-4">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">

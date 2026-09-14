@@ -19,7 +19,8 @@
  * · NÃO TEM X DE FECHAR. Fechar sem escolher deixaria a pessoa achando que
  *   decidiu quando não decidiu. As duas saídas são decisões.
  */
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useFolgaInferior } from "@/hooks/useFolgaInferior";
 import { Link } from "wouter";
 import { jaEscolheu, definirConsentimento } from "@/lib/cookies";
 import MarcaProbabilidade from "@/components/MarcaProbabilidade";
@@ -33,6 +34,10 @@ export default function AvisoDeCookies() {
     if (!jaEscolheu()) setAberto(true);
   }, []);
 
+  const painel = useRef<HTMLDivElement>(null);
+  // Publica a altura do aviso para o botão do chat ficar acima dele.
+  useFolgaInferior("aviso-cookies", painel, aberto);
+
   if (!aberto) return null;
 
   function escolher(opcao: "completo" | "essencial") {
@@ -42,6 +47,7 @@ export default function AvisoDeCookies() {
 
   return (
     <div
+      ref={painel}
       role="dialog"
       aria-label="Escolha sobre medição de uso"
       className="fixed bottom-0 left-0 right-0 z-50 border-t border-border/40 bg-background/95 backdrop-blur-xl"

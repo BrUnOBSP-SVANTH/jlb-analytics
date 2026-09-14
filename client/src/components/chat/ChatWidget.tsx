@@ -73,7 +73,10 @@ export default function ChatWidget() {
         aria-expanded={open}
         // `pointer-events-none` quando escondido: um botão invisível que ainda
         // recebe toque é pior que um botão visível no caminho.
-        className={`fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-40 w-12 h-12 rounded-full bg-primary text-primary-foreground shadow-lg shadow-black/20 flex items-center justify-center hover:scale-105 active:scale-95 transition-all duration-300 ${
+        // Acima de qualquer painel fixo de rodapé (aviso de cookies, comparação):
+        // ver hooks/useFolgaInferior.ts. `transition-all` já anima a subida.
+        style={{ bottom: "calc(var(--folga-inferior, 0px) + var(--respiro-flutuante))" }}
+        className={`fixed right-4 sm:right-6 z-40 w-12 h-12 rounded-full bg-primary text-primary-foreground shadow-lg shadow-black/20 flex items-center justify-center hover:scale-105 active:scale-95 transition-all duration-300 ${
           visivel ? "translate-y-0 opacity-100" : "translate-y-20 opacity-0 pointer-events-none"
         }`}
       >
