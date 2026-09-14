@@ -18,6 +18,20 @@ const STOPWORDS = new Set([
   // EN (títulos de mercado chegam em inglês)
   "will","the","and","what","when","this","that","with","from","have","does","over","under","than",
   "into","more","before","after","become","announce","between","released","during","their","there","about",
+  // Palavras que ABREM pergunta. Viraram necessárias quando a primeira palavra
+  // do título deixou de ser descartada por posição (ver topKeywords): "How",
+  // "Who", "Can" passavam pela regra das siglas de 3 letras maiúsculas (a que
+  // salva "Fed") e tomavam a PRIMEIRA vaga da busca.
+  //
+  // ⚠️ "many", "much", "above", "below" NÃO estão aqui, e de propósito. Medido em
+  // 14/09: com elas fora, "How many 7.0 or above earthquakes in 2026?" virava a
+  // busca "earthquakes 2026" — fina demais — e voltava com 4 artigos, TODOS
+  // lixo: o time San Jose Earthquakes, Merz, Hezbollah e baratas-ciborgue. A
+  // régua de relevância afrouxa quando a busca tem poucos termos (overlapsQuery:
+  // "não exige mais do que existe"). Enquanto isso não for tratado lá, tirar
+  // palavra da busca pode trocar "sem contexto" por contexto falso, que é pior.
+  "how","which","who","where","why","are","was","were","can","could","would","should",
+  "quem","qual","quais","quanto","quantos","quantas","haverá",
 ]);
 
 /**
@@ -120,7 +134,7 @@ export function topKeywords(text: string, n = 4): string {
   const seen = new Set<string>();
   const proper: string[] = [];
   const common: string[] = [];
-  tokens.forEach((w, i) => {
+  tokens.forEach((w) => {
     const lower = w.toLowerCase();
     // ⚠️ O corte por tamanho (<=3) descartava justamente os termos MAIS
     // distintivos de várias categorias: em e-sports os times são T1, G2, FPX e
@@ -139,7 +153,16 @@ export function topKeywords(text: string, n = 4): string {
         || (w.length === 3 && /^[A-ZÀ-Ú]/.test(w)));
     if ((w.length <= 3 && !curtoMasDistintivo) || STOPWORDS.has(lower) || seen.has(lower)) return;
     seen.add(lower);
-    if (i > 0 && /^[A-ZÀ-Ú]/.test(w)) proper.push(w);
+    // ⚠️ Havia `i > 0 &&` aqui: em frase comum a primeira palavra é maiúscula por
+    // gramática, então não provaria nada. Mas os títulos do Kalshi vêm em Title
+    // Case, e neles a primeira palavra costuma ser a ENTIDADE — que caía para o
+    // fim da fila e sumia no corte em `n`. Medido no `pnpm cobertura` de 14/09:
+    // "Chicago Pro Football Team: Relocation" buscava "Pro Football Team
+    // Relocation", "Russia Elections: Yabloko…" perdia "Russia", "MLB: Highest
+    // ABS…" perdia "MLB". O que a regra protegia (a palavra de frase que abre a
+    // pergunta: Will, How, What) agora é trabalho das STOPWORDS, onde deveria
+    // estar desde o começo — e `i` não é mais usado.
+    if (/^[A-ZÀ-Ú]/.test(w)) proper.push(w);
     else common.push(w);
   });
   return [...proper, ...common].slice(0, n).join(" ");

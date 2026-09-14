@@ -37,6 +37,38 @@ describe("topKeywords", () => {
     const kw = topKeywords("Flamengo vs Palmeiras no Maracanã", 6);
     expect(kw.split(" ")).not.toContain("vs");
   });
+
+  // Regressão (14/09, `pnpm cobertura`): títulos do Kalshi vêm em Title Case, e
+  // neles a PRIMEIRA palavra costuma ser a entidade. A regra `i > 0` a jogava
+  // para o fim da fila, e o corte em 4 termos a eliminava. Títulos reais:
+  it("não descarta a entidade que abre um título em Title Case", () => {
+    expect(topKeywords("Chicago Pro Football Team: Relocation").split(" ")).toContain("Chicago");
+    expect(topKeywords("Russia Elections: Yabloko Clears Duma Threshold?").split(" ")).toContain("Russia");
+    expect(topKeywords("MLB: Highest ABS Challenge Success Rate (Team)").split(" ")).toContain("MLB");
+  });
+
+  it("a entidade de abertura vem na frente, não no fim", () => {
+    expect(topKeywords("California Governor Election Winner").split(" ")[0]).toBe("California");
+  });
+
+  // "How"/"Who"/"Can" passavam pela regra das siglas de 3 letras maiúsculas (a
+  // que salva "Fed") e, sem o descarte por posição, tomariam a primeira vaga.
+  it("palavra que abre pergunta não ocupa vaga de termo de busca", () => {
+    expect(topKeywords("How many 7.0 or above earthquakes in 2026?").split(" ")).not.toContain("How");
+    expect(topKeywords("Who will win the Chicago mayoral race?").split(" ")[0]).toBe("Chicago");
+    expect(topKeywords("Can Tesla deliver the Roadster in 2026?").split(" ")).not.toContain("Can");
+  });
+
+  // O outro lado da mesma medição: afinar a busca demais troca "sem contexto"
+  // por contexto FALSO, porque a régua de relevância afrouxa com poucos termos.
+  it("não afina a busca a ponto de sobrar um termo genérico", () => {
+    const kw = topKeywords("How many 7.0 or above earthquakes in 2026?").split(" ");
+    expect(kw.length).toBeGreaterThanOrEqual(3);
+  });
+
+  it("a regra das 3 letras continua salvando o Fed", () => {
+    expect(topKeywords("Fed Decision in September?").split(" ")).toContain("Fed");
+  });
 });
 
 describe("overlapsQuery — impede que palavra genérica case mercados alheios", () => {
