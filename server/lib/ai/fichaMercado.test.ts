@@ -20,8 +20,19 @@ describe("ficha do mercado — o piso que nunca pode faltar", () => {
     // 25% paga 4× (100 ÷ 0,25); o outro lado, 75%, paga ~1,33×. Mostrar os dois
     // é o que ensina que o lado impopular paga mais.
     const f = await montarFicha({ titulo: "X", precoPct: 25, categoria: "zzz", plataforma: "Polymarket" });
-    expect(f).toMatch(/400\.00/);
-    expect(f).toMatch(/133\.33/);
+    // Em pt-BR, com vírgula. Este teste esperava "400.00" e "133.33" — fixava o
+    // formato errado, e a ficha é o que a IA lê e copia para o texto da tela.
+    expect(f).toMatch(/R\$\s400,00/);
+    expect(f).toMatch(/R\$\s133,33/);
+    expect(f).not.toMatch(/\d\.\d{2}\b/);
+  });
+
+  it("lado cotado a 0% não 'recebe R$ 0,00' — recebe MAIS de R$ 20.000", async () => {
+    // Um mercado a 99,6% arredonda para 100%, e o NÃO para 0%. A versão antiga
+    // dizia à IA que o NÃO pagava R$ 0,00: falso, e ao contrário.
+    const f = await montarFicha({ titulo: "X", precoPct: 100, categoria: "zzz", plataforma: "Kalshi" });
+    expect(f).not.toMatch(/R\$\s0,00/);
+    expect(f).toMatch(/mais de R\$ 20\.000/);
   });
 
   it("o relógio muda o recado conforme o prazo", async () => {

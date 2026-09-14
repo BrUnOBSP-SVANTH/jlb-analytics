@@ -27,6 +27,7 @@ import { SUPABASE_URL, SUPABASE_KEY } from "../supabaseRest.ts";
 import { buscarTudo } from "../supaPaginado.ts";
 import { getCache, setCache } from "../cache.ts";
 import { log } from "../log.ts";
+import { reaisExatos, num } from "../../../shared/formato.ts";
 
 /** O que medimos numa categoria, olhando só o que já resolveu oficialmente. */
 export interface HistoricoCategoria {
@@ -176,6 +177,26 @@ function retornoDe100(precoPct: number): number {
   return p > 0 ? Math.round((100 / p) * 100) / 100 : 0;
 }
 
+/**
+ * Quanto R$ 100 viram naquele lado, escrito como a tela escreve.
+ *
+ * DOIS DEFEITOS QUE ISTO CONSERTA (14/09):
+ *
+ *  1. O valor saía de `toFixed(2)`: "recebe R$ 4.35". Ponto decimal, fora do
+ *     padrão pt-BR de todo o site — e a ficha é o que a IA LÊ, então o formato
+ *     errado vazava para o texto que chega ao usuário.
+ *
+ *  2. Lado cotado a 0% (preço abaixo de 0,5%, arredondado) virava "recebe
+ *     R$ 0,00". É falso, e ao contrário: quem compra a menos de 0,5% recebe
+ *     MAIS de R$ 20.000 se acertar. Mercado a 99%/1% é comum, então a IA lia essa
+ *     falsidade com frequência. Sem o preço exato não dá para dar o número, mas
+ *     dá para dar o piso verdadeiro.
+ */
+function pagamentoDe100(precoPct: number): string {
+  if (precoPct <= 0) return "mais de R$ 20.000 (o preço está abaixo de 0,5% e aparece arredondado para 0%)";
+  return reaisExatos(retornoDe100(precoPct));
+}
+
 function diasAte(iso?: string | null): number | null {
   if (!iso) return null;
   const t = new Date(iso).getTime();
@@ -195,8 +216,8 @@ export async function montarFicha(d: DadosFicha): Promise<string> {
 
   linhas.push(
     `PREÇO E O QUE ELE PAGA: o mercado dá ${simPct}% de chance ao SIM. `
-    + `Quem apostar R$ 100 no SIM recebe R$ ${retornoDe100(simPct).toFixed(2)} se acertar; `
-    + `no NÃO (cotado a ${naoPct}%), recebe R$ ${retornoDe100(naoPct).toFixed(2)}.`,
+    + `Quem apostar R$ 100 no SIM recebe ${pagamentoDe100(simPct)} se acertar; `
+    + `no NÃO (cotado a ${naoPct}%), recebe ${pagamentoDe100(naoPct)}.`,
   );
 
   const dias = diasAte(d.fechaEm);
@@ -235,8 +256,8 @@ export async function montarFicha(d: DadosFicha): Promise<string> {
     const leitura = Math.abs(diferenca) < 4
       ? `o preço acertou de perto — o mercado desta categoria vem bem calibrado na nossa amostra`
       : diferenca > 0
-        ? `o favorito venceu MAIS do que o preço dizia (${diferenca.toFixed(0)}pp acima), ou seja, nesta amostra a categoria vinha subestimando o favorito`
-        : `o favorito venceu MENOS do que o preço dizia (${Math.abs(diferenca).toFixed(0)}pp abaixo), ou seja, nesta amostra pagava-se caro pelo favorito`;
+        ? `o favorito venceu MAIS do que o preço dizia (${num(diferenca)}pp acima), ou seja, nesta amostra a categoria vinha subestimando o favorito`
+        : `o favorito venceu MENOS do que o preço dizia (${num(Math.abs(diferenca))}pp abaixo), ou seja, nesta amostra pagava-se caro pelo favorito`;
     linhas.push(
       `NOSSO HISTÓRICO EM ${hist.categoria.toUpperCase()}: acompanhamos ${hist.resolvidos} mercados desta área até a liquidação oficial. `
       + `O favorito venceu ${hist.favoritoVenceuPct}% das vezes, com preço médio de ${hist.precoMedioFavorito}% — ${leitura}. `
