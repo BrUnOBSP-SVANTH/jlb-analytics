@@ -11,6 +11,7 @@
  */
 
 import { podeMedir } from "./cookies";
+import type { Evento } from "@shared/eventos";
 
 const ANON_KEY = "jlb_anon_id";
 
@@ -27,7 +28,9 @@ function anonId(): string {
   }
 }
 
-export function track(event: string, meta?: Record<string, unknown>): void {
+/** `event` é tipado pela lista de shared/eventos.ts: nome fora dela não compila —
+ *  e é o servidor que o descartaria em silêncio. Ver o cabeçalho de lá. */
+export function track(event: Evento, meta?: Record<string, unknown>): void {
   if (typeof window === "undefined") return; // testes/SSR
   // A checagem vem ANTES de anonId(): chamá-la criaria o identificador que a
   // pessoa acabou de recusar.

@@ -9,20 +9,13 @@ import { Router } from "express";
 import { isRateLimited } from "../lib/cache.ts";
 import { SUPABASE_URL, SUPABASE_KEY, supaWriteHeaders } from "../lib/supabaseRest.ts";
 import { log } from "../lib/log.ts";
+import { EVENTOS } from "../../shared/eventos.ts";
 
 const router = Router();
 
-const EVENTS = new Set([
-  "page_view",
-  "signup",
-  "login",
-  "prediction_saved",
-  "chat_opened",
-  "chat_message",
-  "premium_click",
-  "pwa_install",
-  "client_error",
-]);
+// A MESMA lista que o cliente é obrigado a usar (shared/eventos.ts). Havia uma
+// cópia aqui, e sete eventos do cliente não estavam nela — descartados em silêncio.
+const EVENTS = new Set<string>(EVENTOS);
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
