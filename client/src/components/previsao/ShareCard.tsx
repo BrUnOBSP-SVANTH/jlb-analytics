@@ -166,7 +166,9 @@ export function ShareCard() {
         {/* Preview do cartão (o mesmo SVG que vira PNG) */}
         <div
           className="rounded-xl overflow-hidden border border-border/20 [&>svg]:block [&>svg]:w-full [&>svg]:h-auto"
-          // eslint-disable-next-line react/no-danger -- SVG gerado localmente, sem input do usuário
+          // dangerouslySetInnerHTML aqui é seguro: o SVG é gerado localmente, sem input do usuário.
+          // (Havia uma diretiva eslint-disable para react/no-danger, uma regra de plugin que
+          // este projeto não carrega — e diretiva de regra inexistente é ERRO no lint.)
           dangerouslySetInnerHTML={{ __html: svg }}
         />
 

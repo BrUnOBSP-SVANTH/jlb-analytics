@@ -42,7 +42,7 @@ interface ApostaPendente {
 export async function resolvePaperBets(limite = 300): Promise<{ liquidadas: number; avisadas: number }> {
   if (!SUPABASE_URL || !SUPABASE_KEY) return { liquidadas: 0, avisadas: 0 };
 
-  let pendentes: ApostaPendente[] = [];
+  let pendentes: ApostaPendente[];
   try {
     const r = await fetch(
       `${SUPABASE_URL}/rest/v1/paper_bets?resolved=eq.false`

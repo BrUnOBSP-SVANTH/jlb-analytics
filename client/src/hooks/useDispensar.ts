@@ -42,7 +42,10 @@ export function useDispensar<T extends HTMLElement = HTMLDivElement>(
   // `fechar` costuma ser uma seta nova a cada render; guardar em ref evita
   // re-assinar os três listeners a cada digitação do usuário.
   const fecharRef = useRef(fechar);
-  fecharRef.current = fechar;
+  // Num efeito, e não direto no corpo: escrever em ref DURANTE a renderização
+  // quebra a regra do React Compiler (react-hooks/refs) — e é o mesmo padrão do
+  // useModalA11y. Os listeners leem a ref na hora do evento, depois dos efeitos.
+  useEffect(() => { fecharRef.current = fechar; });
 
   useEffect(() => {
     if (!aberto) return;

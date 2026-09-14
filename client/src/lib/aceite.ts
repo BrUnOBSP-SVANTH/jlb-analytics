@@ -50,7 +50,7 @@ export async function registrarAceite(versao = VERSAO_TERMOS): Promise<boolean> 
  * gravado com atraso do que um usuário barrado por erro de rede.
  */
 export async function resolverAceitePendente(): Promise<void> {
-  let pendente: string | null = null;
+  let pendente: string | null;
   try { pendente = localStorage.getItem(CHAVE_PENDENTE); } catch { return; }
   if (!pendente) return;
 

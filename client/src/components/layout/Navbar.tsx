@@ -226,7 +226,9 @@ function UserMenu({ compacto = false }: { compacto?: boolean }) {
 function AlertBell() {
   const { alerts, unreadCount, markAllRead } = useMarketAlerts();
   const [open, setOpen] = useState(false);
-  const d = useDispensar<HTMLDivElement>(open, () => setOpen(false), { aoRolar: false });
+  // Desestruturado: ler `d.ref` no JSX conta como acesso a ref durante a
+  // renderização para o React Compiler; `ref` solto é reconhecido como ref.
+  const { ref: refAlertas, props: propsAlertas } = useDispensar<HTMLDivElement>(open, () => setOpen(false), { aoRolar: false });
 
   function handleOpen() {
     const abrindo = !open;
@@ -246,10 +248,10 @@ function AlertBell() {
   }
 
   return (
-    <div className="relative" ref={d.ref}>
+    <div className="relative" ref={refAlertas}>
       <button
         onClick={handleOpen}
-        {...d.props}
+        {...propsAlertas}
         className="alvo-toque relative p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary/40 transition-colors"
         aria-label={unreadCount > 0 ? `Alertas de mercado, ${unreadCount} novos` : "Alertas de mercado"}
       >
