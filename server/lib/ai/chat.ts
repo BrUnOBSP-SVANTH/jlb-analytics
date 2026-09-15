@@ -5,6 +5,7 @@ import { fetchBcbSerie } from "../bcb.ts";
 import { streamClaude, type ClaudeMessage } from "../anthropic.ts";
 import { fetchCerebroContext } from "../cerebro.ts";
 import { parsePolyPrices } from "../aiForecasts.ts";
+import { pctDoKalshi } from "../../../shared/precoKalshi.ts";
 
 interface ChatContext { portfolio?: string; isAuthenticated?: boolean; userLevel?: number; levelContext?: string }
 export interface ChatRequest { message?: string; history?: unknown; context?: ChatContext }
@@ -63,7 +64,9 @@ function buildLiveMarketsBlock(): string {
     if (m.question && p !== undefined) items.push({ t: m.question, p: Math.round(p * 100), v: m.volume ?? 0, src: "Polymarket" });
   }
   for (const m of kalshi) {
-    if (m.title) items.push({ t: m.title, p: Math.round(m.yesProb > 1 ? m.yesProb : m.yesProb * 100), v: m.volume ?? 0, src: "Kalshi" });
+    // Kalshi já vem em % (shared/precoKalshi.ts): 0,8% não pode chegar à IA como 80%.
+    const p = pctDoKalshi(m.yesProb);
+    if (m.title && p !== null) items.push({ t: m.title, p: Math.round(p), v: m.volume ?? 0, src: "Kalshi" });
   }
   const top = items.sort((a, b) => b.v - a.v).slice(0, 10);
   if (top.length === 0) return ""; // cache frio de mercados — NÃO cachear o vazio

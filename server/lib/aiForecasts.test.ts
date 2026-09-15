@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parseShortDatedKalshi, parseShortDatedPolymarket, tierForClose, categoryEdgeWeight, selectOfficialUpgrades, type RawKalshiMarket, type RawPolyEvent } from "./aiForecasts.ts";
+import { parseShortDatedKalshi, parseShortDatedPolymarket, tierForClose, categoryEdgeWeight, selectOfficialUpgrades, motivoParaNaoGravar, type RawKalshiMarket, type RawPolyEvent } from "./aiForecasts.ts";
 
 // ── tierForClose: prioridade pela proximidade de resolução ──────────────────────
 const NOW = 1_700_000_000_000;
@@ -191,5 +191,33 @@ describe("parseShortDatedPolymarket — diversidade de data curta", () => {
     const evs = ["Esports", "Crypto", "NFL", "Finance", "AI", "Iran", "NBA", "Weather"].map((lab, i) =>
       pev({ category: undefined, tags: [{ label: lab }], markets: [{ id: `t${i}`, question: `Q${i}`, outcomePrices: JSON.stringify(["0.5"]), volume: 100 }] }));
     expect(parseShortDatedPolymarket(evs)).toHaveLength(8); // 8 categorias distintas, nenhuma capada
+  });
+});
+
+// ── motivoParaNaoGravar: o que não entra no track record (auditoria 14/09, item 8) ──
+describe("motivoParaNaoGravar — preço inválido fica de fora, e com motivo", () => {
+  const ok = { marketId: "kalshi-KXFED-26SEP-T4.25", marketProb: 42, aiFairValue: 45 };
+
+  it("registro válido passa", () => {
+    expect(motivoParaNaoGravar(ok)).toBeNull();
+    expect(motivoParaNaoGravar({ ...ok, marketProb: 0, aiFairValue: 100 })).toBeNull(); // bordas inclusivas, como o CHECK
+  });
+
+  it("o caso de 14/09: preço já em % multiplicado por 100 de novo", () => {
+    // O banco recusava com ai_forecasts_market_prob_check e o erro sumia no catch.
+    expect(motivoParaNaoGravar({ ...ok, marketProb: 2300 })).toMatch(/preço do mercado fora de 0–100/);
+  });
+
+  it("não ajusta o número para caber: recusa", () => {
+    // Se a função prendesse em 0–100, gravaria um preço que nunca existiu.
+    for (const marketProb of [-1, 100.5, NaN, Infinity]) {
+      expect(motivoParaNaoGravar({ ...ok, marketProb })).not.toBeNull();
+    }
+    expect(motivoParaNaoGravar({ ...ok, aiFairValue: 140 })).toMatch(/fair value/);
+  });
+
+  it("mercado sem plataforma não é registrado", () => {
+    expect(motivoParaNaoGravar({ ...ok, marketId: "" })).not.toBeNull();
+    expect(motivoParaNaoGravar({ ...ok, marketId: "manifold-abc" })).not.toBeNull();
   });
 });

@@ -16,6 +16,7 @@ import { fetchCerebroContext } from "./cerebro.ts";
 import { fetchRealOutcomesBatch, stripPrefix, chunk } from "./resolveOutcomes.ts";
 import { fetchWithRetry } from "./fetcher.ts";
 import { log } from "./log.ts";
+import { pctDoKalshi } from "../../shared/precoKalshi.ts";
 
 /**
  * EXPERIMENTO DA DIVERGÊNCIA (shadow, migration 024).
@@ -92,23 +93,56 @@ JSON apenas: {"fairValue": <inteiro 5-95>, "rationale": "<raciocínio em 1 frase
   } catch { return null; }
 }
 
-export async function logAiForecast(f: {
+type RegistroIA = {
   marketId: string; source: string; title: string; category?: string;
   marketProb: number; aiFairValue: number; aiFairValueCalibrated?: number;
   aiFairValueBold?: number; boldRationale?: string; boldPromptV?: number;
   confidence?: string; model?: string; newsContextChars?: number;
-}): Promise<void> {
+};
+
+const emPontosPercentuais = (v: unknown): boolean =>
+  typeof v === "number" && Number.isFinite(v) && v >= 0 && v <= 100;
+
+/**
+ * Por que este registro NÃO pode ir para o banco — ou `null` se pode.
+ *
+ * AUDITORIA DE 14/09, ITEM 8. O Postgres recusou 5 gravações nesse dia com
+ * `ai_forecasts_market_prob_check` (0–100): um preço do Kalshi que já vinha em %
+ * foi multiplicado por 100 de novo. A recusa virava um 400 que o `catch` daqui
+ * engolia — ninguém soube, e a previsão sumiu do track record sem rastro.
+ *
+ * NÃO SE AJUSTA O NÚMERO PARA CABER. Prender 2300 em 100 gravaria "o mercado
+ * estava a 100%" sobre um preço que nunca existiu, no registro público que o site
+ * inteiro promete não editar. Preço inválido é defeito a jusante: o registro fica
+ * de fora e o motivo vai para o log com o mercado e os valores.
+ */
+export function motivoParaNaoGravar(f: Pick<RegistroIA, "marketId" | "marketProb" | "aiFairValue">): string | null {
+  if (!f.marketId || (!f.marketId.startsWith("poly-") && !f.marketId.startsWith("kalshi-"))) return "mercado sem id de plataforma";
+  if (!emPontosPercentuais(f.marketProb)) return `preço do mercado fora de 0–100 (${String(f.marketProb)})`;
+  if (!emPontosPercentuais(f.aiFairValue)) return `fair value fora de 0–100 (${String(f.aiFairValue)})`;
+  return null;
+}
+
+export async function logAiForecast(f: RegistroIA): Promise<void> {
   if (!SUPABASE_URL || !SUPABASE_KEY) return;
-  if (!f.marketId || (!f.marketId.startsWith("poly-") && !f.marketId.startsWith("kalshi-"))) return;
+  const motivo = motivoParaNaoGravar(f);
+  if (motivo) {
+    // Mercado sem Polymarket/Kalshi (Manifold, Reddit) fica de fora por desenho —
+    // não há settlement oficial para medir. Isso não é defeito e não vai para o log.
+    const semPlataforma = !f.marketId || (!f.marketId.startsWith("poly-") && !f.marketId.startsWith("kalshi-"));
+    if (!semPlataforma) log.warn(`[ai_forecasts] não gravado ${f.marketId}: ${motivo}`);
+    return;
+  }
   const base: Record<string, unknown> = {
     market_id: f.marketId, source: f.source, title: f.title.slice(0, 300),
     category: f.category ?? "other", market_prob: f.marketProb,
     ai_fair_value: f.aiFairValue, confidence: f.confidence ?? "media",
   };
   // Shadow do loop de calibração (migration 021): gravado em paralelo, não exibido.
-  if (typeof f.aiFairValueCalibrated === "number") base.ai_fair_value_calibrated = f.aiFairValueCalibrated;
+  // Shadows sem check no banco: um valor inválido sairia gravado. Fica de fora.
+  if (emPontosPercentuais(f.aiFairValueCalibrated)) base.ai_fair_value_calibrated = f.aiFairValueCalibrated;
   // Shadow do experimento de divergência (migration 024).
-  if (typeof f.aiFairValueBold === "number") base.ai_fair_value_bold = f.aiFairValueBold;
+  if (emPontosPercentuais(f.aiFairValueBold)) base.ai_fair_value_bold = f.aiFairValueBold;
   if (f.boldRationale) base.bold_rationale = f.boldRationale;
   if (typeof f.boldPromptV === "number") base.bold_prompt_v = f.boldPromptV;
   // O Cérebro ajuda? (migration 025) — sem registrar isto, "RAG é nosso
@@ -133,14 +167,25 @@ export async function logAiForecast(f: {
       headers: { ...supaWriteHeaders(), Prefer: "resolution=ignore-duplicates,return=minimal" },
       body: JSON.stringify(row), signal: AbortSignal.timeout(6_000),
     });
+  // Fire-and-forget continua (a análise não espera o registro), mas recusa do
+  // banco agora deixa rastro — era o que escondia o item 8.
+  const avisarRecusa = async (res: Response, corpo?: string) => {
+    if (res.ok) return;
+    const texto = corpo ?? await res.text().catch(() => "");
+    log.warn(`[ai_forecasts] gravação recusada ${f.marketId} (HTTP ${res.status}): ${texto.slice(0, 200)}`);
+  };
   try {
     if (f.model) {
       const res = await post({ ...base, model: f.model });
-      if (res.status === 400 && /PGRST204|model/i.test(await res.text())) await post(base);
+      const corpo = res.ok ? "" : await res.text().catch(() => "");
+      if (res.status === 400 && /PGRST204|model/i.test(corpo)) await avisarRecusa(await post(base));
+      else await avisarRecusa(res, corpo);
     } else {
-      await post(base);
+      await avisarRecusa(await post(base));
     }
-  } catch { /* fire-and-forget */ }
+  } catch (e) {
+    log.warn(`[ai_forecasts] gravação falhou ${f.marketId}: ${e instanceof Error ? e.message : String(e)}`);
+  }
 }
 
 /** Parse seguro de outcomePrices do Polymarket → array de números finitos (nunca lança). */
@@ -158,7 +203,13 @@ export function getLiveMarketPrices(): Map<string, number> {
   for (const m of poly) {
     try { const p = parseFloat((JSON.parse(m.outcomePrices ?? "[]") as string[])[0]); if (!isNaN(p)) priceMap.set(`poly-${m.id}`, Math.round(p * 100)); } catch { /* skip */ }
   }
-  for (const m of kalshi) priceMap.set(`kalshi-${m.ticker}`, Math.round(m.yesProb > 1 ? m.yesProb : m.yesProb * 100));
+  // Kalshi já vem em % — ver shared/precoKalshi.ts. A adivinhação antiga fazia um
+  // mercado a 1,0% entrar aqui como 100 e ser liquidado SIM pela regra do ≥97,
+  // no track record e nos Duelos.
+  for (const m of kalshi) {
+    const p = pctDoKalshi(m.yesProb);
+    if (p !== null) priceMap.set(`kalshi-${m.ticker}`, Math.round(p));
+  }
   return priceMap;
 }
 
@@ -529,8 +580,9 @@ export async function seedAiForecasts(maxMarkets = 30): Promise<{ started: boole
     targets.push({ marketId: `poly-${m.id}`, source: "polymarket", title: m.question, category: m.category ?? "other", marketProb: prob, volume: m.volume ?? 0, closeMs: parseClose(m.endDate) });
   }
   for (const m of kalshi) {
-    if (!m.title) continue;
-    targets.push({ marketId: `kalshi-${m.ticker}`, source: "kalshi", title: m.title, category: m.category ?? "other", marketProb: Math.round(m.yesProb > 1 ? m.yesProb : m.yesProb * 100), volume: m.volume ?? 0, closeMs: parseClose(m.closeTime) });
+    const p = pctDoKalshi(m.yesProb);
+    if (!m.title || p === null) continue;
+    targets.push({ marketId: `kalshi-${m.ticker}`, source: "kalshi", title: m.title, category: m.category ?? "other", marketProb: Math.round(p), volume: m.volume ?? 0, closeMs: parseClose(m.closeTime) });
   }
 
   // Fonte EXTRA: mercados de data CURTA (fecham em dias) — o cache é dominado por

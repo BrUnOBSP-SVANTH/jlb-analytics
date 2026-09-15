@@ -6,6 +6,7 @@
 
 import { getAllMarkets } from "./marketsCache";
 import { idDeLiquidacao } from "@shared/liquidacao";
+import { pctDoKalshi } from "@shared/precoKalshi";
 
 export type ResolutionSource = "settled" | "inferred" | "manual";
 
@@ -236,7 +237,10 @@ export async function detectResolutions(pending: StoredPrediction[]): Promise<Re
       }
     }
     for (const m of kalshi) {
-      priceMap.set(`kalshi-${m.ticker}`, m.yesProb > 1 ? m.yesProb : m.yesProb * 100);
+      // Kalshi já vem em % (shared/precoKalshi.ts). Com a adivinhação antiga, um
+      // mercado a 0,9% virava 90% e a sua previsão ganhava a sugestão "provável SIM".
+      const p = pctDoKalshi(m.yesProb);
+      if (p !== null) priceMap.set(`kalshi-${m.ticker}`, p);
     }
   } catch { return suggestions; }
 
