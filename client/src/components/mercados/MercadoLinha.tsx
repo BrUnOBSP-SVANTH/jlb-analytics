@@ -34,7 +34,7 @@ import { useState, useEffect } from "react";
 import { Link } from "wouter";
 import { Bookmark, BookmarkCheck, Scale, ExternalLink, ChevronDown } from "lucide-react";
 import { type TrendingItem, CATEGORY_LABELS } from "@/lib/trending";
-import { nomeDaPlataforma, volumeNaMoeda } from "@shared/plataforma";
+import { nomeDaPlataforma, verNaPlataforma, volumeNaMoeda } from "@shared/plataforma";
 import { pct, pp } from "@shared/formato";
 import { useLivePrice } from "@/lib/livePrices";
 import { useEdge } from "@/components/mercados/edgeStore";
@@ -324,7 +324,10 @@ export function MercadoLinha({ item, onCompare, inCompare, onWatch, watched }: {
           <a
             href={item.externalUrl} target="_blank" rel="noopener noreferrer"
             className="alvo-minimo justify-center rounded-md text-muted-foreground hover:text-foreground transition-colors"
-            title="Abrir na plataforma de origem"
+            // Botão só de ícone: sem aria-label o leitor de tela não dizia para
+            // onde ia — e o card, que diz, chegou a dizer a plataforma errada.
+            title={verNaPlataforma(item.source)}
+            aria-label={verNaPlataforma(item.source)}
           >
               <ExternalLink className="w-4 h-4" aria-hidden="true" />
           </a>
