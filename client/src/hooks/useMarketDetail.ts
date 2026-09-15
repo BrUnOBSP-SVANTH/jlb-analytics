@@ -19,6 +19,8 @@ import type { MarketBasic, CerebroArticleSnippet, AiResult, CommunityForecast } 
 import { apiFetch } from "@/lib/api";
 import { montarDesfechos } from "@/lib/desfechos";
 import { termosDistintivos, filtrarRelacionados } from "@/lib/relevancia";
+import { historicoDoToken } from "@/lib/historicoPreco";
+import { serieDiaria } from "@/lib/serieDiaria";
 
 export function useMarketDetail(marketId: string) {
   const source = marketId.startsWith("kalshi-") ? "kalshi"
@@ -27,7 +29,17 @@ export function useMarketDetail(marketId: string) {
   const rawId = marketId.replace(/^(poly-|kalshi-|manifold-)/, "");
 
   const [market, setMarket] = useState<MarketBasic | null>(null);
-  const [snapshotRows, setSnapshotRows] = useState<{ t: number; p: number }[]>([]);
+  // Linha do tempo: o nosso arquivo diário ou, na falta dele, a série do próprio
+  // Polymarket (lib/serieDiaria.ts). Histórico, consulta e token ficam guardados
+  // COM A CHAVE do mercado a que pertencem, e só valem quando ela é a da tela.
+  // Assim, ao navegar de um mercado para outro, nada do anterior vaza para este
+  // — sem precisar zerar estado dentro de efeito.
+  const chave = `${source}:${rawId}`;
+  const [historico, setHistorico] = useState<{ chave: string; rows: { t: number; p: number }[]; fonte: "snapshots" | "polymarket" } | null>(null);
+  const [consultadoPara, setConsultadoPara] = useState<string | null>(null);
+  const [tokenSim, setTokenSim] = useState<{ chave: string; token: string } | null>(null);
+  const snapshotRows = historico?.chave === chave ? historico.rows : [];
+  const fonteHistorico = historico?.chave === chave ? historico.fonte : null;
   const [aiAnalysis, setAiAnalysis] = useState<AiResult | null>(null);
   const [loadingMarket, setLoadingMarket] = useState(true);
   const [loadingAi, setLoadingAi] = useState(false);
@@ -140,6 +152,12 @@ export function useMarketDetail(marketId: string) {
             const desfechos = montarDesfechos(found.outcomes, found.outcomePrices, found.outcomeTokens);
             const parsedOutcomes = desfechos?.map(({ label, prob, token }) => ({ id: token || label, label, prob }));
             const outcomeTokens = parsedOutcomes?.map((o) => o.id);
+            // Token do SIM deste mercado — o mesmo id que o snapshot grava, então
+            // a série de reserva é do mesmo preço que o gráfico mostraria.
+            try {
+              const token = (JSON.parse(found.clobTokenIds ?? "[]") as string[])[0];
+              if (token) setTokenSim({ chave: `polymarket:${rawId}`, token });
+            } catch { /* sem token, sem reserva */ }
             setMarket({
               id: found.id,
               title: displayTitle,
@@ -188,18 +206,35 @@ export function useMarketDetail(marketId: string) {
 
   useEffect(() => {
     if (!rawId) return;
+    let vivo = true;
+    const esta = `${source}:${rawId}`;
     fetch(`/api/snapshots/history/${source}/${encodeURIComponent(rawId)}?days=90`)
       .then((r) => r.ok ? r.json() as Promise<{ rows: { yes_prob: number; snapped_at: string }[] }> : null)
       .then((data) => {
-        if (!data?.rows) return;
+        if (!vivo || !data?.rows) return;
         const mapped = data.rows.map((r) => ({
           t: Math.floor(new Date(r.snapped_at).getTime() / 1000),
           p: r.yes_prob,
         }));
-        if (mapped.length >= 4) setSnapshotRows(mapped);
+        if (mapped.length >= 4) setHistorico({ chave: esta, rows: mapped, fonte: "snapshots" });
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => { if (vivo) setConsultadoPara(esta); });
+    return () => { vivo = false; };
   }, [rawId, source]);
+
+  // Reserva: sem snapshots suficientes, a série do próprio Polymarket (item 7 da
+  // auditoria de 14/09). Só DEPOIS de consultar o nosso arquivo, para as duas
+  // fontes nunca disputarem o mesmo gráfico.
+  useEffect(() => {
+    if (consultadoPara !== chave || fonteHistorico || tokenSim?.chave !== chave) return;
+    let vivo = true;
+    void historicoDoToken(tokenSim.token).then((h) => {
+      const serie = serieDiaria(h, 90);
+      if (vivo && serie.length >= 4) setHistorico({ chave, rows: serie, fonte: "polymarket" });
+    });
+    return () => { vivo = false; };
+  }, [consultadoPara, chave, fonteHistorico, tokenSim]);
 
   // ── AI analysis ───────────────────────────────────────────────────────────────
 
@@ -307,7 +342,7 @@ export function useMarketDetail(marketId: string) {
 
   return {
     source, rawId,
-    market, snapshotRows, aiAnalysis, loadingMarket, loadingAi, aiError,
+    market, snapshotRows, fonteHistorico, aiAnalysis, loadingMarket, loadingAi, aiError,
     communityForecast, cerebroArticles, trackRecord,
     handleAnalyzeAi,
     chartData, currentProb, probPct, probColor, chartStroke, isResolved,

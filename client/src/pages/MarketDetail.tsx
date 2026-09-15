@@ -40,7 +40,7 @@ export default function MarketDetail() {
   // o JSX abaixo ficou intacto de propósito: o risco desta tela mora na renderização.
   const {
     source, rawId,
-    market, snapshotRows, aiAnalysis, loadingMarket, loadingAi, aiError,
+    market, snapshotRows, fonteHistorico, aiAnalysis, loadingMarket, loadingAi, aiError,
     communityForecast, cerebroArticles, trackRecord,
     handleAnalyzeAi,
     chartData, currentProb, probPct, probColor, chartStroke, isResolved,
@@ -285,7 +285,11 @@ export default function MarketDetail() {
                       Histórico de Probabilidade (90 dias)
                     </h2>
                     {snapshotRows.length >= 4 && (
-                      <p className="text-[11px] text-muted-foreground mt-0.5">({snapshotRows.length} snapshots)</p>
+                      <p className="text-[11px] text-muted-foreground mt-0.5">
+                        {fonteHistorico === "polymarket"
+                          ? `${snapshotRows.length} dias, pela série de preço do próprio Polymarket`
+                          : `${snapshotRows.length} registros diários`}
+                      </p>
                     )}
                   </div>
                 </div>
@@ -339,8 +343,14 @@ export default function MarketDetail() {
                 ) : (
                   <div className="h-40 flex flex-col items-center justify-center gap-2 text-center">
                     <BarChart2 className="w-8 h-8 text-muted-foreground" />
-                    <p className="text-sm text-muted-foreground">Dados históricos disponíveis após snapshots serem coletados</p>
-                    <p className="text-[11px] text-muted-foreground">Os dados aparecem aqui conforme o sistema coleta snapshots periódicos</p>
+                    {/* Não diz "não há dados" quando há: o preço de agora e a
+                        variação da semana, logo acima, são da plataforma. O que
+                        falta é a linha do tempo (item 7 da auditoria de 14/09). */}
+                    <p className="text-sm text-muted-foreground">Ainda não há linha do tempo deste mercado</p>
+                    <p className="text-[11px] text-muted-foreground max-w-sm">
+                      O preço de agora{market.weekPriceChange !== undefined ? " e a variação da semana, acima, vêm" : ", acima, vem"} da
+                      plataforma. O gráfico aparece quando houver ao menos quatro dias de preço registrados.
+                    </p>
                   </div>
                 )}
               </div>
