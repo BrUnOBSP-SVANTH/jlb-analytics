@@ -16,6 +16,7 @@ import { spawn } from "child_process";
 
 import { cache, getCache, setCache } from "./lib/cache.ts";
 import { registerSnapshotJob } from "./lib/triggers.ts";
+import { destinoDoApelido, rotaExiste } from "../shared/rotas.ts";
 import { emailEnabled } from "./lib/email.ts";
 import { fetchBrapiQuotes } from "./lib/brapi.ts";
 import { fetchYahooQuotes } from "./lib/yahoo.ts";
@@ -416,11 +417,29 @@ async function startServer() {
 
   app.get("*", (req, res) => {
     res.setHeader("Cache-Control", "no-cache");
-    if (BOT_UA.test(String(req.headers["user-agent"] ?? ""))) {
+
+    // Soft-404 (auditoria de 14/09, item 11): tudo que não era /api devolvia 200
+    // com o index.html — /favicon.ico, /arquivo.png, /service-worker.js — e cada
+    // link quebrado da internet virava página indexável. A tabela de rotas é a de
+    // shared/rotas.ts, a mesma do roteador.
+    const destino = destinoDoApelido(req.path);
+    if (destino) {
+      const query = req.originalUrl.includes("?") ? req.originalUrl.slice(req.originalUrl.indexOf("?")) : "";
+      return res.redirect(301, destino + query);
+    }
+    // Pedido de ARQUIVO que o express.static não achou: 404 de verdade, não HTML.
+    if (req.path.startsWith("/assets/") || /\.[a-z0-9]{1,8}$/i.test(req.path)) {
+      return res.status(404).type("text/plain").send("Não encontrado");
+    }
+
+    const existe = rotaExiste(req.path);
+    if (existe && BOT_UA.test(String(req.headers["user-agent"] ?? ""))) {
       const f = (req.path === "/" ? "index" : req.path.replace(/^\/|\/$/g, "").replace(/\//g, "-")) + ".html";
       if (prerenderedFiles.has(f)) return res.sendFile(path.join(PRERENDER_DIR, f));
     }
-    res.sendFile(path.join(staticPath, "index.html"));
+    // Rota desconhecida ainda recebe o app (é ele que desenha a página de 404),
+    // mas com o status certo.
+    res.status(existe ? 200 : 404).sendFile(path.join(staticPath, "index.html"));
   });
 
   // ── HTTP server + WebSocket ────────────────────────────────────────────────

@@ -3,7 +3,7 @@ import { Home, TrendingUp, BookOpen, LayoutDashboard } from "lucide-react";
 import { useSEO } from "@/hooks/useSEO";
 
 export default function NotFound() {
-  useSEO("Página não encontrada", "A página que você procura não existe ou mudou de endereço.");
+  useSEO("Página não encontrada", "A página que você procura não existe ou mudou de endereço.", { indexavel: false });
   return (
     <div className="min-h-[70vh] flex flex-col items-center justify-center px-4 py-20">
       {/* Error code */}

@@ -31,8 +31,8 @@
   ],
   "shortcuts": [
     {
-      "name": "Apostas ao vivo",
-      "url": "/apostas",
+      "name": "Mercados ao vivo",
+      "url": "/mercados",
       "description": "Mercados preditivos em tempo real"
     },
     {

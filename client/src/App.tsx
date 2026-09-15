@@ -5,7 +5,8 @@
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
-import { Route, Switch, useLocation } from "wouter";
+import { Redirect, Route, Switch, useLocation } from "wouter";
+import { APELIDOS } from "@shared/rotas";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { AuthProvider } from "./contexts/AuthContext";
@@ -178,21 +179,14 @@ function Router() {
               <Route path="/sobre"        component={Sobre} />
               <Route path="/termos"       component={Termos} />
               <Route path="/privacidade"  component={Privacidade} />
-              {/* Redirects backward compat */}
-              {/* /apostas continua funcionando: link já compartilhado não pode
-                  morrer numa troca de nome nossa. Inclui o detalhe do mercado,
-                  que é o link que as pessoas mandam por mensagem. */}
-              <Route path="/apostas/:id">{(p) => { window.location.replace(`/mercados/${p.id}`); return null; }}</Route>
-              {["/apostas","/mercado"].map(p => <Route key={p} path={p}>{() => { window.location.replace("/mercados"); return null; }}</Route>)}
-              {["/minha-conta"].map(p => <Route key={p} path={p}>{() => { window.location.replace("/dashboard"); return null; }}</Route>)}
-              {/* Backtester e a TELA do Cérebro foram retirados do site (mantido o motor do Cérebro nos bastidores). Redireciona links antigos. */}
-              {["/laboratorio","/backtester"].map(p => <Route key={p} path={p}>{() => { window.location.replace("/calculadoras"); return null; }}</Route>)}
-              {["/cerebro"].map(p => <Route key={p} path={p}>{() => { window.location.replace("/previsao"); return null; }}</Route>)}
-              {["/analise"].map(p => <Route key={p} path={p}>{() => { window.location.replace("/previsao"); return null; }}</Route>)}
-              {["/correlacao"].map(p => <Route key={p} path={p}>{() => { window.location.replace("/calculadoras"); return null; }}</Route>)}
-              {/* /premium agora tem destino de verdade (NEG-02) */}
-              <Route path="/premium">{() => { window.location.replace("/planos"); return null; }}</Route>
-              {["/contato"].map(p => <Route key={p} path={p}>{() => { window.location.replace("/sobre"); return null; }}</Route>)}
+              {/* Endereços antigos (shared/rotas.ts). <Redirect> do wouter, e não
+                  window.location.replace: aquilo baixava o site inteiro de novo a
+                  cada clique num link antigo (auditoria de 14/09, item 12). O
+                  servidor responde 301 aos mesmos endereços para quem chega de fora. */}
+              <Route path="/apostas/:id">{(p) => <Redirect to={`/mercados/${p.id}`} replace />}</Route>
+              {Object.entries(APELIDOS).map(([de, para]) => (
+                <Route key={de} path={de}><Redirect to={para} replace /></Route>
+              ))}
               <Route path="/404"          component={NotFound} />
               <Route                      component={NotFound} />
             </Switch>

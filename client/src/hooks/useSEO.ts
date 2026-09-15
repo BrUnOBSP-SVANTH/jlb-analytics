@@ -37,7 +37,13 @@ function upsert(atributo: "name" | "property", chave: string, conteudo: string):
   tag.setAttribute("content", conteudo);
 }
 
-export function useSEO(title: string, description?: string): void {
+/**
+ * `indexavel: false` é para a página de 404 (auditoria de 14/09, item 11): ela
+ * publicava canonical apontando para a própria URL inválida e nenhum robots —
+ * junto com o status 200 de antes, todo link quebrado virava página indexável.
+ */
+export function useSEO(title: string, description?: string, opcoes: { indexavel?: boolean } = {}): void {
+  const indexavel = opcoes.indexavel ?? true;
   useEffect(() => {
     const tituloCompleto = `${title} · JLB Analytics`;
     const desc = description ?? DESCRICAO_PADRAO;
@@ -54,23 +60,31 @@ export function useSEO(title: string, description?: string): void {
     upsert("name", "twitter:description", desc);
     upsert("name", "twitter:url", url);
 
-    // Canonical da rota atual (sem query/hash) — evita indexação duplicada
+    // Canonical da rota atual (sem query/hash) — evita indexação duplicada.
+    // Página que não deve ser indexada não tem canonical: tem noindex.
     let link = document.head.querySelector('link[rel="canonical"]');
-    if (!link) {
-      link = document.createElement("link");
-      link.setAttribute("rel", "canonical");
-      document.head.appendChild(link);
+    if (indexavel) {
+      if (!link) {
+        link = document.createElement("link");
+        link.setAttribute("rel", "canonical");
+        document.head.appendChild(link);
+      }
+      link.setAttribute("href", url);
+      document.head.querySelector('meta[name="robots"]')?.remove();
+    } else {
+      link?.remove();
+      upsert("name", "robots", "noindex");
     }
-    link.setAttribute("href", url);
 
     // Ao sair da rota, volta ao padrão da home — senão a próxima página herda a
     // prévia da anterior enquanto o efeito dela não roda.
     return () => {
+      if (!indexavel) document.head.querySelector('meta[name="robots"]')?.remove();
       document.title = TITULO_PADRAO;
       upsert("property", "og:title", TITULO_PADRAO);
       upsert("property", "og:description", DESCRICAO_PADRAO);
       upsert("name", "twitter:title", TITULO_PADRAO);
       upsert("name", "twitter:description", DESCRICAO_PADRAO);
     };
-  }, [title, description]);
+  }, [title, description, indexavel]);
 }

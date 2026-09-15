@@ -87,6 +87,9 @@ export function Footer() {
                 { label: "Mercados Ao Vivo", href: "/mercados"  },
                 { label: "Análise de Mercados", href: "/noticias" },
                 { label: "Briefing IA",     href: "/briefing" },
+                // A marca inteira se apoia nele ("inclusive quando erra") e o
+                // rodapé não tinha link (auditoria de 14/09, item 9).
+                { label: "Track Record",    href: "/track-record" },
               ].map((l) => (
                 <Link key={l.href} href={l.href}>
                   <span className="block text-sm text-muted-foreground hover:text-foreground transition-colors">{l.label}</span>
@@ -144,10 +147,6 @@ export function Footer() {
             <Link href="/termos"><span className="text-muted-foreground hover:text-foreground transition-colors">Termos de Uso</span></Link>
             <span className="text-border/40">·</span>
             <Link href="/privacidade"><span className="text-muted-foreground hover:text-foreground transition-colors">Política de Privacidade</span></Link>
-            <span className="text-border/40">·</span>
-            <Link href="/sobre"><span className="text-muted-foreground hover:text-foreground transition-colors">Sobre</span></Link>
-            <span className="text-border/40">·</span>
-            <Link href="/imprensa"><span className="text-muted-foreground hover:text-foreground transition-colors">Imprensa</span></Link>
           </div>
           {/* LEG-02: falta a identificação do controlador (razão social e CNPJ).
               A Política de Privacidade cita ANPD e encarregado sem dizer quem é o

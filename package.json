@@ -15,6 +15,7 @@
     "prepare": "git config core.hooksPath .githooks || true",
     "icons": "node scripts/generate-icons.mjs",
     "prerender": "node scripts/prerender.mjs",
+    "sitemap": "node --experimental-transform-types scripts/gerar-sitemap.mjs",
     "doctor:quick": "node scripts/jlb-doctor.mjs --quick",
     "backtest:sports": "node scripts/backtest-sports.mjs",
     "news:impact": "node scripts/news-impact.mjs",
