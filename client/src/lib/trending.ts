@@ -7,6 +7,7 @@
  */
 import { analyzeSentiment } from "@/lib/predictions";
 import { dolar, pct, pp } from "@shared/formato";
+import { nomeDaPlataforma, volumeNaMoeda } from "@shared/plataforma";
 import { getMarkets } from "@/lib/marketsCache";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -333,12 +334,12 @@ export function whyTrendingMarket(item: {
   const { volume, volume24h, liquidity, yesProb, prevYesProb, weekPriceChange, source, multiDesfecho } = item;
   const perto50 = Math.abs(yesProb - 0.5);
   const variacao = prevYesProb !== undefined ? yesProb - prevYesProb : undefined;
-  const plataforma = source === "kalshi" ? "Kalshi" : "Polymarket";
+  const plataforma = nomeDaPlataforma(source) ?? "mercado";
 
   // O que é ESPECÍFICO deste mercado hoje. Se nada aqui casar, não há notícia.
   const especifico: string[] = [];
   if (volume24h && volume24h > 50_000)
-    especifico.push(`${dolar(volume24h)} movimentados nas últimas 24 horas`);
+    especifico.push(`${volumeNaMoeda(volume24h, source)} movimentados nas últimas 24 horas`);
   if (weekPriceChange !== undefined && Math.abs(weekPriceChange) > 0.03)
     especifico.push(`probabilidade ${weekPriceChange > 0 ? "subiu" : "caiu"} ${pp(Math.abs(weekPriceChange * 100)).replace("+", "")} na semana`);
   if (variacao !== undefined && Math.abs(variacao) > 0.02)
@@ -352,7 +353,7 @@ export function whyTrendingMarket(item: {
     : `${pct(yesProb * 100)} para SIM`;
 
   if (volume > 1_000_000 && perto50 < 0.1)
-    return `${abertura}${dolar(volume)} negociados no ${plataforma} com o resultado em aberto (${nivel}) — dinheiro informado dos dois lados.`;
+    return `${abertura}${volumeNaMoeda(volume, source)} negociados no ${plataforma} com o resultado em aberto (${nivel}) — dinheiro informado dos dois lados.`;
   if (yesProb > 0.80 || yesProb < 0.20)
     return `${abertura}Consenso forte no ${plataforma} (${nivel}) — o lado minoritário só tem valor se você enxergou um risco que o mercado ignorou.`;
   if (perto50 < 0.12)
@@ -377,14 +378,18 @@ function bestBetNoteReddit(post: RedditPost): string {
 }
 
 export function bestBetNoteMarket(yesProb: number, vol: number, source: Source): string {
-  const platform = source === "kalshi" ? "Kalshi" : "Polymarket";
+  // O Manifold negocia mana (shared/plataforma.ts): falar em odds que "pagam",
+  // Kelly e casas esportivas trataria opinião como dinheiro em risco.
+  if (source === "manifold")
+    return `No Manifold o preço (${Math.round(yesProb * 100)}% SIM) é opinião apostada em dinheiro fictício. Serve de termômetro do que a comunidade pensa — para preço de mercado, procure o mesmo evento no Polymarket ou no Kalshi.`;
+  const platform = nomeDaPlataforma(source) ?? "mercado";
   if (yesProb > 0.80)
     return `Com ${Math.round(yesProb * 100)}% de probabilidade, o ${platform} precificou quase certeza (odds ${formatOdds(yesProb)}). O lado NÃO paga ${formatOdds(1 - yesProb)} — verifique se há risco sistêmico ignorado.`;
   if (yesProb < 0.20)
-    return `${platform} precificou baixa probabilidade (${Math.round(yesProb * 100)}% SIM, odds ${formatOdds(yesProb)}). Investigue se há catalisadores recentes que justifiquem revisão ao alça.`;
+    return `${platform} precificou baixa probabilidade (${Math.round(yesProb * 100)}% SIM, odds ${formatOdds(yesProb)}). Investigue se há catalisadores recentes que justifiquem uma revisão para cima.`;
   if (Math.abs(yesProb - 0.5) < 0.08)
     return `Resultado genuinamente incerto no ${platform} — use análises fundamentais e aplique Kelly conservador (¼ Kelly). Mercados tão equilibrados raramente têm edge claro.`;
-  return `Volume de ${formatVolume(vol)} indica mercado maduro no ${platform}. Busque divergência com casas esportivas — a diferença entre probabilidades implícitas é onde o edge costuma aparecer.`;
+  return `Volume de ${volumeNaMoeda(vol, source)} indica mercado maduro no ${platform}. Busque divergência com casas esportivas — a diferença entre probabilidades implícitas é onde o edge costuma aparecer.`;
 }
 
 // ─── Builders ──────────────────────────────────────────────────────────────────
@@ -531,8 +536,8 @@ export function buildManifoldItem(m: ManifoldMarket): TrendingItem | null {
     volume: vol,
     yesProb,
     externalUrl: m.url,
-    whyTrending: `${dolar(vol)} no Manifold, plataforma de previsões abertas — ${pct(yesProb * 100)} para SIM. O Manifold usa dinheiro fictício: o preço reflete opinião, não dinheiro em risco.`,
-    bestBetNote: bestBetNoteMarket(yesProb, vol, "manifold" as Source),
+    whyTrending: `${volumeNaMoeda(vol, "manifold")} no Manifold, plataforma de previsões abertas — ${pct(yesProb * 100)} para SIM. O Manifold usa dinheiro fictício: o preço reflete opinião, não dinheiro em risco.`,
+    bestBetNote: bestBetNoteMarket(yesProb, vol, "manifold"),
     sentiment: analyzeSentiment(m.question),
     ageHours,
     category,

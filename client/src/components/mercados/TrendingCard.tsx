@@ -14,7 +14,8 @@ import {
 import { addToWatchlist, removeFromWatchlist, isWatched } from "@/lib/watchlist";
 import { useLivePrice } from "@/lib/livePrices";
 import { traduzir, pareceEmPortugues } from "@/lib/traducao";
-import { type TrendingItem, CATEGORY_LABELS, formatVolume } from "@/lib/trending";
+import { type TrendingItem, CATEGORY_LABELS } from "@/lib/trending";
+import { verNaPlataforma, volumeNaMoeda } from "@shared/plataforma";
 import {
   ProbSparkline, MarketBadge, SentimentBadge, SourceBadge, ProbHero, ProbBar, MultiOutcomePills, TituloDeMercado,
 } from "@/components/mercados/cards";
@@ -222,7 +223,7 @@ function TrendingCardBase({ item, onCompare, inCompare, indice = 0 }: {
             <span className="flex items-center gap-1"><MessageSquare className="w-3 h-3" />{item.comments.toLocaleString()} coment.</span>
           )}
           {item.volume !== undefined && (
-            <span className="flex items-center gap-1"><BarChart2 className="w-3 h-3" />{formatVolume(item.volume)} volume</span>
+            <span className="flex items-center gap-1"><BarChart2 className="w-3 h-3" />{volumeNaMoeda(item.volume, item.source)} volume</span>
           )}
         </div>
         {/* MKT-08: quando não há nada específico a dizer sobre este mercado
@@ -290,9 +291,7 @@ function TrendingCardBase({ item, onCompare, inCompare, indice = 0 }: {
           <a href={item.externalUrl} target="_blank" rel="noopener noreferrer"
             className="inline-flex items-center gap-1.5 text-xs text-primary/70 hover:text-primary transition-colors">
             <ExternalLink className="w-3 h-3" />
-            {item.source === "reddit" ? "Ver no Reddit"
-              : item.source === "kalshi" ? "Ver no Kalshi"
-              : "Ver no Polymarket"}
+            {verNaPlataforma(item.source)}
           </a>
           <div className="flex items-center gap-1">
             {onCompare && (

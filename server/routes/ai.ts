@@ -26,6 +26,7 @@ import { runModelPredict, PREDICT_CACHE_KEY, type PredictParams } from "../lib/a
 import { dailyBriefingHandler } from "../lib/ai/briefing.ts";
 import { portfolioHandler } from "../lib/ai/portfolio.ts";
 import { crossrefHandler } from "../lib/ai/crossref.ts";
+import { nomeDaPlataforma } from "../../shared/plataforma.ts";
 
 // Reexport para o cron em index.ts (setInterval do resumo semanal).
 export { sendWeeklyDigests };
@@ -174,7 +175,7 @@ router.post("/explain-edge", ipLimit("explain-edge", 10, 60_000), aiCreditsMiddl
 
   const edge = Math.round((userProb - marketProb) * 100);
   const direction = edge > 0 ? "acima" : "abaixo";
-  const platformName = source === "kalshi" ? "Kalshi" : "Polymarket";
+  const platformName = nomeDaPlataforma(source) ?? "plataforma de previsão";
 
   const prompt = `Você é um analista sênior de mercados preditivos. Um usuário da plataforma JLB Analytics acredita ter uma vantagem de estimativa sobre o mercado.
 

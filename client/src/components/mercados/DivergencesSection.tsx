@@ -7,6 +7,7 @@ import { Link } from "wouter";
 import { Scale } from "lucide-react";
 import AnimatedSection from "@/components/AnimatedSection";
 import { publishEdges, type Divergence } from "@/components/mercados/edgeStore";
+import { nomeDaPlataforma } from "@shared/plataforma";
 
 export function DivergencesSection() {
   const [divs, setDivs] = useState<Divergence[]>([]);
@@ -53,7 +54,7 @@ export function DivergencesSection() {
                       <p className="text-[11px] text-muted-foreground mt-0.5">
                         Mercado <span className="font-mono text-foreground">{d.currentProb}%</span> ·
                         JLB <span className="font-mono text-gold">{d.aiFairValue}%</span>
-                        <span className="ml-1">({d.source === "kalshi" ? "Kalshi" : "Polymarket"})</span>
+                        {nomeDaPlataforma(d.source) && <span className="ml-1">({nomeDaPlataforma(d.source)})</span>}
                         {d.forecastAgeDays !== undefined && (
                           <span className="ml-1 text-muted-foreground">
                             · estimativa de {d.forecastAgeDays === 0 ? "hoje" : `${d.forecastAgeDays}d atrás`}

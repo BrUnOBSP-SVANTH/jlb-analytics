@@ -5,7 +5,8 @@ import { useRef } from "react";
 import { toast } from "sonner";
 import { useFolgaInferior } from "@/hooks/useFolgaInferior";
 import { Scale, Link2, X as CloseX } from "lucide-react";
-import { type TrendingItem, CATEGORY_LABELS, formatVolume } from "@/lib/trending";
+import { type TrendingItem, CATEGORY_LABELS } from "@/lib/trending";
+import { volumeNaMoeda } from "@shared/plataforma";
 import { SourceBadge } from "@/components/mercados/cards";
 import { num } from "@shared/formato";
 
@@ -81,7 +82,7 @@ export function ComparePanel({ items, onClear }: { items: TrendingItem[]; onClea
                   <div className="flex items-center gap-2 mt-1">
                     <SourceBadge source={item.source} subreddit={item.subreddit} />
                     {item.volume !== undefined && (
-                      <span className="text-[11px] text-muted-foreground">{formatVolume(item.volume)}</span>
+                      <span className="text-[11px] text-muted-foreground">{volumeNaMoeda(item.volume, item.source)}</span>
                     )}
                   </div>
                 </div>

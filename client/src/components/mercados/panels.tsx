@@ -8,7 +8,8 @@ import {
   AlertTriangle, Calculator, ChevronDown, ChevronUp, ExternalLink,
   Flame, Info, Newspaper, Sparkles, Target, Zap,
 } from "lucide-react";
-import { type TrendingItem, formatVolume, formatOdds } from "@/lib/trending";
+import { type TrendingItem, formatOdds } from "@/lib/trending";
+import { volumeNaMoeda } from "@shared/plataforma";
 import { awardPoints } from "@/lib/userProgress";
 import { maybeAuthGate } from "@/lib/upgrade";
 import { VolumeTrend } from "@/components/mercados/cards";
@@ -158,7 +159,7 @@ export function MarketAnalysis({ item }: { item: TrendingItem }) {
         {item.volume !== undefined && (
           <div className="p-2 rounded-lg bg-secondary/20 border border-border/10 text-center">
             <p className="text-[11px] text-muted-foreground mb-0.5">Volume Total</p>
-            <p className="text-xs font-mono font-bold text-foreground">{formatVolume(item.volume)}</p>
+            <p className="text-xs font-mono font-bold text-foreground">{volumeNaMoeda(item.volume, item.source)}</p>
           </div>
         )}
         {item.volume24h !== undefined && (
@@ -166,13 +167,13 @@ export function MarketAnalysis({ item }: { item: TrendingItem }) {
             <p className="text-[11px] text-muted-foreground mb-0.5 flex items-center justify-center gap-1">
               Volume 24h <VolumeTrend volume={item.volume} volume24h={item.volume24h} />
             </p>
-            <p className="text-xs font-mono font-bold text-neon-blue">{formatVolume(item.volume24h)}</p>
+            <p className="text-xs font-mono font-bold text-neon-blue">{volumeNaMoeda(item.volume24h, item.source)}</p>
           </div>
         )}
         {(item.liquidity ?? item.openInterest) !== undefined && (
           <div className="p-2 rounded-lg bg-secondary/20 border border-border/10 text-center">
             <p className="text-[11px] text-muted-foreground mb-0.5">{item.source === "kalshi" ? "Open Interest" : "Liquidez"}</p>
-            <p className="text-xs font-mono font-bold text-gold">{formatVolume((item.openInterest ?? item.liquidity) as number)}</p>
+            <p className="text-xs font-mono font-bold text-gold">{volumeNaMoeda((item.openInterest ?? item.liquidity) as number, item.source)}</p>
           </div>
         )}
       </div>

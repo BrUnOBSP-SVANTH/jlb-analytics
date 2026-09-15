@@ -5,6 +5,7 @@
 import AnimatedSection from "@/components/AnimatedSection";
 import { ExternalLink } from "lucide-react";
 import { type MarketBasic } from "@/components/marketDetail/types";
+import { verNaPlataforma } from "@shared/plataforma";
 
 export function MarketHeader({ market }: { market: MarketBasic }) {
   return (
@@ -26,7 +27,7 @@ export function MarketHeader({ market }: { market: MarketBasic }) {
             className="ml-auto inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
           >
             <ExternalLink className="w-3.5 h-3.5" />
-            Ver no {market.source === "kalshi" ? "Kalshi" : "Polymarket"}
+            {verNaPlataforma(market.source)}
           </a>
         </div>
         <h1 className="text-2xl font-bold text-[var(--titulo)] leading-snug">{market.title}</h1>

@@ -12,6 +12,7 @@ import { INJECTION_GUARD } from "./promptSafety.ts";
 import { humanizeCitations } from "../citations.ts";
 import { logAiForecast } from "../aiForecasts.ts";
 import { log } from "../log.ts";
+import { nomeDaPlataforma } from "../../../shared/plataforma.ts";
 
 export interface AnalyzeParams {
   title: string; yesProb: number; source: string;
@@ -73,7 +74,9 @@ export async function runMarketAnalysis(p: AnalyzeParams, onPhase: PhaseEmit = (
     const NEWS_API_KEY = process.env.NEWS_API_KEY ?? "";
     const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY ?? "";
     const probPct = Math.round(yesProb * 100);
-    const platformName = source === "kalshi" ? "Kalshi" : "Polymarket";
+    // Nome dito pela origem (shared/plataforma.ts): um mercado do Manifold chegava
+    // aqui como "PLATAFORMA: Polymarket" e a IA escrevia sobre dinheiro em risco.
+    const platformName = nomeDaPlataforma(source) ?? "plataforma de previsão";
     const catKey = (category ?? "other").toLowerCase().replace(/[^a-z]/g, "") || "other";
     const catInfo = CATEGORY_BASE_RATES[catKey] ?? CATEGORY_BASE_RATES["other"];
 

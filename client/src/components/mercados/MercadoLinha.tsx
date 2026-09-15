@@ -33,7 +33,8 @@
 import { useState, useEffect } from "react";
 import { Link } from "wouter";
 import { Bookmark, BookmarkCheck, Scale, ExternalLink, ChevronDown } from "lucide-react";
-import { type TrendingItem, CATEGORY_LABELS, formatVolume } from "@/lib/trending";
+import { type TrendingItem, CATEGORY_LABELS } from "@/lib/trending";
+import { nomeDaPlataforma, volumeNaMoeda } from "@shared/plataforma";
 import { pct, pp } from "@shared/formato";
 import { useLivePrice } from "@/lib/livePrices";
 import { useEdge } from "@/components/mercados/edgeStore";
@@ -191,15 +192,13 @@ export function MercadoLinha({ item, onCompare, inCompare, onWatch, watched }: {
               eles não cumpriam. */}
           <p className="mt-1.5 text-[0.8125rem] text-muted-foreground flex flex-wrap items-center gap-x-2">
             <span>
-              {item.source === "reddit" ? `r/${item.subreddit}`
-                : item.source === "kalshi" ? "Kalshi"
-                : item.source === "manifold" ? "Manifold" : "Polymarket"}
+              {item.source === "reddit" ? `r/${item.subreddit}` : nomeDaPlataforma(item.source)}
             </span>
             {item.normalizedCategory !== "other" && item.normalizedCategory !== "all" && (
               <><span aria-hidden="true">·</span><span>{CATEGORY_LABELS[item.normalizedCategory]}</span></>
             )}
             {item.volume !== undefined && item.volume > 0 && (
-              <><span aria-hidden="true">·</span><span>{formatVolume(item.volume)}</span></>
+              <><span aria-hidden="true">·</span><span>{volumeNaMoeda(item.volume, item.source)}</span></>
             )}
             {divergiu && (
               <>
