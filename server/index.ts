@@ -16,6 +16,7 @@ import { spawn } from "child_process";
 
 import { cache, getCache, setCache } from "./lib/cache.ts";
 import { registerSnapshotJob } from "./lib/triggers.ts";
+import { gravarSnapshotsDoCatalogo } from "./lib/snapshotsDoCatalogo.ts";
 import { destinoDoApelido, rotaExiste } from "../shared/rotas.ts";
 import { emailEnabled } from "./lib/email.ts";
 import { fetchBrapiQuotes } from "./lib/brapi.ts";
@@ -120,6 +121,10 @@ async function runMarketSnapshots() {
   }
   log.info("[snapshots] Coletando snapshots diários de mercados...");
   await runPythonScript("market_snapshots.py", ["--limit", "100"]);
+  // O Python cobre os 100 eventos de maior volume; a tela mostra muito mais. O
+  // catálogo servido é gravado também — ver lib/snapshotsDoCatalogo.ts (item 7
+  // da auditoria de 14/09).
+  await gravarSnapshotsDoCatalogo(`http://localhost:${process.env.PORT ?? 3001}`);
   log.info("[snapshots] Snapshots concluídos.");
 }
 registerSnapshotJob(runMarketSnapshots); // POST /api/snapshots/trigger dispara este job
