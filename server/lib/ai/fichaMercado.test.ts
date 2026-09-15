@@ -1,5 +1,17 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { montarFicha } from "./fichaMercado.ts";
+
+/**
+ * SEM BANCO DE VERDADE. O comentário abaixo sempre disse "sem Supabase (como
+ * aqui)", mas o .env é carregado nos testes e a ficha consultava o banco real a
+ * cada execução — com a rede lenta, estourava os 5 s (visto em 14/09, com o DNS
+ * da máquina fora). O cenário que o teste quer provar é justamente o banco
+ * indisponível, então ele é simulado, não herdado do ambiente.
+ */
+vi.mock("../supaPaginado.ts", () => ({
+  buscarTudo: async () => { throw new Error("sem banco no teste"); },
+}));
+
 
 /**
  * A garantia central: a ficha NUNCA sai vazia.
