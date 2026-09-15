@@ -3,7 +3,7 @@
  * Regressão do bug onde um preço inválido virava "NaN%" no card.
  */
 import { describe, it, expect } from "vitest";
-import { clampProb, normalizeCategory, intercalarPorFonte, type TrendingItem, type Source } from "./trending";
+import { clampProb, normalizeCategory, intercalarPorFonte, manifoldAoVivo, buildManifoldItem, type TrendingItem, type Source } from "./trending";
 
 describe("clampProb", () => {
   it("usa o fallback para NaN (o bug original)", () => {
@@ -132,5 +132,35 @@ describe("intercalarPorFonte — a visão padrão mostra a mistura que promete",
     const entrada = Array.from({ length: 4 }, (_, i) => it_("polymarket", `p${i}`));
     expect(intercalarPorFonte(entrada).map((x) => x.id)).toEqual(["p0", "p1", "p2", "p3"]);
     expect(intercalarPorFonte([])).toEqual([]);
+  });
+});
+
+// ── Manifold "ao vivo": atividade, não idade (auditoria 14/09, item 5) ─────────
+describe("manifoldAoVivo — sai o parado, fica o antigo que ainda negocia", () => {
+  const AGORA = Date.UTC(2026, 8, 14);
+  const DIA = 86_400_000;
+
+  it("mercado criado há 1010 dias, com atividade ontem e prazo em 2030, é ao vivo", () => {
+    expect(manifoldAoVivo({ closeTime: Date.UTC(2030, 0, 1), lastUpdatedTime: AGORA - DIA }, AGORA)).toBe(true);
+  });
+
+  it("prazo encerrado não é ao vivo, mesmo com atividade recente", () => {
+    expect(manifoldAoVivo({ closeTime: AGORA - 1, lastUpdatedTime: AGORA - 60_000 }, AGORA)).toBe(false);
+  });
+
+  it("sem atividade há mais de uma semana não é ao vivo", () => {
+    expect(manifoldAoVivo({ closeTime: Date.UTC(2030, 0, 1), lastUpdatedTime: AGORA - 8 * DIA }, AGORA)).toBe(false);
+    expect(manifoldAoVivo({ closeTime: Date.UTC(2030, 0, 1), lastUpdatedTime: AGORA - 6 * DIA }, AGORA)).toBe(true);
+  });
+
+  it("o relógio do card é a última atividade; 'nova' é a criação", () => {
+    const agora = Date.now();
+    const item = buildManifoldItem({
+      id: "x", question: "Pergunta?", probability: 0.4, volume: 1000, url: "https://manifold.markets/x",
+      createdTime: agora - 1010 * DIA, lastUpdatedTime: agora - 2 * 3_600_000,
+    });
+    expect(item?.ageHours).toBeGreaterThan(1.9);
+    expect(item?.ageHours).toBeLessThan(2.1);
+    expect(item?.badge).toBeUndefined();
   });
 });

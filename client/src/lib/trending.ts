@@ -526,7 +526,12 @@ export function buildManifoldItem(m: ManifoldMarket): TrendingItem | null {
   if (!m.question || typeof m.probability !== "number" || !isFinite(m.probability)) return null;
   const yesProb = clampProb(m.probability);
   const vol = m.volume ?? 0;
-  const ageHours = m.createdTime ? hoursAgo(m.createdTime / 1000) : 0;
+  // O relógio do card é a ÚLTIMA ATIVIDADE, não a criação (auditoria de 14/09,
+  // item 5). Com a criação, "Taiwan… antes do fim de 2026" aparecia como
+  // "1010d atrás" sob o selo AO VIVO — um mercado aberto e negociado lido como
+  // abandonado. "Nova" continua sendo sobre a criação.
+  const criadoHaHoras = m.createdTime ? hoursAgo(m.createdTime / 1000) : Infinity;
+  const ageHours = m.lastUpdatedTime ? hoursAgo(m.lastUpdatedTime / 1000) : 0;
   const category = (m.groupSlugs ?? []).join(" ");
   return {
     id: `manifold-${m.id}`,
@@ -542,7 +547,7 @@ export function buildManifoldItem(m: ManifoldMarket): TrendingItem | null {
     ageHours,
     category,
     normalizedCategory: normalizeCategory(category, "manifold"),
-    badge: ageHours < 24 ? "nova" : undefined,
+    badge: criadoHaHoras < 24 ? "nova" : undefined,
   };
 }
 
@@ -576,6 +581,24 @@ export async function fetchPolymarketSports(): Promise<TrendingItem[]> {
   } catch { return []; }
 }
 
+/** Sem nenhuma atividade há mais que isto, o mercado não está "ao vivo". */
+export const MANIFOLD_PARADO_DIAS = 7;
+
+/**
+ * O mercado do Manifold pode aparecer numa lista "ao vivo"?
+ *
+ * Idade NÃO é o critério (a auditoria sugeriu ≤30 dias): os exemplos dela eram
+ * mercados abertos, com prazo em 2026 e 2030, que existem há anos — exatamente o
+ * tipo de pergunta longa que um mercado de previsão serve para acompanhar.
+ * Esconder por idade tiraria o que está vivo. Sai o que está comprovadamente
+ * parado: prazo já encerrado, ou nenhuma atividade na última semana.
+ */
+export function manifoldAoVivo(m: Pick<ManifoldMarket, "closeTime" | "lastUpdatedTime">, agoraMs = Date.now()): boolean {
+  if (typeof m.closeTime === "number" && m.closeTime <= agoraMs) return false;
+  if (typeof m.lastUpdatedTime === "number" && agoraMs - m.lastUpdatedTime > MANIFOLD_PARADO_DIAS * 86_400_000) return false;
+  return true;
+}
+
 export async function fetchManifold(): Promise<TrendingItem[]> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 12_000);
@@ -584,7 +607,7 @@ export async function fetchManifold(): Promise<TrendingItem[]> {
     if (!res.ok) return [];
     const json = await res.json() as { markets: ManifoldMarket[] };
     return (json.markets ?? [])
-      .filter((m) => m.volume > 50)
+      .filter((m) => m.volume > 50 && manifoldAoVivo(m))
       .map(buildManifoldItem)
       .filter((x): x is TrendingItem => x !== null)
       .slice(0, 20);

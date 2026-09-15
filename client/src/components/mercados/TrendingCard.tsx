@@ -177,7 +177,10 @@ function TrendingCardBase({ item, onCompare, inCompare, indice = 0 }: {
           {item.sentiment.label !== "Neutro" && <SentimentBadge label={item.sentiment.label} />}
           {item.ageHours > 0 && (
             <span className="text-[11px] text-muted-foreground flex items-center gap-1">
-              <Clock className="w-3 h-3" />{formatAge(item.ageHours)}
+              {/* No Manifold o relógio é a última atividade, não a criação
+                  (buildManifoldItem) — e o rótulo diz isso. */}
+              <Clock className="w-3 h-3" aria-hidden="true" />
+              {item.source === "manifold" ? "ativo " : ""}{formatAge(item.ageHours)}
             </span>
           )}
           {/* Tradução como chip discreto no fim da linha (não gasta uma linha própria) */}
