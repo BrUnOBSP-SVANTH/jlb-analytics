@@ -98,7 +98,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signUp = useCallback(async (email: string, password: string) => {
-    const { error } = await supabase.auth.signUp({ email, password });
+    // `emailRedirectTo` explícito, como o login com Google e a troca de senha
+    // já fazem. Sem ele, o link de confirmação do e-mail volta para o "Site URL"
+    // do projeto — que em 16/09 era http://localhost:3000: quem se cadastrasse
+    // no site publicado e clicasse no e-mail seria mandado para o próprio
+    // computador. Com ele, volta para o site onde a pessoa se cadastrou.
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { emailRedirectTo: `${window.location.origin}/dashboard` },
+    });
     return { error: error?.message ?? null };
   }, []);
 
