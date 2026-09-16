@@ -18,6 +18,7 @@ import { cache, getCache, setCache } from "./lib/cache.ts";
 import { registerSnapshotJob } from "./lib/triggers.ts";
 import { gravarSnapshotsDoCatalogo } from "./lib/snapshotsDoCatalogo.ts";
 import { destinoDoApelido, rotaExiste } from "../shared/rotas.ts";
+import { mercadoMereceAlerta } from "./lib/alertasMercado.ts";
 import { emailEnabled } from "./lib/email.ts";
 import { fetchBrapiQuotes } from "./lib/brapi.ts";
 import { fetchYahooQuotes } from "./lib/yahoo.ts";
@@ -540,9 +541,9 @@ async function startServer() {
     try {
       const [polyRaw, kalshiRaw] = await Promise.allSettled([
         fetch("http://localhost:" + (process.env.PORT ?? 3001) + "/api/polymarket/markets?limit=50")
-          .then((r) => r.ok ? r.json() as Promise<{ markets: Array<{ id: string; question: string; outcomePrices?: string | string[] }> }> : { markets: [] }),
+          .then((r) => r.ok ? r.json() as Promise<{ markets: Array<{ id: string; question: string; outcomePrices?: string | string[]; volume?: number }> }> : { markets: [] }),
         fetch("http://localhost:" + (process.env.PORT ?? 3001) + "/api/kalshi/markets?limit=40")
-          .then((r) => r.ok ? r.json() as Promise<{ markets: Array<{ ticker: string; title: string; yesProb: number }> }> : { markets: [] }),
+          .then((r) => r.ok ? r.json() as Promise<{ markets: Array<{ ticker: string; title: string; yesProb: number; volume?: number }> }> : { markets: [] }),
       ]);
 
       // `key` = id prefixado ("poly-…"/"kalshi-…") — MESMO formato dos ids da
@@ -565,7 +566,10 @@ async function startServer() {
           livePrices[`poly-${m.id}`] = prob;
           const key = `poly:${m.id}`;
           const prev = prevMarketProbs.get(key);
-          if (prev !== undefined && Math.abs(prob - prev) >= ALERT_THRESHOLD_PP) {
+          // O preço ao vivo vale para TODO mercado (os cards piscam com ele);
+          // o alerta, não: mercado sem gente dentro oscila por qualquer negócio
+          // e monopolizava o sino (lib/alertasMercado.ts).
+          if (prev !== undefined && Math.abs(prob - prev) >= ALERT_THRESHOLD_PP && mercadoMereceAlerta("polymarket", m.volume)) {
             alerts.push({ id: m.id, key: `poly-${m.id}`, title: m.question, source: "polymarket", prob, prevProb: prev, delta: prob - prev });
           }
           prevMarketProbs.set(key, prob);
@@ -578,7 +582,7 @@ async function startServer() {
           if (isFinite(prob)) livePrices[`kalshi-${m.ticker}`] = prob;
           const key = `kalshi:${m.ticker}`;
           const prev = prevMarketProbs.get(key);
-          if (prev !== undefined && Math.abs(prob - prev) >= ALERT_THRESHOLD_PP) {
+          if (prev !== undefined && Math.abs(prob - prev) >= ALERT_THRESHOLD_PP && mercadoMereceAlerta("kalshi", m.volume)) {
             alerts.push({ id: m.ticker, key: `kalshi-${m.ticker}`, title: m.title, source: "kalshi", prob, prevProb: prev, delta: prob - prev });
           }
           prevMarketProbs.set(key, prob);

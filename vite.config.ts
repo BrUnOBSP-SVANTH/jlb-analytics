@@ -25,7 +25,22 @@ export default defineConfig({
         manualChunks(id) {
           if (!id.includes("node_modules")) return;
           const p = id.replace(/\\/g, "/");
-          if (p.includes("/recharts") || p.includes("/d3-") || p.includes("victory-vendor") || p.includes("/internmap") || p.includes("/robust-predicates") || p.includes("/decimal.js")) return "charts";
+          // ⚠️ `/node_modules/<pacote>/`, e NÃO `/<pacote>`. No pnpm as dependências
+          // de uma biblioteca moram dentro da pasta dela
+          // (`.pnpm/recharts@2.x/node_modules/clsx/…`), então casar por prefixo
+          // rotulava como "charts" qualquer miudeza aninhada no recharts — e
+          // bastava o app usar a MESMA miudeza para o bundle principal importar do
+          // chunk de gráficos e o navegador baixar 406 KB de Recharts na home
+          // (auditoria de 14/09, item 27).
+          const ehPacote = (nome: string) => p.includes(`/node_modules/${nome}/`);
+          const ehFamilia = (prefixo: string) => new RegExp(`/node_modules/${prefixo}[^/]*/`).test(p);
+          // Utilidades minúsculas que TODA tela usa (clsx e companhia). Sem um
+          // chunk próprio, o Rollup as guardava dentro de "charts" — e aí o
+          // bundle principal importava de lá, obrigando a home a baixar 406 KB
+          // de Recharts para usar uma função de juntar classes.
+          if (ehPacote("clsx") || ehPacote("tailwind-merge") || ehPacote("class-variance-authority")) return "ui-utils";
+          if (ehPacote("recharts") || ehFamilia("d3-") || ehPacote("victory-vendor")
+            || ehPacote("internmap") || ehPacote("robust-predicates") || ehPacote("decimal.js")) return "charts";
           if (p.includes("/@supabase")) return "supabase";
           if (/\/(react|react-dom|scheduler)@/.test(p) || p.includes("/wouter")) return "react-vendor";
           // demais libs (radix, lucide, cmdk, …) ficam no entry — pequenas e variadas.

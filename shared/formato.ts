@@ -134,3 +134,38 @@ export function haQuantoTempo(iso: string | number | Date | null | undefined): s
   const d = Math.floor(h / 24);
   return `há ${plural(d, "dia", "dias")}`;
 }
+
+/**
+ * Arredonda uma lista de probabilidades para inteiros SEM inventar nem sumir com
+ * pontos percentuais — método do maior resto (Hamilton).
+ *
+ * O QUE ACONTECIA (auditoria de 14/09/2026, item 24). "Fed Decision in
+ * September?" mostrava 88% + 12% + 1% = 101%, mas os preços da API somavam
+ * 99,95%. O 1% a mais não existia em lugar nenhum: nasceu de arredondar cada
+ * linha sozinha. Num site cujo argumento é rigor probabilístico, é o tipo de
+ * detalhe que o leitor atento usa para decidir se confia no resto.
+ *
+ * O total continua sendo o VERDADEIRO (arredondado): mercado com overround segue
+ * somando 103%, porque a margem da plataforma é real e a tela a explica. O que
+ * some é só o erro de arredondamento.
+ *
+ * Entrada em 0–1, saída em pontos percentuais inteiros.
+ */
+export function percentuaisQueSomam(probs: ReadonlyArray<number>): number[] {
+  const validos = probs.map((p) => (Number.isFinite(p) ? p * 100 : 0));
+  const total = Math.round(validos.reduce((t, v) => t + v, 0));
+  const piso = validos.map((v) => Math.floor(v));
+  let faltam = total - piso.reduce((t, v) => t + v, 0);
+  // Quem tem o maior resto recebe o ponto que falta; empate vai para o maior valor.
+  const ordem = validos
+    .map((v, i) => ({ i, resto: v - Math.floor(v), v }))
+    .sort((a, b) => (b.resto - a.resto) || (b.v - a.v));
+  const saida = piso.slice();
+  for (const { i } of ordem) {
+    if (faltam <= 0) break;
+    saida[i] += 1;
+    faltam -= 1;
+  }
+  // Total menor que a soma dos pisos (raro, com valores negativos) — devolve o piso.
+  return saida;
+}

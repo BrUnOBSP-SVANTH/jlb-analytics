@@ -33,7 +33,12 @@ function DataFreshness() {
     <p className="text-[11px] text-muted-foreground text-center tabular-nums">
       {data.lastArticleAt && <>Cérebro atualizado {timeAgo(data.lastArticleAt)}</>}
       {data.lastArticleAt && data.lastSnapshotAt && <span className="mx-1.5 text-border/40">·</span>}
-      {data.lastSnapshotAt && <>preços de mercado {timeAgo(data.lastSnapshotAt)}</>}
+      {/* Isto NÃO é a idade do preço na tela (auditoria de 14/09, item 17). O
+          preço vem ao vivo da plataforma a cada minuto — o topo de /mercados
+          mostra a hora dessa leitura. O que este número diz é quando gravamos o
+          último ponto do HISTÓRICO, e dizer "preços de mercado há 48min" embaixo
+          de um selo AO VIVO fazia as duas linhas se contradizerem na mesma tela. */}
+      {data.lastSnapshotAt && <>histórico de preços gravado {timeAgo(data.lastSnapshotAt)}</>}
     </p>
   );
 }

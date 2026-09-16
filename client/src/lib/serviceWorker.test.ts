@@ -66,3 +66,15 @@ describe("service worker", () => {
     expect(codigo).toMatch(/addEventListener\(["']notificationclick["']/);
   });
 });
+
+// ── Poda do cache (auditoria 14/09, item 28) ─────────────────────────────────
+describe("o cache não cresce para sempre", () => {
+  it("o activate poda o excedente, dos mais antigos para os mais novos", () => {
+    // Sem isto, cada deploy somava os arquivos novos aos do build anterior (87
+    // entradas na medição) até o navegador despejar o cache inteiro.
+    expect(codigo).toMatch(/const MAX_ARQUIVOS\s*=\s*\d+/);
+    expect(codigo).toMatch(/\.then\(\(\)\s*=>\s*podarCache\(\)\)/);
+    // slice(0, sobrando) = os que entraram primeiro; o contrário apagaria o build atual.
+    expect(codigo).toMatch(/chaves\.slice\(0,\s*sobrando\)/);
+  });
+});

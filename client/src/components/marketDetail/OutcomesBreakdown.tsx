@@ -18,7 +18,7 @@ import { BarChart2 } from "lucide-react";
 import { type MarketBasic } from "@/components/marketDetail/types";
 import { Explain } from "@/components/marketDetail/Explain";
 import { Termo } from "@/components/Termo";
-import { pct } from "@shared/formato";
+import { percentuaisQueSomam, pct } from "@shared/formato";
 
 export function OutcomesBreakdown({
   market,
@@ -46,7 +46,13 @@ export function OutcomesBreakdown({
    *   soma > 100%  → overround, a margem embutida pela plataforma;
    *   soma < 100%  → há desfechos fora da lista (a bolsa mostra só os maiores).
    */
-  const soma = Math.round(outcomes.reduce((t, o) => t + o.prob * 100, 0));
+  /**
+   * As linhas somam o mesmo que o texto diz (item 24 da auditoria de 14/09).
+   * Antes cada linha arredondava sozinha: 87,50 + 11,50 + 0,95 (soma 99,95)
+   * virava 88 + 12 + 1 = 101 na tela, enquanto o texto acima dizia 100%.
+   */
+  const porLinha = percentuaisQueSomam(outcomes.map((o) => o.prob));
+  const soma = porLinha.reduce((t, v) => t + v, 0);
   const fechaEmCem = soma >= 99 && soma <= 101;
   return (
     <AnimatedSection delay={0.09}>
@@ -84,8 +90,8 @@ export function OutcomesBreakdown({
         )}
 
         <div className={clicavel ? "-mx-2" : "space-y-2"}>
-          {outcomes.map((o) => {
-            const valor = Math.round(o.prob * 100);
+          {outcomes.map((o, idx) => {
+            const valor = porLinha[idx];
             const barColor = valor >= 40 ? "bg-positive" : valor >= 15 ? "bg-gold" : "bg-neon-blue/60";
             const txtColor = valor >= 40 ? "text-positive" : valor >= 15 ? "text-gold" : "text-muted-foreground";
             const selecionado = clicavel && o.id === desfechoSelecionado;

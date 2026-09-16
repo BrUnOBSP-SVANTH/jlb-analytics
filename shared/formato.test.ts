@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   num, pct, pctDeProb, pp, magnitude, dolar, real, reaisExatos,
-  plural, tempoRestante, haQuantoTempo,
+  plural, tempoRestante, haQuantoTempo, percentuaisQueSomam,
 } from "./formato.ts";
 
 /**
@@ -99,5 +99,34 @@ describe("tempo", () => {
     expect(haQuantoTempo(Date.now() - 3 * 3_600_000)).toBe("há 3 horas");
     expect(haQuantoTempo(Date.now())).toBe("agora");
     expect(haQuantoTempo(null)).toBe("—");
+  });
+});
+
+// ── percentuaisQueSomam: o 101% da auditoria de 14/09 (item 24) ──────────────
+describe("percentuaisQueSomam — arredondar sem inventar ponto percentual", () => {
+  it("o caso medido: Fed de setembro somava 101% na tela", () => {
+    // Preços crus da API: 0,8750 · 0,1150 · 0,0095 → somam 99,95%.
+    // Arredondando cada linha sozinha dava 88 + 12 + 1 = 101.
+    const linhas = percentuaisQueSomam([0.8750, 0.1150, 0.0095]);
+    expect(linhas.reduce((t, v) => t + v, 0)).toBe(100);
+    // Os pisos (87, 11, 0) somam 98; sobram 2 pontos. Vão para os maiores restos:
+    // 0,95 leva o primeiro — e é o que evita um desfecho real aparecer como 0% —
+    // e o empate de 0,50 entre os outros dois vai para o maior valor.
+    expect(linhas).toEqual([88, 11, 1]);
+  });
+
+  it("overround REAL continua aparecendo — não é erro de arredondamento", () => {
+    // 60 + 25 + 18 = 103: a margem da plataforma é verdadeira e a tela a explica.
+    expect(percentuaisQueSomam([0.60, 0.25, 0.18]).reduce((t, v) => t + v, 0)).toBe(103);
+  });
+
+  it("quando faltam pontos, quem tem o maior resto recebe", () => {
+    // 33,4 + 33,3 + 33,3 = 100: os pisos somam 99, e o ponto vai para o maior resto.
+    expect(percentuaisQueSomam([0.334, 0.333, 0.333])).toEqual([34, 33, 33]);
+  });
+
+  it("lista vazia e valores inválidos não quebram", () => {
+    expect(percentuaisQueSomam([])).toEqual([]);
+    expect(percentuaisQueSomam([NaN, 0.5])).toEqual([0, 50]);
   });
 });

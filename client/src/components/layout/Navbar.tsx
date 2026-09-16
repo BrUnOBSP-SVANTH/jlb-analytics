@@ -486,13 +486,22 @@ export function Navbar() {
                   ))}
                 </div>
 
-                {/* Nav groups */}
+                {/* Nav groups
+                    O acordeão é do CELULAR (auditoria de 14/09, item 30). Numa
+                    janela larga o menu abria com as cinco seções fechadas e
+                    qualquer destino custava dois cliques, com espaço de sobra na
+                    tela. De 768px para cima as seções vêm abertas, em colunas, e
+                    o botão de expandir dá lugar a um rótulo. */}
+                <div className="md:grid md:grid-cols-2 lg:grid-cols-3 md:gap-x-5">
                 {NAV_GROUPS.map((group) => (
                   <div key={group.id}>
+                    <p className="hidden md:block px-3 pt-3 pb-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70">
+                      {group.label}
+                    </p>
                     <button
                       onClick={() => setMobileSection(mobileSection === group.id ? null : group.id)}
                       aria-expanded={mobileSection === group.id}
-                      className="alvo-toque w-full flex items-center justify-between px-3 py-3 text-sm font-medium text-muted-foreground hover:text-foreground rounded-lg hover:bg-secondary/20 transition-colors"
+                      className="md:hidden alvo-toque w-full flex items-center justify-between px-3 py-3 text-sm font-medium text-muted-foreground hover:text-foreground rounded-lg hover:bg-secondary/20 transition-colors"
                     >
                       {group.label}
                       <span className={`transition-transform duration-150 ${mobileSection === group.id ? "rotate-180" : ""}`}
@@ -502,8 +511,9 @@ export function Navbar() {
                         </svg>
                       </span>
                     </button>
-                      {mobileSection === group.id && (
-                        <div className="overflow-hidden ml-2 animate-in fade-in slide-in-from-top-1 duration-200">
+                      <div className={`overflow-hidden ml-2 md:ml-0 md:block ${
+                        mobileSection === group.id ? "block animate-in fade-in slide-in-from-top-1 duration-200" : "hidden"
+                      }`}>
                           {group.children.map((child) => {
                             const Icon = child.icon;
                             return (
@@ -523,10 +533,10 @@ export function Navbar() {
                               </Link>
                             );
                           })}
-                        </div>
-                      )}
+                      </div>
                   </div>
                 ))}
+                </div>
 
                 {/* Tema e sessão — o lugar de "sair" (NAV-04), atrás de confirmação */}
                 <div className="flex items-center justify-between gap-2 pt-3 mt-2 border-t border-border/20">

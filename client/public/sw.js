@@ -56,10 +56,34 @@ self.addEventListener("install", () => {
 });
 
 // ── Activate: apaga todo cache de outra versão (inclui o "jlb-v1") ────────
+/**
+ * Teto de arquivos guardados.
+ *
+ * O nome do cache é constante entre deploys (de propósito: trocá-lo apaga tudo
+ * de todo mundo), então cada build novo acrescenta os arquivos dele e os do
+ * build anterior ficavam ali para sempre — 87 entradas na medição da auditoria
+ * de 14/09 (item 28), e crescendo. O navegador acaba despejando o cache inteiro
+ * quando a cota estoura, que é o pior momento possível.
+ *
+ * `cache.keys()` devolve na ordem em que entraram, então os primeiros são os
+ * mais antigos. 120 cobre com folga os arquivos de um build (87 na medição) e
+ * ainda deixa o anterior inteiro para quem está com uma aba velha aberta.
+ */
+const MAX_ARQUIVOS = 120;
+
+async function podarCache() {
+  const cache = await caches.open(CACHE_NAME);
+  const chaves = await cache.keys();
+  const sobrando = chaves.length - MAX_ARQUIVOS;
+  if (sobrando <= 0) return;
+  await Promise.all(chaves.slice(0, sobrando).map((k) => cache.delete(k)));
+}
+
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches.keys()
       .then((keys) => Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k))))
+      .then(() => podarCache())
       .then(() => self.clients.claim())
   );
 });

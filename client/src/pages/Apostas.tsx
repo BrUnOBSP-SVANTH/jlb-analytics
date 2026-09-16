@@ -75,17 +75,47 @@ const PAGE_SIZE = 20;
 // ── "Onde a JLB discorda" — mercados com maior edge entre fair value IA e preço ──
 
 
+/**
+ * Preferências da tela (filtro, ordenação, modo de exibição) no aparelho.
+ *
+ * As chaves eram `apostas_*`, da época em que a seção se chamava "Apostas"
+ * (auditoria de 14/09, item 26). O site hoje se posiciona explicitamente contra
+ * o enquadramento de aposta — e chave de armazenamento aparece no DevTools de
+ * quem for olhar. Agora são `jlb_mercados_*`, LENDO a chave antiga uma última
+ * vez para ninguém perder a preferência que já tinha; a leitura antiga some
+ * quando as contas tiverem migrado.
+ */
+const CHAVE = (nome: string) => `jlb_mercados_${nome}`;
+const CHAVE_ANTIGA = (nome: string) => `apostas_${nome}`;
+
+function preferencia(nome: string): string | null {
+  try {
+    const atual = localStorage.getItem(CHAVE(nome));
+    if (atual !== null) return atual;
+    const antiga = localStorage.getItem(CHAVE_ANTIGA(nome));
+    if (antiga !== null) {
+      localStorage.setItem(CHAVE(nome), antiga);
+      localStorage.removeItem(CHAVE_ANTIGA(nome));
+    }
+    return antiga;
+  } catch { return null; }
+}
+
+function guardarPreferencia(nome: string, valor: string): void {
+  try { localStorage.setItem(CHAVE(nome), valor); } catch { /* aba privada */ }
+}
+
 export default function Apostas() {
   useSEO("Mercados Ao Vivo", "Mercados preditivos em tempo real do Polymarket e Kalshi com probabilidades, volume, divergências da IA e análise contextual.");
   const [items, setItems]           = useState<TrendingItem[]>([]);
   const [loading, setLoading]       = useState(true);
   const [error, setError]           = useState<string | null>(null);
-  const [filter, setFilter]         = useState<Filter>(() => (localStorage.getItem("apostas_filter") as Filter) ?? "all");
-  const [catFilter, setCatFilter]   = useState<CategoryFilter>(() => (localStorage.getItem("apostas_catFilter") as CategoryFilter) ?? "all");
+  const [filter, setFilter]         = useState<Filter>(() => (preferencia("filter") as Filter) ?? "all");
+  const [catFilter, setCatFilter]   = useState<CategoryFilter>(() => (preferencia("catFilter") as CategoryFilter) ?? "all");
   // NEG-04: "tem alguma coisa daqui?" é a pergunta mais óbvia de quem chega.
   const [soBrasil, setSoBrasil] = useState(false);
-  const [viewMode, setViewMode]     = useState<ViewMode>(() => (localStorage.getItem("apostas_viewMode") as ViewMode) ?? "list");
-  const [sortBy, setSortBy]         = useState<SortBy>(() => (localStorage.getItem("apostas_sortBy") as SortBy) ?? "trending");
+  const [viewMode, setViewMode]     = useState<ViewMode>(() => (preferencia("viewMode") as ViewMode) ?? "list");
+  const [sortBy, setSortBy]         = useState<SortBy>(() => (preferencia("sortBy") as SortBy) ?? "trending");
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [compareMap, setCompareMap] = useState<Map<string, TrendingItem>>(new Map());
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
@@ -231,10 +261,10 @@ export default function Apostas() {
   }, [buildAndSet]);
 
   // persist filter preferences
-  useEffect(() => { localStorage.setItem("apostas_filter",    filter);   }, [filter]);
-  useEffect(() => { localStorage.setItem("apostas_catFilter", catFilter); }, [catFilter]);
-  useEffect(() => { localStorage.setItem("apostas_viewMode",  viewMode);  }, [viewMode]);
-  useEffect(() => { localStorage.setItem("apostas_sortBy",    sortBy);    }, [sortBy]);
+  useEffect(() => { guardarPreferencia("filter",    filter);   }, [filter]);
+  useEffect(() => { guardarPreferencia("catFilter", catFilter); }, [catFilter]);
+  useEffect(() => { guardarPreferencia("viewMode",  viewMode);  }, [viewMode]);
+  useEffect(() => { guardarPreferencia("sortBy",    sortBy);    }, [sortBy]);
 
   // Restore compare state from URL on first items load
   useEffect(() => {

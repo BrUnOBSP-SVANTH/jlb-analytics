@@ -8,7 +8,9 @@ export default function NotFound() {
     <div className="min-h-[70vh] flex flex-col items-center justify-center px-4 py-20">
       {/* Error code */}
       <div className="relative mb-8">
-        <p className="text-[120px] font-display font-bold leading-none text-foreground/5 select-none">
+        {/* O 404 gigante é desenho: quem usa leitor de tela ouvia "404 404"
+            (auditoria de 14/09, item 25). O número que conta é o de baixo. */}
+        <p className="text-[120px] font-display font-bold leading-none text-foreground/5 select-none" aria-hidden="true">
           404
         </p>
         <div className="absolute inset-0 flex items-center justify-center">
@@ -31,7 +33,7 @@ export default function NotFound() {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full max-w-md mb-8">
         {[
           { href: "/",          label: "Início",     icon: Home,            desc: "Voltar ao início" },
-          { href: "/mercados",   label: "Mercados",   icon: TrendingUp,      desc: "Mercados em Hype" },
+          { href: "/mercados",   label: "Mercados",   icon: TrendingUp,      desc: "Mercados ao vivo" },
           { href: "/dashboard", label: "Dashboard",  icon: LayoutDashboard, desc: "Suas métricas" },
         ].map(({ href, label, icon: Icon, desc }) => (
           <Link key={href} href={href}>
