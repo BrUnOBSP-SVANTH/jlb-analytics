@@ -248,6 +248,34 @@ for (const rota of ROTAS) {
     await p.waitForTimeout(400);
     const sobra = await p.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     if (sobra > 0) achados.push(`SOBRA HORIZONTAL EM 390px: a página rola ${sobra}px de lado`);
+
+    /**
+     * TEXTO ESPREMIDO NO CELULAR.
+     *
+     * O defeito vizinho da sobra, e que não faz a página rolar: um bloco
+     * `flex-1` ao lado de botões `shrink-0` numa linha com `flex-wrap`. Com base
+     * zero o texto nunca desce de linha — no /leaderboard ele ficou com 36px de
+     * largura, uma palavra por linha, e nada acusava.
+     *
+     * Critério: texto de frase inteira (40+ caracteres) renderizado com menos de
+     * 80px de largura e mais de 60px de altura. Fica de fora o que é de propósito
+     * estreito: o `sr-only` (1px) e o que corta com reticências.
+     */
+    const espremidos = await p.evaluate(() => {
+      const saida = [];
+      for (const e of document.querySelectorAll("p, span, li, h1, h2, h3, h4")) {
+        const texto = (e.textContent || "").trim();
+        if (texto.length < 40) continue;
+        const r = e.getBoundingClientRect();
+        if (r.width < 2 || r.width >= 80 || r.height <= 60) continue;
+        const cs = getComputedStyle(e);
+        if (cs.textOverflow === "ellipsis" || cs.visibility === "hidden") continue;
+        saida.push(`"${texto.slice(0, 35)}…" com ${Math.round(r.width)}px`);
+        if (saida.length >= 2) break;
+      }
+      return saida;
+    });
+    if (espremidos.length > 0) achados.push(`TEXTO ESPREMIDO EM 390px: ${espremidos.join(" | ")}`);
   } catch (e) {
     achados.push(`não carregou: ${String(e.message).slice(0, 120)}`);
   }

@@ -398,7 +398,11 @@ export default function Leaderboard() {
         {/* CTA */}
         <AnimatedSection>
           <div className="p-5 rounded-xl border border-primary/20 bg-primary/3 flex items-center gap-4 flex-wrap">
-            <div className="flex-1 min-w-0">
+            {/* `basis-56` dá ao texto uma largura mínima de verdade. Com `flex-1`
+                sozinho a base era ZERO: o texto nunca descia de linha e ficava
+                espremido em 36px ao lado dos botões, uma palavra por linha, no
+                celular. Assim, sem espaço, são os botões que descem. */}
+            <div className="flex-1 basis-56 min-w-0">
               <p className="text-sm font-semibold text-foreground">Quer aparecer no ranking?</p>
               <p className="text-xs text-muted-foreground mt-0.5">
                 Ative o perfil público, faça previsões e resolva-as quando o mercado fechar.
