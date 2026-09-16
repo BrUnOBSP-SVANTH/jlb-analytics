@@ -608,7 +608,7 @@ export default function Dashboard() {
       </div>
 
       {/* Main grid */}
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <LevelMap feitos={feitos} />
         <div className="space-y-6">
           {/* DSH-01: o nível vinha de PONTOS, e ponto vinha de abrir página.

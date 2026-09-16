@@ -232,6 +232,22 @@ for (const rota of ROTAS) {
     if (a11y.invisiveis > 0) achados.push(`CONTEÚDO INVISÍVEL: ${a11y.invisiveis} blocos com opacidade baixa`);
     if (a11y.saltos.length > 0) achados.push(`SALTO DE TÍTULO: ${a11y.saltos.join(", ")}`);
     if (a11y.h1 === 0) achados.push("SEM H1: a página não tem título principal");
+
+    /**
+     * SOBRA HORIZONTAL NO CELULAR.
+     *
+     * A varredura rodava só em 1280px, e em 16/09 o /nivel/1 rolava de lado em
+     * 390px: dois `<input>` sem `min-w-0` empurravam os cards 20px para fora da
+     * tela. Nada no console, nenhum teste vermelho — só a página balançando no
+     * dedo de quem abre pelo celular, que é quase todo mundo no Brasil.
+     *
+     * Redimensionar em vez de navegar de novo: as media queries reaplicam na
+     * hora e a verificação custa um quadro, não uma carga.
+     */
+    await p.setViewportSize({ width: 390, height: 844 });
+    await p.waitForTimeout(400);
+    const sobra = await p.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+    if (sobra > 0) achados.push(`SOBRA HORIZONTAL EM 390px: a página rola ${sobra}px de lado`);
   } catch (e) {
     achados.push(`não carregou: ${String(e.message).slice(0, 120)}`);
   }

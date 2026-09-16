@@ -97,9 +97,13 @@ function EVCalculator() {
         — independente do resultado individual.
       </p>
 
+      {/* `w-full min-w-0` nos campos: `<input>` tem largura MÍNIMA intrínseca
+          (~150px) e não encolhe sozinho dentro de grade ou flex. Em 390px os dois
+          cards desta página saíam 20px para fora da tela e ela rolava de lado —
+          a única das 27 rotas com esse defeito (medido em 16/09). */}
       <div className="space-y-2">
         <div className="grid grid-cols-3 gap-2 text-xs text-muted-foreground font-medium px-1">
-          <span>Resultado (R$)</span><span>Probabilidade (0–1)</span><span />
+          <span>Resultado (R$)</span><span>Probabilidade <span className="whitespace-nowrap">(0–1)</span></span><span />
         </div>
         {rows.map((row, i) => (
           <div key={i} className="grid grid-cols-3 gap-2">
@@ -107,7 +111,7 @@ function EVCalculator() {
               type="number"
               value={row.outcome}
               onChange={(e) => updateRow(i, "outcome", e.target.value)}
-              className="px-3 py-2 rounded-lg bg-secondary/50 border border-border/50 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+              className="w-full min-w-0 px-3 py-2 rounded-lg bg-secondary/50 border border-border/50 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
               placeholder="ex: 100"
             />
             <input
@@ -115,7 +119,7 @@ function EVCalculator() {
               value={row.probability}
               onChange={(e) => updateRow(i, "probability", e.target.value)}
               step="0.01" min="0" max="1"
-              className="px-3 py-2 rounded-lg bg-secondary/50 border border-border/50 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+              className="w-full min-w-0 px-3 py-2 rounded-lg bg-secondary/50 border border-border/50 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
               placeholder="ex: 0.45"
             />
             {rows.length > 2 && (
@@ -183,13 +187,13 @@ function HouseEdgeCalculator() {
       <div className="space-y-2">
         {odds.map((o, i) => (
           <div key={i} className="flex items-center gap-2">
-            <span className="text-xs text-muted-foreground w-28">{labels[i] ?? `Resultado ${i + 1}`}</span>
+            <span className="text-xs text-muted-foreground w-24 sm:w-28 shrink-0">{labels[i] ?? `Resultado ${i + 1}`}</span>
             <input
               type="number"
               value={o}
               onChange={(e) => setOdds((prev) => prev.map((v, idx) => idx === i ? e.target.value : v))}
               step="0.01" min="1.01"
-              className="flex-1 px-3 py-2 rounded-lg bg-secondary/50 border border-border/50 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+              className="flex-1 min-w-0 px-3 py-2 rounded-lg bg-secondary/50 border border-border/50 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
             />
             {odds.length > 2 && (
               <button onClick={() => setOdds((p) => p.filter((_, idx) => idx !== i))} className="text-xs text-negative" aria-label={`Remover odd ${i + 1}`}>✕</button>
@@ -352,7 +356,12 @@ export default function Nivel1() {
       </div>
 
       {/* Calculadoras */}
-      <div className="grid gap-6 lg:grid-cols-2">
+      {/* `grid-cols-1` explícito, e não coluna implícita: sem ele a trilha única do
+          celular cresce até a largura MÍNIMA do conteúdo (os campos das
+          calculadoras) em vez de caber na tela — em 390px os cards saíam 20px
+          para fora e a página rolava de lado. No Tailwind, `grid-cols-1` é
+          `minmax(0, 1fr)`: a coluna pode encolher. Mesmo padrão nos cinco níveis. */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <HouseEdgeCalculator />
         <EVCalculator />
       </div>
