@@ -4,6 +4,7 @@
  */
 
 import { Router } from "express";
+import { timingSafeEqual } from "node:crypto";
 import { log } from "../lib/log.ts";
 import { triggerSnapshotJob } from "../lib/triggers.ts";
 
@@ -18,6 +19,27 @@ function supaHeaders() {
     Authorization: `Bearer ${SUPABASE_KEY}`,
     "Content-Type": "application/json",
   };
+}
+
+/**
+ * Só quem tem a chave de serviço dispara coleta.
+ *
+ * `/seed` era PÚBLICO e escrevia no banco com a chave de serviço (achado meu
+ * durante a auditoria de 14/09, confirmado pelo fundador em 16/09): qualquer
+ * pessoa na internet podia mandar o servidor buscar 20 históricos no Polymarket
+ * e gravar linhas — de graça para ela, no nosso plano e no nosso banco. A
+ * ferramenta continua existindo, agora com a mesma porta do `/trigger`.
+ *
+ * Comparação em tempo constante: o tempo de um `!==` cresce com o tanto de
+ * prefixo acertado, e isso vaza a chave caractere a caractere para quem medir.
+ */
+export function autorizadoComChaveDeServico(cabecalho: unknown): boolean {
+  const chave = process.env.SUPABASE_SERVICE_KEY ?? "";
+  if (!chave) return false; // sem chave configurada, ninguém entra
+  const esperado = Buffer.from(`Bearer ${chave}`);
+  const recebido = Buffer.from(typeof cabecalho === "string" ? cabecalho : "");
+  if (recebido.length !== esperado.length) return false;
+  return timingSafeEqual(recebido, esperado);
 }
 
 // GET /api/snapshots/history/:source/:marketId?days=90
@@ -119,9 +141,7 @@ router.get("/top", async (req, res) => {
 // Antes era um STUB que respondia "triggered" sem fazer nada — agora dispara
 // o job real registrado pelo index (fire-and-forget, a coleta leva minutos).
 router.post("/trigger", async (req, res) => {
-  const authHeader = req.headers["authorization"] ?? "";
-  const serviceKey = process.env.SUPABASE_SERVICE_KEY ?? "";
-  if (!serviceKey || authHeader !== `Bearer ${serviceKey}`) {
+  if (!autorizadoComChaveDeServico(req.headers["authorization"])) {
     return res.status(401).json({ error: "Unauthorized" });
   }
   const job = triggerSnapshotJob();
@@ -130,10 +150,14 @@ router.post("/trigger", async (req, res) => {
   res.json({ triggered: true, message: "Coleta iniciada em background (leva alguns minutos)" });
 });
 
-// POST /api/snapshots/seed — popula market_snapshots com histórico real do Polymarket CLOB
-// Busca top 20 mercados ativos, puxa CLOB history de cada um e insere no Supabase.
-// Público (sem auth) mas rate-limited pelo próprio Polymarket/Supabase.
+// POST /api/snapshots/seed — popula market_snapshots com histórico real do Polymarket CLOB.
+// Busca top 20 mercados ativos, puxa o histórico CLOB de cada um e grava.
+// REQUER a chave de serviço (ver autorizadoComChaveDeServico): era público, e
+// escrita no banco não pode ficar atrás de "ninguém vai achar a URL".
 router.post("/seed", async (req, res) => {
+  if (!autorizadoComChaveDeServico(req.headers["authorization"])) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
   if (!SUPABASE_URL || !SUPABASE_KEY) {
     return res.status(503).json({ error: "Supabase not configured" });
   }
