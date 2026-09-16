@@ -17,6 +17,7 @@ import React, {
 } from "react";
 import { type User, type Session } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
+import { destinoAposLoginSocial } from "@/lib/retornoLogin";
 import { awardPoints } from "@/lib/userProgress";
 import { resolverAceitePendente } from "@/lib/aceite";
 
@@ -36,6 +37,15 @@ interface AuthContextType {
 // ─── Context ───────────────────────────────────────────────────────────────
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+/**
+ * Lido UMA vez, na carga do módulo: o supabase-js apaga o `#access_token` do
+ * endereço assim que consome a sessão, então esperar o evento para olhar o hash
+ * seria olhar tarde demais. Ver lib/retornoLogin.ts.
+ */
+const destinoPosLogin = typeof window === "undefined"
+  ? null
+  : destinoAposLoginSocial(window.location.hash, window.location.pathname);
 
 // ─── Provider ──────────────────────────────────────────────────────────────
 
@@ -68,6 +78,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(newSession?.user ?? null);
       setLoading(false);
       if (event === "SIGNED_IN") {
+        // Volta do Google que caiu na raiz (Supabase ignorou o /dashboard pedido):
+        // termina o caminho. `replaceState` + `popstate` para o wouter trocar de
+        // tela sem recarregar e sem deixar a raiz no botão Voltar.
+        if (destinoPosLogin && window.location.pathname === "/") {
+          window.history.replaceState(null, "", destinoPosLogin);
+          window.dispatchEvent(new PopStateEvent("popstate"));
+        }
         awardPoints("first_login", "Primeiro acesso à plataforma", "first_login");
         // O aceite marcado no cadastro só pode ser GRAVADO agora: antes da
         // sessão existir, a RLS recusa a escrita — e recusaria em silêncio,
