@@ -36,7 +36,9 @@ test("calculadoras: EV calcula de verdade", async ({ page }) => {
 test("chat: botão flutuante abre o painel", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("button", { name: "Abrir assistente JLB" }).click();
-  await expect(page.getByRole("complementary", { name: "Assistente JLB" })).toBeVisible();
+  // Diálogo desde 15/09 (auditoria de 14/09, item 14): o painel toma a tela,
+  // fecha no Esc e devolve o foco — "conteúdo complementar" dizia o contrário.
+  await expect(page.getByRole("dialog", { name: "Assistente JLB" })).toBeVisible();
   await expect(page.getByLabel("Mensagem para o assistente")).toBeVisible();
 });
 

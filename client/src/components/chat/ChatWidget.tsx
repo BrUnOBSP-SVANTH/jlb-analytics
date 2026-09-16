@@ -29,6 +29,8 @@ export default function ChatWidget() {
    */
   const [visivel, setVisivel] = useState(true);
   const ultimoY = useRef(0);
+  const botaoRef = useRef<HTMLButtonElement>(null);
+  const jaAbriu = useRef(false);
 
   useEffect(() => {
     // Com o painel aberto, esconder o botão seria esconder o "fechar".
@@ -60,6 +62,14 @@ export default function ChatWidget() {
     return () => document.removeEventListener("keydown", aoTeclar);
   }, [open]);
 
+  // Ao fechar, o foco volta para o botão. Sem isto ele voltava para o começo do
+  // documento e quem usa teclado recomeçava a página inteira (item 14 da
+  // auditoria de 14/09, junto com o `role="dialog"` do painel).
+  useEffect(() => {
+    if (open) { jaAbriu.current = true; return; }
+    if (jaAbriu.current) botaoRef.current?.focus();
+  }, [open]);
+
   return (
     <>
       {(open || loaded) && (
@@ -68,6 +78,7 @@ export default function ChatWidget() {
         </Suspense>
       )}
       <button
+        ref={botaoRef}
         onClick={toggle}
         aria-label={open ? "Fechar assistente JLB" : "Abrir assistente JLB"}
         aria-expanded={open}

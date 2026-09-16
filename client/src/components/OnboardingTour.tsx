@@ -21,6 +21,7 @@
  * regra: o tour NÃO renderiza nas rotas de autenticação.
  */
 import { useRef, useState } from "react";
+import { FONTES_EM_TEXTO } from "@shared/plataforma";
 import { useLocation } from "wouter";
 import { MODEL_COUNT } from "@/lib/brand";
 import { useModalA11y } from "@/hooks/useModalA11y";
@@ -39,7 +40,7 @@ const STEPS = [
     iconColor: "text-orange-400",
     title: "Mercados ao Vivo",
     description: "Acompanhe o que o mundo está negociando em tempo real.",
-    detail: "Polymarket + Kalshi + Reddit — probabilidades, volume e análise de IA para cada mercado.",
+    detail: `${FONTES_EM_TEXTO} — probabilidades, volume e análise de IA para cada mercado.`,
   },
   {
     icon: Brain,

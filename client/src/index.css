@@ -21,6 +21,18 @@
   min-width: 44px;
 }
 
+/* ── CONVITE PARA INSTALAR O APP ─────────────────────────────────────────────
+   No celular ele ocupa a largura toda, então precisa subir acima do botão do
+   chat (canto inferior direito). No desktop ele fica no canto inferior
+   ESQUERDO, longe do chat — e aí a folga de 5rem só o empurrava para o meio da
+   tela, em cima do conteúdo (auditoria de 14/09, item 13). */
+@utility banner-instalar {
+  bottom: calc(var(--folga-inferior, 0px) + var(--respiro-flutuante) + 5rem);
+  @media (width >= 40rem) {
+    bottom: calc(var(--folga-inferior, 0px) + var(--respiro-flutuante));
+  }
+}
+
 /* ── BARRA DE ABAS FIXA (Mercados, Análise, Laboratório, Conta) ──────────────
    Auditoria de 14/09/2026, item 2 — crítico. As quatro barras repetiam
    `bg-secondary/5 sticky top-14 backdrop-blur-sm`: fundo a 5% de opacidade com

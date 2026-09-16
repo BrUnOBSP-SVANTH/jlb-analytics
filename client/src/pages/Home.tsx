@@ -6,6 +6,7 @@
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import { dolar, reaisExatos, num } from "@shared/formato";
+import { FONTES_AO_VIVO, QUANTAS_FONTES } from "@shared/plataforma";
 import { buscarJson } from "@/lib/api";
 import { getMarkets, getAllMarkets } from "@/lib/marketsCache";
 import { useSEO } from "@/hooks/useSEO";
@@ -300,7 +301,7 @@ export default function Home() {
           <div className="text-center mb-10">
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-neon-blue/10 border border-neon-blue/20 text-xs text-neon-blue font-medium mb-6">
               <span className="w-1.5 h-1.5 rounded-full bg-neon-blue animate-pulse" aria-hidden="true" />
-              Polymarket · Kalshi · Reddit — ao vivo
+              {FONTES_AO_VIVO.join(" · ")} — ao vivo
             </div>
             <h1 // EXCEÇÃO AO DOURADO DOS TÍTULOS, e proposital. Este título tem DOIS tons de
             // propósito: a primeira frase neutra e a segunda dourada, para a ênfase cair
@@ -376,7 +377,7 @@ export default function Home() {
                 <span className="hidden sm:inline text-border/60">·</span>
               </>
             )}
-            <span><strong className="text-foreground">5 fontes</strong> monitoradas ao vivo</span>
+            <span><strong className="text-foreground">{QUANTAS_FONTES} fontes</strong> monitoradas ao vivo</span>
             <span className="hidden sm:inline text-border/60">·</span>
             <span><strong className="text-foreground">Grátis</strong> para começar</span>
           </div>
@@ -681,7 +682,7 @@ export default function Home() {
                   dot: "bg-gold", label: "artigos no Cérebro", sub: "atualizado diariamente",
                 },
                 stats.markets > 0 && {
-                  value: <>{stats.markets}<span className="text-2xl text-muted-foreground">+</span></>,
+                  value: <>{stats.markets}<span className="text-lg sm:text-2xl text-muted-foreground">+</span></>,
                   dot: "bg-neon-blue", label: "mercados monitorados", sub: "Polymarket + Kalshi",
                 },
                 stats.predictions > 0 && {
@@ -693,8 +694,11 @@ export default function Home() {
               return (
                 <div className={`grid ${cols} gap-px rounded-2xl overflow-hidden border border-border/50 bg-border/50`}>
                   {tiles.map((t) => (
-                    <div key={t.label} className="bg-card p-6 text-center">
-                      <p className="numeric-hero text-4xl md:text-5xl text-foreground leading-none">{t.value}</p>
+                    <div key={t.label} className="bg-card p-4 sm:p-6 text-center">
+                      {/* 36px em três colunas de 66px cortava o número no meio:
+                          "30.345" saía "30.34" (auditoria de 14/09, item 15).
+                          O número-herói só cresce quando há largura para ele. */}
+                      <p className="numeric-hero text-2xl sm:text-4xl md:text-5xl text-foreground leading-none">{t.value}</p>
                       <p className="text-xs text-muted-foreground mt-3 flex items-center justify-center gap-1.5">
                         <span className={`w-1 h-1 rounded-full ${t.dot}`} aria-hidden="true" />{t.label}
                       </p>

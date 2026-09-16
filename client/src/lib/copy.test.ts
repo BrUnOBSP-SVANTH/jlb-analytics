@@ -113,6 +113,17 @@ describe("o que é grátis é dito de um jeito só", () => {
   });
 });
 
+describe("a lista de fontes é a mesma em toda tela", () => {
+  it("ninguém escreve o número de fontes na mão", () => {
+    // Auditoria de 14/09, item 19: cinco textos sobre as fontes, nenhum com as
+    // quatro. A contagem dizia "5 fontes" e o selo listava três. O número e a
+    // lista vêm de shared/plataforma.ts (FONTES_AO_VIVO) — quem escrever de
+    // novo na mão vai divergir de novo.
+    expect(ocorrencias(/\b[2-9] fontes\b/)).toEqual([]);
+    expect(ocorrencias(/Polymarket\s*[·+]\s*Kalshi\s*[·+]\s*Reddit/)).toEqual([]);
+  });
+});
+
 describe("o vocabulário de engenharia não vaza para a tela", () => {
   it("não fala em cache, snapshot nem fallback com o usuário", () => {
     // "Cache — atualizado hoje", "snapshot de mercados há 16min",

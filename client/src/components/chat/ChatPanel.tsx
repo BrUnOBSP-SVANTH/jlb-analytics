@@ -232,11 +232,42 @@ export default function ChatPanel({ open, onClose, onReady }: { open: boolean; o
 
   if (!open) return null;
 
+  /**
+   * Tab não sai do painel enquanto ele está aberto.
+   *
+   * Com `aria-modal="true"` o leitor de tela já trata o resto da página como
+   * inerte; sem prender o Tab, o teclado continuava passeando pelo site atrás
+   * do painel — as duas leituras diriam coisas diferentes. Esc fecha (o widget
+   * cuida disso) e o foco volta para o botão.
+   */
+  const prenderTab = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.key !== "Tab") return;
+    const alvos = e.currentTarget.querySelectorAll<HTMLElement>(
+      'a[href], button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])',
+    );
+    if (alvos.length === 0) return;
+    const primeiro = alvos[0];
+    const ultimo = alvos[alvos.length - 1];
+    const atual = document.activeElement;
+    if (e.shiftKey && (atual === primeiro || !e.currentTarget.contains(atual))) {
+      e.preventDefault(); ultimo.focus();
+    } else if (!e.shiftKey && atual === ultimo) {
+      e.preventDefault(); primeiro.focus();
+    }
+  };
+
   return (
     <div
-      role="complementary"
+      onKeyDown={prenderTab}
+      // Diálogo, não "conteúdo complementar": ele toma a tela, fecha no Esc e
+      // devolve o foco ao botão (auditoria de 14/09, item 14).
+      role="dialog"
+      aria-modal="true"
       aria-label="Assistente JLB"
-      className="fixed z-40 inset-x-3 bottom-20 sm:inset-x-auto sm:right-6 sm:bottom-[5.5rem] sm:w-[380px] h-[70vh] sm:h-[520px] glass-card rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-200"
+      // A altura era FIXA em 520px: com 88px de base, numa janela de 631px o
+      // painel subia por cima do header e cobria o botão "Entrar". Agora 520px é
+      // o desejado, não o imposto — o teto desconta header e base.
+      className="fixed z-40 inset-x-3 bottom-20 sm:inset-x-auto sm:right-6 sm:bottom-[5.5rem] sm:w-[380px] h-[70vh] sm:h-[520px] max-h-[calc(100dvh-10rem)] glass-card rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-200"
     >
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-border/40 shrink-0">

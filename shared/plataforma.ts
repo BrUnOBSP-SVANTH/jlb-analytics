@@ -54,3 +54,21 @@ export function volumeNaMoeda(v: number | null | undefined, source: string | nul
   }
   return dolar(v);
 }
+
+/**
+ * As fontes que o site acompanha ao vivo — a lista, num lugar só.
+ *
+ * Auditoria de 14/09, item 19: cinco textos, nenhum com as quatro. O selo do
+ * hero dizia "Polymarket · Kalshi · Reddit", a estatística ao lado dizia
+ * "5 fontes", /mercados esquecia o Reddit e o tour esquecia o Manifold.
+ * São QUATRO, e os contadores dos filtros provam: Polymarket, Kalshi e Manifold
+ * precificam; o Reddit é discussão, não preço — por isso aparece com o papel dele.
+ */
+export const FONTES_AO_VIVO = ["Polymarket", "Kalshi", "Manifold", "Reddit"] as const;
+
+/** Quantas fontes, escrito por extenso onde o número aparece na tela. */
+export const QUANTAS_FONTES = FONTES_AO_VIVO.length;
+
+/** "Polymarket, Kalshi, Manifold e Reddit" */
+export const FONTES_EM_TEXTO =
+  `${FONTES_AO_VIVO.slice(0, -1).join(", ")} e ${FONTES_AO_VIVO[FONTES_AO_VIVO.length - 1]}`;
