@@ -16,7 +16,7 @@ import { getMarkets } from "@/lib/marketsCache";
 import { maybeAuthGate } from "@/lib/upgrade";
 import { useSEO } from "@/hooks/useSEO";
 import type { MarketBasic, CerebroArticleSnippet, AiResult, CommunityForecast } from "@/components/marketDetail/types";
-import { apiFetch } from "@/lib/api";
+import { apiFetch, buscarJson } from "@/lib/api";
 import { montarDesfechos } from "@/lib/desfechos";
 import { termosDistintivos, filtrarRelacionados } from "@/lib/relevancia";
 import { historicoDoToken } from "@/lib/historicoPreco";
@@ -149,7 +149,18 @@ export function useMarketDetail(marketId: string) {
             // PRECISA viajar junto com o rótulo pelo filtro e pela ordenação,
             // senão a tela mostra o histórico de um candidato sob o nome de
             // outro — um erro que desenha bonito e mente.
-            const desfechos = montarDesfechos(found.outcomes, found.outcomePrices, found.outcomeTokens);
+            // Os TOKENS de cada desfecho não vêm mais na lista: eram 20 KB
+            // comprimidos em toda carga de /mercados para um dado que só esta
+            // tela usa (routes/polymarket.ts). Aqui se pede o de um mercado só,
+            // e apenas quando ele tem mais de dois desfechos.
+            let tokensDesfecho = found.outcomeTokens;
+            const multi = (() => { try { return (JSON.parse(found.outcomes ?? "[]") as string[]).length > 2; } catch { return false; } })();
+            if (!tokensDesfecho && multi) {
+              tokensDesfecho = await buscarJson<{ outcomeTokens?: string | null }>(
+                `/api/polymarket/desfechos/${encodeURIComponent(rawId)}`,
+              ).then((d) => d?.outcomeTokens ?? undefined).catch(() => undefined);
+            }
+            const desfechos = montarDesfechos(found.outcomes, found.outcomePrices, tokensDesfecho);
             const parsedOutcomes = desfechos?.map(({ label, prob, token }) => ({ id: token || label, label, prob }));
             const outcomeTokens = parsedOutcomes?.map((o) => o.id);
             // Token do SIM deste mercado — o mesmo id que o snapshot grava, então

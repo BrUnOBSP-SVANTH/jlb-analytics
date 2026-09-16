@@ -250,12 +250,52 @@ router.get("/markets", async (req, res) => {
     // guardar a lista cortada faria o primeiro chamador definir o tamanho para
     // todos. Cacheamos o superconjunto e cada um leva o pedaço que pediu.
     const limit = limitePedido(req.query.limit, 300, 400);
-    res.json({ markets: markets.slice(0, limit), source: "live" });
+    res.json({ markets: markets.slice(0, limit).map(paraLista), source: "live" });
   } catch (err) {
     const msg = err instanceof Error ? err.message : "unknown";
     log.error("[Polymarket] error:", msg);
     res.status(502).json({ error: "polymarket_unavailable", message: msg });
   }
+});
+
+/**
+ * A LISTA manda só o que a lista desenha.
+ *
+ * Medido em 16/09/2026 nos 300 mercados do catálogo (307 KB crus, 72,6 KB em
+ * brotli): `outcomeTokens` sozinho eram 53 KB crus / ~20 KB comprimidos — e
+ * nenhum card o lê. Ele existe para o gráfico "como cada um chegou aqui" da TELA
+ * DE DETALHE, que abre um mercado por vez. `clobTokenIds` vinha com os dois
+ * tokens (SIM e NÃO) e todo consumidor usa só o primeiro.
+ *
+ * O cache continua guardando o objeto inteiro: quem precisa do resto pede em
+ * `/api/polymarket/desfechos/:id`. ⚠️ O primeiro token e o primeiro preço
+ * precisam descrever o MESMO desfecho (ver `rankOutcomes` em marketNormalize):
+ * por isso encolhe para o PRIMEIRO, nunca para outro.
+ */
+function paraLista(m: PolyMarket): PolyMarket {
+  const { outcomeTokens: _fora, ...resto } = m as PolyMarket & { outcomeTokens?: string };
+  void _fora;
+  let clobTokenIds = resto.clobTokenIds;
+  try {
+    const ids = JSON.parse(String(clobTokenIds ?? "[]")) as string[];
+    if (ids.length > 1) clobTokenIds = JSON.stringify([ids[0]]);
+  } catch { /* formato inesperado: manda como veio */ }
+  return { ...resto, clobTokenIds };
+}
+
+/**
+ * GET /api/polymarket/desfechos/:id — os desfechos de UM mercado agrupado.
+ *
+ * Sai do mesmo cache que serve o catálogo (sem ida extra ao Polymarket). É o que
+ * a tela de detalhe pede quando o mercado tem mais de dois desfechos — e o que
+ * permitiu tirar 20 KB comprimidos de toda carga da lista.
+ */
+router.get("/desfechos/:id", (req, res) => {
+  const id = String(req.params.id).replace(/[^a-zA-Z0-9_-]/g, "");
+  const cache = getCache<Array<PolyMarket & { outcomeTokens?: string }>>("polymarket:markets:active") ?? [];
+  const m = cache.find((x) => x.id === id || x.slug === id);
+  if (!m) return res.status(404).json({ error: "market_not_found" });
+  res.json({ outcomes: m.outcomes ?? null, outcomePrices: m.outcomePrices ?? null, outcomeTokens: m.outcomeTokens ?? null });
 });
 
 interface ClobEntry { t: number; p: number }
