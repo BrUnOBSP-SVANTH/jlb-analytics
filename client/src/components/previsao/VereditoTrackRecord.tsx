@@ -73,7 +73,11 @@ export function VereditoTrackRecord() {
       <div className="max-w-3xl">
         {/* O PLACAR. Os dois números têm o mesmo tamanho porque medem a mesma
             coisa no mesmo conjunto — dar destaque ao nosso seria a mão no peso. */}
-        <div className="flex items-end gap-5 sm:gap-8 flex-wrap">
+        {/* No celular os dois blocos não cabem lado a lado, e com `flex-wrap` o
+            sinal sobrava à DIREITA do primeiro número — lido assim, "79% =" não
+            compara com ninguém. Abaixo de 640px a comparação empilha e o sinal
+            fica entre os dois, que é o que ele significa. */}
+        <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-end sm:gap-8">
           <div>
             <p className="font-mono font-semibold tabular-nums leading-[0.85] text-foreground text-[3.5rem] sm:text-[5rem]">
               {nos}<span className="text-2xl align-top text-muted-foreground">%</span>
@@ -82,7 +86,7 @@ export function VereditoTrackRecord() {
           </div>
 
           <p
-            className="font-mono text-muted-foreground text-[2.5rem] sm:text-[3.5rem] leading-[1.2] pb-6"
+            className="font-mono text-muted-foreground text-[2rem] sm:text-[3.5rem] leading-none sm:leading-[1.2] pb-0 sm:pb-6"
             aria-label={empatou ? "igual a" : naFrente ? "maior que" : "menor que"}
           >
             {sinal}

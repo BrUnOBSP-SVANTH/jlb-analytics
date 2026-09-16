@@ -87,53 +87,30 @@ function GuestView() {
         </div>
       </div>
 
-      {/* Preview of what the dashboard looks like */}
+      {/* A PRÉVIA MOSTRA O FORMATO, NÃO NÚMEROS INVENTADOS.
+          Aqui havia um dashboard inteiro fabricado — "Brier 0.143", "Skill
+          +0.21", "27 de 34 registradas", e previsões que ninguém fez ("Selic
+          abaixo de 10% em Q3 → 48%"). Estava borrado e com aria-hidden, mas
+          continuava legível o bastante para virar número na cabeça de quem lê.
+          Numa página que existe para medir calibração com honestidade, dado
+          inventado é o pior enfeite possível — e o CLAUDE.md proíbe placeholder
+          em tela. O esqueleto abaixo é o MESMO que quem tem conta vê enquanto os
+          dados carregam: promete o formato, que é verdade, e nada além disso. */}
       <div className="space-y-3">
-        <p className="text-xs text-muted-foreground text-center uppercase tracking-wider">Prévia do dashboard</p>
-        <div className="blur-[3px] pointer-events-none select-none opacity-50 space-y-4" aria-hidden="true">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            {[
-              { label: "Brier Score",   value: "0.143", sub: "abaixo da média",   color: "text-warning" },
-              { label: "Skill Score",   value: "+0.21", sub: "melhor que ref.",    color: "text-positive" },
-              { label: "Resolvidas",    value: "27",    sub: "de 34 registradas",  color: "text-foreground" },
-              { label: "Edge médio",    value: "+4.2pp", sub: "vs. mercado",       color: "text-positive" },
-            ].map((s) => (
-              <div key={s.label} className="glass-card rounded-xl p-4">
-                <p className="text-xs text-muted-foreground mb-1">{s.label}</p>
-                <p className={`text-2xl font-bold font-mono ${s.color}`}>{s.value}</p>
-                <p className="text-[11px] text-muted-foreground mt-0.5">{s.sub}</p>
-              </div>
-            ))}
-          </div>
-          <div className="glass-card rounded-xl p-5 h-52">
-            <div className="text-xs font-semibold text-muted-foreground mb-3">Curva de Calibração</div>
-            <div className="h-36 flex items-end gap-1 px-2">
-              {[30,45,48,52,58,65,72,78,84,91].map((h, i) => (
-                <div key={i} className="flex-1 bg-neon-blue/20 rounded-t" style={{ height: `${h}%` }} />
-              ))}
-            </div>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="glass-card rounded-xl p-5 space-y-3">
-              <div className="text-xs font-semibold text-muted-foreground">Últimas previsões</div>
-              {["Eleição presidencial 2026 → 65%", "Selic abaixo de 10% em Q3 → 48%", "Copa do Mundo Brasil → 22%"].map((p) => (
-                <div key={p} className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <div className="w-1.5 h-1.5 rounded-full bg-neon-blue/50" />
-                  {p}
-                </div>
-              ))}
-            </div>
-            <div className="glass-card rounded-xl p-5 space-y-3">
-              <div className="text-xs font-semibold text-muted-foreground">Análise comportamental</div>
-              {["Overconfidence: +8% (moderado)", "Falácia do jogador: baixo risco", "Aversão à perda: λ=2.4 (calibrado)"].map((b) => (
-                <div key={b} className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <div className="w-1.5 h-1.5 rounded-full bg-gold/50" />
-                  {b}
-                </div>
-              ))}
-            </div>
-          </div>
+        <p className="text-xs text-muted-foreground text-center uppercase tracking-wider">O formato do dashboard</p>
+        {/* Recortado e desvanecendo: inteiro, o esqueleto ocupa a tela toda no
+            celular e lê como página quebrada em vez de amostra do formato. */}
+        <div
+          className="pointer-events-none select-none max-h-56 overflow-hidden opacity-80"
+          style={{ maskImage: "linear-gradient(to bottom, black 55%, transparent)", WebkitMaskImage: "linear-gradient(to bottom, black 55%, transparent)" }}
+          aria-hidden="true"
+        >
+          <DashboardSkeleton />
         </div>
+        <p className="text-xs text-muted-foreground text-center max-w-md mx-auto">
+          Os números aparecem quando <span className="text-foreground">você</span> registrar previsões — são os seus,
+          medidos contra o resultado oficial. Não mostramos exemplo fabricado aqui.
+        </p>
       </div>
     </div>
   );
