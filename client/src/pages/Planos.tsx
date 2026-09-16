@@ -24,11 +24,10 @@ import PageHeader from "@/components/PageHeader";
 import AnimatedSection from "@/components/AnimatedSection";
 import { useSEO } from "@/hooks/useSEO";
 import { openUpgrade } from "@/lib/upgrade";
-import { Check, Mail } from "lucide-react";
+import { Check } from "lucide-react";
+import { ListaDeEspera } from "@/components/ListaDeEspera";
 import { reaisExatos, num } from "@shared/formato";
 import { COTA_GRATIS_MENSAL, CONSOME_COTA } from "@shared/planos";
-
-const CONTATO = "contato.jlbanalytics@gmail.com";
 
 /** "a, b e c" — o "e" antes do último item, como se escreve em português. */
 function listar(itens: readonly string[]): string {
@@ -188,10 +187,10 @@ export default function Planos() {
                   Preferimos deixar esta página sem número a publicar um que vai mudar — é a mesma
                   regra que aplicamos a todo dado daqui. Deixe o seu e-mail e avisamos quando abrir.
                 </p>
-                <a href={`mailto:${CONTATO}?subject=Interesse%20no%20JLB%20Premium`}
-                  className="alvo-toque inline-flex items-center gap-2 px-5 py-2.5 rounded-lg border border-gold/40 bg-gold/10 text-sm font-semibold text-gold hover:bg-gold/20 transition-colors">
-                  <Mail className="w-4 h-4" aria-hidden="true" /> Avise-me quando abrir
-                </a>
+                {/* Era um `mailto:` — e a frase acima prometia um campo de
+                    e-mail (auditoria de 14/09, item 21). Em desktop sem cliente
+                    de e-mail configurado, o clique não fazia nada visível. */}
+                <ListaDeEspera />
               </>
             )}
           </section>

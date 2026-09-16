@@ -40,6 +40,7 @@ import snapshotsRouter from "./routes/snapshots.ts";
 import duelsRouter, { resolveActiveDuels } from "./routes/duels.ts";
 import levelsRouter   from "./routes/levels.ts";
 import analyticsRouter from "./routes/analytics.ts";
+import listaDeEsperaRouter from "./routes/listaDeEspera.ts";
 import pushRouter from "./routes/push.ts";
 import settlementsRouter from "./routes/settlements.ts";
 import feedRouter from "./routes/feed.ts";
@@ -298,6 +299,7 @@ async function startServer() {
   app.use("/api/stripe",      stripeRouter);
   app.use("/api",             levelsRouter);     // /api/level1–5/* — TypeScript nativo (dev e prod)
   app.use("/api",             analyticsRouter);  // /api/track — telemetria first-party
+  app.use("/api/lista-de-espera", listaDeEsperaRouter); // quem quer ser avisado quando o Premium abrir
   app.use("/api/push",        pushRouter);       // Web Push: subscribe/unsubscribe
   app.use("/api/manifold",    manifoldRouter);
   app.use("/api/snapshots",   snapshotsRouter);  // /api/snapshots/history/:marketId

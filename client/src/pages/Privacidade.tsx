@@ -48,6 +48,11 @@ export default function Privacidade() {
 
             <Section n="4" title="Comunicações por email">
               <p>Emails (resumo semanal, alertas) são <strong className="text-foreground">opt-in</strong> — só enviados se você ativar em Perfil → Notificações, e você pode desativar a qualquer momento. Base legal: consentimento.</p>
+              <p>
+                Se você deixar o e-mail na <strong className="text-foreground">lista de espera do Premium</strong> (em Planos),
+                guardamos apenas esse endereço e a data, para um uso só: avisar quando o preço sair. Não vira newsletter,
+                não é repassado a ninguém, e sai da lista quando você pedir por <a href="mailto:contato.jlbanalytics@gmail.com" className="text-primary hover:underline">e-mail</a>.
+              </p>
             </Section>
 
             <Section n="5" title="Compartilhamento com terceiros">
