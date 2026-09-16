@@ -10,8 +10,8 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import {
   Target, GraduationCap, BarChart3, Brain, GitMerge,
-  Calculator, Activity, ArrowRight, Zap, DollarSign, Users,
-  Map, CheckCircle, Clock, Rocket,
+  Calculator, Activity, ArrowRight, DollarSign, Users,
+  Map,
 } from "lucide-react";
 
 const OFFERINGS = [
@@ -36,18 +36,7 @@ const STATIC_METRICS = [
   { value: "5",   label: "níveis de educação progressiva",     sub: "do fundamento à análise integrada" },
 ];
 
-const MARKET_FACTS = [
-  { stat: "70%",    desc: "dos endereços no Polymarket têm perdas históricas",                    source: "CryptoSlate 2025" },
-  { stat: "0,04%",  desc: "das contas capturaram mais de 70% de todos os lucros do mercado",      source: "CryptoSlate 2025" },
-  { stat: "R$30bi", desc: "fluxo mensal via Pix para casas de apostas no Brasil",                 source: "BCB 2025" },
-  { stat: "Feb/26", desc: "CVM aprovou a primeira operadora brasileira de mercados preditivos na B3", source: "CVM 2026" },
-];
 
-const ROADMAP = [
-  { phase: "MVP — concluído",      status: "done",    items: ["Mercados ao vivo (Polymarket + Kalshi)", "IA adaptativa por domínio e nível", "5 níveis educacionais com calculadoras", "Cérebro (base curada por RSS + IA)", "Dashboard de calibração pessoal", "Sync de previsões em nuvem (Supabase)", "Rankings de calibração públicos", "Comunidade de forecasters (duelos)"] },
-  { phase: "Q3 2026 — em andamento", status: "active",  items: ["Integração Stripe (plano premium)", "Mobile app (PWA avançado)"] },
-  { phase: "Q4 2026 — planejado",  status: "planned", items: ["API para desenvolvedores", "Integração B3 Mercados Preditivos"] },
-];
 
 export default function Sobre() {
   useSEO("Sobre — metodologia, mercado e roadmap", "Educação quantitativa para o mercado preditivo brasileiro: método, modelo de negócio, métricas reais e roadmap da JLB Analytics.");
@@ -125,26 +114,6 @@ export default function Sobre() {
           </div>
         </AnimatedSection>
 
-        {/* Market context */}
-        <AnimatedSection>
-          <h2 className="text-xl font-display font-bold text-[var(--titulo)] mb-2">Por que agora</h2>
-          <p className="text-sm text-muted-foreground mb-6">
-            O mercado preditivo brasileiro está sendo construído agora — junto com a regulamentação.
-            A janela para capturar usuários antes da commoditização é estreita.
-          </p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {MARKET_FACTS.map((f) => (
-              <div key={f.stat} className="glass-card rounded-xl p-5 flex gap-4 items-start">
-                <span className="text-2xl font-bold font-mono text-gold shrink-0">{f.stat}</span>
-                <div>
-                  <p className="text-sm text-foreground leading-snug">{f.desc}</p>
-                  <p className="text-[11px] text-muted-foreground mt-1">{f.source}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </AnimatedSection>
-
         {/* What we offer */}
         <AnimatedSection>
           <h2 className="text-xl font-display font-bold text-[var(--titulo)] mb-6">O que a plataforma entrega</h2>
@@ -167,7 +136,7 @@ export default function Sobre() {
         {/* Business model */}
         <AnimatedSection>
           <h2 className="text-xl font-display font-bold text-[var(--titulo)] mb-6">Modelo de negócio</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="glass-card rounded-xl p-5 border border-positive/20">
               <div className="flex items-center gap-2 mb-3">
                 <div className="w-8 h-8 rounded-lg bg-positive/10 flex items-center justify-center">
@@ -192,56 +161,6 @@ export default function Sobre() {
                 publicados são os mesmos para quem paga e para quem não paga.
               </p>
             </div>
-            <div className="glass-card rounded-xl p-5 border border-neon-blue/20">
-              <div className="flex items-center gap-2 mb-3">
-                <div className="w-8 h-8 rounded-lg bg-neon-blue/10 flex items-center justify-center">
-                  <Zap className="w-4 h-4 text-neon-blue" />
-                </div>
-                <span className="text-sm font-semibold text-foreground">API / B2B</span>
-              </div>
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                Acesso programático aos modelos econométricos para corretoras, funds e plataformas
-                que precisam de análise quantitativa de mercados preditivos.
-              </p>
-            </div>
-          </div>
-        </AnimatedSection>
-
-        {/* Roadmap */}
-        <AnimatedSection>
-          <h2 className="text-xl font-display font-bold text-[var(--titulo)] mb-6">Roadmap</h2>
-          <div className="space-y-4">
-            {ROADMAP.map((phase) => (
-              <div key={phase.phase} className={`glass-card rounded-xl p-5 border ${
-                phase.status === "done" ? "border-positive/20" :
-                phase.status === "active" ? "border-gold/30 bg-gold/3" :
-                "border-border/20"
-              }`}>
-                <div className="flex items-center gap-3 mb-3">
-                  {phase.status === "done" ? (
-                    <CheckCircle className="w-4 h-4 text-positive shrink-0" />
-                  ) : phase.status === "active" ? (
-                    <Rocket className="w-4 h-4 text-gold shrink-0" />
-                  ) : (
-                    <Clock className="w-4 h-4 text-muted-foreground shrink-0" />
-                  )}
-                  <span className={`text-sm font-semibold ${
-                    phase.status === "done" ? "text-positive" :
-                    phase.status === "active" ? "text-gold" :
-                    "text-muted-foreground"
-                  }`}>{phase.phase}</span>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {phase.items.map((item) => (
-                    <span key={item} className={`text-[11px] px-2 py-1 rounded-full border ${
-                      phase.status === "done" ? "bg-positive/5 border-positive/20 text-positive/80" :
-                      phase.status === "active" ? "bg-gold/5 border-gold/20 text-gold/80" :
-                      "bg-secondary/20 border-border/20 text-muted-foreground"
-                    }`}>{item}</span>
-                  ))}
-                </div>
-              </div>
-            ))}
           </div>
         </AnimatedSection>
 

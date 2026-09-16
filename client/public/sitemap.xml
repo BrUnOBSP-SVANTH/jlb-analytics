@@ -16,6 +16,7 @@
   <url><loc>https://jlb-analytics.onrender.com/simulador</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://jlb-analytics.onrender.com/portfolio</loc><changefreq>weekly</changefreq><priority>0.6</priority></url>
   <url><loc>https://jlb-analytics.onrender.com/leaderboard</loc><changefreq>daily</changefreq><priority>0.6</priority></url>
+  <url><loc>https://jlb-analytics.onrender.com/duelos</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
   <url><loc>https://jlb-analytics.onrender.com/planos</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
   <url><loc>https://jlb-analytics.onrender.com/imprensa</loc><changefreq>weekly</changefreq><priority>0.6</priority></url>
   <url><loc>https://jlb-analytics.onrender.com/sobre</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>

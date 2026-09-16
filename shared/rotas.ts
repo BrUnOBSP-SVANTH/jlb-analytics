@@ -27,8 +27,9 @@ export interface RotaPublica {
 /**
  * O que vai para o sitemap: páginas públicas e canônicas.
  *
- * Fora de propósito: telas de conta (/dashboard, /perfil), /login e /duelos —
- * Duelos é pré-projeto e expor a página é decisão do fundador (CLAUDE.md).
+ * Fora de propósito: telas de conta (/dashboard, /perfil) e /login, que não
+ * existem para quem não entrou. /duelos entrou em 15/09, por decisão do fundador
+ * (o CLAUDE.md pedia que a exposição da página fosse escolha dele).
  */
 export const ROTAS_PUBLICAS: readonly RotaPublica[] = [
   { caminho: "/",             frequencia: "daily",   prioridade: 1.0 },
@@ -47,6 +48,7 @@ export const ROTAS_PUBLICAS: readonly RotaPublica[] = [
   { caminho: "/simulador",    frequencia: "monthly", prioridade: 0.6 },
   { caminho: "/portfolio",    frequencia: "weekly",  prioridade: 0.6 },
   { caminho: "/leaderboard",  frequencia: "daily",   prioridade: 0.6 },
+  { caminho: "/duelos",       frequencia: "weekly",  prioridade: 0.5 },
   { caminho: "/planos",       frequencia: "monthly", prioridade: 0.7 },
   { caminho: "/imprensa",     frequencia: "weekly",  prioridade: 0.6 },
   { caminho: "/sobre",        frequencia: "monthly", prioridade: 0.6 },
@@ -56,7 +58,7 @@ export const ROTAS_PUBLICAS: readonly RotaPublica[] = [
 
 /** Telas que existem mas não se indexam. */
 export const ROTAS_PRIVADAS: readonly string[] = [
-  "/dashboard", "/perfil", "/duelos", "/login", "/reset-password",
+  "/dashboard", "/perfil", "/login", "/reset-password",
 ];
 
 /**

@@ -24,7 +24,7 @@ import { Link, useLocation } from "wouter";
 import {
   BarChart3, Calculator, LayoutDashboard, Menu, X,
   LineChart, GitCompare, Sun, Moon,
-  LogIn, LogOut, User, GraduationCap, Newspaper, Star, Brain,
+  LogIn, LogOut, User, GraduationCap, Newspaper, Star, Swords, Brain,
   Zap, BookOpen, ChevronRight, Flame,
   Bell, BellRing, Sigma, Map, Search, ShieldCheck, Wallet,
 } from "lucide-react";
@@ -101,6 +101,7 @@ const NAV_GROUPS: NavGroup[] = [
       { label: "Dashboard",   href: "/dashboard",   icon: LayoutDashboard, desc: "Sua calibração ao longo do tempo" },
       { label: "Perfil",      href: "/perfil",      icon: User,            desc: "Pontos, plano e conquistas" },
       { label: "Leaderboard", href: "/leaderboard", icon: Star,            desc: "Ranking por calibração", badge: "NOVO" },
+      { label: "Duelos",      href: "/duelos",      icon: Swords,          desc: "Quem prevê melhor, por pontos" },
       // NEG-02: a primeira menção a Premium na navegação era um FILTRO do
       // Leaderboard. Cota de IA sem preço à vista irrita em vez de converter.
       { label: "Planos",      href: "/planos",      icon: Wallet,          desc: "O que é grátis e o que não é" },

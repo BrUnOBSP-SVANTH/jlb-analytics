@@ -56,6 +56,19 @@ function prose(it: FeedItem): string {
   return `há ${it.prob}% de chance${mv}, segundo o mercado preditivo`;
 }
 
+const MARKET_FACTS = [
+  { stat: "70%",    desc: "dos endereços no Polymarket têm perdas históricas",                    source: "CryptoSlate 2025" },
+  { stat: "0,04%",  desc: "das contas capturaram mais de 70% de todos os lucros do mercado",      source: "CryptoSlate 2025" },
+  { stat: "R$30bi", desc: "fluxo mensal via Pix para casas de apostas no Brasil",                 source: "BCB 2025" },
+  { stat: "Feb/26", desc: "CVM aprovou a primeira operadora brasileira de mercados preditivos na B3", source: "CVM 2026" },
+];
+
+const ROADMAP = [
+  { phase: "MVP — concluído",      status: "done",    items: ["Mercados ao vivo (Polymarket + Kalshi)", "IA adaptativa por domínio e nível", "5 níveis educacionais com calculadoras", "Cérebro (base curada por RSS + IA)", "Dashboard de calibração pessoal", "Sync de previsões em nuvem (Supabase)", "Rankings de calibração públicos", "Comunidade de forecasters (duelos)"] },
+  { phase: "Q3 2026 — em andamento", status: "active",  items: ["Integração Stripe (plano premium)", "Mobile app (PWA avançado)"] },
+  { phase: "Q4 2026 — planejado",  status: "planned", items: ["API para desenvolvedores", "Integração B3 Mercados Preditivos"] },
+];
+
 export default function Imprensa() {
   useSEO(
     "Probabilidades para Redações",
@@ -164,6 +177,69 @@ export default function Imprensa() {
           {items && items.length === 0 && !error && (
             <p className="text-sm text-muted-foreground">Sem itens no feed agora — os dados aparecem conforme os snapshots de mercado são coletados.</p>
           )}
+        </section>
+
+        {/* Contexto de mercado, roadmap e licenciamento — moradores novos.
+            Viviam em /sobre, que é lida por quem vai USAR a plataforma: ali
+            "a janela para capturar usuários antes da commoditização é estreita"
+            transformava o leitor no recurso a ser capturado (auditoria de
+            14/09, item 23). Aqui o público é outro — imprensa e parceiros —, e
+            o mesmo texto é informação legítima. */}
+        <section className="space-y-4">
+          <h2 className="text-lg font-bold text-[var(--titulo)]">Por que agora</h2>
+          <p className="text-sm text-muted-foreground max-w-2xl">
+            O mercado preditivo brasileiro está sendo construído agora, junto com a regulamentação —
+            e por isso quase tudo que se publica sobre ele ainda é estimativa sem fonte.
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {MARKET_FACTS.map((f) => (
+              <div key={f.stat} className="glass-card rounded-xl p-5 flex gap-4 items-start">
+                <span className="text-2xl font-bold font-mono text-gold shrink-0">{f.stat}</span>
+                <div>
+                  <p className="text-sm text-foreground leading-snug">{f.desc}</p>
+                  <p className="text-[11px] text-muted-foreground mt-1">{f.source}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="space-y-4">
+          <h2 className="text-lg font-bold text-[var(--titulo)]">Roadmap</h2>
+          <div className="space-y-4">
+            {ROADMAP.map((phase) => (
+              <div key={phase.phase} className={`glass-card rounded-xl p-5 border ${
+                phase.status === "done" ? "border-positive/20" :
+                phase.status === "active" ? "border-gold/30" :
+                "border-border/20"
+              }`}>
+                <div className="flex items-center gap-3 mb-3">
+                  <span className={`text-sm font-semibold ${
+                    phase.status === "done" ? "text-positive" :
+                    phase.status === "active" ? "text-gold" :
+                    "text-muted-foreground"
+                  }`}>{phase.phase}</span>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {phase.items.map((item) => (
+                    <span key={item} className={`text-[11px] px-2 py-1 rounded-full border ${
+                      phase.status === "done" ? "bg-positive/5 border-positive/20 text-positive/80" :
+                      phase.status === "active" ? "bg-gold/5 border-gold/20 text-gold/80" :
+                      "bg-secondary/20 border-border/20 text-muted-foreground"
+                    }`}>{item}</span>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="glass-card rounded-2xl p-6 border border-neon-blue/20">
+          <h2 className="text-lg font-bold text-[var(--titulo)] mb-2">API e licenciamento (B2B)</h2>
+          <p className="text-sm text-muted-foreground max-w-2xl">
+            Acesso programático aos modelos econométricos e ao feed de probabilidades, para redações,
+            corretoras e plataformas que precisam do número com procedência. Fale pelo e-mail abaixo.
+          </p>
         </section>
 
         {/* Credibilidade + CTA de licenciamento */}
