@@ -188,11 +188,15 @@ function checkCodeSmells() {
   const logFiles = new Set();
   for (const f of all) {
     const txt = read(f);
-    // ⚠️ Exige a FORMA de marcador (TODO:, // TODO, /* FIXME), não a palavra solta.
-    // Este projeto comenta em português, e "TODO"/"TODOS" é palavra comum ("de TODO
-    // texto", "TODOS os /api"). Com \b(TODO)\b o doctor acusava comentário legítimo
-    // como pendência -- e alarme falso ensina a ignorar o alarme.
-    todos += countMatches(txt, /(?:\/\/|\/\*|\*|^)\s*(?:TODO|FIXME|XXX|HACK)\b[:(\s]|\b(?:TODO|FIXME|XXX|HACK):/gm);
+    // ⚠️ Exige a FORMA de marcador, não a palavra solta. Este projeto comenta em
+    // português, e "TODO"/"TODOS" é palavra comum. Aceitar o marcador seguido de
+    // espaço ainda deixava passar linha de JSDoc legítima — "  * TODO mercado
+    // como SIM/NÃO" (= todo mercado) era contado como pendência. Alarme falso
+    // ensina a ignorar o alarme, então `TODO` agora só conta com ":" ou "("
+    // logo depois, que é como a convenção o escreve.
+    todos += countMatches(txt, /\bTODO\s*[:(]/g);
+    // FIXME, XXX e HACK não são palavras do português: basta a forma de comentário.
+    todos += countMatches(txt, /(?:\/\/|\/\*|\*|^)\s*(?:FIXME|XXX|HACK)\b[:(\s]/gm);
     mocks += countMatches(txt, /\b(mock|fake|placeholder|simulação|dummy)\b/gi);
     const l = countMatches(txt, /console\.log\(/g);
     if (l > 0) { logs += l; logFiles.add(rel(f)); }

@@ -38,6 +38,17 @@ const IGNORAR = [
 ];
 const ehRuido = (t) => IGNORAR.some((r) => r.test(t));
 
+/**
+ * A rota que TEM que dar 404.
+ *
+ * Ela está na lista para provar que a página de "não encontrado" desenha. Desde
+ * 15/09 o servidor devolve o status 404 de verdade nela (antes era 200 com o
+ * HTML do app, e todo link quebrado da internet virava página indexável) — e o
+ * navegador registra isso no console como erro. Ou seja: a varredura passou a
+ * acusar exatamente o conserto. O que se cobra aqui é a TELA, não o status.
+ */
+const ROTA_404 = "/rota-que-nao-existe";
+
 const b = await chromium.launch();
 const problemas = [];
 let telasOk = 0;
@@ -47,10 +58,13 @@ for (const rota of ROTAS) {
   const p = await ctx.newPage();
   const achados = [];
 
+  // Na rota de 404, o erro de console do PRÓPRIO documento é o esperado.
+  const erro404DoDocumento = (t) => rota === ROTA_404 && /Failed to load resource.*\b404\b/i.test(t);
+
   p.on("console", (m) => {
     if (m.type() !== "error") return;
     const t = m.text();
-    if (!ehRuido(t)) achados.push(`console: ${t.slice(0, 150)}`);
+    if (!ehRuido(t) && !erro404DoDocumento(t)) achados.push(`console: ${t.slice(0, 150)}`);
   });
   p.on("pageerror", (e) => achados.push(`ERRO JS: ${String(e.message).slice(0, 150)}`));
   p.on("requestfailed", (r) => {

@@ -8,8 +8,8 @@ import { supabase } from "@/lib/supabase";
 import { dolar, reaisExatos, num } from "@shared/formato";
 import { FONTES_AO_VIVO, QUANTAS_FONTES } from "@shared/plataforma";
 import { buscarJson } from "@/lib/api";
-import { getMarkets, getAllMarkets } from "@/lib/marketsCache";
 import { useSEO } from "@/hooks/useSEO";
+import type { Destaques } from "@shared/tiposDestaques";
 import CalibrationTest from "@/components/CalibrationTest";
 import MarginOfError from "@/components/MarginOfError";
 import { MODEL_COUNT } from "@/lib/brand";
@@ -49,27 +49,7 @@ interface LiveMarket {
   source: "Polymarket";
 }
 
-interface PolyApiMarket {
-  id?: string;
-  question?: string;
-  eventTitle?: string;
-  outcomePrices?: string;
-  volume?: number;
-  volume24hr?: number;
-}
-
 // ── Helpers ────────────────────────────────────────────────────────────────
-
-function parseYesProb(outcomePrices?: string): number {
-  if (!outcomePrices) return 0.5;
-  try {
-    const prices = (JSON.parse(outcomePrices) as string[]).map(parseFloat);
-    const p = prices[0] ?? 0.5;
-    return p > 1 ? p / 100 : Math.max(0.01, Math.min(0.99, p));
-  } catch {
-    return 0.5;
-  }
-}
 
 // ── Skeleton ───────────────────────────────────────────────────────────────
 
@@ -228,14 +208,18 @@ export default function Home() {
       try {
         const [artRes, mkts, trackRes] = await Promise.allSettled([
           supabase.from("cerebro_articles").select("id", { count: "exact", head: true }).eq("status", "active"),
-          getAllMarkets(),  // cache compartilhado — conta real, sem fetch redundante
+          // A CONTA vem junto com os destaques, numa resposta de 3 KB. Antes era
+          // `getAllMarkets()`: o catálogo inteiro (115 KB) baixado na home para
+          // somar dois comprimentos e desenhar oito cards. Ver routes/destaques.ts.
+          buscarJson<Destaques>("/api/mercados/destaques"),
           // predictions tem RLS por usuário (count anônimo = 0) — o track record da IA é público via API
           // Mesmo endpoint que o selo de margem de erro pede na mesma tela —
           // `buscarJson` deduplica a requisição em voo (TRV-01).
           buscarJson<{ totalCount?: number }>("/api/ai/track-record"),
         ]);
         const articles = artRes.status === "fulfilled" ? (artRes.value.count ?? 0) : 0;
-        const marketCount = mkts.status === "fulfilled" ? (mkts.value.polymarket.length + mkts.value.kalshi.length) : 0;
+        const totais = mkts.status === "fulfilled" ? mkts.value?.totais : undefined;
+        const marketCount = (totais?.polymarket ?? 0) + (totais?.kalshi ?? 0);
         const predictions = trackRes.status === "fulfilled" ? (trackRes.value?.totalCount ?? 0) : 0;
         setStats({ articles, markets: marketCount, predictions });
       } catch { /* non-critical */ }
@@ -262,15 +246,15 @@ export default function Home() {
 
     async function load() {
       try {
-        const raw = await getMarkets<PolyApiMarket>("polymarket");
+        // A regra de título e o corte em 8 moram no servidor agora
+        // (routes/destaques.ts) — a home recebe pronto o que mostra.
+        const dados = await buscarJson<Destaques>("/api/mercados/destaques");
         if (cancelled) return;
-        const items: LiveMarket[] = raw.slice(0, 8).map((m) => ({
-          id: m.id ?? "",
-          question: (m.eventTitle && m.eventTitle.length > 10 && m.eventTitle !== m.question)
-            ? m.eventTitle
-            : (m.question ?? "Mercado preditivo"),
-          yesProb: parseYesProb(m.outcomePrices),
-          volume: m.volume ?? m.volume24hr ?? 0,
+        const items: LiveMarket[] = (dados?.destaques ?? []).map((m) => ({
+          id: m.id,
+          question: m.titulo,
+          yesProb: m.prob,
+          volume: m.volume,
           source: "Polymarket",
         }));
         setMarkets(items);
