@@ -191,10 +191,15 @@ describe("glossarioDeNomes — aprender o nome com o evento irmão", () => {
       .toBe("LA Rams wins by over 9.5 points?");
   });
 
-  it("assinatura com dois nomes possíveis é descartada — não se escolhe no palpite", () => {
-    const g = glossarioDeNomes(["NY Giants vs LA Rams", "New York Giants vs LA Chargers"]);
-    expect(g.has("NYG")).toBe(false);
-    expect(completarComGlossario("New York G wins", g)).toBe("New York G wins");
+  it("assinatura que aponta para TIMES diferentes é descartada — não se escolhe no palpite", () => {
+    // "NY Giants" e "NY Jets" dão NYG e NYJ, mas "NY Giants" e "NJ Giants"
+    // dariam a mesma assinatura sendo times distintos: aí fica como a origem
+    // escreveu. (Duas grafias do mesmo nome é outro caso — ver abaixo.)
+    const g = glossarioDeNomes(["NY Giants vs LA Rams", "NJ Generals vs LA Chargers"]);
+    expect(g.has("NYG")).toBe(true);
+    const ambiguo = glossarioDeNomes(["NY Giants vs LA Rams", "NY Gladiators vs LA Chargers"]);
+    expect(ambiguo.has("NYG")).toBe(false);
+    expect(completarComGlossario("New York G wins", ambiguo)).toBe("New York G wins");
   });
 
   it("sem glossário, o título passa intacto", () => {
@@ -205,5 +210,39 @@ describe("glossarioDeNomes — aprender o nome com o evento irmão", () => {
     const g = glossarioDeNomes(CONTEXTOS);
     expect(completarComGlossario("Will Bitcoin close above $80,000?", g))
       .toBe("Will Bitcoin close above $80,000?");
+  });
+});
+
+describe("glossário: duas grafias do mesmo time não são ambiguidade", () => {
+  it("'NY Giants' e 'New York Giants' convivem — vale a forma mais completa", () => {
+    // Medido em produção em 18/09: o jogo da semana escrevia "NY Giants" e o da
+    // semana seguinte "New York Giants". As duas dão NYG, e o descarte por
+    // ambiguidade deixava "New York G wins by over 2.5 points?" na tela.
+    const g = glossarioDeNomes(["NY Giants vs LA Rams", "New York Giants vs Philadelphia Eagles"]);
+    expect(g.get("NYG")).toBe("New York Giants");
+    expect(completarComGlossario("New York G wins by over 2.5 points?", g))
+      .toBe("New York Giants wins by over 2.5 points?");
+  });
+
+  it("times diferentes com a mesma assinatura seguem sendo descartados", () => {
+    const g = glossarioDeNomes(["LA Rams vs SF 49ers", "LA Raiders vs KC Chiefs"]);
+    expect(g.has("LAR")).toBe(false);
+    expect(completarComGlossario("Los Angeles R wins", g)).toBe("Los Angeles R wins");
+  });
+});
+
+describe("o limite honesto do glossário (medido em 18/09)", () => {
+  it("'New York G' pode ser o time OU o governo — e aí não se escolhe", () => {
+    // Os dois estão no catálogo do Kalshi ao mesmo tempo: o jogo NYG×LAR e a
+    // corrida ao governo de Nova York. As duas grafias dão N-Y-G e terminam em
+    // palavras diferentes, então o título fica como a origem publicou. É o
+    // desenho funcionando: 149 dos 150 títulos completam, e o que sobra mostra
+    // o que o Kalshi escreveu, nunca um palpite nosso.
+    const g = glossarioDeNomes(["NY Giants vs LA Rams", "New York Governor vs Challenger"]);
+    expect(g.has("NYG")).toBe(false);
+    expect(completarComGlossario("New York G wins by over 2.5 points?", g))
+      .toBe("New York G wins by over 2.5 points?");
+    // O outro lado do mesmo jogo continua sendo completado normalmente.
+    expect(g.get("LAR")).toBe("LA Rams");
   });
 });

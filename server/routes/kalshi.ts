@@ -342,9 +342,14 @@ router.get("/markets", async (req, res) => {
       // título do evento) — mas o evento IRMÃO, o do resultado, publica
       // "NY Giants vs LA Rams". O glossário aprende com o lote todo e só aplica
       // quando a assinatura de maiúsculas aponta para um nome só.
+      // ⚠️ `curtoPrazo` inteiro, não `disponiveis`: este último já tirou os
+      // mercados que vieram pelo caminho dos eventos, e são justamente os do
+      // RESULTADO do jogo que trazem o nome bom no regulamento ("NY Giants vs
+      // LA Rams"). Aprender só no que sobrou deixava o handicap cortado — medido
+      // em 18/09: 1 título em 150 resistia exatamente por isso.
       const glossario = glossarioDeNomes([
         ...events.map((ev) => ev.title),
-        ...disponiveis.map((m) => confrontoEmTexto(m.rules_primary)),
+        ...curtoPrazo.map((m) => confrontoEmTexto(m.rules_primary)),
       ]);
       const comNomes = juntos.map((m) => ({ ...m, title: completarComGlossario(m.title, glossario) }));
 

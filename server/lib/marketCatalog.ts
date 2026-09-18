@@ -269,7 +269,16 @@ export function glossarioDeNomes(contextos: Array<string | undefined>): Map<stri
   }
   const glossario = new Map<string, string>();
   vistos.forEach((nomes, sig) => {
-    if (nomes.size === 1) glossario.set(sig, Array.from(nomes)[0]);
+    const lista = Array.from(nomes);
+    if (lista.length === 1) { glossario.set(sig, lista[0]); return; }
+    // Duas grafias do MESMO nome ("NY Giants" e "New York Giants") batem em
+    // assinatura E no último termo — aí não há escolha a fazer, só a forma mais
+    // completa a preferir. Dois nomes com finais diferentes ("LA Rams" e
+    // "LA Raiders") continuam sendo dois times, e aí não se escolhe.
+    const finais = new Set(lista.map((n) => n.split(/\s+/).pop()!.toLowerCase()));
+    if (finais.size === 1) {
+      glossario.set(sig, lista.reduce((a, b) => (b.length > a.length ? b : a)));
+    }
   });
   return glossario;
 }
