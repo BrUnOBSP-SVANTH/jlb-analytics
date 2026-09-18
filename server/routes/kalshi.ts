@@ -4,7 +4,7 @@ import { fetchWithRetry } from "../lib/fetcher.ts";
 import { kalshiMarketUrl, kalshiYesProb, kalshiTemPrecoReal } from "../lib/marketNormalize.ts";
 import type { KalshiEventsResponse, KalshiMarket, KalshiEvent, KalshiNestedMarket } from "../lib/types.ts";
 import { log } from "../lib/log.ts";
-import { comOrcamento, porVolume, desambiguarPorPai, desambiguarTitulosIguais, limitePedido, normalizarTitulo, expandirNomeTruncado, confrontoEmTexto, glossarioDeNomes, completarComGlossario } from "../lib/marketCatalog.ts";
+import { comOrcamento, porVolume, desambiguarPorPai, desambiguarTitulosIguais, limitePedido, normalizarTitulo, tituloLimpo, expandirNomeTruncado, confrontoEmTexto, glossarioDeNomes, completarComGlossario } from "../lib/marketCatalog.ts";
 
 const router = Router();
 
@@ -25,17 +25,10 @@ const TETO_KALSHI = 300;
  */
 const ORCAMENTO_MS = 20_000;
 
-/**
- * Descarta título com buraco de interpolação e normaliza o espaçamento.
- * Devolve `undefined` para o chamador cair na próxima alternativa.
- */
-export function tituloLimpo(t?: string): string | undefined {
-  if (!t) return undefined;
-  const s = t.trim();                      // apara PRIMEIRO: sobra nas bordas é inofensiva
-  if (!s) return undefined;
-  if (/\s{2,}/.test(s)) return undefined;  // buraco INTERNO: "Will  become President" — falta o nome
-  return s;
-}
+// A regra de título mora em lib/marketCatalog.ts — o briefing monta a própria
+// lista direto da API e precisa da MESMA regra, senão "Will  become President of
+// the United States before 2045?" volta a aparecer por outro caminho.
+export { tituloLimpo } from "../lib/marketCatalog.ts";
 
 /** Vagas reservadas para mercado que resolve logo — ver `fetchCurtoPrazo`. */
 const COTA_CURTO_PRAZO = 60;

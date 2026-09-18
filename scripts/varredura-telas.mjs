@@ -72,7 +72,18 @@ for (const rota of ROTAS) {
     if (!ehRuido(t)) achados.push(`rede: ${t.slice(0, 150)}`);
   });
   p.on("response", (r) => {
-    if (r.status() >= 500) achados.push(`HTTP ${r.status()}: ${r.url().slice(0, 120)}`);
+    if (r.status() < 500) return;
+    // Continua acusando TODO 5xx — inclusive o 503 declarado. O que muda é o que
+    // se lê no relatório: quando a rota diz o motivo em português ("a cota diária
+    // de IA acabou"), esse motivo vale mais que o número do status, porque separa
+    // "código quebrado" de "fonte indisponível" sem esconder nenhum dos dois.
+    const base = `HTTP ${r.status()}: ${r.url().slice(0, 120)}`;
+    void r.text()
+      .then((corpo) => {
+        const motivo = JSON.parse(corpo)?.message;
+        achados.push(typeof motivo === "string" && motivo ? `${base} — ${motivo.slice(0, 120)}` : base);
+      })
+      .catch(() => achados.push(base));
   });
 
   try {

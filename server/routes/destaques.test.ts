@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { montarDestaques } from "./destaques.ts";
+import { montarDestaques, ttlDaVitrine } from "./destaques.ts";
 
 const mercado = (over: Record<string, unknown> = {}) => ({
   id: "1", question: "Vai chover?", outcomePrices: '["0.42","0.58"]', volume: 1000, ...over,
@@ -59,5 +59,64 @@ describe("preço decidido não entra na vitrine", () => {
     const m = (id: string, p: string) => ({ id, question: "q", outcomePrices: `["${p}","x"]`, volume: 1 });
     expect(montarDestaques([m("a", "0.96")], 0).destaques).toHaveLength(1);
     expect(montarDestaques([m("b", "0.97")], 0).destaques).toHaveLength(0);
+  });
+});
+
+describe("prazo vencido não fica na vitrine", () => {
+  const AGORA = new Date("2026-09-17T12:00:00Z").getTime();
+  const m = (id: string, over: Record<string, unknown> = {}) => ({
+    id, question: "q" + id, outcomePrices: '["0.42","0.58"]', volume: 1, ...over,
+  });
+
+  it("mercado com data de fim no passado sai, mesmo com preço em aberto", () => {
+    // O caso que dois caches empilhados (catálogo 90s + vitrine 60s) deixavam
+    // passar: fechou às 11h, a home ainda o mostrava.
+    const { destaques } = montarDestaques([
+      m("vencido", { endDate: "2026-09-17T11:00:00Z" }),
+      m("vivo", { endDate: "2026-09-20T00:00:00Z" }),
+    ], 0, 8, AGORA);
+    expect(destaques.map((d) => d.id)).toEqual(["vivo"]);
+  });
+
+  it("respeita o que a origem já marcou como encerrado", () => {
+    const { destaques } = montarDestaques([
+      m("fechado", { closed: true }),
+      m("inativo", { active: false }),
+      m("vivo"),
+    ], 0, 8, AGORA);
+    expect(destaques.map((d) => d.id)).toEqual(["vivo"]);
+  });
+
+  it("sem data de fim, segue valendo — não se descarta por falta de campo", () => {
+    expect(montarDestaques([m("sem-data")], 0, 8, AGORA).destaques).toHaveLength(1);
+    expect(montarDestaques([m("data-lixo", { endDate: "não é data" })], 0, 8, AGORA).destaques).toHaveLength(1);
+  });
+
+  it("fecha daqui a um minuto: ainda é um mercado vivo", () => {
+    const daquiAPouco = new Date(AGORA + 60_000).toISOString();
+    expect(montarDestaques([m("quase", { endDate: daquiAPouco })], 0, 8, AGORA).destaques).toHaveLength(1);
+  });
+});
+
+describe("ttlDaVitrine — o cache não pode sobreviver ao fechamento", () => {
+  const AGORA = new Date("2026-09-17T12:00:00Z").getTime();
+  const daqui = (segundos: number) => new Date(AGORA + segundos * 1000).toISOString();
+
+  it("tudo fechando longe: vale o teto normal", () => {
+    expect(ttlDaVitrine([daqui(3600), daqui(86_400)], AGORA)).toBe(60);
+    expect(ttlDaVitrine([undefined, undefined], AGORA)).toBe(60);
+  });
+
+  it("um mercado fecha em 20s: o cache morre com ele", () => {
+    expect(ttlDaVitrine([daqui(3600), daqui(20)], AGORA)).toBe(20);
+  });
+
+  it("fechamento colado no agora respeita o piso de 5s", () => {
+    // Sem piso, a home reconstruiria a lista a cada requisição.
+    expect(ttlDaVitrine([daqui(1)], AGORA)).toBe(5);
+  });
+
+  it("data no passado não encurta nada — quem filtra o vencido é montarDestaques", () => {
+    expect(ttlDaVitrine([daqui(-100), daqui(3600)], AGORA)).toBe(60);
   });
 });

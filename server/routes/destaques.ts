@@ -26,6 +26,7 @@ const router = Router();
 interface PolyBruto {
   id?: string; question?: string; eventTitle?: string;
   outcomePrices?: string; volume?: number; volume24hr?: number;
+  endDate?: string; closed?: boolean; active?: boolean;
 }
 
 /**
@@ -33,13 +34,26 @@ interface PolyBruto {
  * título do evento manda quando diz mais que a pergunta (num mercado agrupado a
  * pergunta é do desfecho líder e sozinha engana).
  */
-export function montarDestaques(poly: ReadonlyArray<PolyBruto>, totalKalshi: number, n = 8): Destaques {
+export function montarDestaques(
+  poly: ReadonlyArray<PolyBruto>,
+  totalKalshi: number,
+  n = 8,
+  agora = Date.now(),
+): Destaques {
   const destaques: MercadoEmDestaque[] = [];
   for (const m of poly) {
     if (destaques.length >= n) break;
     const id = String(m.id ?? "").trim();
     const prob = parsePolyPrices(m.outcomePrices)[0];
     if (!id || prob === undefined || !Number.isFinite(prob)) continue; // sem preço real não vai para a tela
+    // ⏰ O RELÓGIO, não só o preço. O corte por preço decidido não pega mercado
+    // que venceu empatado, e a vitrine é servida de DOIS caches empilhados (o
+    // catálogo por 90s + este por 60s): dá tempo de um mercado fechar enquanto
+    // está guardado. Aqui a data é conferida na hora de montar, contra o relógio
+    // de agora — prazo vencido não aparece na home nem por dois minutos.
+    if (m.closed === true || m.active === false) continue;
+    const fim = m.endDate ? new Date(m.endDate).getTime() : NaN;
+    if (Number.isFinite(fim) && fim <= agora) continue;
     // Preço já DECIDIDO não é destaque. Na primeira medição (16/09) a fileira
     // abria com "Detroit Tigers vs. Toronto Blue Jays — 100%": um jogo acabado,
     // ocupando a vitrine de uma página que promete "o que o mundo está prevendo".
@@ -54,6 +68,22 @@ export function montarDestaques(poly: ReadonlyArray<PolyBruto>, totalKalshi: num
     });
   }
   return { destaques, totais: { polymarket: poly.length, kalshi: totalKalshi } };
+}
+
+/**
+ * Por quanto tempo esta lista ainda é verdade.
+ *
+ * Filtrar o vencido ao MONTAR não basta: a resposta fica guardada 60s, e um
+ * mercado que fecha nesse meio-tempo continuaria na home. Então o cache morre
+ * junto com o primeiro fechamento — nunca depois dele. Piso de 5s para o mercado
+ * que está fechando agora não derrubar o cache a cada requisição.
+ */
+export function ttlDaVitrine(fechamentos: Array<string | undefined>, agora = Date.now(), teto = 60): number {
+  const proximos = fechamentos
+    .map((f) => (f ? new Date(f).getTime() : NaN))
+    .filter((t) => Number.isFinite(t) && t > agora);
+  if (proximos.length === 0) return teto;
+  return Math.max(5, Math.min(teto, Math.floor((Math.min(...proximos) - agora) / 1000)));
 }
 
 const CHAVE = "home:destaques";
@@ -81,8 +111,11 @@ router.get("/destaques", async (req, res) => {
   const payload = montarDestaques(poly, totalKalshi, Math.min(Number(req.query.n) || 8, 20));
 
   // Cache curto: o catálogo por trás já é SWR de 90s, então nada aqui fica velho
-  // além do que a própria /mercados mostra.
-  if (payload.destaques.length > 0) setCache(CHAVE, payload, 60);
+  // além do que a própria /mercados mostra — e agora também nunca sobrevive ao
+  // fechamento do mercado mais próximo de vencer.
+  const porId = new Map(poly.map((m) => [String(m.id ?? "").trim(), m.endDate]));
+  const ttl = ttlDaVitrine(payload.destaques.map((d) => porId.get(d.id)));
+  if (payload.destaques.length > 0) setCache(CHAVE, payload, ttl);
   res.json(payload);
 });
 

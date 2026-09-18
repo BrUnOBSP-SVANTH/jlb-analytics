@@ -253,7 +253,13 @@ export default function Briefing() {
       const url = force ? "/api/ai/daily-briefing?force=1" : "/api/ai/daily-briefing";
       const res = await fetch(url);
       if (res.status === 404) throw new Error("ENDPOINT_NOT_FOUND");
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      if (!res.ok) {
+        // O servidor manda o motivo em português ("a cota diária de IA acabou").
+        // Antes a tela exibia "HTTP 500" para quem estava lendo — um código de
+        // status não diz a ninguém o que aconteceu nem o que fazer.
+        const corpo = await res.json().catch(() => null) as { message?: string } | null;
+        throw new Error(corpo?.message || `HTTP ${res.status}`);
+      }
       const data = await res.json() as BriefingData;
       setBriefing(data);
       // Persiste na sessão com timestamp

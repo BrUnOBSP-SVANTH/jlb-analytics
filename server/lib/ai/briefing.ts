@@ -7,11 +7,35 @@ import { callClaude } from "../anthropic.ts";
 import { extractJson } from "../extractJson.ts";
 import { INJECTION_GUARD } from "./promptSafety.ts";
 import { getCache, setCache } from "../cache.ts";
+import { tituloLimpo } from "../marketCatalog.ts";
 import { log } from "../log.ts";
 import type { NewsApiResponse, PolyEvent, KalshiEventsResponse } from "../types.ts";
 
+/** Mensagem honesta para quem lê a tela, a partir do erro do provedor. */
+export function motivoDoBriefing(erro: unknown): { error: string; message: string } {
+  const bruto = erro instanceof Error ? erro.message : String(erro ?? "");
+  // ⚠️ NUNCA repassar o texto do provedor. Em 17/09 a resposta pública trazia o
+  // ID da nossa organização no Groq e a URL de cobrança do Google — quem lê a
+  // tela não pode fazer nada com isso, e não deveria ver.
+  const semCota = /\b429\b|quota|rate.?limit|insufficient|credit|exceeded/i.test(bruto);
+  return semCota
+    ? {
+        error: "briefing_sem_cota",
+        message: "O briefing de hoje ainda não saiu: a cota diária de IA acabou. Ele volta assim que a cota renova.",
+      }
+    : {
+        error: "briefing_indisponivel",
+        message: "Não foi possível gerar o briefing agora. Tente de novo em alguns minutos.",
+      };
+}
+
 export async function dailyBriefingHandler(req: Request, res: Response) {
-  if (!process.env.ANTHROPIC_API_KEY) return res.status(503).json({ error: "ANTHROPIC_API_KEY não configurada." });
+  // A análise passa por Anthropic → Gemini → Groq, então UMA chave basta. Exigir
+  // a da Anthropic era o mesmo defeito que deixou o Cérebro 65 dias sem sintetizar.
+  const temIA = !!(process.env.ANTHROPIC_API_KEY || process.env.GEMINI_API_KEY || process.env.GROQ_API_KEY);
+  if (!temIA) {
+    return res.status(503).json({ error: "ia_nao_configurada", message: "O briefing depende da IA, que não está configurada neste ambiente." });
+  }
 
   const today = new Date().toISOString().slice(0, 10);
   const force = req.query.force === "1";
@@ -35,7 +59,10 @@ export async function dailyBriefingHandler(req: Request, res: Response) {
       if (!m) continue;
       const prices = parsePolyPrices(m.outcomePrices);
       const yesProb = prices[0] !== undefined ? Math.round(prices[0] * 100) : null;
-      if (m.question && yesProb !== null) topMarkets.push({ source: "Polymarket", title: m.question, prob: yesProb });
+      // Mesma régua do catálogo: título com buraco de interpolação não vai para
+      // a tela nem para o prompt — cai no título do evento.
+      const titulo = tituloLimpo(m.question) ?? tituloLimpo(ev.title);
+      if (titulo && yesProb !== null) topMarkets.push({ source: "Polymarket", title: titulo, prob: yesProb });
     }
   }
   if (kalshiResult.status === "fulfilled") {
@@ -45,7 +72,10 @@ export async function dailyBriefingHandler(req: Request, res: Response) {
       const bid = parseFloat(m.yes_bid_dollars ?? "0") * 100;
       const ask = parseFloat(m.yes_ask_dollars ?? "0") * 100;
       const yesProb = bid > 0 && ask > 0 ? Math.round((bid + ask) / 2) : null;
-      if ((m.title ?? ev.title) && yesProb !== null) topMarkets.push({ source: "Kalshi", title: m.title ?? ev.title ?? m.ticker, prob: yesProb });
+      // "Will  become President of the United States before 2045?" — o Kalshi
+      // publica o buraco, e isto chegava à tela do briefing e ao prompt da IA.
+      const titulo = tituloLimpo(m.title) ?? tituloLimpo(ev.title);
+      if (titulo && yesProb !== null) topMarkets.push({ source: "Kalshi", title: titulo, prob: yesProb });
     }
   }
 
@@ -97,6 +127,8 @@ JSON exato (sem markdown). Em marketHighlights, "prob" é a probabilidade SIM do
     res.json(result);
   } catch (err) {
     log.error("[daily-briefing] error:", err);
-    res.status(500).json({ error: "briefing_failed", message: err instanceof Error ? err.message : "unknown" });
+    // 503, não 500: não é defeito do código, é fonte indisponível — e a mensagem
+    // que vai para a tela diz o que está acontecendo, em português.
+    res.status(503).json(motivoDoBriefing(err));
   }
 }

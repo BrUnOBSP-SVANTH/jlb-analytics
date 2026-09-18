@@ -283,3 +283,19 @@ export function completarComGlossario(titulo: string, glossario: Map<string, str
     return nome && nome !== trecho ? nome : trecho;
   });
 }
+
+/**
+ * Descarta título com buraco de interpolação e normaliza o espaçamento.
+ * Devolve `undefined` para o chamador cair na próxima alternativa.
+ *
+ * Morava na rota do Kalshi, mas a regra não é da rota: o briefing montava a
+ * própria lista direto da API e exibia "Will  become President of the United
+ * States before 2045?" na tela e no prompt da IA. Regra de título em um lugar só.
+ */
+export function tituloLimpo(t?: string): string | undefined {
+  if (!t) return undefined;
+  const s = t.trim();                      // apara PRIMEIRO: sobra nas bordas é inofensiva
+  if (!s) return undefined;
+  if (/\s{2,}/.test(s)) return undefined;  // buraco INTERNO: "Will  become President" — falta o nome
+  return s;
+}
