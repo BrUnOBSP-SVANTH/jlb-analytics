@@ -1,4 +1,5 @@
 import { emailEnabled, sendEmail, renderWeeklyDigestHtml } from "../email.ts";
+import { urlPublica } from "../urlPublica.ts";
 import { SUPABASE_URL, SUPABASE_KEY } from "../supabaseRest.ts";
 import { computeDivergences, getTrackRecordData, getClosingSoon } from "../aiForecasts.ts";
 import { log } from "../log.ts";
@@ -30,7 +31,8 @@ export async function sendWeeklyDigests(): Promise<{ sent: number; skipped: stri
     if (recipients.length === 0) return { sent: 0, skipped: "nenhum inscrito" };
 
     const digest = await buildDigest();
-    const appUrl = process.env.APP_URL ?? "http://localhost:3000";
+    // Idem Stripe: link de e-mail apontando para localhost não leva a lugar nenhum.
+    const appUrl = urlPublica();
     const html = renderWeeklyDigestHtml(digest, appUrl);
     const sleep = (ms: number) => new Promise((res) => setTimeout(res, ms));
 

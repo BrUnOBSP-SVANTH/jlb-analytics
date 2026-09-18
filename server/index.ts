@@ -18,6 +18,7 @@ import { cache, getCache, setCache } from "./lib/cache.ts";
 import { registerSnapshotJob } from "./lib/triggers.ts";
 import { gravarSnapshotsDoCatalogo } from "./lib/snapshotsDoCatalogo.ts";
 import { destinoDoApelido, rotaExiste } from "../shared/rotas.ts";
+import { urlPublica, hostPublico, ehProducao } from "./lib/urlPublica.ts";
 import { mercadoMereceAlerta } from "./lib/alertasMercado.ts";
 import { emailEnabled } from "./lib/email.ts";
 import { fetchBrapiQuotes } from "./lib/brapi.ts";
@@ -167,10 +168,13 @@ async function startServer() {
   // antigos onde 'self' não casa com WebSocket same-origin.
   const supabaseHost = (process.env.SUPABASE_URL ?? process.env.VITE_SUPABASE_URL ?? "")
     .replace(/^https?:\/\//, "").replace(/\/.*$/, "");
-  // No Render, RENDER_EXTERNAL_URL é injetada automaticamente com a URL
-  // pública do serviço — dispensa configurar APP_URL à mão no free tier.
-  const APP_URL = process.env.APP_URL ?? process.env.RENDER_EXTERNAL_URL ?? "";
-  const appHost = APP_URL.replace(/^https?:\/\//, "").replace(/\/.*$/, "");
+  // Endereço público e "isto é produção?" saem de lib/urlPublica.ts — em 17/09
+  // o APP_URL do Render estava como http://localhost:3000 e vazava para a CSP,
+  // para o CORS e para o Stripe. A regra agora ignora endereço local quando há
+  // um público disponível.
+  const APP_URL = urlPublica();
+  const appHost = hostPublico();
+  const EM_PRODUCAO = ehProducao();
   app.use(helmet({
     contentSecurityPolicy: {
       useDefaults: false,
@@ -184,7 +188,7 @@ async function startServer() {
           "'self'",
           ...(supabaseHost ? [`https://${supabaseHost}`, `wss://${supabaseHost}`] : []),
           ...(appHost ? [`wss://${appHost}`] : []),
-          ...(process.env.NODE_ENV !== "production" ? ["ws://localhost:*", "http://localhost:*"] : []),
+          ...(EM_PRODUCAO ? [] : ["ws://localhost:*", "http://localhost:*"]),
         ],
         "worker-src": ["'self'"],
         "manifest-src": ["'self'"],
@@ -220,7 +224,7 @@ async function startServer() {
   // ── CORS ───────────────────────────────────────────────────────────────────
   // Restrict API access to known origins only.
   const allowedOrigins =
-    process.env.NODE_ENV === "production"
+    EM_PRODUCAO
       ? (APP_URL ? [APP_URL] : [])
       : [
           "http://localhost:3000",
@@ -362,9 +366,12 @@ async function startServer() {
   // ── Cache stats (debug) ────────────────────────────────────────────────────
   // Contém chaves com conteúdo de usuário (ex.: perguntas do chat em
   // chat-cerebro:*) — em produção exige DEBUG_STATS_KEY; chaves truncadas.
+  // ⚠️ A trava era `NODE_ENV === "production"`, e o serviço publicado está sem
+  // essa variável: em 17/09 esta rota respondia 200 para qualquer um na
+  // internet. Por isso o gate agora é EM_PRODUCAO (rodar no Render já conta).
   app.get("/api/cache/stats", (req, res) => {
     const debugKey = process.env.DEBUG_STATS_KEY ?? "";
-    if (process.env.NODE_ENV === "production" && (!debugKey || req.headers["x-debug-key"] !== debugKey)) {
+    if (EM_PRODUCAO && (!debugKey || req.headers["x-debug-key"] !== debugKey)) {
       return res.status(404).json({ error: "not_found" });
     }
     const now = Date.now();
@@ -391,10 +398,13 @@ async function startServer() {
   });
 
   // ── Static files + SPA fallback ────────────────────────────────────────────
-  const staticPath =
-    process.env.NODE_ENV === "production"
-      ? path.resolve(__dirname, "public")
-      : path.resolve(__dirname, "..", "dist", "public");
+  // Onde está a SPA buildada. A pergunta certa é "de onde este arquivo está
+  // rodando" (dist/index.js empacotado vs. server/index.ts direto), não
+  // NODE_ENV — que no serviço publicado não vale e mandaria procurar no lugar
+  // errado se um dia os dois caminhos deixassem de coincidir.
+  const staticPath = __dirname.endsWith("dist")
+    ? path.resolve(__dirname, "public")
+    : path.resolve(__dirname, "..", "dist", "public");
 
   // Assets com hash no nome são imutáveis (cache 1 ano); index.html e sw.js
   // sempre revalidam (senão deploy novo não chega); resto fica 1h.

@@ -4,6 +4,7 @@
  */
 
 import { Router, raw } from "express";
+import { urlPublica } from "../lib/urlPublica.ts";
 import crypto from "crypto";
 import { log } from "../lib/log.ts";
 
@@ -88,8 +89,11 @@ router.post("/checkout", async (req, res) => {
         "line_items[0][quantity]": "1",
         "customer_email": userEmail,
         "metadata[user_id]": userId,
-        "success_url": `${process.env.APP_URL ?? "http://localhost:3000"}/perfil?success=1`,
-        "cancel_url": `${process.env.APP_URL ?? "http://localhost:3000"}/perfil?cancelled=1`,
+        // ⚠️ NÃO ler APP_URL direto: no Render ela está como localhost:3000, e
+        // era isto que mandaria quem acabou de PAGAR para o próprio computador
+        // (mesmo defeito do retorno do login com Google, medido em 17/09).
+        "success_url": `${urlPublica()}/perfil?success=1`,
+        "cancel_url": `${urlPublica()}/perfil?cancelled=1`,
       }),
     });
 
