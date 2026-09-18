@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { topKeywords, looksEnglish, rankHits, dedupeByTitle, overlapsQuery, noticiaFresca, janelaDeNoticia, entidadesDoConfronto, dominioDoMercado, tsqueryDeGrupos, overlapsGrupos } from "./cerebro.ts";
+import { topKeywords, looksEnglish, rankHits, dedupeByTitle, overlapsQuery, noticiaFresca, janelaDeNoticia, entidadesDoConfronto, dominioDoMercado, tsqueryDeGrupos, overlapsGrupos, sinteseUtil } from "./cerebro.ts";
 
 describe("topKeywords", () => {
   it("prioriza substantivos próprios (entidades do mercado)", () => {
@@ -342,5 +342,27 @@ describe("overlapsGrupos — variante do mesmo conceito não conta duas vezes", 
   it("dois assuntos distintos passam", () => {
     const artigo = { title: "Eleição presidencial no Brasil", summary: "" };
     expect(overlapsGrupos(artigo, [["election", "eleição"], ["brazil", "brasil"]])).toBe(true);
+  });
+});
+
+// ── Idade da síntese (achado de 17/09: 65 dias sem gerar) ────────────────────
+describe("sinteseUtil — até quando a síntese ainda é contexto", () => {
+  const AGORA = Date.UTC(2026, 8, 18);
+  const diasAtras = (n: number) => new Date(AGORA - n * 86_400_000).toISOString();
+
+  it("síntese de hoje e de um mês atrás entram", () => {
+    expect(sinteseUtil(diasAtras(0), AGORA)).toBe(true);
+    expect(sinteseUtil(diasAtras(30), AGORA)).toBe(true);
+    expect(sinteseUtil(diasAtras(45), AGORA)).toBe(true);
+  });
+
+  it("o caso real: a de 14/07 não entra mais na análise de setembro", () => {
+    expect(sinteseUtil("2026-07-14", AGORA)).toBe(false);
+    expect(sinteseUtil(diasAtras(46), AGORA)).toBe(false);
+  });
+
+  it("sem data, entra — o valor da síntese não é a data", () => {
+    expect(sinteseUtil(undefined, AGORA)).toBe(true);
+    expect(sinteseUtil("data inválida", AGORA)).toBe(true);
   });
 });

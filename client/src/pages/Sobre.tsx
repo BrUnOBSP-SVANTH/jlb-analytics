@@ -3,6 +3,7 @@
  * Missão, produto, mercado e roadmap — orientado ao investidor.
  */
 import PageHeader from "@/components/PageHeader";
+import { haQuantoTempo } from "@shared/formato";
 import AnimatedSection from "@/components/AnimatedSection";
 import { useSEO } from "@/hooks/useSEO";
 import { Link } from "wouter";
@@ -42,20 +43,31 @@ export default function Sobre() {
   useSEO("Sobre — metodologia, mercado e roadmap", "Educação quantitativa para o mercado preditivo brasileiro: método, modelo de negócio, métricas reais e roadmap da JLB Analytics.");
   const [articleCount, setArticleCount] = useState<number | null>(null);
   const [analysisCount, setAnalysisCount] = useState<number | null>(null);
+  /** Quando a síntese mais recente foi escrita — ver a nota no `metrics`. */
+  const [ultimaSintese, setUltimaSintese] = useState<string | null>(null);
 
   useEffect(() => {
     Promise.all([
       supabase.from("cerebro_articles").select("id", { count: "exact", head: true }).eq("status", "active"),
       supabase.from("cerebro_analyses").select("id", { count: "exact", head: true }).eq("status", "active"),
-    ]).then(([artRes, anaRes]) => {
+      supabase.from("cerebro_analyses").select("updated_at").eq("status", "active")
+        .order("updated_at", { ascending: false }).limit(1),
+    ]).then(([artRes, anaRes, ultimaRes]) => {
       if (artRes.count != null) setArticleCount(artRes.count);
       if (anaRes.count != null) setAnalysisCount(anaRes.count);
+      const quando = (ultimaRes.data as { updated_at: string | null }[] | null)?.[0]?.updated_at;
+      if (quando) setUltimaSintese(quando);
     }).catch(() => {});
   }, []);
 
   const metrics = [
     { value: articleCount != null ? articleCount.toLocaleString("pt-BR") : "…", label: "artigos na base Cérebro",          sub: "atualizado diariamente via RSS" },
-    { value: analysisCount != null ? String(analysisCount) : "…",               label: "sínteses IA ativas",                sub: "domínios: macro, política, esportes, cripto" },
+    // A IDADE VAI JUNTO COM A CONTAGEM. Em 17/09/2026 esta linha dizia "187
+    // sínteses IA ativas" enquanto a mais nova era de 14/07 — o sintetizador
+    // estava parado havia 65 dias e o número, sozinho, dizia o contrário. Contar
+    // acervo é fácil; o que informa é quando ele foi atualizado pela última vez.
+    { value: analysisCount != null ? String(analysisCount) : "…",               label: "sínteses IA ativas",
+      sub: ultimaSintese ? `a mais recente, ${haQuantoTempo(ultimaSintese)}` : "domínios: macro, política, esportes, cripto" },
     ...STATIC_METRICS,
   ];
 

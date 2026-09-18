@@ -2,7 +2,11 @@
 cerebro_synthesizer.py — JLB Analytics Cerebro
 
 Lê artigos brutos de cerebro_articles (Supabase), agrupa por categoria e data,
-usa Claude Haiku para gerar sínteses wiki e salva em cerebro_analysis.
+gera sínteses wiki por IA e salva em cerebro_analyses.
+
+A IA vem da MESMA cadeia do servidor — Anthropic → Gemini → Groq —, e basta uma
+das três chaves. Antes daqui só falar com a Anthropic, e por isso o Cérebro
+passou 65 dias sem sintetizar quando os créditos acabaram (ver `chamar_ia`).
 
 Uso:
   python cerebro_synthesizer.py                    # sintetiza artigos das últimas 24h
@@ -11,12 +15,14 @@ Uso:
   python cerebro_synthesizer.py --dry-run          # imprime sem salvar
 
 Requisitos:
-  pip install httpx anthropic python-dotenv
+  pip install httpx python-dotenv
 
 Variáveis de ambiente (.env):
   SUPABASE_URL             — URL do projeto Supabase
   SUPABASE_SERVICE_KEY     — chave service_role
-  ANTHROPIC_API_KEY        — chave Claude API
+  ANTHROPIC_API_KEY        — 1ª opção de IA (melhor qualidade)
+  GEMINI_API_KEY           — 2ª opção (free tier; é o que sustenta o site hoje)
+  GROQ_API_KEY             — 3ª opção (rápida e grátis)
 """
 
 from __future__ import annotations
@@ -32,13 +38,14 @@ from datetime import datetime, timedelta, timezone
 from typing import Any
 
 try:
+    # O SDK da Anthropic saiu: as três IAs são chamadas por HTTP (ver `chamar_ia`).
+    # Uma dependência a menos é um motivo a menos para o cron morrer na instalação.
     import httpx
-    import anthropic
     from dotenv import load_dotenv
 except ImportError:
     sys.exit(
         "Dependências ausentes. Execute:\n"
-        "  pip install httpx anthropic python-dotenv"
+        "  pip install httpx python-dotenv"
     )
 
 load_dotenv()
@@ -165,8 +172,93 @@ RETORNE SOMENTE O JSON ABAIXO, SEM TEXTO ANTES OU DEPOIS, SEM MARKDOWN:
 {{"title":"título conciso (max 60 chars)","content":"síntese em português (max 250 palavras)","tags":["tag1","tag2","tag3"],"keyInsight":"frase-chave do principal achado"}}"""
 
 
+# ─── Cadeia de provedores: Anthropic → Gemini → Groq ──────────────────────────
+#
+# POR QUE ISTO EXISTE. Este script chamava SÓ a Anthropic. Quando os créditos
+# acabaram, ele passou a falhar em silêncio a cada duas horas — e o Cérebro
+# ficou 65 DIAS sem gerar síntese (última em 14/07/2026, descoberto em 17/09).
+# A coleta de notícias seguiu normal o tempo todo, então nada parecia quebrado:
+# o site continuava anunciando "sínteses IA ativas" e servindo as de julho.
+#
+# O servidor Node já tinha a cadeia de três provedores por causa desse mesmo
+# risco (lib/anthropic.ts → gemini.ts → groq.ts). Aqui ela é replicada em HTTP
+# puro, com os MESMOS modelos e a mesma ordem, para não depender de SDK.
+#
+# A ordem importa e é a medida: Anthropic é a melhor; o Gemini free é o plano B
+# que sustenta o site; o Groq é rápido e grátis, último porque a qualidade cai.
+
+ANTHROPIC_MODEL = os.getenv("ANTHROPIC_MODEL", "claude-haiku-4-5-20251001")
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-flash-lite-latest")
+GROQ_MODEL = os.getenv("GROQ_MODEL", "openai/gpt-oss-120b")
+
+
+async def _via_anthropic(http: httpx.AsyncClient, prompt: str, max_tokens: int) -> str | None:
+    key = os.getenv("ANTHROPIC_API_KEY", "")
+    if not key:
+        return None
+    r = await http.post(
+        "https://api.anthropic.com/v1/messages",
+        headers={"x-api-key": key, "anthropic-version": "2023-06-01", "Content-Type": "application/json"},
+        json={"model": ANTHROPIC_MODEL, "max_tokens": max_tokens, "messages": [{"role": "user", "content": prompt}]},
+        timeout=60.0,
+    )
+    r.raise_for_status()
+    return "".join(b.get("text", "") for b in r.json().get("content", []) if b.get("type") == "text")
+
+
+async def _via_gemini(http: httpx.AsyncClient, prompt: str, max_tokens: int) -> str | None:
+    key = os.getenv("GEMINI_API_KEY", "")
+    if not key:
+        return None
+    # A chave vai no CABEÇALHO, não na URL: o httpx registra a URL completa em
+    # nível INFO, e com `?key=` a chave do Gemini aparecia inteira no log do
+    # servidor (visto na primeira execução, 18/09).
+    r = await http.post(
+        f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent",
+        headers={"Content-Type": "application/json", "x-goog-api-key": key},
+        json={
+            "contents": [{"role": "user", "parts": [{"text": prompt}]}],
+            "generationConfig": {"maxOutputTokens": max_tokens},
+        },
+        timeout=60.0,
+    )
+    r.raise_for_status()
+    cands = r.json().get("candidates", [])
+    if not cands:
+        return None
+    return "".join(p.get("text", "") for p in cands[0].get("content", {}).get("parts", []))
+
+
+async def _via_groq(http: httpx.AsyncClient, prompt: str, max_tokens: int) -> str | None:
+    key = os.getenv("GROQ_API_KEY", "")
+    if not key:
+        return None
+    r = await http.post(
+        "https://api.groq.com/openai/v1/chat/completions",
+        headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
+        json={"model": GROQ_MODEL, "max_tokens": max_tokens, "messages": [{"role": "user", "content": prompt}]},
+        timeout=60.0,
+    )
+    r.raise_for_status()
+    return r.json()["choices"][0]["message"]["content"]
+
+
+async def chamar_ia(http: httpx.AsyncClient, prompt: str, max_tokens: int = 1200) -> tuple[str, str] | None:
+    """Texto da IA e qual provedor respondeu. `None` só quando os TRÊS falham."""
+    for nome, chamar in (("anthropic", _via_anthropic), ("gemini", _via_gemini), ("groq", _via_groq)):
+        try:
+            texto = await chamar(http, prompt, max_tokens)
+            if texto and texto.strip():
+                return texto.strip(), nome
+            log.warning("  → %s sem chave ou resposta vazia; tentando o próximo", nome)
+        except Exception as exc:
+            log.warning("  → %s falhou (%s); tentando o próximo", nome, str(exc)[:160])
+    log.error("  → TODOS os provedores falharam — nenhuma síntese nesta rodada")
+    return None
+
+
 async def synthesize_category(
-    ai_client: anthropic.Anthropic,
+    http: httpx.AsyncClient,
     category: str,
     articles: list[dict],
     date_label: str,
@@ -175,13 +267,11 @@ async def synthesize_category(
         return None
 
     prompt = build_prompt(category, articles, date_label)
+    resposta = await chamar_ia(http, prompt)
+    if not resposta:
+        return None
+    raw, provedor = resposta
     try:
-        msg = ai_client.messages.create(
-            model="claude-haiku-4-5-20251001",
-            max_tokens=1200,
-            messages=[{"role": "user", "content": prompt}],
-        )
-        raw = msg.content[0].text.strip()
         # Remove markdown code fences
         raw = raw.replace("```json", "").replace("```", "").strip()
         # Extract outermost {...}
@@ -190,12 +280,10 @@ async def synthesize_category(
         if start == -1 or end == -1:
             raise json.JSONDecodeError("No JSON object found", raw, 0)
         data = json.loads(raw[start:end + 1])
+        data["_provedor"] = provedor
         return data
     except json.JSONDecodeError as exc:
-        log.warning("JSON parse error para %s: %s", category, exc)
-        return None
-    except Exception as exc:
-        log.error("Claude error para %s: %s", category, exc)
+        log.warning("JSON inválido de %s para %s: %s", provedor, category, exc)
         return None
 
 
@@ -210,22 +298,23 @@ async def main() -> None:
 
     supabase_url = os.getenv("SUPABASE_URL") or os.getenv("VITE_SUPABASE_URL", "")
     service_key = os.getenv("SUPABASE_SERVICE_KEY", "")
-    anthropic_key = os.getenv("ANTHROPIC_API_KEY", "")
+    # Basta UM provedor. Exigir a Anthropic era o que derrubava o script inteiro
+    # quando os créditos acabavam — com duas alternativas configuradas ao lado.
+    provedores = [p for p in ("ANTHROPIC_API_KEY", "GEMINI_API_KEY", "GROQ_API_KEY") if os.getenv(p, "")]
 
     if not args.dry_run:
         if not supabase_url:
             sys.exit("SUPABASE_URL não configurada.")
         if not service_key:
             sys.exit("SUPABASE_SERVICE_KEY não configurada.")
-    if not anthropic_key:
-        sys.exit("ANTHROPIC_API_KEY não configurada.")
+    if not provedores:
+        sys.exit("Nenhum provedor de IA configurado (ANTHROPIC_API_KEY, GEMINI_API_KEY ou GROQ_API_KEY).")
+    log.info("Provedores disponíveis, em ordem: %s", ", ".join(provedores))
 
     since = (datetime.now(timezone.utc) - timedelta(days=args.days)).isoformat()
     date_label = datetime.now(timezone.utc).strftime("%d/%m/%Y")
 
     categories = [args.category] if args.category else list(CATEGORY_DOMAINS.keys())
-
-    ai_client = anthropic.Anthropic(api_key=anthropic_key)
 
     total_saved = 0
     async with httpx.AsyncClient(
@@ -248,7 +337,7 @@ async def main() -> None:
                 continue
 
             log.info("  → %d artigos encontrados, sintetizando…", len(articles))
-            result = await synthesize_category(ai_client, cat, articles, date_label)
+            result = await synthesize_category(http, cat, articles, date_label)
             if not result:
                 log.warning("  → Falha na síntese de %s", cat)
                 continue
@@ -273,7 +362,7 @@ async def main() -> None:
 
             ok = await upsert_analysis(http, supabase_url, service_key, analysis)
             if ok:
-                log.info("  → Síntese salva: %s", analysis["title"])
+                log.info("  → Síntese salva (%s): %s", result.get("_provedor", "?"), analysis["title"])
                 total_saved += 1
             else:
                 log.warning("  → Falha ao salvar síntese de %s", cat)

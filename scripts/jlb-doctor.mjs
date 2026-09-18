@@ -389,6 +389,31 @@ async function checkSupabase(env) {
     }
   } catch { /* silencioso */ }
 
+  // Frescor das SÍNTESES do Cérebro. Contar não basta: em 17/09/2026 o doctor
+  // dizia "✅ 187 sínteses IA ativas" enquanto a última era de 14/07 — 65 dias
+  // sem gerar, porque o cerebro_synthesizer.py só falava com a Anthropic e os
+  // créditos tinham acabado. Acervo parado parece acervo saudável; o que
+  // denuncia é a DATA. Mesmo alarme dos snapshots, pelo mesmo motivo.
+  try {
+    const r = await fetch(`${url}/rest/v1/cerebro_analyses?select=updated_at&status=eq.active&order=updated_at.desc.nullslast&limit=1`, { headers: h });
+    if (r.ok) {
+      const [row] = await r.json();
+      if (row?.updated_at) {
+        const dias = Math.floor((Date.now() - new Date(row.updated_at).getTime()) / 86_400_000);
+        if (dias > 7) {
+          line("⚠️", `última síntese do Cérebro há ${paint(dias + " dias", c.yellow)} — sintetizador parado?`);
+          add(dias > 30 ? "crit" : "warn", "Cérebro",
+            `Sínteses paradas há ${dias}d — rodar python/cerebro_synthesizer.py e ver qual provedor respondeu`);
+        } else {
+          line("✅", `última síntese do Cérebro: ${paint(dias === 0 ? "hoje" : `${dias}d atrás`, c.green)}`);
+        }
+      } else {
+        line("⚠️", "nenhuma síntese do Cérebro com data — sintetizador nunca rodou?");
+        add("warn", "Cérebro", "Nenhuma síntese datada em cerebro_analyses");
+      }
+    }
+  } catch { /* silencioso */ }
+
   // ── Comparador de resultados / track record da IA (MONITOR) ──
   // O sinal-chave: `settled_count` = resoluções pelo RESULTADO OFICIAL da plataforma.
   // É a prova de que o site acumula retorno real sobre os resultados (não chute de

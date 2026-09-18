@@ -272,6 +272,27 @@ export function janelaDeNoticia(fechaEmMs?: number): number {
   return Math.min(MAX_IDADE_TETO_DIAS, Math.max(MAX_IDADE_PRECIFICACAO_DIAS, diasAteFechar / 4));
 }
 
+/**
+ * Até quando uma SÍNTESE ainda é contexto, fora da precificação.
+ *
+ * Síntese é conhecimento de domínio — envelhece mais devagar que notícia, por
+ * isso a régua é bem mais larga que os 3 dias da precificação. Mas ela não é
+ * eterna: em 17/09/2026 descobrimos que o sintetizador estava parado desde
+ * 14/07 (65 dias) e o site seguia servindo aquelas sínteses como contexto de
+ * análise do dia, sem nada dizer a idade. Passado este limite não é contexto, é
+ * história — e a ausência de síntese nova é, ela própria, o sinal de que a
+ * geração parou.
+ */
+export const MAX_IDADE_SINTESE_DIAS = 45;
+
+/** A síntese ainda serve de contexto? Sem data, entra (o valor dela não é a data). */
+export function sinteseUtil(date: string | undefined, agora = Date.now(), maxDias = MAX_IDADE_SINTESE_DIAS): boolean {
+  if (!date) return true;
+  const idade = (agora - new Date(date).getTime()) / 86_400_000;
+  if (!Number.isFinite(idade)) return true;
+  return idade <= maxDias;
+}
+
 /** O artigo é fresco o bastante para mexer em preço? Sem data, não arriscamos. */
 export function noticiaFresca(date: string | undefined, maxDias = MAX_IDADE_PRECIFICACAO_DIAS): boolean {
   if (!date) return false;
@@ -656,7 +677,9 @@ export async function fetchCerebroContext(
       return dominio.has(cat) && overlapsGrupos(h, grupos, 1);
     };
     const termosRank = enriquecerComPortugues(words);
-    const synth = rankHits(deduped.filter((h) => h.kind === "síntese"), termosRank).filter(relevant);
+    // Síntese velha demais sai aqui. Na precificação o corte é bem mais duro
+    // (janelaDeNoticia, logo abaixo); este é o teto do caminho de explicação.
+    const synth = rankHits(deduped.filter((h) => h.kind === "síntese" && sinteseUtil(h.date)), termosRank).filter(relevant);
     const ftsArts = rankHits(deduped.filter((h) => h.kind === "artigo" && !h._semantic), termosRank).filter(relevant);
     // .filter(relevant) TAMBÉM aqui: antes o grupo semântico entrava inteiro sem
     // passar pela régua — era por onde a faixa 0.60–0.65 vazaria sem confirmação.
@@ -678,7 +701,13 @@ export async function fetchCerebroContext(
     if (hits.length === 0) return { context: "", hits: [] };
 
     const note = "";
-    const context = note + hits.map((h, i) => `[C${i + 1}] (${h.kind} · ${h.source}) "${h.title}"\n${h.summary}`).join("\n\n");
+    // A DATA entra na linha. Sem ela, o modelo lia "síntese · Cerebro IA" e
+    // tratava conteúdo de dois meses atrás como se fosse de hoje — e quem lia a
+    // análise não tinha como saber. Data é metade da informação de um contexto.
+    const context = note + hits.map((h, i) => {
+      const quando = h.date ? ` · ${new Date(h.date).toLocaleDateString("pt-BR")}` : "";
+      return `[C${i + 1}] (${h.kind} · ${h.source}${quando}) "${h.title}"\n${h.summary}`;
+    }).join("\n\n");
     return { context, hits };
   } catch { return { context: "", hits: [] }; }
 }
