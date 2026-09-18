@@ -25,6 +25,9 @@ import { LoadingSkeleton } from "@/components/mercados/LoadingSkeleton";
 import { DivergencesSection } from "@/components/mercados/DivergencesSection";
 import { casaBusca } from "@/lib/marketSearch";
 import { ehSobreBrasil } from "@/lib/brasil";
+import {
+  fontesSemResposta, fraseDasFontes, motivoDaListaVazia, type FonteMercado,
+} from "@/lib/fontesDoCatalogo";
 import { num } from "@shared/formato";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -108,6 +111,9 @@ function guardarPreferencia(nome: string, valor: string): void {
 export default function Apostas() {
   useSEO("Mercados Ao Vivo", "Mercados preditivos em tempo real do Polymarket e Kalshi com probabilidades, volume, divergências da IA e análise contextual.");
   const [items, setItems]           = useState<TrendingItem[]>([]);
+  // Quais fontes não trouxeram nada na última rodada — a tela precisa dizer
+  // isso em vez de deixar o filtro levar a um vazio sem explicação.
+  const [fontesFora, setFontesFora] = useState<FonteMercado[]>([]);
   const [loading, setLoading]       = useState(true);
   const [error, setError]           = useState<string | null>(null);
   const [filter, setFilter]         = useState<Filter>(() => (preferencia("filter") as Filter) ?? "all");
@@ -241,6 +247,16 @@ export default function Apostas() {
       );
 
       const ok = buildAndSet(all, silent);
+      // Só vale marcar quem faltou quando a rodada de fato trouxe algo: se TUDO
+      // falhou, a lista antiga continua na tela e o aviso de erro é outro.
+      if (ok) {
+        setFontesFora(fontesSemResposta({
+          reddit: redditItems.length,
+          polymarket: polyItems.length,
+          kalshi: kalshiItems.length,
+          manifold: manifoldItems.length,
+        }));
+      }
       if (!ok && !silent) {
         setError("Não foi possível carregar os dados agora. Tente novamente em instantes.");
         toast.error("Falha ao carregar mercados", {
@@ -428,8 +444,11 @@ export default function Apostas() {
               {/* "Em Hype" era jargão, e em inglês. O que esta tela é: o que os
                   mercados estão precificando agora. */}
               <h1 className="text-2xl font-display font-bold text-[var(--titulo)]">Mercados ao vivo</h1>
+              {/* A frase conta só as bolsas que responderam nesta rodada, e
+                  nomeia a que faltou — prometer fonte fora do ar é o oposto da
+                  tese da plataforma. Regra em lib/fontesDoCatalogo.ts. */}
               <p className="text-sm text-muted-foreground mt-1 max-w-xl">
-                O que Polymarket, Kalshi e Manifold estão precificando agora, com a nossa leitura ao lado.
+                {fraseDasFontes(fontesFora)}
               </p>
             </div>
 
@@ -478,15 +497,23 @@ export default function Apostas() {
               {/* Source pills */}
               {(["all", "reddit", "polymarket", "kalshi", "manifold"] as Filter[]).map((src) => {
                 const LABELS: Record<Filter, string> = { all: "Todos", reddit: "Reddit", polymarket: "Polymarket", kalshi: "Kalshi", manifold: "Manifold" };
+                // Fonte que não respondeu continua clicável de propósito: quem
+                // clica merece a explicação, não uma pastilha morta sem motivo.
+                const fora = src !== "all" && fontesFora.includes(src);
                 return (
                   <button key={src}
                     onClick={() => { setFilter(src); setCatFilter("all"); }}
+                    title={fora ? `${LABELS[src]} não respondeu na última atualização` : undefined}
+                    aria-label={fora ? `${LABELS[src]}, sem resposta na última atualização` : undefined}
                     className={`shrink-0 px-3.5 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
                       filter === src
                         ? "bg-foreground text-background border-foreground"
+                        : fora
+                        ? "border-border/30 text-muted-foreground/60 hover:text-foreground hover:border-border/60"
                         : "border-border/40 text-muted-foreground hover:text-foreground hover:border-border/70"
                     }`}>
                     {LABELS[src]}
+                    {fora && <span className="ml-1.5 font-normal opacity-80">· sem resposta</span>}
                   </button>
                 );
               })}
@@ -678,24 +705,35 @@ export default function Apostas() {
           </div>
         )}
 
-        {!loading && filtered.length === 0 && !error && (
-          <AnimatedSection>
-            {/* O vazio sugeria a saída em TEXTO ("tente Todos"), sem botão —
-                deixando o trabalho de desfazer o filtro para o usuário. */}
-            <div className="text-center py-16">
-              <Flame className="w-10 h-10 mx-auto mb-3 text-muted-foreground/40" aria-hidden="true" />
-              <p className="text-sm font-medium text-foreground mb-1">Nenhum mercado com este filtro agora</p>
-              <p className="text-xs text-muted-foreground mb-4">
-                Isso acontece: as fontes têm coberturas diferentes e algumas categorias ficam vazias por horas.
-              </p>
-              <button
-                onClick={() => { setFilter("all"); setCatFilter("all"); }}
-                className="alvo-toque inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-border/40 text-xs font-semibold text-foreground hover:border-primary/40 transition-colors">
-                Ver todos os mercados
-              </button>
-            </div>
-          </AnimatedSection>
-        )}
+        {!loading && filtered.length === 0 && !error && (() => {
+          // O vazio sugeria a saída em TEXTO ("tente Todos"), sem botão —
+          // deixando o trabalho de desfazer o filtro para o usuário. E dava a
+          // explicação errada quando a causa era a fonte fora do ar.
+          const motivo = motivoDaListaVazia(filter === "all" ? "all" : filter, fontesFora);
+          return (
+            <AnimatedSection>
+              <div className="text-center py-16">
+                <Flame className="w-10 h-10 mx-auto mb-3 text-muted-foreground/40" aria-hidden="true" />
+                <p className="text-sm font-medium text-foreground mb-1">{motivo.titulo}</p>
+                <p className="text-xs text-muted-foreground mb-4 max-w-md mx-auto leading-relaxed">{motivo.detalhe}</p>
+                <div className="flex items-center justify-center gap-2 flex-wrap">
+                  {motivo.fonteFora && (
+                    <button
+                      onClick={() => void load(false)}
+                      className="alvo-toque inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-primary/40 text-xs font-semibold text-foreground hover:border-primary transition-colors">
+                      Tentar de novo
+                    </button>
+                  )}
+                  <button
+                    onClick={() => { setFilter("all"); setCatFilter("all"); }}
+                    className="alvo-toque inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-border/40 text-xs font-semibold text-foreground hover:border-primary/40 transition-colors">
+                    Ver todos os mercados
+                  </button>
+                </div>
+              </div>
+            </AnimatedSection>
+          );
+        })()}
 
         {!loading && filtered.length > 0 && viewMode === "list" && (
           <p className="text-xs text-muted-foreground text-center mb-4">
