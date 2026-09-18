@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { comOrcamento, porVolume, desambiguarPorPai, limitePedido, normalizarTitulo } from "./marketCatalog.ts";
+import { comOrcamento, porVolume, desambiguarPorPai, limitePedido, normalizarTitulo, expandirNomeTruncado, confrontoEmTexto, glossarioDeNomes, completarComGlossario } from "./marketCatalog.ts";
 
 describe("comOrcamento — página que demora não pode derrubar a tela", () => {
   it("devolve o resultado quando chega a tempo", async () => {
@@ -112,5 +112,98 @@ describe("normalizarTitulo — o buraco que aparecia no card", () => {
     expect(normalizarTitulo("")).toBe("");
     // Espaço duplicado vem de título que já teve algo removido na origem.
     expect(normalizarTitulo("  Mercado   normal  ")).toBe("Mercado normal");
+  });
+});
+
+describe("expandirNomeTruncado — o nome cortado pela origem", () => {
+  const EVENTO = "NY Giants vs LA Rams";
+
+  it("o caso real de 17/09: 'New York G wins' vira o time inteiro", () => {
+    expect(expandirNomeTruncado("New York G wins", EVENTO)).toBe("NY Giants wins");
+  });
+
+  it("vale também no meio da frase, sem estragar o resto", () => {
+    expect(expandirNomeTruncado("Los Angeles R wins by over 9.5 points?", EVENTO))
+      .toBe("LA Rams wins by over 9.5 points?");
+  });
+
+  it("título sem corte fica exatamente como veio", () => {
+    expect(expandirNomeTruncado("Will Bitcoin close above $80,000?", EVENTO))
+      .toBe("Will Bitcoin close above $80,000?");
+  });
+
+  it("sem evento, não há de onde tirar — não inventa", () => {
+    expect(expandirNomeTruncado("New York G wins")).toBe("New York G wins");
+    expect(expandirNomeTruncado("New York G wins", "Algum evento sem confronto")).toBe("New York G wins");
+  });
+
+  it("assinatura ambígua entre os dois lados: mantém o que a origem publicou", () => {
+    // LA Rams e LA Raiders dariam a mesma assinatura — no empate não se escolhe.
+    expect(expandirNomeTruncado("Los Angeles R wins", "LA Rams vs LA Raiders"))
+      .toBe("Los Angeles R wins");
+  });
+
+  it("não mexe em nome próprio que só PARECE cortado", () => {
+    // "Donald J" não casa com nenhum lado do confronto — fica como está.
+    expect(expandirNomeTruncado("Donald J wins the election", EVENTO)).toBe("Donald J wins the election");
+  });
+});
+
+describe("confrontoEmTexto — o confronto que está no regulamento", () => {
+  it("acha o confronto no meio da regra do Kalshi", () => {
+    // Vem com o esporte colado ("Pro Football") porque a regra não separa — e
+    // tudo bem: quem usa isto casa por PREFIXO de palavras, então o excedente
+    // não atrapalha. Cortar por lista de esportes seria adivinhação.
+    expect(confrontoEmTexto(
+      "If New York G wins the NY Giants vs LA Rams Pro Football game originally scheduled for Sep 21, 2026, then the market resolves to Yes.",
+    )).toBe("NY Giants vs LA Rams Pro Football");
+  });
+
+  it("serve de contexto para completar o nome cortado", () => {
+    const regra = "If Los Angeles R wins the NY Giants vs LA Rams Pro Football game, then Yes.";
+    expect(expandirNomeTruncado("Los Angeles R wins", confrontoEmTexto(regra))).toBe("LA Rams wins");
+  });
+
+  it("regra sem confronto não inventa nada", () => {
+    expect(confrontoEmTexto("If Bitcoin closes above $80,000 then the market resolves to Yes.")).toBeUndefined();
+    expect(confrontoEmTexto(undefined)).toBeUndefined();
+  });
+});
+
+describe("glossarioDeNomes — aprender o nome com o evento irmão", () => {
+  // Os três contextos reais do jogo NYG×LAR em 17/09: só o primeiro traz os
+  // nomes inteiros; o do handicap e o regulamento vêm cortados nos dois lados.
+  const CONTEXTOS = [
+    "NY Giants vs LA Rams",
+    "New York G vs Los Angeles R: Spread",
+    "New York G vs Los Angeles R Pro Football",
+  ];
+
+  it("aprende os dois times e ignora as formas cortadas", () => {
+    const g = glossarioDeNomes(CONTEXTOS);
+    expect(g.get("NYG")).toBe("NY Giants");
+    expect(g.get("LAR")).toBe("LA Rams");
+  });
+
+  it("conserta o handicap, que não tinha o nome em registro nenhum", () => {
+    const g = glossarioDeNomes(CONTEXTOS);
+    expect(completarComGlossario("Los Angeles R wins by over 9.5 points?", g))
+      .toBe("LA Rams wins by over 9.5 points?");
+  });
+
+  it("assinatura com dois nomes possíveis é descartada — não se escolhe no palpite", () => {
+    const g = glossarioDeNomes(["NY Giants vs LA Rams", "New York Giants vs LA Chargers"]);
+    expect(g.has("NYG")).toBe(false);
+    expect(completarComGlossario("New York G wins", g)).toBe("New York G wins");
+  });
+
+  it("sem glossário, o título passa intacto", () => {
+    expect(completarComGlossario("New York G wins", new Map())).toBe("New York G wins");
+  });
+
+  it("não mexe em título sem corte", () => {
+    const g = glossarioDeNomes(CONTEXTOS);
+    expect(completarComGlossario("Will Bitcoin close above $80,000?", g))
+      .toBe("Will Bitcoin close above $80,000?");
   });
 });

@@ -162,3 +162,124 @@ export function normalizarTitulo(titulo: string): string {
   // isso não removemos dois-pontos em geral, só o que virou lacuna.
   return t;
 }
+
+/**
+ * Nome de time cortado pela origem, completado com dado da própria origem.
+ *
+ * O Kalshi publica o time abreviado no mercado ("New York G wins") e o confronto
+ * inteiro no EVENTO ("NY Giants vs LA Rams"). Quem lê o card vê "New York G" e
+ * não sabe se é Giants ou Jets — em 17/09 eram 5 dos 300 mercados do catálogo,
+ * todos de futebol americano.
+ *
+ * A regra da casa é NUNCA inventar o nome que falta. Aqui não se inventa: o nome
+ * completo vem do mesmo `GET /events`. A ponte entre as duas formas são as
+ * MAIÚSCULAS, que sobrevivem à abreviação — "New York G" e "NY Giants" dão N-Y-G;
+ * "Los Angeles R" e "LA Rams" dão L-A-R. Só troca quando a assinatura casa com
+ * um lado SÓ do confronto; no empate, fica como o Kalshi publicou.
+ */
+function maiusculas(s: string): string {
+  return (s.match(/[A-Z]/g) ?? []).join("");
+}
+
+export function expandirNomeTruncado(titulo: string, tituloDoEvento?: string): string {
+  const t = (titulo ?? "").trim();
+  if (!t || !tituloDoEvento) return t;
+
+  // Os lados do confronto, como a origem os escreve.
+  const lados = tituloDoEvento.split(/\s+(?:vs\.?|v\.|x)\s+/i).map((s) => s.trim()).filter(Boolean);
+  if (lados.length < 2) return t;
+
+  // Cada lado pode vir com palavras coladas depois do nome ("LA Rams Pro
+  // Football game", do regulamento), então o candidato é o menor PREFIXO de
+  // palavras cuja assinatura bate — "LA Rams", não a frase inteira.
+  const candidatos = (alvo: string): string[] => {
+    const achados = new Set<string>();
+    for (const lado of lados) {
+      const palavras = lado.split(/\s+/);
+      for (let n = 1; n <= palavras.length; n++) {
+        const prefixo = palavras.slice(0, n).join(" ");
+        if (maiusculas(prefixo) === alvo) { achados.add(prefixo); break; }
+      }
+    }
+    return Array.from(achados);
+  };
+
+  // O trecho cortado: nome próprio terminado numa letra solta ("New York G").
+  const cortado = /\b([A-Z][A-Za-z.]*(?:\s+[A-Z][A-Za-z.]*)*\s+[A-Z])(?![A-Za-z.])/g;
+  return t.replace(cortado, (trecho) => {
+    const alvo = maiusculas(trecho);
+    if (alvo.length < 2) return trecho;
+    const casam = candidatos(alvo);
+    return casam.length === 1 && casam[0] !== trecho ? casam[0] : trecho;
+  });
+}
+
+/**
+ * O confronto escondido no regulamento do mercado.
+ *
+ * Nem todo mercado chega pelo caminho dos EVENTOS (o de curto prazo vem da
+ * listagem plana, sem o título do evento junto). Mas o próprio registro traz
+ * `rules_primary`: "If New York G wins the NY Giants vs LA Rams Pro Football
+ * game…". O confronto está ali, escrito pela origem — serve de contexto para
+ * `expandirNomeTruncado` sem custar nenhuma chamada extra de API.
+ */
+export function confrontoEmTexto(texto?: string): string | undefined {
+  if (!texto) return undefined;
+  const m = texto.match(
+    /\b([A-Z][A-Za-z.]*(?:\s+[A-Z][A-Za-z.]*)*)\s+(?:vs\.?|v\.)\s+([A-Z][A-Za-z.]*(?:\s+[A-Z][A-Za-z.]*)*)/,
+  );
+  return m ? `${m[1]} vs ${m[2]}` : undefined;
+}
+
+/**
+ * Glossário de nomes, montado com o que a ORIGEM publicou no mesmo lote.
+ *
+ * Os mercados de handicap do mesmo jogo não têm o nome inteiro em lugar nenhum:
+ * título, regulamento e até o título do evento vêm cortados ("New York G vs
+ * Los Angeles R: Spread"). Mas o evento IRMÃO — o do resultado — publica
+ * "NY Giants vs LA Rams". Como as duas formas compartilham as maiúsculas
+ * (N-Y-G), dá para aprender o nome ali e aplicá-lo aqui.
+ *
+ * Duas travas contra inventar: forma cortada nunca entra no glossário (ela é o
+ * problema, não a resposta), e assinatura que aponta para DOIS nomes diferentes
+ * é descartada — na dúvida, fica o que a origem escreveu.
+ */
+const TERMINA_EM_LETRA_SOLTA = /(?:^|\s)[A-Z]$/;
+
+function ladosDoConfronto(texto: string): string[] {
+  return texto.split(/\s+(?:vs\.?|v\.)\s+/i).map((s) => s.trim()).filter(Boolean);
+}
+
+export function glossarioDeNomes(contextos: Array<string | undefined>): Map<string, string> {
+  const vistos = new Map<string, Set<string>>();
+  for (const ctx of contextos) {
+    if (!ctx) continue;
+    for (const lado of ladosDoConfronto(ctx)) {
+      // "Los Angeles R: Spread" → a pontuação não pode esconder a letra solta.
+      const palavras = lado.split(/\s+/).map((p) => p.replace(/[^A-Za-z.]+$/, "")).filter(Boolean);
+      for (let n = 1; n <= palavras.length; n++) {
+        const nome = palavras.slice(0, n).join(" ");
+        if (TERMINA_EM_LETRA_SOLTA.test(nome)) continue;
+        const sig = maiusculas(nome);
+        if (sig.length < 3) continue;
+        if (!vistos.has(sig)) vistos.set(sig, new Set());
+        vistos.get(sig)!.add(nome);
+      }
+    }
+  }
+  const glossario = new Map<string, string>();
+  vistos.forEach((nomes, sig) => {
+    if (nomes.size === 1) glossario.set(sig, Array.from(nomes)[0]);
+  });
+  return glossario;
+}
+
+/** Aplica o glossário ao título — mesma regra de corte de `expandirNomeTruncado`. */
+export function completarComGlossario(titulo: string, glossario: Map<string, string>): string {
+  const t = (titulo ?? "").trim();
+  if (!t || glossario.size === 0) return t;
+  return t.replace(/\b([A-Z][A-Za-z.]*(?:\s+[A-Z][A-Za-z.]*)*\s+[A-Z])(?![A-Za-z.])/g, (trecho) => {
+    const nome = glossario.get(maiusculas(trecho));
+    return nome && nome !== trecho ? nome : trecho;
+  });
+}

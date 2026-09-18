@@ -21,8 +21,10 @@ test("Manifold fora do ar: a tela diz, em vez de mostrar vazio sem motivo", asyn
   await page.goto("/mercados");
 
   // O subtítulo para de prometer a fonte que não respondeu...
+  // Prazo largo de propósito: a frase só muda DEPOIS da primeira carga, e aqui
+  // as bolsas são as APIs reais — servidor frio já levou mais de 5s.
   const subtitulo = page.locator("p", { hasText: "precificando agora" }).first();
-  await expect(subtitulo).toContainText("Manifold não respondeu nesta atualização");
+  await expect(subtitulo).toContainText("Manifold não respondeu nesta atualização", { timeout: 45_000 });
   await expect(subtitulo).not.toContainText("Kalshi e Manifold estão");
 
   // ...a pastilha do filtro avisa antes do clique...

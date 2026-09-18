@@ -4,7 +4,7 @@ import { fetchWithRetry } from "../lib/fetcher.ts";
 import { kalshiMarketUrl, kalshiYesProb, kalshiTemPrecoReal } from "../lib/marketNormalize.ts";
 import type { KalshiEventsResponse, KalshiMarket, KalshiEvent, KalshiNestedMarket } from "../lib/types.ts";
 import { log } from "../lib/log.ts";
-import { comOrcamento, porVolume, desambiguarPorPai, desambiguarTitulosIguais, limitePedido, normalizarTitulo } from "../lib/marketCatalog.ts";
+import { comOrcamento, porVolume, desambiguarPorPai, desambiguarTitulosIguais, limitePedido, normalizarTitulo, expandirNomeTruncado, confrontoEmTexto, glossarioDeNomes, completarComGlossario } from "../lib/marketCatalog.ts";
 
 const router = Router();
 
@@ -50,6 +50,7 @@ const COTA_ATE_7_DIAS = 20;
  *  título no último passo, quando já não se sabe por qual caminho eles vieram. */
 interface KalshiMercadoPlano {
   ticker?: string; event_ticker?: string; title?: string; yes_sub_title?: string;
+  rules_primary?: string;
   yes_bid_dollars?: string; yes_ask_dollars?: string; last_price_dollars?: string;
   previous_price_dollars?: string; volume_fp?: string; volume_24h_fp?: string;
   open_interest_fp?: string; liquidity_dollars?: string; close_time?: string; status?: string;
@@ -220,7 +221,9 @@ router.get("/markets", async (req, res) => {
           // o título do evento nesse caso; se nem ele existir, o ticker, que é feio
           // mas verdadeiro. Nunca inventar o nome que falta. E `tituloDistinto`
           // ainda acrescenta o rótulo da faixa quando o evento tem irmãos.
-          title: normalizarTitulo(tituloDistinto(m, ev, irmaos)),
+          // O Kalshi abrevia o time no mercado ("New York G wins") e escreve o
+          // confronto inteiro no evento — completar por ali usa dado da origem.
+          title: normalizarTitulo(expandirNomeTruncado(tituloDistinto(m, ev, irmaos), ev.title)),
           rotuloDesfecho: tituloLimpo(m.yes_sub_title),
           yesProb: kalshiYesProb(m.yes_bid_dollars, m.yes_ask_dollars, m.last_price_dollars),
           prevYesProb: m.previous_price_dollars
@@ -315,8 +318,11 @@ router.get("/markets", async (req, res) => {
               const base = tituloLimpo(m.title) ?? tituloLimpo(m.yes_sub_title) ?? m.ticker!;
               const rotulo = tituloLimpo(m.yes_sub_title);
               const irmaos = irmaosPorEvento.get(m.event_ticker ?? m.ticker!) ?? 1;
-              if (irmaos < 2 || !rotulo) return base;
-              return base.toLowerCase().includes(rotulo.toLowerCase()) ? base : `${base} — ${rotulo}`;
+              const comp = (t: string) => expandirNomeTruncado(t, confrontoEmTexto(m.rules_primary));
+              // Sem o evento junto (esta piscina vem da listagem plana), o confronto
+              // sai do próprio regulamento do mercado. Nada é inventado.
+              if (irmaos < 2 || !rotulo) return comp(base);
+              return comp(base.toLowerCase().includes(rotulo.toLowerCase()) ? base : `${base} — ${rotulo}`);
             })(),
             rotuloDesfecho: tituloLimpo(m.yes_sub_title),
             yesProb: kalshiYesProb(m.yes_bid_dollars, m.yes_ask_dollars, m.last_price_dollars),
@@ -338,6 +344,17 @@ router.get("/markets", async (req, res) => {
 
       const juntos = [...curtos, ...longoPrazo].slice(0, TETO_KALSHI);
 
+      // Último recurso para o nome cortado: o mercado de HANDICAP não tem o time
+      // inteiro em registro nenhum ("New York G vs Los Angeles R: Spread" até no
+      // título do evento) — mas o evento IRMÃO, o do resultado, publica
+      // "NY Giants vs LA Rams". O glossário aprende com o lote todo e só aplica
+      // quando a assinatura de maiúsculas aponta para um nome só.
+      const glossario = glossarioDeNomes([
+        ...events.map((ev) => ev.title),
+        ...disponiveis.map((m) => confrontoEmTexto(m.rules_primary)),
+      ]);
+      const comNomes = juntos.map((m) => ({ ...m, title: completarComGlossario(m.title, glossario) }));
+
       // Última desambiguação: dois EVENTOS DIFERENTES com o título idêntico.
       // Não é escada de faixas e não é bug nosso — a API do Kalshi devolve o mesmo
       // título para KXOSCARVIS (efeitos visuais) e KXOSCARMAH (maquiagem), ambos
@@ -346,7 +363,7 @@ router.get("/markets", async (req, res) => {
       // Então marcamos com a série — feio, mas verdadeiro e clicável — em vez de
       // exibir dois cards idênticos, que parecem defeito e não deixam escolher.
       const porPai = desambiguarPorPai(
-        juntos,
+        comNomes,
         { titulo: (m) => m.title, pai: (m) => m.eventTicker, sufixo: (m) => m.seriesTicker },
         (m, titulo) => ({ ...m, title: titulo }),
       );
