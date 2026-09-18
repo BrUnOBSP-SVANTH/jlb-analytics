@@ -10,10 +10,11 @@ import { toast } from "sonner";
 import { Star, CheckCircle, X } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { track } from "@/lib/analytics";
+import { COTA_GRATIS_MENSAL } from "@shared/planos";
 import type { UpgradeDetail } from "@/lib/upgrade";
 
 const BENEFITS = [
-  "Análises de IA ilimitadas (sem a cota mensal de 4)",
+  `Análises de IA ilimitadas (sem a cota mensal de ${COTA_GRATIS_MENSAL})`,
   "Previsão Guiada + Briefing por IA sem limite",
   "Histórico de previsões sincronizado na nuvem",
   "Apoio ao projeto + prioridade em novos recursos",
@@ -70,12 +71,12 @@ export default function UpgradeModal() {
     ? "Crie sua conta grátis"
     : isCredits ? "Você usou suas análises grátis do mês" : "Vire Premium";
   const subtitle = isLogin
-    ? "A IA é liberada para quem tem conta — 4 análises grátis por mês, sem cartão. Leva 30 segundos."
+    ? `A IA é liberada para quem tem conta — ${COTA_GRATIS_MENSAL} análises grátis por mês, sem cartão. Leva 30 segundos.`
     : isCredits
-    ? `Foram ${detail.used ?? 4} de ${detail.limit ?? 4} análises de IA. Libere ilimitado e continue de onde parou.`
+    ? `Foram ${detail.used ?? COTA_GRATIS_MENSAL} de ${detail.limit ?? COTA_GRATIS_MENSAL} análises de IA. Libere ilimitado e continue de onde parou.`
     : "Análises de IA ilimitadas, Previsão Guiada sem limite e apoio ao projeto.";
   const benefits = isLogin
-    ? ["4 análises de IA grátis por mês", "Histórico de previsões sincronizado", "Sem cartão de crédito", "Vira Premium quando quiser"]
+    ? [`${COTA_GRATIS_MENSAL} análises de IA grátis por mês`, "Histórico de previsões sincronizado", "Sem cartão de crédito", "Vira Premium quando quiser"]
     : BENEFITS;
 
   return (
@@ -135,7 +136,9 @@ export default function UpgradeModal() {
             Assinar Premium
           </button>
         ) : (
-          <Link href="/perfil">
+          // Sem Price ID do Stripe configurado, este é o botão que TODO mundo vê:
+          // ele prometia "Ver planos" e entregava a tela de perfil.
+          <Link href="/planos">
             <span
               className="block w-full text-center px-6 py-2.5 rounded-lg bg-gold text-on-accent text-sm font-semibold hover:opacity-90 transition-opacity cursor-pointer"
               onClick={() => setOpen(false)}

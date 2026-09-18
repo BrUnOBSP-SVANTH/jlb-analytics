@@ -125,7 +125,7 @@ export async function verifyUserId(authHeader: string): Promise<string | null> {
 function loginRequired(res: Response) {
   return res.status(401).json({
     error: "login_required",
-    message: "Crie uma conta grátis para usar a IA — 4 análises por mês no plano gratuito.",
+    message: `Crie uma conta grátis para usar a IA — ${FREE_LIMIT} análises por mês no plano gratuito.`,
   });
 }
 

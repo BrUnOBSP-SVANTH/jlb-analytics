@@ -35,6 +35,7 @@ const ler = (rel: string) => semComentarios(readFileSync(join(RAIZ, rel), "utf-8
 
 const PAGINA = ler("client/src/pages/Planos.tsx");
 const MIDDLEWARE = ler("server/middleware/aiCredits.ts");
+const MODAL = ler("client/src/components/UpgradeModal.tsx");
 
 describe("cota do plano grátis", () => {
   it("é um número positivo e inteiro", () => {
@@ -50,6 +51,13 @@ describe("cota do plano grátis", () => {
   it("a página anuncia a constante compartilhada, não um literal próprio", () => {
     expect(PAGINA).toMatch(/COTA_GRATIS_MENSAL/);
     expect(PAGINA).not.toMatch(/const\s+COTA_GRATIS\s*=\s*\d/);
+  });
+
+  it("o paywall promete a mesma cota que o servidor cobra", () => {
+    // O modal trazia "4 análises grátis por mês" em texto fixo — mudar a cota
+    // deixaria a oferta mentindo no instante exato em que a pessoa decide pagar.
+    expect(MODAL).toMatch(/COTA_GRATIS_MENSAL/);
+    expect(MODAL).not.toMatch(/\d+\s+análises/);
   });
 
   it("a lista do que consome a cota não está vazia", () => {
@@ -73,5 +81,11 @@ describe("preço do Premium", () => {
 
   it("sem preço definido, a página diz isso em vez de inventar", () => {
     expect(PAGINA).toMatch(/não está fechado/);
+  });
+
+  it("sem Price ID, o botão do paywall leva mesmo à página de planos", () => {
+    // É o caminho que TODO mundo percorre hoje (o Price ID do Stripe ainda não
+    // foi configurado), e ele prometia "Ver planos" entregando o perfil.
+    expect(MODAL).toMatch(/href="\/planos"/);
   });
 });
