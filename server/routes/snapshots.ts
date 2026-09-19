@@ -4,9 +4,9 @@
  */
 
 import { Router } from "express";
-import { timingSafeEqual } from "node:crypto";
 import { log } from "../lib/log.ts";
 import { triggerSnapshotJob } from "../lib/triggers.ts";
+import { autorizadoComChaveDeServico } from "../lib/chaveDeServico.ts";
 
 const router = Router();
 
@@ -22,25 +22,11 @@ function supaHeaders() {
 }
 
 /**
- * Só quem tem a chave de serviço dispara coleta.
- *
- * `/seed` era PÚBLICO e escrevia no banco com a chave de serviço (achado meu
- * durante a auditoria de 14/09, confirmado pelo fundador em 16/09): qualquer
- * pessoa na internet podia mandar o servidor buscar 20 históricos no Polymarket
- * e gravar linhas — de graça para ela, no nosso plano e no nosso banco. A
- * ferramenta continua existindo, agora com a mesma porta do `/trigger`.
- *
- * Comparação em tempo constante: o tempo de um `!==` cresce com o tanto de
- * prefixo acertado, e isso vaza a chave caractere a caractere para quem medir.
+ * Só quem tem a chave de serviço dispara coleta. `/seed` era PÚBLICO e escrevia
+ * no banco com a chave de serviço (auditoria de 14/09). A regra mora em
+ * lib/chaveDeServico.ts desde que apareceram mais portas iguais em /api/ai.
  */
-export function autorizadoComChaveDeServico(cabecalho: unknown): boolean {
-  const chave = process.env.SUPABASE_SERVICE_KEY ?? "";
-  if (!chave) return false; // sem chave configurada, ninguém entra
-  const esperado = Buffer.from(`Bearer ${chave}`);
-  const recebido = Buffer.from(typeof cabecalho === "string" ? cabecalho : "");
-  if (recebido.length !== esperado.length) return false;
-  return timingSafeEqual(recebido, esperado);
-}
+export { autorizadoComChaveDeServico };
 
 // GET /api/snapshots/history/:source/:marketId?days=90
 router.get("/history/:source/:marketId", async (req, res) => {

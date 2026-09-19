@@ -19,6 +19,7 @@ import { registerSnapshotJob } from "./lib/triggers.ts";
 import { gravarSnapshotsDoCatalogo } from "./lib/snapshotsDoCatalogo.ts";
 import { destinoDoApelido, rotaExiste } from "../shared/rotas.ts";
 import { urlPublica, hostPublico, ehProducao } from "./lib/urlPublica.ts";
+import { tarefasAgendadasLigadas } from "./lib/orcamentoIA.ts";
 import { mercadoMereceAlerta } from "./lib/alertasMercado.ts";
 import { emailEnabled } from "./lib/email.ts";
 import { fetchBrapiQuotes } from "./lib/brapi.ts";
@@ -665,7 +666,15 @@ async function startServer() {
   });
 
   // ── Cerebro auto-collection ────────────────────────────────────────────────
-  if (process.env.SUPABASE_SERVICE_KEY) {
+  // ⚠️ Só em produção (ou com JLB_TAREFAS=1). Todo servidor que subia com o
+  // `.env` rodava estas tarefas na partida — inclusive os de desenvolvimento e
+  // de teste, que usam as MESMAS chaves e o MESMO banco. Era isso que esgotava a
+  // cota de IA do site e enchia o track record em horários impossíveis. Ver
+  // lib/orcamentoIA.ts.
+  if (process.env.SUPABASE_SERVICE_KEY && !tarefasAgendadasLigadas()) {
+    log.info("   Tarefas agendadas DESLIGADAS fora da produção (JLB_TAREFAS=1 para ligar) — a cota de IA e o banco são os de produção.");
+  }
+  if (process.env.SUPABASE_SERVICE_KEY && tarefasAgendadasLigadas()) {
     setTimeout(() => { void runCerebroCollection(); }, 30_000);
     setInterval(() => { void runCerebroCollection(); }, CEREBRO_INTERVAL_MS);
     log.info("   Cerebro: coleta automática a cada 2h ✅");
@@ -728,7 +737,7 @@ async function startServer() {
     setTimeout(() => { void runSportsForecast(); }, 8 * 60_000);
     setInterval(() => { void runSportsForecast(); }, 12 * 60 * 60 * 1000);
     log.info("   Esportes: previsão dos próximos jogos + resolução, 2×/dia ✅");
-  } else {
+  } else if (!process.env.SUPABASE_SERVICE_KEY) {
     log.warn("   Cerebro/Snapshots: SUPABASE_SERVICE_KEY ausente — coleta manual apenas.");
   }
 

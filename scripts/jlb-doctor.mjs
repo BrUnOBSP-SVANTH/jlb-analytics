@@ -414,6 +414,32 @@ async function checkSupabase(env) {
     }
   } catch { /* silencioso */ }
 
+  // ORÇAMENTO DE IA DO DIA (19/09/2026). A semeadura e o backfill de embeddings
+  // rodavam a cada partida do servidor, inclusive nos servidores de teste, e
+  // esgotavam a cota grátis que o usuário também usa — o briefing caiu por isso
+  // em 17/09. Agora há teto diário contado no banco (server/lib/orcamentoIA.ts);
+  // aqui se vê o gasto. Os tetos são LIDOS de lá, para não existirem em dois lugares.
+  try {
+    const fonte = readFileSync(join(ROOT, "server/lib/orcamentoIA.ts"), "utf8");
+    const teto = (nome) => Number(fonte.match(new RegExp(`${nome}\\s*=\\s*(\\d+)`))?.[1]);
+    const tetoPrev = teto("TETO_PREVISOES_DIA");
+    const tetoEmb = teto("TETO_EMBEDDINGS_BACKFILL_DIA");
+    const hoje = new Date(); hoje.setUTCHours(0, 0, 0, 0);
+    const desde = encodeURIComponent(hoje.toISOString());
+    const prev = await count("ai_forecasts", `&created_at=gte.${desde}`);
+    const emb = await count("cerebro_articles", `&embedded_at=gte.${desde}`);
+    const dia2 = encodeURIComponent(new Date(Date.now() - 2 * 86_400_000).toISOString());
+    const semVetor = await count("cerebro_articles", `&embedding=is.null&status=eq.active&ingested_at=gte.${dia2}`);
+    const medida = (n, t, o) => n === null ? "?" : `${n}/${t} ${o}`;
+    const estourou = (n, t) => n !== null && Number.isFinite(t) && n > t;
+    const icone = estourou(prev, tetoPrev) || estourou(emb, tetoEmb) ? "⚠️" : "✅";
+    line(icone, `orçamento de IA hoje (UTC): ${medida(prev, tetoPrev, "previsões")} · ${medida(emb, tetoEmb, "embeddings")}` +
+      (semVetor === null ? "" : paint(`  (${semVetor} notícias das últimas 48h ainda sem vetor)`, c.dim)));
+    if (estourou(prev, tetoPrev) || estourou(emb, tetoEmb)) {
+      add("warn", "IA", "Orçamento diário de IA estourado — alguma tarefa rodando fora do agendador de produção (servidor local com JLB_TAREFAS=1?)");
+    }
+  } catch { /* silencioso */ }
+
   // ── Comparador de resultados / track record da IA (MONITOR) ──
   // O sinal-chave: `settled_count` = resoluções pelo RESULTADO OFICIAL da plataforma.
   // É a prova de que o site acumula retorno real sobre os resultados (não chute de

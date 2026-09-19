@@ -16,6 +16,7 @@ import { fetchCerebroContext } from "./cerebro.ts";
 import { fetchRealOutcomesBatch, stripPrefix, chunk } from "./resolveOutcomes.ts";
 import { fetchWithRetry } from "./fetcher.ts";
 import { log } from "./log.ts";
+import { TETO_PREVISOES_DIA, temAlgumaIA, contarHoje, restanteDoDia } from "./orcamentoIA.ts";
 import { pctDoKalshi } from "../../shared/precoKalshi.ts";
 
 /**
@@ -559,8 +560,19 @@ async function fetchShortDatedPolymarketTargets(daysAhead = 21, limit = 100): Pr
 
 export async function seedAiForecasts(maxMarkets = 30): Promise<{ started: boolean; reason?: string }> {
   if (!SUPABASE_URL || !SUPABASE_KEY) return { started: false, reason: "supabase ausente" };
-  if (!process.env.ANTHROPIC_API_KEY) return { started: false, reason: "anthropic ausente" };
+  // A cadeia é Anthropic → Gemini → Groq: UMA chave basta. Exigir a da Anthropic
+  // parava a semeadura inteira quando só ela faltava — mesmo defeito que deixou
+  // o Cérebro 65 dias sem sintetizar.
+  if (!temAlgumaIA()) return { started: false, reason: "nenhuma chave de IA" };
   if (seedRunning) return { started: false, reason: "já em execução" };
+
+  // ORÇAMENTO DO DIA, contado no banco (lib/orcamentoIA.ts). A semeadura rodava a
+  // cada partida do servidor — deploy, Render acordando, servidor de teste — e
+  // em 15/09 fez 127 previsões numa hora. Vale também para o POST público
+  // /api/ai/seed-forecasts: quem dispara não passa do teto.
+  const restante = restanteDoDia(TETO_PREVISOES_DIA, await contarHoje("ai_forecasts", "created_at"));
+  if (restante <= 0) return { started: false, reason: `orçamento do dia esgotado (${TETO_PREVISOES_DIA} previsões)` };
+  maxMarkets = Math.min(maxMarkets, restante);
 
   const GENERIC = /\b(Team|Person|Candidate|Player|Country|Party)\s+[A-Z]{1,3}\b/;
   const poly = getCache<Array<{ id: string; question: string; outcomePrices?: string; category?: string; volume?: number; endDate?: string }>>("polymarket:markets:active") ?? [];

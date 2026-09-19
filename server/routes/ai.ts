@@ -7,6 +7,7 @@ import { intervaloWilson, comparaComMercado } from "../lib/ai/incerteza.ts";
 import { Router, type Request, type Response, type NextFunction } from "express";
 import { getCache, setCache, isRateLimited } from "../lib/cache.ts";
 import { aiCreditsMiddleware, verifyUserId, isStaleMonth, FREE_LIMIT } from "../middleware/aiCredits.ts";
+import { autorizadoComChaveDeServico } from "../lib/chaveDeServico.ts";
 import { extractJson } from "../lib/extractJson.ts";
 import { callClaude, anthropicBreakerState } from "../lib/anthropic.ts";
 import { aiMetricsSnapshot } from "../lib/ai/metrics.ts";
@@ -136,9 +137,14 @@ router.get("/bold-status", async (_req, res) => {
 // Embeda em lote os artigos ativos que ainda não têm vetor. Idempotente e
 // bounded (chame repetidamente até remaining=0; um cron pode fazer isso). Só
 // funciona após aplicar a migração 016_cerebro_embeddings.sql.
-// EXCEÇÃO ao login-gate de IA (de propósito): é manutenção do corpus RAG (mesmo
-// código do cron), não análise de usuário — por isso fica fora do aiCreditsMiddleware.
+// Manutenção do corpus RAG, não análise de usuário — por isso fica fora do
+// aiCreditsMiddleware. ⚠️ Mas NÃO é pública: era, e 6 chamadas/min × 200
+// artigos davam 1.200 embeddings por minuto por IP contra um teto de 1.000 por
+// DIA — qualquer pessoa esgotava a busca semântica do site num minuto.
 router.post("/embed-cerebro", async (req, res) => {
+  if (!autorizadoComChaveDeServico(req.headers["authorization"])) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
   if (!SUPABASE_URL || !SUPABASE_KEY) return res.status(503).json({ error: "supabase ausente" });
   if (!embeddingsEnabled()) return res.status(503).json({ error: "GEMINI_API_KEY ausente" });
   if (isRateLimited(`embed-cerebro:${req.ip ?? "?"}`, 6, 60_000)) {
@@ -762,6 +768,11 @@ router.get("/weekly-digest", async (_req, res) => {
 
 // ── Seed manual de previsões da IA (ativa Consenso/Divergências/Track Record) ──
 router.post("/seed-forecasts", async (req, res) => {
+  // Era pública: qualquer pessoa disparava 30 chamadas de IA, duas vezes a cada
+  // 10 min por IP, na cota do site. O agendador de produção já semeia sozinho.
+  if (!autorizadoComChaveDeServico(req.headers["authorization"])) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
   const ip = req.ip ?? "unknown";
   if (isRateLimited(`ai-seed:${ip}`, 2, 600_000)) {
     return res.status(429).json({ error: "rate_limited", message: "Seed já disparado recentemente. Aguarde." });

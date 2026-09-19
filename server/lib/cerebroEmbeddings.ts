@@ -9,6 +9,7 @@
 import { SUPABASE_URL, SUPABASE_KEY, supaWriteHeaders } from "./supabaseRest.ts";
 import { rawEmbed, embeddingsEnabled } from "./embeddings.ts";
 import { log } from "./log.ts";
+import { TETO_EMBEDDINGS_BACKFILL_DIA, contarHoje, restanteDoDia } from "./orcamentoIA.ts";
 
 export interface EmbedBatchResult {
   embedded: number;
@@ -52,7 +53,9 @@ export async function embedCerebroBatch(limit = 100): Promise<EmbedBatchResult> 
     const pr = await fetch(`${SUPABASE_URL}/rest/v1/cerebro_articles?id=eq.${a.id}`, {
       method: "PATCH",
       headers: supaWriteHeaders(),
-      body: JSON.stringify({ embedding: `[${vector.join(",")}]` }),
+      // `embedded_at` (migração 034) é o que permite contar o gasto do DIA —
+      // ver runDailyEmbedBackfill.
+      body: JSON.stringify({ embedding: `[${vector.join(",")}]`, embedded_at: new Date().toISOString() }),
     }).catch(() => null);
     if (pr?.ok) embedded += 1;
     await new Promise((r) => setTimeout(r, 150)); // throttle p/ o rate limit do Gemini
@@ -71,9 +74,18 @@ export async function embedCerebroBatch(limit = 100): Promise<EmbedBatchResult> 
  * no teto do dia (`dailyCap`, folgado para deixar cota às buscas ao vivo),
  * terminar todos os artigos, ou a cota estourar. Observável via log.
  */
-export async function runDailyEmbedBackfill(dailyCap = 800): Promise<EmbedBatchResult> {
+export async function runDailyEmbedBackfill(tetoDoDia = TETO_EMBEDDINGS_BACKFILL_DIA): Promise<EmbedBatchResult> {
   if (!embeddingsEnabled() || !SUPABASE_URL || !SUPABASE_KEY) {
     return { embedded: 0, remaining: -1, done: false, rateLimited: false, error: "config ausente" };
+  }
+  // ⚠️ O teto é do DIA, não desta execução. Antes era `dailyCap = 800` por
+  // chamada, e o servidor parte várias vezes por dia: cada partida gastava mais
+  // 800 do limite de 1.000 do Gemini, e a busca semântica de quem usa o site
+  // ficava sem cota. O gasto de hoje vem do banco (embedded_at, migração 034).
+  const dailyCap = restanteDoDia(tetoDoDia, await contarHoje("cerebro_articles", "embedded_at"));
+  if (dailyCap <= 0) {
+    log.info(`[embeddings] orçamento do dia já usado (${tetoDoDia}) — segue amanhã`);
+    return { embedded: 0, remaining: -1, done: false, rateLimited: false };
   }
   let total = 0, remaining = -1, rateLimited = false, done = false;
   while (total < dailyCap) {
