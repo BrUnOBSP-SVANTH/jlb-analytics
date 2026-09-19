@@ -22,8 +22,11 @@ import "@fontsource-variable/jetbrains-mono";
 
 import "./index.css";
 import { limparChavesAntigas } from "./lib/limpezaStorage";
+import { ouvirVersaoNova } from "./lib/versaoNova";
 
 initErrorTracking();
+// Publicação nova com a aba aberta: recarrega uma vez em vez de quebrar a tela.
+ouvirVersaoNova();
 // Apaga chaves de versões anteriores antes de o app montar (TRV-04).
 limparChavesAntigas();
 createRoot(document.getElementById("root")!).render(<App />);
