@@ -7,6 +7,7 @@
 import { Link } from "wouter";
 import { UserPlus, Cloud } from "lucide-react";
 import { track } from "@/lib/analytics";
+import { LINK_CADASTRO } from "@/lib/linkCadastro";
 
 export default function SignupNudge({ count, context }: { count?: number; context?: string }) {
   const label =
@@ -27,7 +28,7 @@ export default function SignupNudge({ count, context }: { count?: number; contex
           Crie uma conta grátis para não perdê-las e acompanhar seu Brier Score em qualquer dispositivo.
         </p>
       </div>
-      <Link href="/login" onClick={() => track("signup_nudge_click", { context })}>
+      <Link href={LINK_CADASTRO} onClick={() => track("signup_nudge_click", { context })}>
         <span className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-gold text-on-accent text-xs font-semibold hover:opacity-90 transition-opacity cursor-pointer shrink-0">
           <UserPlus className="w-3.5 h-3.5" aria-hidden="true" /> Criar conta grátis
         </span>

@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { Star, CheckCircle, X } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { track } from "@/lib/analytics";
+import { LINK_CADASTRO } from "@/lib/linkCadastro";
 import { COTA_GRATIS_MENSAL } from "@shared/planos";
 import type { UpgradeDetail } from "@/lib/upgrade";
 
@@ -116,7 +117,9 @@ export default function UpgradeModal() {
         </div>
 
         {(!user || isLogin) ? (
-          <Link href="/login">
+          // "Criar conta grátis" abre o CADASTRO (ver lib/linkCadastro.ts);
+          // "Entrar para assinar" é de quem já tem conta.
+          <Link href={isLogin ? LINK_CADASTRO : "/login"}>
             <span
               className="block w-full text-center px-6 py-2.5 rounded-lg bg-gold text-on-accent text-sm font-semibold hover:opacity-90 transition-opacity cursor-pointer"
               onClick={() => setOpen(false)}

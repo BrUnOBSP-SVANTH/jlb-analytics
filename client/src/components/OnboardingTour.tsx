@@ -33,7 +33,7 @@ const STEPS = [
     iconColor: "text-gold",
     title: "Bem-vindo ao JLB Analytics",
     description: "A plataforma de educação quantitativa para mercados preditivos do Brasil.",
-    detail: "Polymarket, Kalshi, dados macro reais, IA adaptativa e 3.700+ artigos — tudo em um lugar.",
+    detail: "Polymarket, Kalshi, dados macro reais, IA adaptativa e o noticiário do dia — tudo em um lugar.",
   },
   {
     icon: Flame,
@@ -68,24 +68,36 @@ const STEPS = [
     iconColor: "text-gold",
     title: "Busca Global (⌘K)",
     description: "Pressione Cmd+K (ou Ctrl+K) para buscar em qualquer lugar.",
-    detail: "Navega por páginas, busca nos 3.700+ artigos do Cérebro e encontra qualquer mercado.",
+    detail: "Navega por páginas, busca nas notícias do Cérebro e encontra qualquer mercado.",
   },
 ];
 
 const STORAGE_KEY = "jlb_onboarding_v3";
 
 /**
- * Rotas onde o tour NUNCA aparece.
+ * O tour abre sozinho SÓ para quem chegou pela home e está nela.
  *
- * O critério não é "página importante": é página cujo único trabalho é um
- * formulário que a pessoa veio completar. Cobrir isso com um convite de boas-
- * vindas não atrasa a tarefa — impede a tarefa. Quem chega em `/login` já sabe
- * o que quer; o tour espera a pessoa sair dali.
+ * Antes a regra era uma lista do que não podia ("/login", "/reset-password"),
+ * e em todo o resto o tour cobria a tela. Percorrido no site real em 19/09/2026,
+ * em tela de celular: quem chegava numa ficha de mercado — vindo do Google ou de
+ * um link compartilhado — dava de cara com 6 passos de boas-vindas por cima do
+ * mercado que veio ver, e o botão "Analisar com IA" não recebia o clique. Na
+ * home, a proposta do site ficava inteira escondida atrás do painel. Com 53
+ * visitantes no mês e só 8 abrindo algum mercado, cada barreira na chegada conta.
+ *
+ * Quem chegou por outra página veio por AQUELE conteúdo: nada de tour, nem se
+ * depois passar pela home — seria interromper alguém no meio da navegação.
+ * A regra de /login (formulário não pode ser coberto) continua valendo de graça.
  */
-const ROTAS_SEM_TOUR = ["/login", "/reset-password"];
+export function tourAbre(chegada: string, rota: string): boolean {
+  return chegada === "/" && rota === "/";
+}
 
 export default function OnboardingTour() {
   const [rota] = useLocation();
+  // A página de CHEGADA, fotografada na montagem: o tour monta junto com o app,
+  // antes de qualquer navegação.
+  const [chegada] = useState(() => (typeof window === "undefined" ? "/" : window.location.pathname));
   const [visible, setVisible] = useState(() => {
     try {
       return localStorage.getItem(STORAGE_KEY) == null;
@@ -103,7 +115,7 @@ export default function OnboardingTour() {
   // porque `useModalA11y` precisa montar junto com ele — pendurar o Escape num
   // modal invisível sequestraria a tecla do resto do site.
   if (!visible) return null;
-  if (ROTAS_SEM_TOUR.some((r) => rota === r || rota.startsWith(r + "/"))) return null;
+  if (!tourAbre(chegada, rota)) return null;
   return <PainelDoTour onDismiss={dismiss} />;
 }
 

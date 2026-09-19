@@ -11,6 +11,7 @@ import { useSEO } from "@/hooks/useSEO";
 import { track } from "@/lib/analytics";
 import { checkPassword, MIN_PASSWORD_LEN } from "@/lib/passwordSafety";
 import { marcarAceitePendente } from "@/lib/aceite";
+import { modoInicialDoLogin } from "@/lib/linkCadastro";
 
 type Mode = "login" | "signup" | "reset";
 
@@ -24,7 +25,8 @@ export default function Login() {
   // O aceite é exigido só no cadastro: quem já tem conta aceitou quando criou.
   const [aceitou, setAceitou] = useState(false);
 
-  const [mode, setMode] = useState<Mode>("login");
+  // "Criar conta grátis" chega aqui com ?modo=cadastro — ver lib/linkCadastro.ts.
+  const [mode, setMode] = useState<Mode>(() => modoInicialDoLogin(window.location.search));
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);

@@ -28,6 +28,7 @@ import { Check } from "lucide-react";
 import { ListaDeEspera } from "@/components/ListaDeEspera";
 import { reaisExatos, num } from "@shared/formato";
 import { COTA_GRATIS_MENSAL, CONSOME_COTA } from "@shared/planos";
+import { LINK_CADASTRO } from "@/lib/linkCadastro";
 
 /** "a, b e c" — o "e" antes do último item, como se escreve em português. */
 function listar(itens: readonly string[]): string {
@@ -89,7 +90,7 @@ export default function Planos() {
               A conta gratuita existe para você medir a própria calibração, não para provar o produto
               por sete dias. Nada aqui vira cobrança sozinho.
             </p>
-            <Link href="/login"
+            <Link href={LINK_CADASTRO}
               className="alvo-toque inline-flex items-center gap-2 mt-5 px-4 py-2 rounded-lg border border-border/50 text-sm font-medium text-foreground hover:border-primary/50 transition-colors">
               Criar conta grátis
             </Link>
