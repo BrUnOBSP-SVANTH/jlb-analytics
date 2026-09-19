@@ -14,6 +14,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { getMarkets } from "@/lib/marketsCache";
 import { maybeAuthGate } from "@/lib/upgrade";
+import { track } from "@/lib/analytics";
 import { useSEO } from "@/hooks/useSEO";
 import type { MarketBasic, CerebroArticleSnippet, AiResult, CommunityForecast } from "@/components/marketDetail/types";
 import { apiFetch, buscarJson } from "@/lib/api";
@@ -267,15 +268,21 @@ export function useMarketDetail(marketId: string) {
         }),
         signal: AbortSignal.timeout(50_000),
       });
-      if (await maybeAuthGate(res)) { setLoadingAi(false); return; }
+      if (await maybeAuthGate(res)) {
+        track("analise_ia", { resultado: "barrada", onde: "ficha" });
+        setLoadingAi(false);
+        return;
+      }
       if (res.status === 429) throw new Error("RATE_LIMIT");
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json() as AiResult;
       setAiAnalysis(data);
+      track("analise_ia", { resultado: "vista", onde: "ficha" });
     } catch (e) {
       const isTimeout = (e instanceof DOMException && e.name === "TimeoutError")
         || (e instanceof Error && /timed out|abort/i.test(e.message));
       const msg = e instanceof Error ? e.message : "Erro ao gerar análise";
+      track("analise_ia", { resultado: msg === "RATE_LIMIT" ? "limite" : "erro", onde: "ficha" });
       setAiError(msg === "RATE_LIMIT"
         ? "Limite de requisições atingido. Aguarde ~1 minuto e tente novamente."
         : isTimeout

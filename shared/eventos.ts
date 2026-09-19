@@ -38,6 +38,11 @@ export const EVENTOS = [
   "chat_opened",
   "progress_sync_failed",
   "client_error",
+  // O degrau central do funil: alguém pediu a análise da IA de um mercado.
+  // `meta.resultado` diz o que aconteceu — "vista", "barrada" (login ou cota),
+  // "limite" (429) ou "erro". A análise exige conta, então "barrada" mede
+  // quantos visitantes bateram no muro do cadastro no momento de valor.
+  "analise_ia",
 ] as const;
 
 export type Evento = (typeof EVENTOS)[number];

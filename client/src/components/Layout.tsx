@@ -8,14 +8,18 @@ import { useLocation } from "wouter";
 import CommandPalette from "./CommandPalette";
 import AvisoDeCookies from "./AvisoDeCookies";
 import { track } from "@/lib/analytics";
+import { podeMedir } from "@/lib/cookies";
+import { origemDaSessao } from "@/lib/origemDaVisita";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 
 export default function Layout({ children }: { children: ReactNode }) {
   const [location] = useLocation();
 
-  // page_view a cada mudança de rota (SPA não dispara navegação do browser)
-  useEffect(() => { track("page_view"); }, [location]);
+  // page_view a cada mudança de rota (SPA não dispara navegação do browser).
+  // O primeiro que SAI de fato leva a origem da visita (Google, Instagram,
+  // WhatsApp...) — só com consentimento, senão a vez de registrar se perderia.
+  useEffect(() => { track("page_view", podeMedir() ? origemDaSessao() : undefined); }, [location]);
 
   return (
     <div className="min-h-screen flex flex-col bg-background">

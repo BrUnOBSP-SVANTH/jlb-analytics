@@ -12,6 +12,7 @@ import { type TrendingItem, formatOdds } from "@/lib/trending";
 import { volumeNaMoeda } from "@shared/plataforma";
 import { awardPoints } from "@/lib/userProgress";
 import { maybeAuthGate } from "@/lib/upgrade";
+import { track } from "@/lib/analytics";
 import { VolumeTrend } from "@/components/mercados/cards";
 import { apiFetch } from "@/lib/api";
 import { num, pct, pp } from "@shared/formato";
@@ -326,7 +327,7 @@ export function NewsAnalysisPanel({ item }: { item: TrendingItem }) {
             ...(item.comments !== undefined ? { comments: item.comments } : {}),
           }),
         });
-        if (await maybeAuthGate(res)) return;
+        if (await maybeAuthGate(res)) { track("analise_ia", { resultado: "barrada", onde: "lista" }); return; }
         if (res.status === 429) throw new Error("RATE_LIMIT");
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         data = await res.json() as RedditContextResult;
@@ -337,17 +338,19 @@ export function NewsAnalysisPanel({ item }: { item: TrendingItem }) {
           body: JSON.stringify({ title: item.title, yesProb: item.yesProb ?? 0.5, source: item.source }),
           signal: AbortSignal.timeout(50_000),
         });
-        if (await maybeAuthGate(res)) return;
+        if (await maybeAuthGate(res)) { track("analise_ia", { resultado: "barrada", onde: "lista" }); return; }
         if (res.status === 429) throw new Error("RATE_LIMIT");
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         data = await res.json() as MarketAnalysisResult;
       }
       setResult(data);
+      track("analise_ia", { resultado: "vista", onde: "lista" });
       awardPoints("market_analyzed", "Analisou tendência com IA");
     } catch (e) {
       const isTimeout = (e instanceof DOMException && e.name === "TimeoutError")
         || (e instanceof Error && /timed out|abort/i.test(e.message));
       const msg = e instanceof Error ? e.message : "Erro ao gerar análise";
+      track("analise_ia", { resultado: msg === "RATE_LIMIT" ? "limite" : "erro", onde: "lista" });
       setError(msg === "RATE_LIMIT"
         ? "Limite de requisições atingido. Aguarde ~1 minuto e tente novamente."
         : isTimeout
