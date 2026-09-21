@@ -2,16 +2,20 @@
  * aiCredits middleware — JLB Analytics
  *
  * Controla consumo de chamadas de IA por usuário.
- * Plano free: 4 análises por mês (EXIGE login). Plano premium: ilimitado.
+ * Plano free: a cota de shared/planos.ts por mês (EXIGE login). Premium: ilimitado.
  *
  * Fluxo:
- *   1. Identifica usuário pelo header Authorization (JWT Supabase) ou por IP.
- *   2. Lê registro em ai_credits. Se não existe, cria com defaults (free, 0 usado).
- *   3. Verifica se used_this_month < limite do plano.
- *   4. Incrementa contador.
- *   5. Passa para o próximo handler.
+ *   1. Sem token → 401 (IA exige conta). Token inválido → 401.
+ *   2. RESERVA 1 crédito no banco, num passo só (reservar_credito_ia, migração
+ *      036): confere o saldo E debita juntos. Sem saldo → 429.
+ *   3. Passa para o handler.
+ *   4. Ao terminar: se foi acerto de cache ou erro, DEVOLVE o crédito.
  *
- * Sem Supabase configurado: deixa passar (degradação graciosa).
+ * Por que reservar antes e não debitar depois: debitar depois deixava pedidos
+ * simultâneos passarem todos (medido: 5 de 5 com 1 de saldo).
+ *
+ * Banco inacessível → 503, nunca "deixa passar". Sem Supabase CONFIGURADO
+ * (ambiente de desenvolvimento) → deixa passar, como sempre foi.
  */
 
 import type { Request, Response, NextFunction } from "express";
@@ -49,40 +53,38 @@ function supaHeaders() {
   };
 }
 
-async function getOrCreateCredits(userId: string): Promise<{ plan: string; used: number; limit: number } | null> {
-  if (!SUPABASE_URL || !SUPABASE_KEY) return null;
-
-  const url = `${SUPABASE_URL}/rest/v1/ai_credits?user_id=eq.${userId}&select=plan,used_this_month,month_reset`;
-  const r = await fetch(url, { headers: supaHeaders() });
-  if (!r.ok) return null;
-
-  const rows = await r.json() as Array<{ plan: string; used_this_month: number; month_reset: string }>;
-
-  if (rows.length === 0) {
-    // Cria registro para o usuário
-    await fetch(`${SUPABASE_URL}/rest/v1/ai_credits`, {
+/**
+ * RESERVA o crédito antes da análise — confere e debita num passo só, no banco
+ * (migração 036). Devolve `null` quando não conseguiu falar com o banco.
+ *
+ * ⚠️ A ordem antiga era CONFERIR antes e DEBITAR depois da análise (5 a 25s
+ * depois). Nesse intervalo todo pedido lia o mesmo saldo: com 3 de 4 usadas,
+ * 5 pedidos simultâneos passaram os 5. Duas abas bastavam para furar a cota.
+ */
+async function reservarCredito(userId: string): Promise<{ reservado: boolean; usado: number; plano: string } | null> {
+  try {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/rpc/reservar_credito_ia`, {
       method: "POST",
       headers: supaHeaders(),
-      body: JSON.stringify({ user_id: userId, plan: "free", used_this_month: 0 }),
+      body: JSON.stringify({ p_user_id: userId, p_limite: FREE_LIMIT }),
+      signal: AbortSignal.timeout(8_000),
     });
-    return { plan: "free", used: 0, limit: FREE_LIMIT };
+    if (!r.ok) return null;
+    const [linha] = await r.json() as Array<{ reservado: boolean; usado: number; plano: string }>;
+    return linha ?? null;
+  } catch {
+    return null;
   }
-
-  const row = rows[0];
-  const creditLimit = row.plan === "premium" ? Infinity : FREE_LIMIT;
-  const used = isStaleMonth(row.month_reset) ? 0 : row.used_this_month;
-  return { plan: row.plan, used, limit: creditLimit };
 }
 
-async function incrementCredits(userId: string) {
-  if (!SUPABASE_URL || !SUPABASE_KEY) return;
-  // Usa RPC atômica — evita race condition com múltiplas requisições paralelas
-  await fetch(`${SUPABASE_URL}/rest/v1/rpc/increment_ai_credits`, {
+/** Devolve a reserva de quem não gerou nada (acerto de cache ou erro). */
+async function devolverCredito(userId: string) {
+  await fetch(`${SUPABASE_URL}/rest/v1/rpc/devolver_credito_ia`, {
     method: "POST",
     headers: supaHeaders(),
     body: JSON.stringify({ p_user_id: userId }),
   }).catch((e) => {
-    log.warn("[aiCredits] increment RPC failed:", e instanceof Error ? e.message : e);
+    log.warn("[aiCredits] devolução falhou:", e instanceof Error ? e.message : e);
   });
 }
 
@@ -141,57 +143,73 @@ export function aiCreditsMiddleware(req: Request, res: Response, next: NextFunct
   // não logando. Rate-limit por IP das rotas segue como defesa extra.
   if (!authHeader) return loginRequired(res);
 
-  verifyUserId(authHeader).then((userId) => {
+  verifyUserId(authHeader).then(async (userId) => {
     // Token presente mas sem usuário válido (expirado/forjado) → pedir login.
     if (!userId) return loginRequired(res);
 
-    return getOrCreateCredits(userId).then((credits) => {
-      if (!credits) return next(); // Supabase indisponível → pass through
+    // RESERVA ANTES, devolve depois se não houve geração. Ver reservarCredito.
+    const reserva = await reservarCredito(userId);
 
-      if (credits.limit !== Infinity && credits.used >= credits.limit) {
-        return res.status(429).json({
-          error: "credits_exhausted",
-          message: `Você usou ${credits.used}/${credits.limit} análises de IA este mês. Faça upgrade para Premium para acesso ilimitado.`,
-          used: credits.used,
-          limit: credits.limit,
-          plan: credits.plan,
-        });
-      }
-
-      // Cobrança DIFERIDA: só debita 1 crédito quando houve geração REAL de IA —
-      // nunca em cache-hit (o handler seta res.locals.aiCacheHit) nem em erro
-      // (status fora de 2xx). Antes o incremento era upfront: um acerto de cache
-      // ou um 503 queimava crédito — irrelevante com 30/mês, injusto com 4/mês.
-      res.on("finish", () => {
-        const ok = res.statusCode >= 200 && res.statusCode < 300;
-        if (ok && !res.locals.aiCacheHit) void incrementCredits(userId);
+    // ⚠️ Fechado, não aberto. Antes, qualquer falha ao falar com o banco
+    // deixava passar SEM COTA — com o Supabase instável, a IA virava ilimitada
+    // para qualquer conta. Sem conseguir contar, não gasta (mesma regra do
+    // orçamento das tarefas automáticas, lib/orcamentoIA.ts).
+    if (!reserva) {
+      return res.status(503).json({
+        error: "cota_indisponivel",
+        message: "Não conseguimos conferir sua cota de análises agora. Tente de novo em instantes.",
       });
+    }
 
-      // Cota nos headers — o chat (ChatPanel) mostra o contador a partir deles.
-      // ⚠️ Escritos no ÚLTIMO instante, e não aqui. Antes era `used + 1` fixo,
-      // decidido ANTES de o handler rodar: no acerto de cache, que não cobra
-      // nada (ver a cobrança diferida acima), o número dizia que gastou quando
-      // não gastou. Só na hora de enviar se sabe se houve cobrança.
-      const escreverCota = () => {
-        if (res.headersSent) return;
-        const cobrou = !res.locals.aiCacheHit && res.statusCode >= 200 && res.statusCode < 300;
-        res.setHeader("X-AI-Credits-Used", String(credits.used + (cobrou ? 1 : 0)));
-        res.setHeader("X-AI-Credits-Limit", credits.limit === Infinity ? "unlimited" : String(credits.limit));
-        res.setHeader("X-AI-Plan", credits.plan);
-      };
-      // `writeHead` é por onde TODA resposta passa — JSON e stream (SSE) —
-      // inclusive quando o Express a chama por baixo dos panos.
-      const writeHeadOriginal = res.writeHead.bind(res);
-      res.writeHead = ((...args: Parameters<typeof res.writeHead>) => {
-        escreverCota();
-        return writeHeadOriginal(...args);
-      }) as typeof res.writeHead;
+    const premium = reserva.plano === "premium";
+    if (!reserva.reservado) {
+      return res.status(429).json({
+        error: "credits_exhausted",
+        message: `Você usou as ${FREE_LIMIT} análises de IA grátis deste mês. Faça upgrade para Premium para acesso ilimitado.`,
+        used: reserva.usado,
+        limit: FREE_LIMIT,
+        plan: reserva.plano,
+      });
+    }
 
-      next();
-    });
-  }).catch(() => next()); // Erro (verificação ou Supabase) → pass through
+    // Cobrança JUSTA: a reserva é devolvida quando não houve geração de
+    // verdade — acerto de cache (o handler marca res.locals.aiCacheHit) ou erro
+    // (status fora de 2xx). Com 4 por mês, cobrar por um 503 ou pela mesma
+    // resposta já pronta seria injusto.
+    //
+    // Conexão que cai no meio NÃO devolve: a geração já aconteceu (custou) e a
+    // resposta fica no cache. Devolver abriria o truque de pedir, abortar no
+    // último segundo e pegar do cache de graça logo depois.
+    const gerou = () => !res.locals.aiCacheHit && res.statusCode >= 200 && res.statusCode < 300;
+    res.on("finish", () => { if (!gerou()) void devolverCredito(userId); });
+
+    // Cota nos headers — o chat (ChatPanel) mostra o contador a partir deles.
+    // Escritos no ÚLTIMO instante: só na hora de enviar se sabe se o crédito
+    // reservado vai ficar ou ser devolvido.
+    const escreverCota = () => {
+      if (res.headersSent) return;
+      res.setHeader("X-AI-Credits-Used", String(gerou() ? reserva.usado : Math.max(0, reserva.usado - 1)));
+      res.setHeader("X-AI-Credits-Limit", premium ? "unlimited" : String(FREE_LIMIT));
+      res.setHeader("X-AI-Plan", reserva.plano);
+    };
+    // `writeHead` é por onde TODA resposta passa — JSON e stream (SSE) —
+    // inclusive quando o Express a chama por baixo dos panos.
+    const writeHeadOriginal = res.writeHead.bind(res);
+    res.writeHead = ((...args: Parameters<typeof res.writeHead>) => {
+      escreverCota();
+      return writeHeadOriginal(...args);
+    }) as typeof res.writeHead;
+
+    next();
+  }).catch(() => {
+    // Falha inesperada na verificação: também fechado.
+    if (!res.headersSent) res.status(503).json({ error: "cota_indisponivel", message: "Não conseguimos conferir sua cota de análises agora. Tente de novo em instantes." });
+  });
 }
 
+// HISTÓRICO — substituída em 21/09/2026 por reservar_credito_ia/devolver_credito_ia
+// (migração 036), porque debitar DEPOIS da análise deixava pedidos simultâneos
+// passarem todos. Fica documentada aqui porque ainda existe no banco.
 // RPC atômica no Supabase (migration 020). O reset mensal mora AQUI: se a linha
 // é de um mês antigo, a chamada atual já conta como a 1ª do novo mês (=1) e
 // month_reset vira o mês corrente; senão, +1. Sem off-by-one (a 1ª chamada do

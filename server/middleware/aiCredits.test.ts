@@ -42,14 +42,18 @@ describe("cabeçalho da cota vs. acerto de cache", () => {
     vi.resetModules();
 
     // Supabase de mentira: token válido, usuário com 2 de 4 análises usadas.
+    // A reserva (migração 036) confere e debita num passo só.
+    let usado = 2;
     const fetchOriginal = globalThis.fetch;
     globalThis.fetch = (async (entrada: RequestInfo | URL) => {
       const u = String(entrada);
       if (u.includes("/auth/v1/user")) return new Response(JSON.stringify({ id: "u-1" }), { status: 200 });
-      if (u.includes("/rest/v1/ai_credits")) {
-        return new Response(JSON.stringify([{ plan: "free", used_this_month: 2, month_reset: new Date().toISOString().slice(0, 10) }]), { status: 200 });
+      if (u.includes("/rpc/reservar_credito_ia")) {
+        usado += 1;
+        return new Response(JSON.stringify([{ reservado: true, usado, plano: "free" }]), { status: 200 });
       }
-      return new Response("{}", { status: 200 }); // rpc de incremento
+      if (u.includes("/rpc/devolver_credito_ia")) { usado -= 1; return new Response("", { status: 204 }); }
+      return new Response("{}", { status: 200 });
     }) as typeof fetch;
 
     try {
