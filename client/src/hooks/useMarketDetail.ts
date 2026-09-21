@@ -14,6 +14,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { getMarkets } from "@/lib/marketsCache";
 import { maybeAuthGate } from "@/lib/upgrade";
+import { idCanonicoDeMercado } from "@shared/liquidacao";
 import { track } from "@/lib/analytics";
 import { useSEO } from "@/hooks/useSEO";
 import type { MarketBasic, CerebroArticleSnippet, AiResult, CommunityForecast } from "@/components/marketDetail/types";
@@ -261,7 +262,9 @@ export function useMarketDetail(marketId: string) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title: market.title, yesProb: market.yesProb, source: market.source,
-          marketId: `${source}-${rawId}`, category: market.category,
+          // "polymarket-123" NÃO é o formato do banco: o track record descarta
+          // (silenciosamente) tudo que não começa com poly-/kalshi-.
+          marketId: idCanonicoDeMercado(source, rawId), category: market.category,
           // Alimentam a FICHA do mercado no servidor (relógio e liquidez) — é o
           // que garante análise com substância mesmo sem notícia casada.
           closeTime: market.endDate, volume: market.volume,

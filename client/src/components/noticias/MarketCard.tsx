@@ -10,6 +10,7 @@ import { CategoryBadge } from "@/components/noticias/cards";
 import { ProbHero, ProbBar, ProbSparkline, TituloDeMercado } from "@/components/mercados/cards";
 import AnimatedSection from "@/components/AnimatedSection";
 import { addPrediction, edge, kellyFraction, type StoredPrediction } from "@/lib/predictions";
+import { idCanonicoDeMercado } from "@shared/liquidacao";
 import { awardPoints } from "@/lib/userProgress";
 import { track } from "@/lib/analytics";
 import { traduzir, pareceEmPortugues } from "@/lib/traducao";
@@ -30,7 +31,8 @@ function TrackForm({ market, marketProb, onSaved, onCancel }: TrackFormProps) {
 
   function handleSave() {
     const pred = addPrediction({
-      marketId: market.id,
+      // Esta lista vem crua da API do Polymarket: o id precisa do prefixo.
+      marketId: idCanonicoDeMercado("polymarket", market.id),
       question: market.question,
       marketProb,
       userProb,

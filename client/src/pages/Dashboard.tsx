@@ -24,7 +24,7 @@ import {
 } from "@/lib/predictions";
 import { apiFetch } from "@/lib/api";
 import { awardPoints, loadProgress, niveisConcluidos } from "@/lib/userProgress";
-import { num } from "@shared/formato";
+import { num, plural } from "@shared/formato";
 import { pullProgress } from "@/lib/progressSync";
 import { pullFromSupabase, pushToSupabase, syncOne, deleteOne } from "@/lib/predictionsSync";
 import ContaTabs from "@/components/ContaTabs";
@@ -589,7 +589,7 @@ export default function Dashboard() {
             <span className="text-sm font-normal text-muted-foreground">/{preds.length}</span>
           </p>
           <p className="text-[11px] text-muted-foreground">
-            {preds.filter((p) => !p.resolved).length} pendentes
+            {plural(preds.filter((p) => !p.resolved).length, "pendente", "pendentes")}
           </p>
         </div>
 

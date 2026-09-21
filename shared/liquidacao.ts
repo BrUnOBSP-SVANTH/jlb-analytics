@@ -36,3 +36,38 @@ export function idDeLiquidacao(p: { marketId: string; outcomeId?: string | null 
   if (p.marketId.startsWith("kalshi-") && TICKER_KALSHI.test(p.outcomeId)) return `kalshi-${p.outcomeId}`;
   return null;
 }
+
+/**
+ * O id do mercado no NOSSO formato: `poly-<id>`, `kalshi-<ticker>`,
+ * `manifold-<id>`.
+ *
+ * O QUE ACONTECIA (medido em 20/09/2026, percorrendo o site logado com uma
+ * conta de teste). Cada tela montava o id do seu jeito, e duas delas gravavam o
+ * id CRU da plataforma:
+ *
+ *  · a previsão registrada na ficha do mercado virava `market_id = "1130012"`.
+ *    `idDeLiquidacao` exige o prefixo — sem ele devolve `null` e a previsão
+ *    NUNCA é resolvida. As três previsões do banco estavam assim, inclusive a
+ *    do fundador, de abril: o usuário registra, espera o resultado e ele não
+ *    chega. É o laço morto que o job das 6h existe para fechar;
+ *  · a análise pedida na ficha mandava `polymarket-1130012` ao servidor, e o
+ *    track record só aceita `poly-`/`kalshi-` — a análise era descartada em
+ *    silêncio (confirmado: a análise do teste não aparece em `ai_forecasts`).
+ *
+ * "poly", não "polymarket": é o prefixo que o banco guarda desde sempre
+ * (`paper_bets`, `ai_forecasts`). Id que já vem prefixado passa intacto, então
+ * chamar duas vezes é seguro.
+ */
+const PREFIXO_DA_FONTE: Record<string, string> = {
+  polymarket: "poly", poly: "poly", kalshi: "kalshi", manifold: "manifold",
+};
+
+export function idCanonicoDeMercado(fonte: string | undefined, idCru: string): string {
+  const id = String(idCru ?? "").trim();
+  if (!id) return id;
+  if (/^(poly|kalshi|manifold)-/.test(id)) return id;
+  const prefixo = PREFIXO_DA_FONTE[String(fonte ?? "").toLowerCase()];
+  // Sem fonte conhecida não se inventa prefixo: melhor um id que não liquida do
+  // que um que liquida contra o mercado ERRADO.
+  return prefixo ? `${prefixo}-${id}` : id;
+}

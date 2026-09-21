@@ -31,6 +31,7 @@ import { pct, pp, num } from "@shared/formato";
 import { Explain } from "@/components/marketDetail/Explain";
 import { type MarketBasic } from "@/components/marketDetail/types";
 import { addPrediction, previsaoDoDesfecho, somaDasEstimativas, tituloComDesfecho } from "@/lib/predictions";
+import { idCanonicoDeMercado } from "@shared/liquidacao";
 import { awardPoints } from "@/lib/userProgress";
 import { track } from "@/lib/analytics";
 import { maybeAuthGate } from "@/lib/upgrade";
@@ -127,7 +128,8 @@ export function EdgeCalculator({
 
   function handleSave() {
     addPrediction({
-      marketId,
+      // Com o prefixo da fonte — sem ele a previsão nunca é resolvida.
+      marketId: idCanonicoDeMercado(market.source, marketId),
       // "<pergunta> — Barcelona": toda tela que lista previsões passa a dizer de
       // qual desfecho é, sem ser tocada. Ver tituloComDesfecho.
       question: tituloComDesfecho(question, desfecho?.label),
