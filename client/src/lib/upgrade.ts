@@ -8,6 +8,8 @@
  * único <UpgradeModal/> montado na App escuta o evento e mostra a oferta.
  */
 
+import { toast } from "sonner";
+
 export interface UpgradeDetail {
   /** "credits" = estourou a cota; "manual" = CTA direto; "login" = IA exige conta grátis. */
   reason: "credits" | "manual" | "login";
@@ -52,7 +54,27 @@ export async function maybeUpgrade(res: Response): Promise<boolean> {
  * Retorna `false` para qualquer outra resposta (inclusive 429 de rate-limit
  * puro por rajada), deixando o chamador seguir o tratamento normal de erro.
  */
+/**
+ * Bloqueios de CONTA que não são "falta cota" nem "falta login" (21/09/2026):
+ * a cota grátis passou a ser da pessoa (e-mail normalizado), e e-mail
+ * temporário ou não confirmado não usa a IA. O servidor manda o motivo em
+ * português; sem este tratamento a tela mostraria "HTTP 403".
+ */
+const BLOQUEIOS_DE_CONTA = new Set(["email_temporario", "email_nao_confirmado", "cota_indisponivel"]);
+
 export async function maybeAuthGate(res: Response): Promise<boolean> {
+  if (res.status === 403 || res.status === 503) {
+    try {
+      const body = (await res.clone().json()) as { error?: string; message?: string };
+      if (body?.error && BLOQUEIOS_DE_CONTA.has(body.error) && body.message) {
+        toast.error(body.message, { duration: 10_000 });
+        return true;
+      }
+    } catch {
+      /* corpo não-JSON → deixa o chamador tratar */
+    }
+    return false;
+  }
   if (res.status === 401) {
     try {
       const body = (await res.clone().json()) as { error?: string };

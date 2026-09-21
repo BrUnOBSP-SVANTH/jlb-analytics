@@ -47,7 +47,9 @@ describe("cabeçalho da cota vs. acerto de cache", () => {
     const fetchOriginal = globalThis.fetch;
     globalThis.fetch = (async (entrada: RequestInfo | URL) => {
       const u = String(entrada);
-      if (u.includes("/auth/v1/user")) return new Response(JSON.stringify({ id: "u-1" }), { status: 200 });
+      if (u.includes("/auth/v1/user")) {
+        return new Response(JSON.stringify({ id: "u-1", email: "ana@gmail.com", email_confirmed_at: "2026-09-01T00:00:00Z" }), { status: 200 });
+      }
       if (u.includes("/rpc/reservar_credito_ia")) {
         usado += 1;
         return new Response(JSON.stringify([{ reservado: true, usado, plano: "free" }]), { status: 200 });

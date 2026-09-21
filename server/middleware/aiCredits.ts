@@ -6,10 +6,13 @@
  *
  * Fluxo:
  *   1. Sem token → 401 (IA exige conta). Token inválido → 401.
- *   2. RESERVA 1 crédito no banco, num passo só (reservar_credito_ia, migração
- *      036): confere o saldo E debita juntos. Sem saldo → 429.
- *   3. Passa para o handler.
- *   4. Ao terminar: se foi acerto de cache ou erro, DEVOLVE o crédito.
+ *   2. E-mail não confirmado ou de serviço temporário → 403.
+ *   3. RESERVA 1 crédito no banco, num passo só (reservar_credito_ia): confere
+ *      o saldo E debita juntos. Sem saldo → 429. O saldo grátis é da PESSOA —
+ *      do e-mail normalizado (migração 037, lib/identidadeCota.ts): apelidos
+ *      da mesma caixa (joao+1@, j.o.a.o@) dividem as mesmas análises.
+ *   4. Passa para o handler.
+ *   5. Ao terminar: se foi acerto de cache ou erro, DEVOLVE o crédito.
  *
  * Por que reservar antes e não debitar depois: debitar depois deixava pedidos
  * simultâneos passarem todos (medido: 5 de 5 com 1 de saldo).
@@ -21,6 +24,7 @@
 import type { Request, Response, NextFunction } from "express";
 import { createHash } from "crypto";
 import { log } from "../lib/log.ts";
+import { identidadeDaCota, ehEmailDescartavel } from "../lib/identidadeCota.ts";
 
 const SUPABASE_URL = process.env.SUPABASE_URL ?? process.env.VITE_SUPABASE_URL ?? "";
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY ?? "";
@@ -61,12 +65,12 @@ function supaHeaders() {
  * depois). Nesse intervalo todo pedido lia o mesmo saldo: com 3 de 4 usadas,
  * 5 pedidos simultâneos passaram os 5. Duas abas bastavam para furar a cota.
  */
-async function reservarCredito(userId: string): Promise<{ reservado: boolean; usado: number; plano: string } | null> {
+async function reservarCredito(userId: string, identidade: string): Promise<{ reservado: boolean; usado: number; plano: string } | null> {
   try {
     const r = await fetch(`${SUPABASE_URL}/rest/v1/rpc/reservar_credito_ia`, {
       method: "POST",
       headers: supaHeaders(),
-      body: JSON.stringify({ p_user_id: userId, p_limite: FREE_LIMIT }),
+      body: JSON.stringify({ p_user_id: userId, p_limite: FREE_LIMIT, p_identidade: identidade }),
       signal: AbortSignal.timeout(8_000),
     });
     if (!r.ok) return null;
@@ -78,40 +82,47 @@ async function reservarCredito(userId: string): Promise<{ reservado: boolean; us
 }
 
 /** Devolve a reserva de quem não gerou nada (acerto de cache ou erro). */
-async function devolverCredito(userId: string) {
+async function devolverCredito(userId: string, identidade: string) {
   await fetch(`${SUPABASE_URL}/rest/v1/rpc/devolver_credito_ia`, {
     method: "POST",
     headers: supaHeaders(),
-    body: JSON.stringify({ p_user_id: userId }),
+    body: JSON.stringify({ p_user_id: userId, p_identidade: identidade }),
   }).catch((e) => {
     log.warn("[aiCredits] devolução falhou:", e instanceof Error ? e.message : e);
   });
 }
 
-// Verifica o JWT no Supabase Auth (assinatura + expiração) e devolve o user id.
+// Verifica o JWT no Supabase Auth (assinatura + expiração) e devolve o usuário.
 // Decodificar o payload sem verificar permitiria forjar qualquer `sub` e minerar
 // cotas ilimitadas — a verificação TEM que acontecer no servidor.
 // Cache curto por hash do token evita uma ida ao Auth a cada request.
-const tokenCache = new Map<string, { userId: string | null; expiresAt: number }>();
+export interface UsuarioVerificado {
+  id: string;
+  email: string | null;
+  /** E-mail confirmado (clicou no link) ou conta do Google, que já vem confirmada. */
+  confirmado: boolean;
+}
+
+const tokenCache = new Map<string, { usuario: UsuarioVerificado | null; expiresAt: number }>();
 const TOKEN_CACHE_TTL_MS = 5 * 60 * 1000;
 
-export async function verifyUserId(authHeader: string): Promise<string | null> {
+export async function verifyUser(authHeader: string): Promise<UsuarioVerificado | null> {
   const token = authHeader.replace(/^Bearer\s+/i, "").trim();
   if (!token) return null;
 
   const cacheKey = createHash("sha256").update(token).digest("hex");
   const hit = tokenCache.get(cacheKey);
-  if (hit && hit.expiresAt > Date.now()) return hit.userId;
+  if (hit && hit.expiresAt > Date.now()) return hit.usuario;
 
-  let userId: string | null = null;
+  let usuario: UsuarioVerificado | null = null;
   try {
     const r = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
       headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${token}` },
       signal: AbortSignal.timeout(5_000),
     });
     if (r.ok) {
-      const user = await r.json() as { id?: string };
-      userId = user.id ?? null;
+      const u = await r.json() as { id?: string; email?: string; email_confirmed_at?: string | null; confirmed_at?: string | null };
+      if (u.id) usuario = { id: u.id, email: u.email ?? null, confirmado: !!(u.email_confirmed_at || u.confirmed_at) };
     }
   } catch { /* Auth indisponível → trata como anônimo */ }
 
@@ -119,8 +130,37 @@ export async function verifyUserId(authHeader: string): Promise<string | null> {
     const now = Date.now();
     tokenCache.forEach((v, k) => { if (v.expiresAt <= now) tokenCache.delete(k); });
   }
-  tokenCache.set(cacheKey, { userId, expiresAt: Date.now() + TOKEN_CACHE_TTL_MS });
-  return userId;
+  tokenCache.set(cacheKey, { usuario, expiresAt: Date.now() + TOKEN_CACHE_TTL_MS });
+  return usuario;
+}
+
+/** Atalho para quem só precisa do id (rotas que não mexem em cota). */
+export async function verifyUserId(authHeader: string): Promise<string | null> {
+  return (await verifyUser(authHeader))?.id ?? null;
+}
+
+/**
+ * A cota grátis do mês para a tela — lida da IDENTIDADE (o e-mail normalizado),
+ * que é o que a trava de fato usa. Ler por conta mostraria um saldo que não é o
+ * que vale: duas contas da mesma caixa dividem as mesmas análises.
+ */
+export async function lerCota(usuario: UsuarioVerificado): Promise<{ used: number; limit: number | null; plan: string }> {
+  const vazio = { used: 0, limit: FREE_LIMIT, plan: "free" };
+  if (!SUPABASE_URL || !SUPABASE_KEY) return vazio;
+  try {
+    const rp = await fetch(`${SUPABASE_URL}/rest/v1/ai_credits?user_id=eq.${usuario.id}&select=plan`, { headers: supaHeaders() });
+    const [conta] = rp.ok ? await rp.json() as Array<{ plan: string }> : [];
+    if (conta?.plan === "premium") return { used: 0, limit: null, plan: "premium" };
+
+    const identidade = identidadeDaCota(usuario.email);
+    if (!identidade) return vazio;
+    const ri = await fetch(`${SUPABASE_URL}/rest/v1/cota_ia_identidade?identidade=eq.${identidade}&select=usado,mes`, { headers: supaHeaders() });
+    const [cota] = ri.ok ? await ri.json() as Array<{ usado: number; mes: string }> : [];
+    const used = !cota || isStaleMonth(cota.mes) ? 0 : cota.usado;
+    return { used, limit: FREE_LIMIT, plan: "free" };
+  } catch {
+    return vazio;
+  }
 }
 
 // IA exige conta: resposta padrão para requisição sem login válido.
@@ -143,12 +183,39 @@ export function aiCreditsMiddleware(req: Request, res: Response, next: NextFunct
   // não logando. Rate-limit por IP das rotas segue como defesa extra.
   if (!authHeader) return loginRequired(res);
 
-  verifyUserId(authHeader).then(async (userId) => {
+  verifyUser(authHeader).then(async (usuario) => {
     // Token presente mas sem usuário válido (expirado/forjado) → pedir login.
-    if (!userId) return loginRequired(res);
+    if (!usuario) return loginRequired(res);
+    const userId = usuario.id;
+
+    // ── A cota é da PESSOA, não da conta (lib/identidadeCota.ts) ──────────────
+    // O Supabase já exige confirmar o e-mail para entrar; repetir aqui protege
+    // contra alguém desligar essa opção no painel um dia — conta com e-mail
+    // que ninguém confirmou é conta que qualquer um cria às dezenas.
+    if (!usuario.confirmado) {
+      return res.status(403).json({
+        error: "email_nao_confirmado",
+        message: "Confirme seu e-mail para usar a IA — o link foi enviado quando você criou a conta.",
+      });
+    }
+    // E-mail de 10 minutos dá uma caixa nova por clique: seria cota infinita.
+    if (ehEmailDescartavel(usuario.email)) {
+      return res.status(403).json({
+        error: "email_temporario",
+        message: "A IA não fica disponível para e-mail temporário. Entre com o Google ou com um e-mail pessoal.",
+      });
+    }
+    const identidade = identidadeDaCota(usuario.email);
+    if (!identidade) {
+      // Conta sem e-mail utilizável: sem identidade, não há como contar — fecha.
+      return res.status(403).json({
+        error: "email_temporario",
+        message: "Não conseguimos identificar o e-mail da sua conta. Entre com o Google ou com um e-mail pessoal.",
+      });
+    }
 
     // RESERVA ANTES, devolve depois se não houve geração. Ver reservarCredito.
-    const reserva = await reservarCredito(userId);
+    const reserva = await reservarCredito(userId, identidade);
 
     // ⚠️ Fechado, não aberto. Antes, qualquer falha ao falar com o banco
     // deixava passar SEM COTA — com o Supabase instável, a IA virava ilimitada
@@ -181,7 +248,7 @@ export function aiCreditsMiddleware(req: Request, res: Response, next: NextFunct
     // resposta fica no cache. Devolver abriria o truque de pedir, abortar no
     // último segundo e pegar do cache de graça logo depois.
     const gerou = () => !res.locals.aiCacheHit && res.statusCode >= 200 && res.statusCode < 300;
-    res.on("finish", () => { if (!gerou()) void devolverCredito(userId); });
+    res.on("finish", () => { if (!gerou()) void devolverCredito(userId, identidade); });
 
     // Cota nos headers — o chat (ChatPanel) mostra o contador a partir deles.
     // Escritos no ÚLTIMO instante: só na hora de enviar se sabe se o crédito

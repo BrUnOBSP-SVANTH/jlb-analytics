@@ -37,6 +37,11 @@ export default function Privacidade() {
                 <li><strong className="text-foreground">Cadastro:</strong> email e dados de autenticação (via Supabase).</li>
                 <li><strong className="text-foreground">Uso da plataforma:</strong> previsões registradas, pontos, progresso e métricas de calibração — armazenados localmente (localStorage) e, se logado, sincronizados na sua conta.</li>
                 <li><strong className="text-foreground">Uso de IA:</strong> registros de chamadas às análises (endpoint, modelo, latência) para controle de cota e melhoria do serviço.</li>
+                {/* Setembro/2026: a cota grátis passou a ser por pessoa, contada
+                    por um hash do e-mail normalizado (server/lib/identidadeCota.ts).
+                    Tratar dado derivado do e-mail para outra finalidade exige
+                    dizer aqui qual é, e o que NÃO fazemos com ele. */}
+                <li><strong className="text-foreground">Controle da cota grátis:</strong> para que a cota de análises valha por pessoa, e não por conta, guardamos uma <em>impressão digital</em> (hash) do seu e-mail normalizado — sem pontos e sem o trecho depois do &quot;+&quot;. Ela serve só para reconhecer que duas contas usam a mesma caixa de e-mail; não é possível recuperar o e-mail a partir dela, e ela não é usada para mais nada. Base legal: legítimo interesse em impedir o abuso do plano gratuito.</li>
                 <li><strong className="text-foreground">Técnicos:</strong> dados de navegação e métricas agregadas de uso (analytics).</li>
               </ul>
               <p>Não coletamos dados financeiros de apostas reais — a plataforma é educacional e o portfólio é simulado.</p>

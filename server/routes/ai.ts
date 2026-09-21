@@ -6,7 +6,7 @@ import { normalizeCategory } from "../lib/ai/calibration.ts";
 import { intervaloWilson, comparaComMercado } from "../lib/ai/incerteza.ts";
 import { Router, type Request, type Response, type NextFunction } from "express";
 import { getCache, setCache, isRateLimited } from "../lib/cache.ts";
-import { aiCreditsMiddleware, verifyUserId, isStaleMonth, FREE_LIMIT } from "../middleware/aiCredits.ts";
+import { aiCreditsMiddleware, verifyUserId, verifyUser, lerCota, FREE_LIMIT } from "../middleware/aiCredits.ts";
 import { autorizadoComChaveDeServico } from "../lib/chaveDeServico.ts";
 import { extractJson } from "../lib/extractJson.ts";
 import { callClaude, anthropicBreakerState } from "../lib/anthropic.ts";
@@ -74,44 +74,16 @@ router.get("/user-calibration-history", async (req, res) => {
 });
 
 router.get("/credits", async (req, res) => {
-  const SUPABASE_URL = process.env.SUPABASE_URL ?? process.env.VITE_SUPABASE_URL ?? "";
-  const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY ?? "";
-
-  if (!SUPABASE_URL || !SUPABASE_KEY) {
-    return res.json({ used: 0, limit: FREE_LIMIT, plan: "free" });
-  }
-
   const authHeader = String(req.headers.authorization ?? "");
   if (!authHeader) return res.json({ used: 0, limit: FREE_LIMIT, plan: "free" });
-
-  try {
-    // Valida o JWT no Supabase Auth (assinatura + expiração), em vez de decodificar
-    // o payload às cegas — decodificar sem verificar permitiria forjar `sub` e ler a
-    // cota de qualquer usuário. Mesma invariante já aplicada no aiCreditsMiddleware.
-    const userId = await verifyUserId(authHeader);
-    if (!userId) return res.json({ used: 0, limit: FREE_LIMIT, plan: "free" });
-
-    const r = await fetch(`${SUPABASE_URL}/rest/v1/ai_credits?user_id=eq.${userId}&select=plan,used_this_month,month_reset`, {
-      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` },
-    });
-    if (!r.ok) return res.json({ used: 0, limit: FREE_LIMIT, plan: "free" });
-
-    const rows = await r.json() as Array<{ plan: string; used_this_month: number; month_reset: string }>;
-    if (rows.length === 0) return res.json({ used: 0, limit: FREE_LIMIT, plan: "free" });
-
-    const row = rows[0];
-    // Mês vencido = cota zerada (mesma invariante do enforcement). O reset no banco
-    // é lazy (trigger no incremento), então sem isto o display mostraria o uso do
-    // mês passado logo após a virada do mês.
-    const used = isStaleMonth(row.month_reset) ? 0 : row.used_this_month;
-    return res.json({
-      used,
-      limit: row.plan === "premium" ? null : FREE_LIMIT,
-      plan: row.plan,
-    });
-  } catch {
-    return res.json({ used: 0, limit: FREE_LIMIT, plan: "free" });
-  }
+  // Valida o JWT no Supabase Auth (assinatura + expiração), em vez de decodificar
+  // o payload às cegas — decodificar sem verificar permitiria forjar `sub` e ler a
+  // cota de qualquer usuário. Mesma invariante já aplicada no aiCreditsMiddleware.
+  const usuario = await verifyUser(authHeader).catch(() => null);
+  if (!usuario) return res.json({ used: 0, limit: FREE_LIMIT, plan: "free" });
+  // O saldo mostrado é o da PESSOA (e-mail normalizado), o mesmo que a trava
+  // usa — ver lerCota. Ler por conta mostraria um número que não é o que vale.
+  res.json(await lerCota(usuario));
 });
 
 // ── Observabilidade: métricas das chamadas de IA (read-only, agregado) ────────
