@@ -13,7 +13,7 @@
  */
 
 import { supabase } from "./supabase";
-import { loadPredictions, savePredictions, type StoredPrediction, type ResolutionSource } from "./predictions";
+import { addPrediction, loadPredictions, savePredictions, type StoredPrediction, type ResolutionSource } from "./predictions";
 
 // ── DB row type (matches 003_predictions.sql + 018_resolution_source.sql) ──
 
@@ -195,4 +195,37 @@ export async function deleteOne(id: string, userId: string): Promise<void> {
   try {
     await supabase.from("predictions").delete().eq("id", id).eq("user_id", userId);
   } catch { /* silent */ }
+}
+
+/**
+ * Registra a previsão E sincroniza na hora, se houver conta.
+ *
+ * O cabeçalho deste arquivo promete "on every write: upsert in Supabase" — e
+ * não era o que acontecia. Só o Dashboard (ao montar) e a Previsão Guiada
+ * sincronizavam; quem registrava pela FICHA do mercado ou pelos cards de
+ * notícias ficava só no localStorage até abrir o painel. Medido em 20/09/2026
+ * no site publicado: a previsão registrada na ficha não chegou ao banco.
+ *
+ * O que isso custava: o job que resolve pelo settlement oficial e manda push
+ * roda no SERVIDOR, de 6 em 6 horas — previsão que não chegou ao banco nunca é
+ * resolvida e nunca vira aviso. E o cadastro promete "histórico de previsões
+ * sincronizado", o que só era verdade depois de uma visita ao painel.
+ *
+ * A sessão é lida aqui dentro para as telas não precisarem conhecer o usuário —
+ * eram quatro componentes sem `useAuth`, e espalhar isso convidaria o próximo a
+ * esquecer de novo. Best-effort: falha de rede não pode derrubar o registro,
+ * que já está salvo localmente.
+ */
+export function registrarPrevisao(
+  dados: Parameters<typeof addPrediction>[0],
+): StoredPrediction {
+  const pred = addPrediction(dados);
+  void (async () => {
+    try {
+      const { data } = await supabase.auth.getSession();
+      const userId = data.session?.user?.id;
+      if (userId) await syncOne(pred, userId);
+    } catch { /* offline ou sem conta: o localStorage já guardou */ }
+  })();
+  return pred;
 }

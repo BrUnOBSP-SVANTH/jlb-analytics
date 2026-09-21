@@ -8,7 +8,7 @@ import { traduzir, pareceEmPortugues } from "@/lib/traducao";
 import { type KalshiMarket, daysLeft, formatVolume } from "@/lib/noticiasShared";
 import { CategoryBadge } from "@/components/noticias/cards";
 import { TituloDeMercado } from "@/components/mercados/cards";
-import { addPrediction } from "@/lib/predictions";
+import { registrarPrevisao } from "@/lib/predictionsSync";
 import { awardPoints } from "@/lib/userProgress";
 import { track } from "@/lib/analytics";
 import { num } from "@shared/formato";
@@ -41,7 +41,7 @@ export function KalshiCard({ market }: { market: KalshiMarket }) {
   }, [market.title]);
 
   function handleSaveKalshi() {
-    addPrediction({
+    registrarPrevisao({
       marketId: `kalshi-${market.ticker}`,
       question: translation ?? market.title,
       marketProb: market.yesProb,

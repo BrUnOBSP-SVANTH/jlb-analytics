@@ -10,7 +10,8 @@ import {
   ArrowRight, Target, Clock, Loader2, Zap, BarChart2,
   Eye, Trophy, CheckCircle, BookmarkPlus,
 } from "lucide-react";
-import { loadPredictions, addPrediction, type StoredPrediction } from "@/lib/predictions";
+import { loadPredictions, type StoredPrediction } from "@/lib/predictions";
+import { registrarPrevisao } from "@/lib/predictionsSync";
 import { awardPoints } from "@/lib/userProgress";
 import { track } from "@/lib/analytics";
 import AnaliseTabs from "@/components/AnaliseTabs";
@@ -79,7 +80,7 @@ function QuickPredict({ market, marketProb }: { market: string; marketProb: numb
   const [saved, setSaved] = useState(false);
 
   function handleSave() {
-    addPrediction({
+    registrarPrevisao({
       marketId: `briefing-${encodeURIComponent(market).slice(0, 40)}-${Date.now()}`,
       question: market,
       marketProb,

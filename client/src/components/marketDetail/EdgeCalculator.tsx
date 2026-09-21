@@ -30,7 +30,8 @@ import { calcularVantagem, precoCalculavel } from "@/lib/edge";
 import { pct, pp, num } from "@shared/formato";
 import { Explain } from "@/components/marketDetail/Explain";
 import { type MarketBasic } from "@/components/marketDetail/types";
-import { addPrediction, previsaoDoDesfecho, somaDasEstimativas, tituloComDesfecho } from "@/lib/predictions";
+import { previsaoDoDesfecho, somaDasEstimativas, tituloComDesfecho } from "@/lib/predictions";
+import { registrarPrevisao } from "@/lib/predictionsSync";
 import { idCanonicoDeMercado } from "@shared/liquidacao";
 import { awardPoints } from "@/lib/userProgress";
 import { track } from "@/lib/analytics";
@@ -127,7 +128,7 @@ export function EdgeCalculator({
     : null;
 
   function handleSave() {
-    addPrediction({
+    registrarPrevisao({
       // Com o prefixo da fonte — sem ele a previsão nunca é resolvida.
       marketId: idCanonicoDeMercado(market.source, marketId),
       // "<pergunta> — Barcelona": toda tela que lista previsões passa a dizer de
