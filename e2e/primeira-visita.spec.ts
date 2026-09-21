@@ -40,3 +40,26 @@ test("'Criar conta grátis' abre o CADASTRO, não o login", async ({ page }) => 
   await expect(page.getByText("Crie sua conta gratuita")).toBeVisible();
   await expect(page.getByText("Entre na sua conta")).toHaveCount(0);
 });
+
+test("cadastro avisa ANTES quando o e-mail é temporário", async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem("jlb_onboarding_v3", "done"));
+  await page.goto("/login?modo=cadastro");
+  const email = page.getByLabel("E-mail");
+
+  await email.fill("alguem@mailinator.com");
+  await email.blur();
+  await expect(page.getByText("Esse é um e-mail temporário")).toBeVisible({ timeout: 10_000 });
+
+  // Trocou para um e-mail de verdade: o aviso some.
+  await email.fill("alguem@gmail.com");
+  await email.blur();
+  await expect(page.getByText("Esse é um e-mail temporário")).toHaveCount(0, { timeout: 10_000 });
+});
+
+test("cadastro: o botão do Google apagado diz o porquê", async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem("jlb_onboarding_v3", "done"));
+  await page.goto("/login?modo=cadastro");
+  await expect(page.getByText("Para criar a conta, marque o aceite dos termos abaixo.")).toBeVisible();
+  await page.getByRole("checkbox").check();
+  await expect(page.getByText("Para criar a conta, marque o aceite dos termos abaixo.")).toHaveCount(0);
+});

@@ -33,6 +33,22 @@ export default function Login() {
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  const [emailTemporario, setEmailTemporario] = useState(false);
+
+  /**
+   * Pergunta ao servidor se o domínio é de e-mail temporário. Manda SÓ o
+   * domínio — o endereço da pessoa não precisa sair do navegador para isto.
+   * Falha de rede não avisa nada: o bloqueio de verdade está no servidor.
+   */
+  async function conferirDominio(valor: string) {
+    const dominio = valor.trim().toLowerCase().split("@")[1] ?? "";
+    if (!/^[a-z0-9.-]+\.[a-z]{2,}$/.test(dominio)) { setEmailTemporario(false); return; }
+    try {
+      const r = await fetch(`/api/conta/dominio-temporario?dominio=${encodeURIComponent(dominio)}`);
+      const j = r.ok ? (await r.json() as { temporario?: boolean }) : null;
+      setEmailTemporario(j?.temporario === true);
+    } catch { setEmailTemporario(false); }
+  }
 
   const reset = () => {
     setErrorMsg(null);
@@ -155,6 +171,13 @@ export default function Login() {
                 <Chrome className="w-4 h-4" aria-hidden="true" />
                 Continuar com Google
               </button>
+              {/* O botão fica apagado até o aceite — e o aceite fica no pé do
+                  formulário. Sem dizer o motivo, parecia defeito. */}
+              {mode === "signup" && !aceitou && (
+                <p className="mt-2 text-[11px] text-muted-foreground text-center">
+                  Para criar a conta, marque o aceite dos termos abaixo.
+                </p>
+              )}
 
               <div className="flex items-center gap-3 my-6">
                 <div className="flex-1 h-px bg-border/30" />
@@ -177,8 +200,19 @@ export default function Login() {
                 autoComplete="email"
                 className={`${inputClass} pl-10`}
                 aria-label="E-mail"
+                aria-describedby={emailTemporario ? "aviso-email-temporario" : undefined}
+                onBlur={() => { if (mode === "signup") void conferirDominio(email); }}
               />
             </div>
+            {/* Avisa ANTES de criar a conta: e-mail temporário não usa a IA
+                (middleware/aiCredits.ts). Descobrir isso só na primeira análise
+                é pior do que não saber — a pessoa já investiu o cadastro. */}
+            {mode === "signup" && emailTemporario && (
+              <p id="aviso-email-temporario" role="status" className="-mt-2 text-[11px] leading-relaxed text-warning">
+                Esse é um e-mail temporário. A conta é criada, mas as análises de IA não funcionam com ele —
+                use um e-mail pessoal ou continue com o Google.
+              </p>
+            )}
 
             {mode !== "reset" && (
               <div className="relative">
@@ -187,7 +221,8 @@ export default function Login() {
                   type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder={mode === "signup" ? `Mínimo ${MIN_PASSWORD_LEN} caracteres, com letras e números` : "Sua senha"}
+                  // Curta de propósito: no celular a versão longa aparecia cortada ("…com letras e r").
+                  placeholder={mode === "signup" ? `Letras e números, mín. ${MIN_PASSWORD_LEN}` : "Sua senha"}
                   required
                   autoComplete={mode === "login" ? "current-password" : "new-password"}
                   className={`${inputClass} pl-10 pr-10`}

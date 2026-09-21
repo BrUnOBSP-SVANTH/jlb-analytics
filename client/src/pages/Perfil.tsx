@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { BadgesSection, type BadgeContext } from "@/components/perfil/badges";
 import { PremiumUpgrade } from "@/components/perfil/PremiumUpgrade";
+import { CotaDeAnalises } from "@/components/perfil/CotaDeAnalises";
 import { EmailPreferences } from "@/components/perfil/EmailPreferences";
 import { ProfilePublicSettings } from "@/components/perfil/ProfilePublicSettings";
 
@@ -238,6 +239,9 @@ export default function Perfil() {
             </div>
           </div>
         </AnimatedSection>
+
+        {/* ── Cota de IA: é para cá que a pastilha "X análises restantes" leva ── */}
+        <CotaDeAnalises />
 
         {/* ── Plano Premium ── */}
         <PremiumUpgrade userId={user.id} userEmail={user.email ?? ""} />
