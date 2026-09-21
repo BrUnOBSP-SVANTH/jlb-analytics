@@ -280,7 +280,9 @@ export function useMarketDetail(marketId: string) {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json() as AiResult;
       setAiAnalysis(data);
-      track("analise_ia", { resultado: "vista", onde: "ficha" });
+      // `cache`: análise servida do cache NÃO cobra crédito (por desenho). É o que
+      // responde "de cada 10 análises, quantas de fato consomem cota?".
+      track("analise_ia", { resultado: "vista", onde: "ficha", cache: (data as { cached?: boolean }).cached === true });
     } catch (e) {
       const isTimeout = (e instanceof DOMException && e.name === "TimeoutError")
         || (e instanceof Error && /timed out|abort/i.test(e.message));

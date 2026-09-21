@@ -167,10 +167,25 @@ export function aiCreditsMiddleware(req: Request, res: Response, next: NextFunct
         if (ok && !res.locals.aiCacheHit) void incrementCredits(userId);
       });
 
-      // Expõe info no header para o cliente poder mostrar contador
-      res.setHeader("X-AI-Credits-Used", String(credits.used + 1));
-      res.setHeader("X-AI-Credits-Limit", credits.limit === Infinity ? "unlimited" : String(credits.limit));
-      res.setHeader("X-AI-Plan", credits.plan);
+      // Cota nos headers — o chat (ChatPanel) mostra o contador a partir deles.
+      // ⚠️ Escritos no ÚLTIMO instante, e não aqui. Antes era `used + 1` fixo,
+      // decidido ANTES de o handler rodar: no acerto de cache, que não cobra
+      // nada (ver a cobrança diferida acima), o número dizia que gastou quando
+      // não gastou. Só na hora de enviar se sabe se houve cobrança.
+      const escreverCota = () => {
+        if (res.headersSent) return;
+        const cobrou = !res.locals.aiCacheHit && res.statusCode >= 200 && res.statusCode < 300;
+        res.setHeader("X-AI-Credits-Used", String(credits.used + (cobrou ? 1 : 0)));
+        res.setHeader("X-AI-Credits-Limit", credits.limit === Infinity ? "unlimited" : String(credits.limit));
+        res.setHeader("X-AI-Plan", credits.plan);
+      };
+      // `writeHead` é por onde TODA resposta passa — JSON e stream (SSE) —
+      // inclusive quando o Express a chama por baixo dos panos.
+      const writeHeadOriginal = res.writeHead.bind(res);
+      res.writeHead = ((...args: Parameters<typeof res.writeHead>) => {
+        escreverCota();
+        return writeHeadOriginal(...args);
+      }) as typeof res.writeHead;
 
       next();
     });

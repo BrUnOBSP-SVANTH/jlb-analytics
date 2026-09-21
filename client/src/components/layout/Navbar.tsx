@@ -36,6 +36,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useMarketAlerts } from "@/hooks/useMarketAlerts";
 import { useDispensar, ATALHO_BUSCA, ehMac } from "@/hooks/useDispensar";
 import { prefetchRoute } from "@/lib/prefetch";
+import { EVENTO_IA_USADA } from "@/lib/api";
+import { COTA_GRATIS_MENSAL } from "@shared/planos";
 
 // ── Nav structure ────────────────────────────────────────────────────────────
 
@@ -157,15 +159,24 @@ function UserMenu({ compacto = false }: { compacto?: boolean }) {
     return () => window.removeEventListener("jlb:points", onPoints);
   }, []);
 
-  // Busca créditos de IA quando usuário está logado
+  // Busca créditos de IA quando usuário está logado — e DE NOVO a cada análise.
+  // Sem a releitura, a pessoa gastava uma análise e seguia lendo "4 restantes"
+  // até recarregar a página: o débito ia para o banco, a tela não contava.
   useEffect(() => {
     if (!user || !session?.access_token) return;
-    fetch("/api/ai/credits", {
-      headers: { Authorization: `Bearer ${session.access_token}` },
-    })
-      .then((r) => r.ok ? r.json() as Promise<AiCredits> : null)
-      .then((data) => { if (data) setCredits(data); })
-      .catch(() => {});
+    let vivo = true;
+    const ler = () => {
+      fetch("/api/ai/credits", { headers: { Authorization: `Bearer ${session.access_token}` } })
+        .then((r) => r.ok ? r.json() as Promise<AiCredits> : null)
+        .then((data) => { if (data && vivo) setCredits(data); })
+        .catch(() => {});
+    };
+    ler();
+    // O débito é diferido no servidor (ver lib/api.ts): perguntar na hora exata
+    // pegaria o número anterior.
+    const aoUsarIA = () => setTimeout(ler, 1500);
+    window.addEventListener(EVENTO_IA_USADA, aoUsarIA);
+    return () => { vivo = false; window.removeEventListener(EVENTO_IA_USADA, aoUsarIA); };
   }, [user, session?.access_token]);
 
   if (!user) {
@@ -181,7 +192,7 @@ function UserMenu({ compacto = false }: { compacto?: boolean }) {
   }
 
   const creditUsed = credits?.used ?? 0;
-  const creditLimit = credits?.limit ?? 4; // fallback = cota grátis (FREE_LIMIT no servidor)
+  const creditLimit = credits?.limit ?? COTA_GRATIS_MENSAL; // mesma constante que o servidor cobra
   const isPremium = credits?.plan === "premium";
   const restantes = Math.max(0, creditLimit - creditUsed);
 

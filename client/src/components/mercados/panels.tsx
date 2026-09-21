@@ -344,7 +344,7 @@ export function NewsAnalysisPanel({ item }: { item: TrendingItem }) {
         data = await res.json() as MarketAnalysisResult;
       }
       setResult(data);
-      track("analise_ia", { resultado: "vista", onde: "lista" });
+      track("analise_ia", { resultado: "vista", onde: "lista", cache: (data as { cached?: boolean }).cached === true });
       awardPoints("market_analyzed", "Analisou tendência com IA");
     } catch (e) {
       const isTimeout = (e instanceof DOMException && e.name === "TimeoutError")

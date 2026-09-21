@@ -39,13 +39,35 @@ export async function tokenAtual(): Promise<string | null> {
  * duelos, push, créditos) respondem 401 sem o cabeçalho, e o sintoma é um pedido
  * de login que não acaba nunca.
  */
+/**
+ * Avisa a interface que uma chamada de IA terminou — quem mostra a cota relê o
+ * número depois disso.
+ *
+ * POR QUE PRECISA EXISTIR (20/09/2026). A barra de navegação busca
+ * `/api/ai/credits` UMA vez, quando a sessão carrega, e nunca mais. A pessoa
+ * gastava uma análise e continuava lendo "4 análises restantes" até recarregar
+ * a página — o débito acontecia no banco, mas a tela não contava.
+ *
+ * ⚠️ O débito é DIFERIDO no servidor (middleware/aiCredits.ts): ele roda quando
+ * a resposta termina de ser enviada, e ainda gasta uma ida ao Supabase. Reler
+ * imediatamente pegaria o número velho — por isso quem ouve este evento espera
+ * um instante antes de perguntar.
+ */
+export const EVENTO_IA_USADA = "jlb:ia-usada";
+
 export async function apiFetch(url: string, init: RequestInit = {}): Promise<Response> {
   const headers = new Headers(init.headers);
   const token = await tokenAtual();
   if (token && !headers.has("Authorization")) {
     headers.set("Authorization", `Bearer ${token}`);
   }
-  return fetch(url, { ...init, headers });
+  const res = await fetch(url, { ...init, headers });
+  // Só rota de IA mexe na cota. 429 (cota esgotada) também avisa: é justamente
+  // quando o número precisa aparecer certo na tela.
+  if (url.includes("/api/ai/") && (res.ok || res.status === 429)) {
+    try { window.dispatchEvent(new CustomEvent(EVENTO_IA_USADA)); } catch { /* fora do navegador */ }
+  }
+  return res;
 }
 
 /**
