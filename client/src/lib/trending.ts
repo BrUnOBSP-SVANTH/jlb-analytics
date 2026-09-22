@@ -333,17 +333,54 @@ function whyTrendingReddit(post: RedditPost): string {
  * múltiplos desfechos, onde não existe SIM: a decisão do Fed tem três resultados
  * possíveis e o US Open tem dezenas. Agora há um texto para cada tipo.
  */
+/**
+ * A vantagem do líder sobre o SEGUNDO colocado, em 0–1.
+ *
+ * É a medida certa de "está em aberto?" — e vale para os dois formatos. Num
+ * mercado binário os dois desfechos são p e 1−p, então a folga é |2p−1|: a
+ * mesma coisa que a distância de 50% em dobro. Num mercado de vários desfechos,
+ * a distância de 50% não quer dizer nada (com doze candidatos, ninguém chega
+ * perto de 50) — mas "o primeiro está 6 pontos à frente do segundo" quer.
+ */
+export function folgaDoLider(desfechos: ReadonlyArray<number>): number {
+  const ordenados = [...desfechos].filter((p) => Number.isFinite(p)).sort((a, b) => b - a);
+  if (ordenados.length === 0) return 0;
+  return ordenados[0] - (ordenados[1] ?? 0);
+}
+
+/**
+ * Por que este mercado está na lista — em uma frase, ou nenhuma.
+ *
+ * ⚠️ A RÉGUA DO BINÁRIO NÃO SERVE PARA VÁRIOS DESFECHOS (Auditoria 21/09,
+ * DAD-04). A regra era `yesProb > 0,80 || yesProb < 0,20` para todo mundo, e em
+ * mercado de vários desfechos `yesProb` é a probabilidade do LÍDER. Resultado
+ * fotografado na tela: "Consenso forte no Polymarket (líder com 19%)" — e no
+ * Kalshi, com 10%. Líder de 19% é o oposto de consenso: é uma disputa tão
+ * aberta que nem o primeiro colocado tem um quinto das chances.
+ *
+ * A régua de vários desfechos olha o líder e a folga dele:
+ *  · líder ≥ 70%  → consenso;
+ *  · líder < 35%  → ninguém domina;
+ *  · no meio      → favorito claro, mas em aberto.
+ *
+ * E "equilibrado" passa a ser medido pela diferença entre os DOIS PRIMEIROS, que
+ * é o que a palavra significa — não pela distância de 50%.
+ */
 export function whyTrendingMarket(item: {
   volume: number; volume24h?: number; liquidity?: number;
   yesProb: number; prevYesProb?: number; weekPriceChange?: number;
   source: Source;
   /** Mercado de múltiplos desfechos: não existe "SIM" para descrever. */
   multiDesfecho?: boolean;
+  /** Probabilidades 0–1 de todos os desfechos. Sem elas, cai no binário. */
+  desfechos?: ReadonlyArray<number>;
 }): string {
-  const { volume, volume24h, liquidity, yesProb, prevYesProb, weekPriceChange, source, multiDesfecho } = item;
-  const perto50 = Math.abs(yesProb - 0.5);
+  const { volume, volume24h, liquidity, yesProb, prevYesProb, weekPriceChange, source, multiDesfecho, desfechos } = item;
+  void liquidity;
   const variacao = prevYesProb !== undefined ? yesProb - prevYesProb : undefined;
   const plataforma = nomeDaPlataforma(source) ?? "mercado";
+  // Sem a lista, o binário monta a sua: os dois lados da mesma moeda.
+  const folga = folgaDoLider(desfechos?.length ? desfechos : [yesProb, 1 - yesProb]);
 
   // O que é ESPECÍFICO deste mercado hoje. Se nada aqui casar, não há notícia.
   const especifico: string[] = [];
@@ -361,17 +398,45 @@ export function whyTrendingMarket(item: {
     ? `líder com ${pct(yesProb * 100)}`
     : `${pct(yesProb * 100)} para SIM`;
 
-  if (volume > 1_000_000 && perto50 < 0.1)
-    return `${abertura}${volumeNaMoeda(volume, source)} negociados no ${plataforma} com o resultado em aberto (${nivel}) — dinheiro informado dos dois lados.`;
-  if (yesProb > 0.80 || yesProb < 0.20)
-    return `${abertura}Consenso forte no ${plataforma} (${nivel}) — o lado minoritário só tem valor se você enxergou um risco que o mercado ignorou.`;
-  if (perto50 < 0.12)
-    return `${abertura}Mercado equilibrado no ${plataforma} (${nivel}) — é onde a informação de qualidade vale mais.`;
+  const frase = (() => {
+    // Volume grande COM o resultado em aberto é a melhor notícia que um card tem.
+    if (volume > 1_000_000 && folga < 0.20)
+      return `${volumeNaMoeda(volume, source)} negociados no ${plataforma} com o resultado em aberto (${nivel}) — dinheiro informado dos dois lados.`;
 
-  // Chegou aqui: só há volume, que já aparece no próprio card, ao lado. Repetir
-  // em prosa não acrescenta — e era isso que produzia as doze frases iguais.
-  // Melhor um card limpo do que uma frase que ninguém precisa ler.
-  return abertura.trim();
+    if (multiDesfecho) {
+      if (yesProb >= 0.70)
+        return `Consenso forte no ${plataforma} (${nivel}) — o resto do tabuleiro divide o que sobra.`;
+      if (yesProb < 0.35)
+        return `Disputa aberta no ${plataforma}: nenhum desfecho domina (${nivel}) — é onde a informação de qualidade vale mais.`;
+      // ⚠️ Nem todo "vários desfechos" tem vários: mercado de DOIS RÓTULOS
+      // próprios ("Mais/Menos 21,5", "Rays/Yankees") também entra aqui, porque
+      // não é SIM/NÃO. Com 51% contra 49%, chamar o primeiro de "favorito
+      // claro" seria trocar um exagero por outro — é um cara ou coroa.
+      if (folga < 0.12)
+        return `Mercado equilibrado no ${plataforma} (${nivel}) — é onde a informação de qualidade vale mais.`;
+      return `Favorito claro, mas em aberto no ${plataforma} (${nivel}) — a maior parte das chances está fora do líder.`;
+    }
+
+    if (yesProb > 0.80 || yesProb < 0.20)
+      return `Consenso forte no ${plataforma} (${nivel}) — o lado minoritário só tem valor se você enxergou um risco que o mercado ignorou.`;
+    if (folga < 0.12)
+      return `Mercado equilibrado no ${plataforma} (${nivel}) — é onde a informação de qualidade vale mais.`;
+
+    // Chegou aqui: só há volume, que já aparece no próprio card, ao lado. Repetir
+    // em prosa não acrescenta — e era isso que produzia as doze frases iguais.
+    // Melhor um card limpo do que uma frase que ninguém precisa ler.
+    return "";
+  })();
+
+  // Maiúscula no começo: quando só há a abertura, a frase começava com
+  // "probabilidade subiu 4pp na semana." — minúscula, no meio do card.
+  return comMaiuscula(abertura + frase).trim();
+}
+
+/** Primeira letra maiúscula, sem mexer no resto (siglas e nomes ficam intactos). */
+export function comMaiuscula(texto: string): string {
+  const t = texto.trimStart();
+  return t ? t[0].toLocaleUpperCase("pt-BR") + t.slice(1) : texto;
 }
 
 function bestBetNoteReddit(post: RedditPost): string {
@@ -491,7 +556,13 @@ export function buildPolyItem(bet: PolyBet): TrendingItem | null {
     parsedOutcomes,
     clobTokenIds: bet.clobTokenIds,
     externalUrl,
-    whyTrending: whyTrendingMarket({ volume: vol, volume24h: vol24h, liquidity: liq, yesProb, prevYesProb: bet.prevYesProb, weekPriceChange: weekChg, source: "polymarket", multiDesfecho: !!parsedOutcomes }),
+    whyTrending: whyTrendingMarket({
+      volume: vol, volume24h: vol24h, liquidity: liq, yesProb, prevYesProb: bet.prevYesProb,
+      weekPriceChange: weekChg, source: "polymarket", multiDesfecho: !!parsedOutcomes,
+      // As probabilidades de TODOS os desfechos: é a folga entre os dois
+      // primeiros que diz se a disputa está aberta (DAD-04).
+      desfechos: descricao.desfechos.map((d) => d.prob),
+    }),
     bestBetNote: bestBetNoteMarket(yesProb, vol, "polymarket"),
     sentiment: analyzeSentiment(displayTitle),
     ageHours: 0,
@@ -521,7 +592,11 @@ export function buildKalshiItem(m: KalshiMarket): TrendingItem | null {
     prevYesProb: prevDecimal,
     parsedOutcomes: m.outcomes,
     externalUrl: m.externalUrl ?? `https://kalshi.com/markets/${m.seriesTicker.toLowerCase()}/${m.eventTicker.toLowerCase()}`,
-    whyTrending: whyTrendingMarket({ volume: m.volume, volume24h: m.volume24h, liquidity: m.liquidity, yesProb: yesDecimal, prevYesProb: prevDecimal, source: "kalshi", multiDesfecho: !!m.outcomes }),
+    whyTrending: whyTrendingMarket({
+      volume: m.volume, volume24h: m.volume24h, liquidity: m.liquidity, yesProb: yesDecimal,
+      prevYesProb: prevDecimal, source: "kalshi", multiDesfecho: !!m.outcomes,
+      desfechos: m.outcomes?.map((o) => o.prob),
+    }),
     bestBetNote: bestBetNoteMarket(yesDecimal, m.volume, "kalshi"),
     sentiment: analyzeSentiment(m.title),
     ageHours: 0,

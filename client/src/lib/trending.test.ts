@@ -3,7 +3,7 @@
  * Regressão do bug onde um preço inválido virava "NaN%" no card.
  */
 import { describe, it, expect } from "vitest";
-import { clampProb, normalizeCategory, intercalarPorFonte, manifoldAoVivo, buildManifoldItem, type TrendingItem, type Source } from "./trending";
+import { clampProb, normalizeCategory, intercalarPorFonte, manifoldAoVivo, buildManifoldItem, whyTrendingMarket, folgaDoLider, comMaiuscula, type TrendingItem, type Source } from "./trending";
 
 describe("clampProb", () => {
   it("usa o fallback para NaN (o bug original)", () => {
@@ -162,5 +162,101 @@ describe("manifoldAoVivo — sai o parado, fica o antigo que ainda negocia", () 
     expect(item?.ageHours).toBeGreaterThan(1.9);
     expect(item?.ageHours).toBeLessThan(2.1);
     expect(item?.badge).toBeUndefined();
+  });
+});
+
+
+describe("whyTrendingMarket — a régua do binário não serve para vários desfechos", () => {
+  // Um mercado sem volume de 24h e sem variação: assim a frase medida é só a
+  // conclusão sobre o nível, que é o que o achado DAD-04 trata.
+  const base = { volume: 500_000, source: "polymarket" as const };
+
+  it("🔴 líder de 19% NÃO é consenso forte — era o que a tela dizia", () => {
+    // Fotografado em 21/09: "Consenso forte no Polymarket (líder com 19%)".
+    // A regra binária `yesProb < 0,20` pegava o LÍDER de um mercado de doze
+    // candidatos e o chamava de consenso. É o oposto: ninguém domina.
+    const frase = whyTrendingMarket({
+      ...base, yesProb: 0.19, multiDesfecho: true,
+      desfechos: [0.19, 0.17, 0.13, 0.12, 0.09, 0.07],
+    });
+    expect(frase).not.toContain("Consenso forte");
+    expect(frase).toContain("nenhum desfecho domina");
+    expect(frase).toContain("líder com 19%");   // e continua dizendo de quem é o número
+  });
+
+  it("o mesmo valia no Kalshi, com líder de 10%", () => {
+    const frase = whyTrendingMarket({
+      ...base, source: "kalshi", yesProb: 0.10, multiDesfecho: true,
+      desfechos: [0.10, 0.09, 0.08, 0.07],
+    });
+    expect(frase).not.toContain("Consenso forte");
+    expect(frase).toContain("Kalshi");
+  });
+
+  it("líder de 90% é consenso mesmo com vários desfechos", () => {
+    const frase = whyTrendingMarket({ ...base, yesProb: 0.90, multiDesfecho: true, desfechos: [0.90, 0.05, 0.03] });
+    expect(frase).toContain("Consenso forte");
+  });
+
+  it("⚠️ dois rótulos empatados (Mais 51% · Menos 49%) é cara ou coroa, não favorito", () => {
+    // "Map 2 Total Rounds: Over/Under 21.5" não é SIM/NÃO, então entra pela
+    // régua de vários desfechos — mas com dois rótulos e 2pp de folga, chamar o
+    // primeiro de "favorito claro" trocaria um exagero por outro.
+    const frase = whyTrendingMarket({ ...base, yesProb: 0.51, multiDesfecho: true, desfechos: [0.51, 0.49] });
+    expect(frase).toContain("equilibrado");
+    expect(frase).not.toContain("Favorito claro");
+  });
+
+  it("líder no meio da tabela: favorito claro, mas em aberto", () => {
+    const frase = whyTrendingMarket({ ...base, yesProb: 0.55, multiDesfecho: true, desfechos: [0.55, 0.20, 0.15] });
+    expect(frase).toContain("Favorito claro");
+    expect(frase).toContain("em aberto");
+  });
+});
+
+describe("'equilibrado' é a folga entre os dois primeiros, não a distância de 50%", () => {
+  const base = { volume: 500_000, source: "polymarket" as const };
+
+  it("53/47 é disputa apertada", () => {
+    expect(whyTrendingMarket({ ...base, yesProb: 0.53 })).toContain("equilibrado");
+  });
+
+  it("61/39 já não é — há um favorito", () => {
+    expect(whyTrendingMarket({ ...base, yesProb: 0.61 })).not.toContain("equilibrado");
+  });
+
+  it("no binário a folga é o dobro da distância de 50% — a conta fecha", () => {
+    expect(folgaDoLider([0.53, 0.47])).toBeCloseTo(0.06, 4);
+    expect(folgaDoLider([0.61, 0.39])).toBeCloseTo(0.22, 4);
+    expect(folgaDoLider([0.9, 0.1])).toBeCloseTo(0.8, 4);
+  });
+
+  it("com vários desfechos, a folga é entre o 1º e o 2º — a ordem da lista não importa", () => {
+    // Com doze candidatos ninguém chega perto de 50%, e a distância de 50% não
+    // diz nada. "6 pontos à frente do segundo", sim.
+    expect(folgaDoLider([0.13, 0.19, 0.17])).toBeCloseTo(0.02, 4);
+    expect(folgaDoLider([])).toBe(0);
+    expect(folgaDoLider([0.42])).toBeCloseTo(0.42, 4);   // um desfecho só: a folga é ele
+  });
+});
+
+describe("a frase começa com maiúscula", () => {
+  it("quando só há a variação da semana, não começa minúscula no meio do card", () => {
+    // Antes: "probabilidade subiu 4pp na semana." — com minúscula, no card.
+    const frase = whyTrendingMarket({
+      volume: 1_000, source: "polymarket", yesProb: 0.42, weekPriceChange: 0.04,
+    });
+    expect(frase.startsWith("Probabilidade")).toBe(true);
+  });
+
+  it("não mexe no resto do texto (sigla e nome próprio ficam)", () => {
+    expect(comMaiuscula("eUA anunciam")).toBe("EUA anunciam");
+    expect(comMaiuscula("")).toBe("");
+    expect(comMaiuscula("Já maiúscula")).toBe("Já maiúscula");
+  });
+
+  it("mercado sem nada a dizer continua sem frase — card limpo", () => {
+    // A filosofia antiga continua: melhor nenhuma frase do que uma inútil.
+    expect(whyTrendingMarket({ volume: 1_000, source: "polymarket", yesProb: 0.42 })).toBe("");
   });
 });
