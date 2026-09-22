@@ -32,10 +32,42 @@ const LOTE_MAX = 40;
 /** O que já sabemos, por sessão. `null` = tentamos e não há tradução útil. */
 const memoria = new Map<string, string | null>();
 
+/** Só para o teste: cada caso precisa começar sem o que o anterior aprendeu. */
+export function _limparMemoria(): void { memoria.clear(); }
+
 interface Pendente { texto: string; resolver: (v: string | null) => void }
 
 let fila: Pendente[] = [];
 let agendado: ReturnType<typeof setTimeout> | null = null;
+
+/**
+ * Uma requisição. `falhou` distingue "o servidor respondeu que não há tradução"
+ * de "não deu para perguntar" — e a diferença importa: a primeira a gente
+ * guarda, a segunda tem que ser tentada de novo na próxima montagem.
+ */
+async function pedirLote(
+  textos: string[],
+): Promise<{ mapa: Record<string, string>; pendentes: string[]; falhou: boolean }> {
+  try {
+    const r = await fetch("/api/translate/lote", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ textos }),
+    });
+    if (!r.ok) return { mapa: {}, pendentes: [], falhou: true };
+    const dados = await r.json() as { traducoes?: Record<string, string>; pendentes?: string[] };
+    return { mapa: dados.traducoes ?? {}, pendentes: dados.pendentes ?? [], falhou: false };
+  } catch {
+    return { mapa: {}, pendentes: [], falhou: true };
+  }
+}
+
+/** Parte a lista em pedaços do tamanho que o servidor aceita. */
+export function emLotes<T>(itens: T[], tamanho = LOTE_MAX): T[][] {
+  const lotes: T[][] = [];
+  for (let i = 0; i < itens.length; i += tamanho) lotes.push(itens.slice(i, i + tamanho));
+  return lotes;
+}
 
 async function despachar() {
   agendado = null;
@@ -43,26 +75,32 @@ async function despachar() {
   fila = [];
   if (lote.length === 0) return;
 
-  const textos = Array.from(new Set(lote.map((p) => p.texto))).slice(0, LOTE_MAX);
+  // ⚠️ AQUI MORAVA O DEFEITO (Auditoria 21/09, DAD-05). Era
+  // `.slice(0, LOTE_MAX)`: os títulos além do 40º ficavam de fora da requisição,
+  // mas o laço de baixo resolvia TODOS com `mapa[p.texto] ?? null` e guardava
+  // esse `null` na memória. Resultado: o 41º título em diante nunca era
+  // traduzido na sessão — nem rolando a página, nem voltando à tela. E era
+  // silencioso: a lista visível tem 40 cards, então só quem rolava via o inglês.
+  // Agora o excedente vira OUTRA requisição em vez de virar `null`.
+  const textos = Array.from(new Set(lote.map((p) => p.texto)));
+  const pedacos = emLotes(textos);
 
-  try {
-    const r = await fetch("/api/translate/lote", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ textos }),
-    });
-    const dados = r.ok ? (await r.json() as { traducoes?: Record<string, string> }) : null;
-    const mapa = dados?.traducoes ?? {};
-    for (const p of lote) {
-      const t = mapa[p.texto] ?? null;
-      memoria.set(p.texto, t);
-      p.resolver(t);
-    }
-  } catch {
-    // Falha de rede não vira título duplicado nem card travado: sem tradução, o
-    // card mostra o original e segue. E NÃO guardamos o `null` na memória — a
-    // próxima montagem tenta de novo.
-    for (const p of lote) p.resolver(null);
+  const respostas = await Promise.all(pedacos.map(pedirLote));
+  const mapa: Record<string, string> = Object.assign({}, ...respostas.map((r) => r.mapa));
+  // Lote que não chegou ao servidor não conta como "não tem tradução": o card
+  // mostra o original e segue, mas nada é guardado, então a próxima montagem
+  // tenta de novo. Um lote quebrado também não pode apagar os que deram certo —
+  // por isso cada um é pedido e tratado por conta própria.
+  const semResposta = new Set(pedacos.filter((_, i) => respostas[i].falhou).flat());
+  // Título que o servidor está traduzindo AGORA (em segundo plano) também não
+  // vira `null` guardado: ele fica pronto em segundos, e gravar "não tem" aqui
+  // o deixaria em inglês até a pessoa recarregar a página.
+  const emTraducao = new Set(respostas.flatMap((r) => r.pendentes));
+
+  for (const p of lote) {
+    const t = mapa[p.texto] ?? null;
+    if (!semResposta.has(p.texto) && !emTraducao.has(p.texto)) memoria.set(p.texto, t);
+    p.resolver(t);
   }
 }
 

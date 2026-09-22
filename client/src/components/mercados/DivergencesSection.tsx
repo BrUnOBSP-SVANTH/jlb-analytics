@@ -8,11 +8,13 @@ import { Scale } from "lucide-react";
 import AnimatedSection from "@/components/AnimatedSection";
 import { publishEdges, type Divergence } from "@/components/mercados/edgeStore";
 import { nomeDaPlataforma } from "@shared/plataforma";
+import { traduzir, pareceEmPortugues } from "@/lib/traducao";
 
 export function DivergencesSection() {
   const [divs, setDivs] = useState<Divergence[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
+  const [traducoes, setTraducoes] = useState<Record<string, string>>({});
 
   useEffect(() => {
     fetch("/api/ai/divergences")
@@ -21,6 +23,21 @@ export function DivergencesSection() {
       .catch(() => {})
       .finally(() => setLoaded(true));
   }, []);
+
+  // Este bloco era a última lista do site inteiro ainda em inglês (medido em
+  // 22/09, na captura da /mercados): os cards de baixo já vinham traduzidos e as
+  // quatro linhas de divergência, não. `traduzir` junta estes pedidos aos dos
+  // cards na MESMA requisição, então custa zero a mais.
+  useEffect(() => {
+    let vivo = true;
+    for (const d of divs) {
+      if (pareceEmPortugues(d.title)) continue;
+      void traduzir(d.title).then((t) => {
+        if (vivo && t) setTraducoes((atual) => ({ ...atual, [d.title]: t }));
+      });
+    }
+    return () => { vivo = false; };
+  }, [divs]);
 
   if (!loaded || divs.length === 0) return null;
 
@@ -51,6 +68,9 @@ export function DivergencesSection() {
                   <div className="flex items-center gap-3 p-2.5 rounded-lg bg-secondary/20 border border-border/15 hover:border-gold/30 transition-colors cursor-pointer">
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-medium text-foreground truncate">{d.title}</p>
+                      {traducoes[d.title] && (
+                        <p className="text-[11px] text-muted-foreground truncate">{traducoes[d.title]}</p>
+                      )}
                       <p className="text-[11px] text-muted-foreground mt-0.5">
                         Mercado <span className="font-mono text-foreground">{d.currentProb}%</span> ·
                         JLB <span className="font-mono text-gold">{d.aiFairValue}%</span>

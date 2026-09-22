@@ -20,6 +20,7 @@ import { gravarSnapshotsDoCatalogo } from "./lib/snapshotsDoCatalogo.ts";
 import { destinoDoApelido, rotaExiste } from "../shared/rotas.ts";
 import { urlPublica, hostPublico, ehProducao } from "./lib/urlPublica.ts";
 import { tarefasAgendadasLigadas } from "./lib/orcamentoIA.ts";
+import { traduzirCatalogo } from "./lib/traducaoCatalogo.ts";
 import { mercadoMereceAlerta } from "./lib/alertasMercado.ts";
 import { emailEnabled } from "./lib/email.ts";
 import { fetchBrapiQuotes } from "./lib/brapi.ts";
@@ -732,6 +733,14 @@ async function startServer() {
     setTimeout(() => { void runDailyEmbedBackfill(); }, 6 * 60_000);
     setInterval(() => { void runDailyEmbedBackfill(); }, 24 * 60 * 60 * 1000);
     log.info("   Embeddings Cerebro: backfill diário (~800/dia, respeita a cota free) ✅");
+
+    // Pré-tradução do catálogo: 10min após o boot, depois a cada 6h. A cadeia
+    // de IA traduz muito melhor que o tradutor automático e leva ~10s por lote
+    // de 20 — espera que o visitante não pode pagar com 0,1 CPU. Aqui ninguém
+    // está esperando, e cada título é traduzido UMA vez na vida (DAD-05).
+    setTimeout(() => { void traduzirCatalogo(`http://localhost:${process.env.PORT ?? 3001}`); }, 10 * 60_000);
+    setInterval(() => { void traduzirCatalogo(`http://localhost:${process.env.PORT ?? 3001}`); }, 6 * 60 * 60 * 1000);
+    log.info("   Tradução: catálogo pré-traduzido pela IA, a cada 6h ✅");
 
     // Modelos esportivos: 8min após o boot, depois 2×/dia. Prever cedo importa —
     // a previsão só vale se estiver gravada ANTES do jogo; e resolver 2×/dia

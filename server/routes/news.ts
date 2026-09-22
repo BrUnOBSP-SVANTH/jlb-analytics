@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { getCache, setCache } from "../lib/cache.ts";
 import { fetchJSON } from "../lib/fetcher.ts";
-import { translateToPt } from "../lib/translate.ts";
+import { translateToPt, traduzirLote } from "../lib/translate.ts";
 import type { NewsArticle, NewsApiResponse } from "../lib/types.ts";
 import { log } from "../lib/log.ts";
 
@@ -48,17 +48,17 @@ router.post("/translate/lote", async (req, res) => {
   if (!Array.isArray(bruto)) return res.status(400).json({ error: "textos required" });
 
   // Teto de 40: acima disso a chamada demora mais que as individuais que ela
-  // veio substituir, e a lista visível de mercados nunca passa disso.
+  // veio substituir, e a lista visível de mercados nunca passa disso. Quem
+  // manda mais do que isso é o cliente dividindo em lotes — e cada lote é uma
+  // requisição, não uma fila que o servidor segura aberta.
   const textos = bruto.slice(0, 40).map((t) => String(t ?? "").trim().slice(0, 500)).filter(Boolean);
 
-  const traducoes: Record<string, string> = {};
-  await Promise.all(textos.map(async (t) => {
-    const r = await translateToPt(t);
-    // Mesma regra da rota individual: só entra o que traduziu DE VERDADE.
-    if (r && r !== t) traducoes[t] = r;
-  }));
-
-  res.json({ traducoes });
+  // A lista inteira num pedido só (DAD-05): quem traduz é a cadeia de IA, e ela
+  // precisa ver os títulos juntos para não gastar uma chamada por card. Título
+  // que ainda não tem tradução volta em `pendentes` — está sendo traduzido
+  // agora, em segundo plano, e o cliente não deve gravar "não tem" para ele.
+  const { traducoes, pendentes } = await traduzirLote(textos);
+  res.json({ traducoes, pendentes });
 });
 
 // ── NewsAPI ──────────────────────────────────────────────────────────────────
