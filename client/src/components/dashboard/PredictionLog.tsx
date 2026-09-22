@@ -4,7 +4,7 @@
  */
 import { useState } from "react";
 import {
-  CheckCircle, X as XIcon, Target, Check, Copy, Share2, Trash2,
+  CheckCircle, X as XIcon, Target, Check, Copy, Share2, Trash2, Lock,
   Trophy, BarChart2,
 } from "lucide-react";
 import type { StoredPrediction } from "@/lib/predictions";
@@ -104,14 +104,29 @@ export function PredictionRow({
           >
             {copied ? <Copy className="w-3.5 h-3.5" aria-hidden="true" /> : <Share2 className="w-3.5 h-3.5" aria-hidden="true" />}
           </button>
-          <button
-            onClick={() => onDelete(pred.id)}
-            title="Remover previsão"
-            aria-label="Remover previsão"
-            className="p-1 rounded-md text-muted-foreground hover:text-muted-foreground hover:bg-secondary/30 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border"
-          >
-            <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
-          </button>
+          {/* Apagar SÓ o que está em aberto. Mudar de ideia antes do resultado é
+              legítimo; apagar a previsão depois de saber que errou é o
+              cherry-picking que este track record existe para não fazer — e
+              desde a migration 041 o banco recusa (SEG-01). O botão sumir aqui
+              é o que impede a tela de prometer uma ação que falharia calada. */}
+          {pred.resolved ? (
+            <span
+              title="Previsão resolvida não pode ser apagada — é o que faz o histórico valer alguma coisa."
+              aria-label="Previsão resolvida: não pode ser apagada"
+              className="p-1 text-muted-foreground/50"
+            >
+              <Lock className="w-3.5 h-3.5" aria-hidden="true" />
+            </span>
+          ) : (
+            <button
+              onClick={() => onDelete(pred.id)}
+              title="Remover previsão"
+              aria-label="Remover previsão"
+              className="p-1 rounded-md text-muted-foreground hover:text-muted-foreground hover:bg-secondary/30 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border"
+            >
+              <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
+            </button>
+          )}
         </div>
       </div>
     </div>

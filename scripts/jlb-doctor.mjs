@@ -648,7 +648,7 @@ async function checkMarketFidelity(env) {
 // ── 8b. Segurança (self-monitoring, grátis) ──────────────────────────────────
 // O que mata segurança é REGRESSÃO: um CVE novo, uma tabela nova sem RLS, ou um
 // segredo commitado por engano. Este bloco pega os três sozinho a cada `pnpm doctor`.
-function checkSecurity() {
+async function checkSecurity(env = {}) {
   section("Segurança");
 
   // 1) Segredos no bundle do cliente (JWT service-role / chave secreta Stripe)
@@ -708,6 +708,43 @@ function checkSecurity() {
     const missing = [...created].filter((t) => !rls.has(t));
     if (missing.length > 0) { line("🔴", paint(`Tabela(s) SEM RLS: ${missing.join(", ")}`, c.red), "chave anônima é pública → dados expostos"); add("crit", "Segurança", `Tabela sem RLS: ${missing.join(", ")} — ENABLE ROW LEVEL SECURITY`); }
     else line("✅", `RLS ativo em todas as ${created.size} tabelas`);
+  }
+
+  // 3b) As travas que impedem FORJAR o ranking (SEG-01).
+  //
+  // RLS ligada não basta: o buraco de 22/09 era um GRANT de coluna. `authenticated`
+  // tinha UPDATE em `predictions.outcome` e `predictions.resolved` — e o Leaderboard
+  // publica a média desses números. Isto aqui pergunta ao BANCO, não ao arquivo de
+  // migration: o banco pode ter sido mexido pelo painel depois.
+  {
+    const url = env.SUPABASE_URL || env.VITE_SUPABASE_URL;
+    const chave = env.SUPABASE_SERVICE_KEY;
+    if (!url || !chave) {
+      line("⏭️", "travas de escrita: precisa de SUPABASE_SERVICE_KEY para perguntar ao banco");
+    } else {
+      try {
+        const r = await fetch(`${url}/rest/v1/rpc/travas_de_escrita`, {
+          method: "POST",
+          headers: { apikey: chave, Authorization: `Bearer ${chave}`, "Content-Type": "application/json" },
+          body: "{}",
+          signal: AbortSignal.timeout(10_000),
+        });
+        if (!r.ok) {
+          line("🔴", paint("travas_de_escrita ausente no banco", c.red), "a migration 041 não foi aplicada");
+          add("crit", "Segurança", "Migration 041 não aplicada — dá para forjar o ranking (pnpm provar:travas)");
+        } else {
+          const abertas = (await r.json()).filter((t) => t.aberto);
+          if (abertas.length > 0) {
+            line("🔴", paint(`${abertas.length} trava(s) do ranking ABERTA(S)`, c.red), abertas.map((t) => t.item).join(", "));
+            add("crit", "Segurança", `Ranking forjável: ${abertas.map((t) => `${t.item} (${t.detalhe})`).join(" · ")}`);
+          } else {
+            line("✅", "Previsão imutável: sem UPDATE pelo navegador, gatilhos ativos, resolvida não se apaga");
+          }
+        }
+      } catch (e) {
+        line("⚠️", paint("não consegui checar as travas de escrita", c.yellow), String(e.message ?? e).slice(0, 60));
+      }
+    }
   }
 
   // 4) Headers de segurança (helmet) presentes
@@ -781,7 +818,7 @@ function report() {
   try { await checkAnthropic(env); } catch (e) { add("warn", "Doctor", "checkAnthropic falhou: " + e.message); }
   try { await checkSupabase(env); } catch (e) { add("warn", "Doctor", "checkSupabase falhou: " + e.message); }
   try { await checkMarketFidelity(env); } catch (e) { add("warn", "Doctor", "checkMarketFidelity falhou: " + e.message); }
-  try { checkSecurity(); } catch (e) { add("warn", "Doctor", "checkSecurity falhou: " + e.message); }
+  try { await checkSecurity(env); } catch (e) { add("warn", "Doctor", "checkSecurity falhou: " + e.message); }
   try { checkInventory(); } catch (e) { add("warn", "Doctor", "checkInventory falhou: " + e.message); }
   const code = report();
   process.exit(code);

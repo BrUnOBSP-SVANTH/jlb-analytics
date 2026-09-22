@@ -51,7 +51,15 @@ const COLUNAS_OPCIONAIS = ["resolution_source", "outcome_id", "outcome_label"] a
 async function upsertRows(rows: Array<Record<string, unknown>>): Promise<void> {
   let atuais = rows;
   for (let tentativa = 0; tentativa <= COLUNAS_OPCIONAIS.length; tentativa++) {
-    const { error } = await supabase.from("predictions").upsert(atuais, { onConflict: "id" });
+    // ⚠️ `ignoreDuplicates` — a previsão é IMUTÁVEL depois de gravada (migration
+    // 041, achado SEG-01). Quem resolve é o servidor, contra o settlement
+    // oficial; o navegador não tem mais UPDATE em `predictions`, porque com ele
+    // dava para marcar as próprias previsões como acertadas e subir no ranking
+    // público. Sem esta linha o PostgREST recusaria o LOTE INTEIRO por causa das
+    // linhas que já existem, e nem as previsões novas seriam salvas.
+    const { error } = await supabase
+      .from("predictions")
+      .upsert(atuais, { onConflict: "id", ignoreDuplicates: true });
     if (!error) return;
     const msg = error.message ?? "";
     const faltando = COLUNAS_OPCIONAIS.find((c) => msg.includes(c) && c in (atuais[0] ?? {}));

@@ -45,6 +45,9 @@ grant update (username, display_name, bio, public_profile,
 
 -- 5. ai_credits: leitura própria apenas; escrita é exclusiva do backend (service key)
 drop policy if exists credits_own on public.ai_credits;
+-- O DROP acima usa o nome ANTIGO da política; sem o novo, rodar esta migration
+-- duas vezes para em 42710 (achado do teste de idempotência, 22/09).
+drop policy if exists credits_select_own on public.ai_credits;
 create policy credits_select_own on public.ai_credits
   for select using ((select auth.uid()) = user_id);
 revoke insert, update, delete on table public.ai_credits from anon, authenticated;

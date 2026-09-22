@@ -34,7 +34,8 @@
     "test:e2e": "playwright test",
     "funil": "node --env-file=.env scripts/funil.mjs",
     "capturas": "node scripts/capturas.mjs",
-    "converter:desfechos": "node scripts/converter-desfechos-poly.mjs"
+    "converter:desfechos": "node scripts/converter-desfechos-poly.mjs",
+    "provar:travas": "node scripts/provar-travas.mjs"
   },
   "dependencies": {
     "@fontsource-variable/fraunces": "^5.3.0",

@@ -28,9 +28,13 @@ describe("migrations rodam duas vezes sem quebrar", () => {
     const desprotegidas: string[] = [];
 
     for (const { nome, sql } of arquivos()) {
-      const criadas = [...sql.matchAll(/^CREATE POLICY\s+"([^"]+)"/gm)].map((m) => m[1]);
+      // ⚠️ O nome da policy pode vir COM ou SEM aspas, e a versão anterior deste
+      // teste só enxergava as com aspas — a 041 criou uma sem, que passaria
+      // batido e quebraria na segunda execução com 42710.
+      const nomeDaPolicy = (m: RegExpMatchArray) => m[1] ?? m[2];
+      const criadas = [...sql.matchAll(/^CREATE POLICY\s+(?:"([^"]+)"|([a-z0-9_]+))/gim)].map(nomeDaPolicy);
       const dropadas = new Set(
-        [...sql.matchAll(/^DROP POLICY IF EXISTS\s+"([^"]+)"/gm)].map((m) => m[1]),
+        [...sql.matchAll(/^DROP POLICY IF EXISTS\s+(?:"([^"]+)"|([a-z0-9_]+))/gim)].map(nomeDaPolicy),
       );
       for (const p of criadas) {
         if (!dropadas.has(p)) desprotegidas.push(`${nome}: "${p}"`);
@@ -68,5 +72,64 @@ describe("migrations rodam duas vezes sem quebrar", () => {
       }
     }
     expect(faltando, `sem IF NOT EXISTS:\n${faltando.join("\n")}`).toEqual([]);
+  });
+});
+
+/**
+ * SEG-01 — as travas que impedem forjar o ranking público.
+ *
+ * Aqui o teste lê o FONTE da migration, como o resto deste arquivo: ele prende
+ * a regra para que ninguém a desfaça sem perceber. A prova de que o banco de
+ * produção está mesmo trancado é outra, e roda contra o banco de verdade:
+ * `node scripts/provar-travas.mjs` tenta forjar uma previsão com um JWT de
+ * usuário e exige que o banco recuse.
+ */
+describe("SEG-01 — a previsão nasce pendente e não muda mais", () => {
+  const sql = () => arquivos().find((a) => a.nome.startsWith("041_"))!.sql;
+
+  it("o navegador perde o UPDATE nas duas tabelas do ranking", () => {
+    // Era o buraco: `authenticated` podia alterar `outcome`, `resolved` e
+    // `brier_score` das PRÓPRIAS previsões — e o Leaderboard lê justamente a
+    // média desses números.
+    expect(sql()).toMatch(/REVOKE UPDATE ON public\.predictions FROM anon, authenticated/);
+    expect(sql()).toMatch(/REVOKE UPDATE ON public\.paper_bets\s+FROM anon, authenticated/);
+    expect(sql()).toMatch(/DROP POLICY IF EXISTS predictions_update_own/);
+  });
+
+  it("apagar só o que ainda está em aberto", () => {
+    // Apagar a previsão DEPOIS de saber que errou é o cherry-picking que a
+    // plataforma promete não fazer.
+    expect(sql()).toMatch(/CREATE POLICY predictions_delete_own_pendente[\s\S]*?resolved = false/);
+  });
+
+  it("o gatilho zera o que o cliente não pode decidir", () => {
+    const s = sql();
+    for (const coluna of ["resolved", "outcome", "resolved_at", "resolution_source", "resolution_price"]) {
+      expect(s.includes(`NEW.${coluna}`), `${coluna} precisa ser forçada no INSERT`).toBe(true);
+    }
+    // E a data é a do servidor: `created_at` decide a ordem do histórico e
+    // sustenta o "previu ANTES do resultado".
+    expect(s).toMatch(/NEW\.created_at\s+:= now\(\)/);
+  });
+
+  it("⚠️ o servidor continua podendo resolver — senão nada nunca liquida", () => {
+    // A trava não pode trancar quem tem a obrigação de gravar o resultado: o
+    // job de 6h usa a chave de serviço.
+    expect(sql()).toMatch(/IF current_user = 'service_role' THEN\s+RETURN NEW;/);
+  });
+
+  it("a banca simulada nasce em aberto pelo mesmo motivo", () => {
+    const s = sql();
+    expect(s).toMatch(/trg_aposta_nasce_aberta/);
+    for (const coluna of ["resolved", "outcome", "payout", "settled_at"]) {
+      expect(s.includes(`NEW.${coluna}`), `${coluna} precisa ser forçada no INSERT de paper_bets`).toBe(true);
+    }
+  });
+
+  it("a trava é verificável de fora, e só pela chave de serviço", () => {
+    const s = sql();
+    expect(s).toMatch(/CREATE OR REPLACE FUNCTION public\.travas_de_escrita/);
+    expect(s).toMatch(/REVOKE ALL ON FUNCTION public\.travas_de_escrita\(\) FROM anon, authenticated/);
+    expect(s).toMatch(/GRANT EXECUTE ON FUNCTION public\.travas_de_escrita\(\) TO service_role/);
   });
 });
