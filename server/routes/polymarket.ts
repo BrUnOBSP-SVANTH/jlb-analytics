@@ -5,6 +5,7 @@ import { parseYesPrice, polyEventUrl, rankOutcomes } from "../lib/marketNormaliz
 import type { PolyEvent, PolyMarket } from "../lib/types.ts";
 import { log } from "../lib/log.ts";
 import { comOrcamento, desambiguarPorPai, limitePedido, normalizarTitulo } from "../lib/marketCatalog.ts";
+import { montarCardDoEvento } from "../lib/eventoAgregado.ts";
 
 const router = Router();
 
@@ -146,37 +147,35 @@ router.get("/markets", async (req, res) => {
       if (nested.length === 0) return [];
       const top = nested[0];
       if (ev.negRisk && nested.length > 1) {
-        // rankOutcomes garante a invariante de fidelidade: representante = ranked[0].ref
-        // (líder de PROBABILIDADE), então id/clobTokenIds/outcomePrices[0] descrevem O
-        // MESMO desfecho e o settlement resolve o outcome certo (ver marketNormalize).
+        // rankOutcomes ordena por PROBABILIDADE e corta o ruído. A ordem dele é a
+        // ordem das quatro listas paralelas do card — por construção, não por
+        // coincidência. O representante (`ranked[0].ref`) ainda empresta os campos
+        // que o card precisa (prazo, categoria, slug), mas NÃO empresta mais o id:
+        // desde o DAD-03 quem dá identidade ao card é o evento, e quem liquida um
+        // desfecho é o mercado dele, em `outcomeMarketIds`.
         const ranked = rankOutcomes<(typeof nested)[number]>(nested.map((m) => ({ label: m.groupItemTitle ?? m.question ?? "", prob: parseYesPrice(m.outcomePrices), ref: m })));
         if (ranked.length > 2) {
           const lead = ranked[0].ref;
-          return [{
-            ...lead,
-            question: normalizarTitulo(ev.title ?? lead.question ?? ""),
-            eventTitle: normalizarTitulo(ev.title ?? ""),
-            volume: toNum(ev.volume) ?? lead.volume,
-            outcomes: JSON.stringify(ranked.map((o) => o.label)),
-            outcomePrices: JSON.stringify(ranked.map((o) => o.prob.toFixed(4))),
-            // O TOKEN DE CADA DESFECHO, e não só o do líder.
-            //
-            // Ao juntar os mercados aninhados num card só, tudo que não fosse do
-            // líder era descartado — inclusive o identificador que permite buscar
-            // o histórico de preço de cada candidato. Resultado: a tela de
-            // detalhe conseguia listar "Lula 38%, Bolsonaro 44%" mas não tinha
-            // como mostrar COMO cada um chegou lá, que é o gráfico que o
-            // Polymarket mostra e o que dá leitura a uma eleição.
-            //
-            // Guardado como lista paralela a `outcomes`: mesma ordem, mesmo
-            // índice. Quem não tiver token entra como string vazia, para os
-            // índices não escorregarem.
-            outcomeTokens: JSON.stringify(ranked.map((o) => {
+          // A identidade do card e as quatro listas paralelas moram em
+          // `lib/eventoAgregado.ts` — função pura, testada, porque é ali que o
+          // card deixa de trocar de dono quando o líder muda (DAD-03).
+          const card = montarCardDoEvento(String(ev.id), ranked.map((o) => ({
+            rotulo: o.label,
+            prob: o.prob,
+            idDoMercado: String(o.ref.id ?? ""),
+            token: (() => {
               try {
                 const ids = JSON.parse(String(o.ref.clobTokenIds ?? "[]")) as string[];
                 return ids[0] ?? "";
               } catch { return ""; }
-            })),
+            })(),
+          })));
+          return [{
+            ...lead,
+            ...card,
+            question: normalizarTitulo(ev.title ?? lead.question ?? ""),
+            eventTitle: normalizarTitulo(ev.title ?? ""),
+            volume: toNum(ev.volume) ?? lead.volume,
           }];
         }
       }
@@ -271,6 +270,12 @@ router.get("/markets", async (req, res) => {
  * `/api/polymarket/desfechos/:id`. ⚠️ O primeiro token e o primeiro preço
  * precisam descrever o MESMO desfecho (ver `rankOutcomes` em marketNormalize):
  * por isso encolhe para o PRIMEIRO, nunca para outro.
+ *
+ * `outcomeMarketIds` FICA, e a diferença é o preço: medido em 22/09 nos mesmos
+ * 300 mercados, manter os ids custa 9,7 KB crus (230,4 → 240,1 KB) contra os 53
+ * KB dos tokens — são 92 cards agregados com ids de 6 dígitos, não tokens de 78.
+ * E sem eles a banca simulada não sabe QUAL mercado liquida a aposta feita num
+ * card de evento, que é metade do DAD-03.
  */
 function paraLista(m: PolyMarket): PolyMarket {
   const { outcomeTokens: _fora, ...resto } = m as PolyMarket & { outcomeTokens?: string };
@@ -292,10 +297,16 @@ function paraLista(m: PolyMarket): PolyMarket {
  */
 router.get("/desfechos/:id", (req, res) => {
   const id = String(req.params.id).replace(/[^a-zA-Z0-9_-]/g, "");
-  const cache = getCache<Array<PolyMarket & { outcomeTokens?: string }>>("polymarket:markets:active") ?? [];
+  const cache = getCache<Array<PolyMarket & { outcomeTokens?: string; outcomeMarketIds?: string }>>("polymarket:markets:active") ?? [];
   const m = cache.find((x) => x.id === id || x.slug === id);
   if (!m) return res.status(404).json({ error: "market_not_found" });
-  res.json({ outcomes: m.outcomes ?? null, outcomePrices: m.outcomePrices ?? null, outcomeTokens: m.outcomeTokens ?? null });
+  res.json({
+    outcomes: m.outcomes ?? null,
+    outcomePrices: m.outcomePrices ?? null,
+    outcomeTokens: m.outcomeTokens ?? null,
+    // O id do MERCADO de cada desfecho: é ele que liquida a previsão (DAD-03).
+    outcomeMarketIds: m.outcomeMarketIds ?? null,
+  });
 });
 
 interface ClobEntry { t: number; p: number }

@@ -75,3 +75,39 @@ describe("montarDesfechos — o identificador não pode se soltar do nome", () =
     expect(r!.map((o) => o.label)).toEqual(["A", "C"]);
   });
 });
+
+describe("o mercado de cada desfecho — é ele que liquida (DAD-03)", () => {
+  // Os ids são os reais do evento "Democratic Presidential Nominee 2028".
+  const ROTULOS = j(["Alexandria Ocasio-Cortez", "Jon Ossoff", "Gavin Newsom"]);
+  const PRECOS = j(["0.18", "0.17", "0.13"]);
+  const TOKENS = j(["tok-aoc", "tok-ossoff", "tok-newsom"]);
+  const MERCADOS = j(["559653", "559655", "559657"]);
+
+  it("o mercado acompanha o rótulo pela ORDENAÇÃO, igual ao token", () => {
+    // A lista é reordenada por probabilidade. Se o id não viajar junto, a
+    // previsão de um candidato é gravada contra o mercado de outro — e liquida
+    // errado, marcada como oficial.
+    const r = montarDesfechos(
+      j(["Gavin Newsom", "Alexandria Ocasio-Cortez", "Jon Ossoff"]),
+      j(["0.13", "0.18", "0.17"]),
+      j(["tok-newsom", "tok-aoc", "tok-ossoff"]),
+      j(["559657", "559653", "559655"]),
+    );
+    expect(r!.map((o) => o.label)).toEqual(["Alexandria Ocasio-Cortez", "Jon Ossoff", "Gavin Newsom"]);
+    expect(r!.map((o) => o.marketId)).toEqual(["559653", "559655", "559657"]);
+    expect(r!.map((o) => o.token)).toEqual(["tok-aoc", "tok-ossoff", "tok-newsom"]);
+  });
+
+  it("token e mercado são coisas diferentes e não se confundem", () => {
+    const r = montarDesfechos(ROTULOS, PRECOS, TOKENS, MERCADOS);
+    expect(r![0]).toMatchObject({ label: "Alexandria Ocasio-Cortez", token: "tok-aoc", marketId: "559653" });
+  });
+
+  it("sem a lista de mercados, `marketId` fica vazio — não vira o token", () => {
+    // Cache antigo. Vazio é ausência; token no lugar do mercado seria o defeito
+    // de volta, porque token não liquida.
+    const r = montarDesfechos(ROTULOS, PRECOS, TOKENS);
+    expect(r!.every((o) => o.marketId === "")).toBe(true);
+    expect(r![0].token).toBe("tok-aoc");
+  });
+});

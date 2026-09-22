@@ -7,6 +7,8 @@
  */
 import { getAllMarkets } from "./marketsCache";
 import type { PolyBet, KalshiMarket } from "./trending";
+import { descreverPolymarket } from "@shared/descreverMercado";
+import { tituloComDesfecho } from "./predictions";
 
 export interface HotMarket {
   id: string;          // rota do detalhe: poly-<id> | kalshi-<ticker>
@@ -98,9 +100,13 @@ export async function fetchHotMarkets(): Promise<HotMarket[]> {
   const poly: HotMarket[] = polymarket
     .filter((m) => m.active && !m.closed)
     .map((m) => {
-      const title = m.eventTitle && m.eventTitle.length > 10 && m.eventTitle !== m.question
-        ? m.eventTitle
-        : m.question ?? "";
+      // Regra única de como o mercado é descrito (DAD-01): a PERGUNTA é o
+      // título, e num evento agregado o nome do desfecho entra junto — senão a
+      // âncora diz "Democratic Presidential Nominee 2028 — 18%" sem dizer 18%
+      // de quem. `id` aqui é só a rota do detalhe, então é o do CARD mesmo.
+      const d = descreverPolymarket(m);
+      const ehSimNao = d.tipo === "sim-nao" || d.tipo === "escada-de-datas";
+      const title = tituloComDesfecho(d.titulo || (m.question ?? ""), ehSimNao ? null : d.lider?.rotulo ?? null);
       return { id: `poly-${m.id}`, title, prob: polyProb(m), volume: num(m.volume), source: "polymarket" as const, isBR: isBRtext(title) };
     });
 

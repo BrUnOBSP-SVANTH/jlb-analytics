@@ -89,9 +89,13 @@ export function NovaApostaModal({
           ) : escolhido ? (
             <div className="p-3 rounded-lg bg-primary/5 border border-primary/20 text-xs">
               <p className="font-medium text-foreground line-clamp-2">{escolhido.titulo}</p>
+              {/* "SIM" sozinho não diz a quê: num evento com vários candidatos, a
+                  aposta é sobre UM deles, e é esse nome que precisa estar aqui
+                  antes de a pessoa comprometer o saldo (DAD-02). */}
               <p className="text-muted-foreground mt-1">
                 {escolhido.fonte === "polymarket" ? "Polymarket" : "Kalshi"} · o mercado dá{" "}
-                <span className="font-mono font-bold text-foreground">{Math.round(escolhido.probSim * 100)}%</span> de chance para SIM
+                <span className="font-mono font-bold text-foreground">{Math.round(escolhido.probSim * 100)}%</span>
+                {escolhido.desfecho ? <> de chance para <strong className="text-foreground">{escolhido.desfecho}</strong></> : " de chance para SIM"}
               </p>
               <button onClick={() => setEscolhido(null)} className="text-[11px] text-muted-foreground hover:text-muted-foreground mt-1">
                 Trocar mercado
@@ -112,7 +116,10 @@ export function NovaApostaModal({
                   <button key={m.id} onClick={() => { setEscolhido(m); setLado("sim"); }}
                     className="w-full text-left px-3 py-2 rounded-lg hover:bg-secondary/40 transition-colors text-xs text-foreground flex items-center gap-2">
                     <span className="text-muted-foreground font-mono tabular-nums shrink-0 w-9">{Math.round(m.probSim * 100)}%</span>
-                    <span className="line-clamp-1">{m.titulo}</span>
+                    <span className="line-clamp-1">
+                      {m.titulo}
+                      {m.desfecho && <span className="text-muted-foreground"> · {m.desfecho}</span>}
+                    </span>
                   </button>
                 ))}
                 {filtrados.length === 0 && (

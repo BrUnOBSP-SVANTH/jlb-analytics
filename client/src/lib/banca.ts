@@ -14,6 +14,8 @@ import { supabase } from "./supabase";
 import { getAllMarkets } from "./marketsCache";
 import type { PolyBet, KalshiMarket } from "./trending";
 import { SALDO_INICIAL, type Aposta, type Lado } from "@shared/banca";
+import { descreverPolymarket } from "@shared/descreverMercado";
+import { mercadoQueLiquida } from "@shared/liquidacao";
 
 /** Uma aposta da banca, como a tela precisa dela. */
 export interface ApostaBanca extends Aposta {
@@ -31,8 +33,20 @@ export interface ApostaBanca extends Aposta {
 
 /** Um mercado real disponível para apostar. */
 export interface MercadoBanca {
-  id: string;              // poly-<id> | kalshi-<ticker> — o formato que o liquidador entende
+  /**
+   * `poly-<id>` | `kalshi-<ticker>` — o formato que o LIQUIDADOR entende.
+   *
+   * ⚠️ Num card de evento agregado este NÃO é o id do card (`poly-ev-…`): é o
+   * do mercado do desfecho líder, resolvido na hora de listar. Evento não tem
+   * SIM/NÃO para liquidar, e uma aposta gravada com o id do evento ficaria
+   * aberta para sempre (DAD-03).
+   */
+  id: string;
   titulo: string;
+  /** Quando a aposta é sobre um desfecho nomeado ("Alexandria Ocasio-Cortez"),
+   *  é ele que o SIM significa. Sem isto o modal pergunta "SIM a 18%" sem dizer
+   *  18% de quem (DAD-02). */
+  desfecho?: string;
   probSim: number;         // 0–1, ao vivo
   urlExterna: string;
   fechaEm: string | null;
@@ -183,12 +197,17 @@ export async function carregarMercados(): Promise<MercadoBanca[]> {
     .map((m): MercadoBanca | null => {
       const p = probPoly(m);
       if (p === null) return null;
-      const titulo = m.eventTitle && m.eventTitle.length > 10 && m.eventTitle !== m.question
-        ? m.eventTitle : (m.question ?? "");
+      // Como o mercado é descrito: regra única, a mesma dos cards (DAD-01).
+      const descricao = descreverPolymarket(m);
+      const ehSimNao = descricao.tipo === "sim-nao" || descricao.tipo === "escada-de-datas";
+      // E qual mercado liquida a aposta: no card de evento, o do líder (DAD-03).
+      const idQueLiquida = mercadoQueLiquida(m);
+      if (!idQueLiquida) return null;   // sem id que liquide, não se aceita aposta
       return {
-        id: `poly-${m.id}`,
-        titulo,
-        probSim: p,
+        id: `poly-${idQueLiquida}`,
+        titulo: descricao.titulo || (m.question ?? ""),
+        desfecho: ehSimNao ? undefined : descricao.lider?.rotulo,
+        probSim: ehSimNao ? p : (descricao.lider?.prob ?? p),
         urlExterna: m.externalUrl ?? (m.eventSlug ? `https://polymarket.com/pt/event/${m.eventSlug}` : "https://polymarket.com/pt"),
         fechaEm: m.endDate ?? m.closeTime ?? null,
         fonte: "polymarket" as const,

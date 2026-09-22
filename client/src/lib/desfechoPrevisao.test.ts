@@ -125,8 +125,14 @@ describe("idDeLiquidacao — qual id resolve ESTA previsão", () => {
     expect(idDeLiquidacao(p({ marketId: "kalshi-KXUCL-27-BAR", outcomeId: "Arsenal" }))).toBeNull();
   });
 
-  it("desfecho do Polymarket (token CLOB) e Manifold: não liquida por aqui", () => {
+  it("desfecho do Polymarket: o token CLOB não liquida; o MERCADO do desfecho, sim", () => {
+    // Token real, de 78 dígitos (o da previsão do fundador em AOC). Ele é
+    // identificador de NEGOCIAÇÃO — não tem resultado oficial para consultar.
+    const tokenReal = "107064985435494333113391038470401719113272800530429703182710416066774068907304";
+    expect(idDeLiquidacao(p({ marketId: "poly-2772176", outcomeId: tokenReal }))).toBeNull();
     expect(idDeLiquidacao(p({ marketId: "poly-2772176", outcomeId: "7131523460849" }))).toBeNull();
+    // O id do mercado do desfecho, esse sim, liquida (DAD-03):
+    expect(idDeLiquidacao(p({ marketId: "poly-ev-14321", outcomeId: "559653" }))).toBe("poly-559653");
     expect(idDeLiquidacao(p({ marketId: "manifold-abc" }))).toBeNull();
   });
 });

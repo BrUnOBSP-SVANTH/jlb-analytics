@@ -156,15 +156,26 @@ export function useMarketDetail(marketId: string) {
             // tela usa (routes/polymarket.ts). Aqui se pede o de um mercado só,
             // e apenas quando ele tem mais de dois desfechos.
             let tokensDesfecho = found.outcomeTokens;
+            let mercadosDesfecho: string | undefined;
             const multi = (() => { try { return (JSON.parse(found.outcomes ?? "[]") as string[]).length > 2; } catch { return false; } })();
             if (!tokensDesfecho && multi) {
-              tokensDesfecho = await buscarJson<{ outcomeTokens?: string | null }>(
+              const extra = await buscarJson<{ outcomeTokens?: string | null; outcomeMarketIds?: string | null }>(
                 `/api/polymarket/desfechos/${encodeURIComponent(rawId)}`,
-              ).then((d) => d?.outcomeTokens ?? undefined).catch(() => undefined);
+              ).catch(() => null);
+              tokensDesfecho = extra?.outcomeTokens ?? undefined;
+              mercadosDesfecho = extra?.outcomeMarketIds ?? undefined;
             }
-            const desfechos = montarDesfechos(found.outcomes, found.outcomePrices, tokensDesfecho);
-            const parsedOutcomes = desfechos?.map(({ label, prob, token }) => ({ id: token || label, label, prob }));
-            const outcomeTokens = parsedOutcomes?.map((o) => o.id);
+            const desfechos = montarDesfechos(found.outcomes, found.outcomePrices, tokensDesfecho, mercadosDesfecho);
+            // ⚠️ DUAS COISAS DIFERENTES, e confundi-las era o DAD-03: `id` é o que
+            // LIQUIDA (o mercado do desfecho) e `outcomeTokens` é o que DESENHA (o
+            // token CLOB, que o gráfico de histórico consome). Eram o mesmo valor
+            // — o token — e por isso nenhuma previsão de desfecho do Polymarket
+            // resolvia: token não tem resultado oficial. Sem o id do mercado
+            // (cache antigo) cai no token, como antes: pior é a lista não abrir.
+            const parsedOutcomes = desfechos?.map(({ label, prob, token, marketId }) => ({
+              id: marketId || token || label, label, prob,
+            }));
+            const outcomeTokens = desfechos?.map((o) => o.token);
             // Token do SIM deste mercado — o mesmo id que o snapshot grava, então
             // a série de reserva é do mesmo preço que o gráfico mostraria.
             try {

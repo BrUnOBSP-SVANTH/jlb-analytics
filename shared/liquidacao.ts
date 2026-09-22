@@ -19,8 +19,13 @@
  *    não trazia o id, ele caiu no rótulo ("Barcelona"), e rótulo não liquida.
  *    Verificado contra o Kalshi real (mercados já liquidados do mesmo evento:
  *    cada ticker recebeu o próprio resultado).
- *  · Desfecho do POLYMARKET: o id é token de negociação (CLOB), sem mercado
- *    próprio para liquidar → `null`, resolve à mão.
+ *  · Desfecho do POLYMARKET: cada desfecho de um evento negRisk É um mercado
+ *    binário, com id próprio e resolução própria — `poly-<idDoMercado>` responde
+ *    "este desfecho aconteceu?", e o vencedor liquida SIM enquanto os demais
+ *    liquidam NÃO, igual ao Kalshi. Antes (DAD-03) guardávamos aqui o token
+ *    CLOB, que é identificador de NEGOCIAÇÃO e não tem resultado: a previsão
+ *    ficava presa em "aguardando" para sempre. Token continua devolvendo `null`
+ *    — é por isso que os dois formatos são distinguidos abaixo.
  *
  * ⚠️ NUNCA devolver o id do MERCADO para uma previsão de desfecho. O settlement
  * do mercado é o SIM/NÃO do LÍDER: aplicado a outro desfecho, grava Brier
@@ -30,11 +35,70 @@
 /** Formato de ticker do Kalshi: "KXUCL-27-BAR", "KXPRESNOMD-28-AOC". */
 export const TICKER_KALSHI = /^[A-Z0-9]+(?:-[A-Z0-9.]+)+$/;
 
+/**
+ * Id de MERCADO do Polymarket (numérico, poucos dígitos: "559653", "1130012").
+ *
+ * O token CLOB também é só dígitos, mas é um uint256: na prática 76 a 78 deles
+ * ("1070649854354943331133910384704017191132728005304297031827104160667740689…").
+ * É essa a diferença que separa "dá para liquidar" de "não dá".
+ *
+ * ⚠️ O teto é 10 dígitos, e a folga entre 8 e 10 é de propósito: os ids reais
+ * hoje têm 6 ou 7, e o que cair na faixa do meio — 11 a 75 dígitos — não é
+ * reconhecido por nada e devolve `null`. Errar para o lado de "não liquida" é
+ * seguro; errar para o outro grava resultado oficial contra um mercado
+ * adivinhado.
+ */
+export const ID_MERCADO_POLY = /^\d{1,10}$/;
+
+/**
+ * O id do card NÃO é o de um mercado quando ele representa um EVENTO inteiro
+ * ("poly-ev-123"). Evento não liquida: quem liquida é o desfecho (DAD-03).
+ */
+export const EVENTO_POLY = /^poly-ev-/;
+
 export function idDeLiquidacao(p: { marketId: string; outcomeId?: string | null }): string | null {
   if (!p.marketId.startsWith("poly-") && !p.marketId.startsWith("kalshi-")) return null;
-  if (!p.outcomeId) return p.marketId;
+  if (!p.outcomeId) {
+    // Card de evento agregado sem desfecho escolhido não tem o que liquidar: o
+    // evento não tem SIM/NÃO. Devolver o id aqui mandaria o liquidador procurar
+    // um mercado "ev-123" que não existe — e, pior, antes do DAD-03 ele mandava
+    // o id do LÍDER, liquidando a previsão contra um desfecho que o usuário
+    // nunca escolheu.
+    return EVENTO_POLY.test(p.marketId) ? null : p.marketId;
+  }
   if (p.marketId.startsWith("kalshi-") && TICKER_KALSHI.test(p.outcomeId)) return `kalshi-${p.outcomeId}`;
+  if (p.marketId.startsWith("poly-") && ID_MERCADO_POLY.test(p.outcomeId)) return `poly-${p.outcomeId}`;
   return null;
+}
+
+/**
+ * Qual mercado liquida um CARD — quando a pergunta é binária (SIM/NÃO).
+ *
+ * A previsão da IA e a aposta da banca simulada são SIM/NÃO sobre a
+ * probabilidade PRINCIPAL do card, e a principal de um evento agregado é a do
+ * desfecho que está na frente. Como o card de evento se chama `ev-…` e evento
+ * não é um mercado, esses caminhos precisam do id do mercado do LÍDER — senão o
+ * liquidador procura um mercado que não existe e a aposta fica pendente para
+ * sempre, que é o limbo que o DAD-03 veio tirar.
+ *
+ * ⚠️ Resolvido NA HORA DE GRAVAR, e é isso que o torna correto: o que foi
+ * gravado fica preso ao desfecho que era líder QUANDO a aposta foi feita. Se
+ * amanhã outro assumir a frente, a aposta de ontem continua valendo sobre quem
+ * foi apostado — só o CARD, que é o evento, acompanha a disputa.
+ *
+ * Mora aqui, e não no servidor, porque a banca simulada decide isto no
+ * navegador e o seed da IA decide no servidor: é a mesma pergunta, e ela não
+ * pode ter duas respostas (a mesma razão de `shared/banca.ts` existir).
+ */
+export function mercadoQueLiquida(card: { id: string; outcomeMarketIds?: string | null }): string | null {
+  const id = String(card.id ?? "").trim();
+  if (!id) return null;
+  if (!id.startsWith("ev-")) return id;          // mercado binário comum
+  try {
+    const ids = JSON.parse(String(card.outcomeMarketIds ?? "[]")) as string[];
+    const lider = String(ids[0] ?? "").trim();
+    return lider || null;                        // sem o id do líder não se inventa um
+  } catch { return null; }
 }
 
 /**

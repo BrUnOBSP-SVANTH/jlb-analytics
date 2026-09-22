@@ -27,14 +27,21 @@ export interface MarketBasic {
   active?: boolean;
   status?: string;    // Kalshi: "active" | "closed" | "settled" | "finalized" | …
   /**
-   * Mercados multi-resultado (negRisk). `id` é o identificador ESTÁVEL da fonte
-   * (token CLOB no Polymarket, ticker no Kalshi) e viaja junto com o rótulo por
-   * uma razão prática: a previsão registrada guarda o id, não o nome. Nome de
-   * time ou de candidato muda, e um histórico preso ao rótulo muda de dono.
+   * Mercados multi-resultado (negRisk). `id` é o que LIQUIDA aquele desfecho:
+   * o ticker no Kalshi, o id do MERCADO aninhado no Polymarket. Ele viaja junto
+   * com o rótulo por uma razão prática: a previsão registrada guarda o id, não o
+   * nome. Nome de time ou de candidato muda, e um histórico preso ao rótulo muda
+   * de dono.
+   *
+   * ⚠️ No Polymarket isto já foi o token CLOB, e era o defeito DAD-03: token é
+   * identificador de NEGOCIAÇÃO, não um mercado — não tem resultado oficial,
+   * então `idDeLiquidacao` devolvia `null` e a previsão de desfecho nunca
+   * resolvia. O token continua existindo, em `outcomeTokens`, para o gráfico.
    */
   parsedOutcomes?: Desfecho[];
-  /** Os mesmos ids de `parsedOutcomes`, na MESMA ordem — o gráfico de histórico
-   *  consome nesta forma. Derivado da mesma lista, nunca montado à parte. */
+  /** Os TOKENS dos mesmos desfechos, na MESMA ordem de `parsedOutcomes` — o
+   *  gráfico de histórico consome nesta forma. Derivado da mesma lista, nunca
+   *  montado à parte, senão o histórico troca de dono. */
   outcomeTokens?: string[];
   resolvedOutcome?: string; // desfecho vencedor quando o mercado já resolveu (SIM/NÃO/rótulo)
 }

@@ -20,6 +20,7 @@ import { gravarSnapshotsDoCatalogo } from "./lib/snapshotsDoCatalogo.ts";
 import { destinoDoApelido, rotaExiste } from "../shared/rotas.ts";
 import { urlPublica, hostPublico, ehProducao } from "./lib/urlPublica.ts";
 import { tarefasAgendadasLigadas } from "./lib/orcamentoIA.ts";
+import { mercadoQueLiquida } from "../shared/liquidacao.ts";
 import { traduzirCatalogo } from "./lib/traducaoCatalogo.ts";
 import { mercadoMereceAlerta } from "./lib/alertasMercado.ts";
 import { emailEnabled } from "./lib/email.ts";
@@ -559,7 +560,7 @@ async function startServer() {
     try {
       const [polyRaw, kalshiRaw] = await Promise.allSettled([
         fetch("http://localhost:" + (process.env.PORT ?? 3001) + "/api/polymarket/markets?limit=50")
-          .then((r) => r.ok ? r.json() as Promise<{ markets: Array<{ id: string; question: string; outcomePrices?: string | string[]; volume?: number }> }> : { markets: [] }),
+          .then((r) => r.ok ? r.json() as Promise<{ markets: Array<{ id: string; question: string; outcomePrices?: string | string[]; volume?: number; outcomeMarketIds?: string }> }> : { markets: [] }),
         fetch("http://localhost:" + (process.env.PORT ?? 3001) + "/api/kalshi/markets?limit=40")
           .then((r) => r.ok ? r.json() as Promise<{ markets: Array<{ ticker: string; title: string; yesProb: number; volume?: number }> }> : { markets: [] }),
       ]);
@@ -582,7 +583,18 @@ async function startServer() {
           }
           if (prob === null || !isFinite(prob)) continue;
           livePrices[`poly-${m.id}`] = prob;
-          const key = `poly:${m.id}`;
+          // ⚠️ O QUE COMPARAR COM O QUE. O id do card ficou estável (DAD-03), e
+          // isso criou um risco que não existia enquanto ele trocava sozinho: num
+          // evento agregado o preço do card é o do desfecho que está NA FRENTE,
+          // e quando a frente muda, comparar "card hoje" com "card ontem" compara
+          // dois candidatos diferentes — e dispara "subiu 23pp" sem ninguém ter
+          // subido. Então a comparação é chaveada pelo MERCADO do líder: se o
+          // líder mudou, a chave muda, não há anterior, e nenhum alerta sai. O
+          // alerta em si continua carregando o id do CARD, que é o que a
+          // watchlist guarda.
+          const doLider = mercadoQueLiquida(m) ?? m.id;
+          if (doLider !== m.id) livePrices[`poly-${doLider}`] = prob;
+          const key = `poly:${doLider}`;
           const prev = prevMarketProbs.get(key);
           // O preço ao vivo vale para TODO mercado (os cards piscam com ele);
           // o alerta, não: mercado sem gente dentro oscila por qualquer negócio

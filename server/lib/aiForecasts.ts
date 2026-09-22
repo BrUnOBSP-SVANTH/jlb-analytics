@@ -12,6 +12,7 @@ import { REGRA_LINGUAGEM_CURTA } from "./ai/linguagem.ts";
 import { getCalibrationMemo, getCategoryDeficitWeights } from "./calibrationData.ts";
 import { extractJson } from "./extractJson.ts";
 import { getCache, setCache } from "./cache.ts";
+import { mercadoQueLiquida } from "../../shared/liquidacao.ts";
 import { fetchCerebroContext } from "./cerebro.ts";
 import { fetchRealOutcomesBatch, stripPrefix, chunk } from "./resolveOutcomes.ts";
 import { fetchWithRetry } from "./fetcher.ts";
@@ -196,13 +197,33 @@ export function parsePolyPrices(raw?: string): number[] {
   catch { return []; }
 }
 
+/** O rótulo do desfecho que lidera um card agregado ("Alexandria Ocasio-Cortez"). */
+function primeiroDesfecho(outcomesJson?: string): string | null {
+  try {
+    const lista = JSON.parse(String(outcomesJson ?? "[]")) as string[];
+    const primeiro = String(lista[0] ?? "").trim();
+    return primeiro || null;
+  } catch { return null; }
+}
+
 /** Lê os preços atuais direto do cache do servidor (sem self-call HTTP). */
 export function getLiveMarketPrices(): Map<string, number> {
   const priceMap = new Map<string, number>();
-  const poly = getCache<Array<{ id: string; outcomePrices?: string }>>("polymarket:markets:active") ?? [];
+  const poly = getCache<Array<{ id: string; outcomePrices?: string; outcomeMarketIds?: string }>>("polymarket:markets:active") ?? [];
   const kalshi = getCache<Array<{ ticker: string; yesProb: number }>>("kalshi:markets") ?? [];
   for (const m of poly) {
-    try { const p = parseFloat((JSON.parse(m.outcomePrices ?? "[]") as string[])[0]); if (!isNaN(p)) priceMap.set(`poly-${m.id}`, Math.round(p * 100)); } catch { /* skip */ }
+    try {
+      const p = parseFloat((JSON.parse(m.outcomePrices ?? "[]") as string[])[0]);
+      if (isNaN(p)) continue;
+      const pct = Math.round(p * 100);
+      priceMap.set(`poly-${m.id}`, pct);
+      // Card de evento agregado tem DOIS ids: o do card (`poly-ev-…`, que a tela
+      // usa) e o do mercado do líder (que a previsão guarda, porque é ele que
+      // liquida — DAD-03). O preço é o mesmo, então os dois entram no mapa: sem
+      // isso, a previsão gravada ontem não encontraria o preço de hoje.
+      const doLider = mercadoQueLiquida(m);
+      if (doLider && doLider !== m.id) priceMap.set(`poly-${doLider}`, pct);
+    } catch { /* skip */ }
   }
   // Kalshi já vem em % — ver shared/precoKalshi.ts. A adivinhação antiga fazia um
   // mercado a 1,0% entrar aqui como 100 e ser liquidado SIM pela regra do ≥97,
@@ -575,7 +596,7 @@ export async function seedAiForecasts(maxMarkets = 30): Promise<{ started: boole
   maxMarkets = Math.min(maxMarkets, restante);
 
   const GENERIC = /\b(Team|Person|Candidate|Player|Country|Party)\s+[A-Z]{1,3}\b/;
-  const poly = getCache<Array<{ id: string; question: string; outcomePrices?: string; category?: string; volume?: number; endDate?: string }>>("polymarket:markets:active") ?? [];
+  const poly = getCache<Array<{ id: string; question: string; outcomePrices?: string; outcomes?: string; category?: string; volume?: number; endDate?: string; outcomeMarketIds?: string }>>("polymarket:markets:active") ?? [];
   const kalshi = getCache<Array<{ ticker: string; title: string; yesProb: number; category?: string; volume?: number; closeTime?: string }>>("kalshi:markets") ?? [];
 
   type Target = { marketId: string; source: string; title: string; category: string; marketProb: number; volume: number; closeMs: number };
@@ -589,7 +610,20 @@ export async function seedAiForecasts(maxMarkets = 30): Promise<{ started: boole
     let prob = NaN;
     try { const p = parseFloat((JSON.parse(m.outcomePrices ?? "[]") as string[])[0]); if (!isNaN(p)) prob = Math.round(p * 100); } catch { /* sem preço */ }
     if (isNaN(prob)) continue; // sem preço REAL → não semeia (o padrão-50 poluía a prova)
-    targets.push({ marketId: `poly-${m.id}`, source: "polymarket", title: m.question, category: m.category ?? "other", marketProb: prob, volume: m.volume ?? 0, closeMs: parseClose(m.endDate) });
+    // A previsão é sobre a probabilidade PRINCIPAL do card, que num evento
+    // agregado é a do líder — então ela é gravada com o id do MERCADO do líder,
+    // que liquida. Gravar `poly-ev-…` deixaria a previsão pendente para sempre,
+    // porque evento não tem resultado oficial (DAD-03).
+    const idQueLiquida = mercadoQueLiquida(m);
+    if (!idQueLiquida) continue;   // card agregado sem o mercado do líder: não dá para provar nada
+    // E o TÍTULO diz de quem é a probabilidade. No card agregado, `question` é o
+    // nome do evento ("Democratic Presidential Nominee 2028") enquanto o número
+    // é o do líder — e o track record publicava "…Nominee 2028: IA 18% SIM" sem
+    // dizer 18% de quem (DAD-02). O nome do desfecho entra no título, que é o
+    // que a tela pública mostra.
+    const lider = idQueLiquida !== m.id ? primeiroDesfecho(m.outcomes) : null;
+    const titulo = lider ? `${m.question} — ${lider}` : m.question;
+    targets.push({ marketId: `poly-${idQueLiquida}`, source: "polymarket", title: titulo, category: m.category ?? "other", marketProb: prob, volume: m.volume ?? 0, closeMs: parseClose(m.endDate) });
   }
   for (const m of kalshi) {
     const p = pctDoKalshi(m.yesProb);

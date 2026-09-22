@@ -47,6 +47,9 @@ export interface PolyBet {
   featured?: boolean;
   outcomePrices?: string;
   outcomes?: string;
+  /** Lista paralela a `outcomes`: o id do MERCADO de cada desfecho — o que
+   *  liquida (DAD-03). Só vem nos cards de evento agregado (`id` = "ev-…"). */
+  outcomeMarketIds?: string;
   clobTokenIds?: string;
   externalUrl?: string; // URL canônica computada no servidor (fonte da verdade)
 }

@@ -16,8 +16,18 @@ export interface Desfecho {
   label: string;
   /** 0–1. */
   prob: number;
-  /** Identificador do desfecho na plataforma; "" quando a fonte não mandou. */
+  /** Token de NEGOCIAÇÃO (CLOB). Serve para o histórico de preço — e só. */
   token: string;
+  /**
+   * O MERCADO deste desfecho. É ele que liquida.
+   *
+   * Auditoria 21/09, DAD-03: a previsão de desfecho do Polymarket guardava o
+   * token CLOB, que não é um mercado e não tem resultado oficial — então
+   * `idDeLiquidacao` devolvia `null` e a previsão nunca resolvia. Cada desfecho
+   * de um evento negRisk é um mercado binário com id próprio, que o liquidador
+   * já sabe consultar. "" quando a fonte não mandou.
+   */
+  marketId: string;
 }
 
 /** Abaixo disto o desfecho é ruído: polui a lista e some no gráfico. */
@@ -39,10 +49,12 @@ export function montarDesfechos(
   outcomesJson?: string,
   pricesJson?: string,
   tokensJson?: string,
+  marketIdsJson?: string,
 ): Desfecho[] | null {
   const labels = jsonArray<string>(outcomesJson);
   const precos = jsonArray<string | number>(pricesJson).map(Number);
   const tokens = jsonArray<string>(tokensJson);
+  const mercados = jsonArray<string>(marketIdsJson);
 
   // 2 ou menos rótulos = mercado binário comum.
   if (labels.length <= 2) return null;
@@ -54,6 +66,7 @@ export function montarDesfechos(
     label,
     prob: Number.isFinite(precos[i]) ? precos[i] : 0,
     token: tokens[i] ?? "",
+    marketId: String(mercados[i] ?? ""),
   }));
 
   return juntos
