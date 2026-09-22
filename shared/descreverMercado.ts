@@ -125,6 +125,12 @@ export function descreverMercado(m: MercadoParaDescrever): DescricaoDeMercado {
   const rotulosCrus = m.rotulos?.length ? m.rotulos : m.desfechos?.map((d) => d.rotulo) ?? [];
 
   let tipo: TipoDeMercado;
+  // ⚠️ Há um caso em que o evento É o título certo, e ignorá-lo seria trocar um
+  // defeito por outro: no evento AGREGADO, a "pergunta" que a plataforma manda é
+  // a do desfecho líder. "Decisão do Fed em setembro" com desfechos "25 bps",
+  // "50 bps", "manter" chega como question="25 bps" — e um card escrito
+  // "25 bps 62%" não diz de que mercado se trata. Quando há vários desfechos,
+  // eles é que carregam o específico, e o título é o guarda-chuva.
   if (desfechos.length > 2) {
     tipo = "varios-desfechos";
   } else if (rotulosCrus.length === 2 && !ehSimNao(rotulosCrus)) {
@@ -140,9 +146,11 @@ export function descreverMercado(m: MercadoParaDescrever): DescricaoDeMercado {
     ? [...desfechos].sort((a, b) => b.prob - a.prob)
     : desfechos;
 
+  const eventoEhOTitulo = tipo === "varios-desfechos" && !!evento && !truncado;
+
   return {
-    titulo,
-    subtitulo,
+    titulo: eventoEhOTitulo ? evento : titulo,
+    subtitulo: eventoEhOTitulo ? undefined : subtitulo,
     tipo,
     desfechos: ordenados,
     lider: ordenados[0],
@@ -163,4 +171,31 @@ export function resumoDoMercado(d: DescricaoDeMercado, formatar: (prob: number) 
     return `${a.rotulo} ${formatar(a.prob)} · ${b.rotulo} ${formatar(b.prob)}`;
   }
   return `${d.lider!.rotulo} ${formatar(d.lider!.prob)}`;
+}
+
+/**
+ * Adaptador do Polymarket: os campos `outcomes` e `outcomePrices` chegam como
+ * TEXTO com um array dentro ('["Yes","No"]'). Cada tela fazia o próprio
+ * `JSON.parse` com o próprio `try/catch` — e cada uma errava de um jeito.
+ */
+export function descreverPolymarket(m: {
+  question?: string;
+  eventTitle?: string;
+  outcomes?: string;
+  outcomePrices?: string;
+  yesProb?: number;
+}): DescricaoDeMercado {
+  const lista = (cru?: string): string[] => {
+    if (!cru) return [];
+    try { const v = JSON.parse(cru); return Array.isArray(v) ? v.map(String) : []; } catch { return []; }
+  };
+  const rotulos = lista(m.outcomes);
+  const precos = lista(m.outcomePrices).map((p) => Number(p)).filter((n) => Number.isFinite(n));
+  return descreverMercado({
+    pergunta: m.question,
+    tituloDoEvento: m.eventTitle,
+    rotulos: rotulos.length ? rotulos : undefined,
+    precos: precos.length ? precos : undefined,
+    probSim: m.yesProb,
+  });
 }

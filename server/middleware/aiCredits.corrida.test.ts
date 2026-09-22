@@ -34,6 +34,9 @@ interface Cenario {
 }
 
 async function disparar(c: Cenario): Promise<{ status: number[]; saldoPorCaixa: Map<string, number> }> {
+  // Guarda o que havia antes: APAGAR no fim vazaria para o próximo arquivo de
+  // teste que rodar no mesmo processo (o pool reaproveita processos).
+  const antes = { url: process.env.SUPABASE_URL, key: process.env.SUPABASE_SERVICE_KEY };
   process.env.SUPABASE_URL = "https://exemplo.supabase.co";
   process.env.SUPABASE_SERVICE_KEY = "chave-de-teste";
   vi.resetModules();
@@ -92,8 +95,8 @@ async function disparar(c: Cenario): Promise<{ status: number[]; saldoPorCaixa: 
     return { status, saldoPorCaixa: saldo };
   } finally {
     globalThis.fetch = fetchOriginal;
-    delete process.env.SUPABASE_URL;
-    delete process.env.SUPABASE_SERVICE_KEY;
+    if (antes.url === undefined) delete process.env.SUPABASE_URL; else process.env.SUPABASE_URL = antes.url;
+    if (antes.key === undefined) delete process.env.SUPABASE_SERVICE_KEY; else process.env.SUPABASE_SERVICE_KEY = antes.key;
   }
 }
 

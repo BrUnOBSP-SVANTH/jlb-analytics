@@ -157,6 +157,13 @@ export function MercadoLinha({ item, onCompare, inCompare, onWatch, watched }: {
             pegou o salto h1→h3 no mesmo minuto em que ele nasceu — é para isso
             que ela mede sozinha. */}
         <div className="min-w-0 flex-1">
+          {/* O evento que agrupa, quando acrescenta contexto (DAD-01) — antes ele
+              SUBSTITUÍA a pergunta, e a pergunta é o que identifica o mercado. */}
+          {item.subtitulo && (
+            <p className="text-[11px] text-muted-foreground leading-snug line-clamp-1" title={item.subtitulo}>
+              {item.subtitulo}
+            </p>
+          )}
           {destino ? (
             <Link href={destino}>
               <h2 className="text-[0.9375rem] leading-snug text-foreground hover:text-primary transition-colors cursor-pointer">

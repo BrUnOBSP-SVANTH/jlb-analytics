@@ -6,6 +6,7 @@
  * para isolar a lógica pura da UI. São funções puras + fetch — sem React.
  */
 import { analyzeSentiment } from "@/lib/predictions";
+import { descreverMercado, type TipoDeMercado } from "@shared/descreverMercado";
 import { dolar, pct, pp } from "@shared/formato";
 import { nomeDaPlataforma, volumeNaMoeda } from "@shared/plataforma";
 import { getMarkets } from "@/lib/marketsCache";
@@ -223,7 +224,12 @@ export interface TrendingItem {
   /** Always 0–1 decimal (normalized at build time) */
   yesProb?: number;
   prevYesProb?: number;
-  /** Parsed multi-outcome list, sorted by prob desc. Only set when outcomes > 2. */
+  /** O guarda-chuva do evento, quando acrescenta contexto (DAD-01). */
+  subtitulo?: string;
+  /** Como o mercado deve ser lido — ver shared/descreverMercado.ts (DAD-01). */
+  tipo?: TipoDeMercado;
+  /** Desfechos com rótulo. Preenchido também para binário com rótulos PRÓPRIOS
+   *  (Over/Under, time × time): é o que faz o card parar de escrever "SIM". */
   parsedOutcomes?: { label: string; prob: number }[];
   clobTokenIds?: string;
   externalUrl: string;
@@ -440,13 +446,6 @@ export function buildPolyItem(bet: PolyBet): TrendingItem | null {
   if (yesProb > 1) yesProb = yesProb / 100; // NaN > 1 é false → cai no clampProb
   yesProb = clampProb(yesProb);
 
-  const parsedOutcomes: { label: string; prob: number }[] | undefined =
-    allLabels.length > 2 && allPrices.length >= allLabels.length
-      ? allLabels
-          .map((label, i) => ({ label, prob: Math.max(0, allPrices[i] ?? 0) }))
-          .filter((o) => o.prob > 0.005)
-          .sort((a, b) => b.prob - a.prob)
-      : undefined;
 
   const vol = toNum(bet.volume);
   const vol24h = bet.volume24h !== undefined ? toNum(bet.volume24h) : undefined;
@@ -461,14 +460,27 @@ export function buildPolyItem(bet: PolyBet): TrendingItem | null {
     (weekChg !== undefined && Math.abs(weekChg) > 0.07) ? "em-alta" :
     (vol24h !== undefined && vol > 0 && vol24h / vol > 0.2) ? "em-alta" : undefined;
 
-  const displayTitle =
-    bet.eventTitle && bet.eventTitle.length > 10 && bet.eventTitle !== bet.question
-      ? bet.eventTitle
-      : bet.question;
+  // DAD-01: a PERGUNTA é o título; o evento vira subtítulo quando acrescenta.
+  // Antes, o título do evento substituía a pergunta em 159 dos 300 cards.
+  const descricao = descreverMercado({
+    pergunta: bet.question,
+    tituloDoEvento: bet.eventTitle,
+    rotulos: allLabels.length ? allLabels : undefined,
+    precos: allPrices.length ? allPrices : undefined,
+    probSim: yesProb,
+  });
+  const displayTitle = descricao.titulo;
+  // Pílulas de desfecho sempre que NÃO for Sim/Não — é o que tira o "CHANCE SIM"
+  // de Over/Under e de time × time.
+  const parsedOutcomes = descricao.tipo === "sim-nao" || descricao.tipo === "escada-de-datas"
+    ? undefined
+    : descricao.desfechos.filter((o) => o.prob > 0.005).map((o) => ({ label: o.rotulo, prob: o.prob }));
 
   return {
     id: `poly-${bet.id}`,
     title: displayTitle,
+    subtitulo: descricao.subtitulo,
+    tipo: descricao.tipo,
     source: "polymarket",
     score: Math.min(100, (vol / 10_000) + ((liq ?? 0) / 5_000)),
     volume: vol, volume24h: vol24h, liquidity: liq, weekPriceChange: weekChg,

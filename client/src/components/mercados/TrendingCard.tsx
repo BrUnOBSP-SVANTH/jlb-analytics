@@ -136,6 +136,7 @@ function TrendingCardBase({ item, onCompare, inCompare, indice = 0 }: {
                 de dourado diferentes. */}
             <TituloDeMercado
               titulo={item.title}
+              subtitulo={item.subtitulo}
               traducao={translation}
               traduzindo={translating && isMarket}
               href={isMarket ? `/mercados/${item.id}` : undefined}

@@ -383,8 +383,15 @@ export function MultiOutcomePills({ outcomes }: { outcomes: { label: string; pro
  * a segunda linha só existe quando há tradução DE VERDADE. Passar o original
  * como "tradução" fazia todo card do site mostrar o título duas vezes.
  */
-export function TituloDeMercado({ titulo, traducao, href, traduzindo = false, linhas = 3 }: {
+export function TituloDeMercado({ titulo, subtitulo, traducao, href, traduzindo = false, linhas = 3 }: {
   titulo: string;
+  /**
+   * O evento que agrupa o mercado, quando acrescenta contexto (DAD-01):
+   * "Counter-Strike: Liquid vs Paper Rex" acima de "Map 2 Total Rounds:
+   * Over/Under 21.5". Antes ele SUBSTITUÍA a pergunta, e a pergunta é o que
+   * diz de que mercado se trata.
+   */
+  subtitulo?: string;
   /** `null` quando não há tradução útil — e aí a segunda linha não existe. */
   traducao?: string | null;
   /** Sem `href`, o título não é clicável (post de discussão, por exemplo). */
@@ -398,6 +405,11 @@ export function TituloDeMercado({ titulo, traducao, href, traduzindo = false, li
 
   return (
     <div className="min-w-0">
+      {subtitulo && (
+        <p className="text-[11px] text-muted-foreground leading-snug line-clamp-1 mb-0.5" title={subtitulo}>
+          {subtitulo}
+        </p>
+      )}
       {href
         ? <Link href={href}><p className={`${classe} hover:text-gold transition-colors cursor-pointer`}>{titulo}</p></Link>
         : <p className={classe}>{titulo}</p>}

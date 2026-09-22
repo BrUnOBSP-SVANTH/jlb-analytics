@@ -8,7 +8,14 @@
 export interface MercadoEmDestaque {
   id: string;
   titulo: string;
-  /** 0–1, a escala que o cliente usa. */
+  /** O evento que agrupa, quando acrescenta contexto (DAD-01). */
+  subtitulo?: string;
+  /**
+   * De QUEM é a probabilidade, quando o mercado não é Sim/Não (DAD-02).
+   * A home mostrava "Brazil Presidential Election 61%" — 61% de quem?
+   */
+  desfecho?: string;
+  /** 0–1, a escala que o cliente usa. É a do desfecho líder. */
   prob: number;
   volume: number;
 }

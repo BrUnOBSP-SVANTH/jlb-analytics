@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { descreverMercado, resumoDoMercado, rotuloEmPortugues } from "./descreverMercado.ts";
+import { descreverMercado, descreverPolymarket, resumoDoMercado, rotuloEmPortugues } from "./descreverMercado.ts";
 import { pctDeProb } from "./formato.ts";
 
 const resumo = (m: Parameters<typeof descreverMercado>[0]) =>
@@ -121,5 +121,54 @@ describe("regras de borda", () => {
     expect(d.titulo).toBe("");
     expect(d.desfechos).toEqual([]);
     expect(resumoDoMercado(d, (p) => pctDeProb(p))).toBe("");
+  });
+});
+
+describe("descreverPolymarket — os campos da plataforma vêm como texto", () => {
+  it("lê os arrays em texto e descreve", () => {
+    const d = descreverPolymarket({
+      question: "Will the Democratic Party control the House after the 2026 Midterm elections?",
+      eventTitle: "Which party will win the House in 2026?",
+      outcomes: '["Yes", "No"]',
+      outcomePrices: '["0.925", "0.075"]',
+    });
+    expect(d.tipo).toBe("sim-nao");
+    expect(d.desfechos[0].prob).toBeCloseTo(0.925, 3);
+    expect(d.subtitulo).toBe("Which party will win the House in 2026?");
+  });
+
+  it("texto quebrado não derruba a tela — cai no que sobrou", () => {
+    const d = descreverPolymarket({ question: "Vai chover?", outcomes: "{quebrado", outcomePrices: "nada", yesProb: 0.3 });
+    expect(d.tipo).toBe("sim-nao");
+    expect(d.desfechos[0].prob).toBe(0.3);
+  });
+});
+
+describe("o caso em que o EVENTO é o título certo", () => {
+  it("evento agregado: a 'pergunta' da plataforma é a do desfecho líder", () => {
+    // Caso real que o teste de destaques já guardava: um card escrito
+    // "25 bps 62%" não diz de que mercado se trata. Com vários desfechos, o
+    // específico vem nos desfechos e o título é o guarda-chuva.
+    const d = descreverMercado({
+      pergunta: "25 bps",
+      tituloDoEvento: "Decisão do Fed em setembro",
+      desfechos: [
+        { rotulo: "25 bps", prob: 0.62 },
+        { rotulo: "Manter", prob: 0.3 },
+        { rotulo: "50 bps", prob: 0.08 },
+      ],
+    });
+    expect(d.titulo).toBe("Decisão do Fed em setembro");
+    expect(d.subtitulo).toBeUndefined();          // o evento virou o título
+    expect(resumoDoMercado(d, (p) => pctDeProb(p))).toBe("25 bps 62%");
+  });
+
+  it("mas em binário a pergunta continua mandando", () => {
+    const d = descreverMercado({
+      pergunta: "Will the Democratic Party control the House after the 2026 Midterm elections?",
+      tituloDoEvento: "Which party will win the House in 2026?",
+      rotulos: ["Yes", "No"], precos: [0.925, 0.075],
+    });
+    expect(d.titulo).toContain("Democratic Party");
   });
 });

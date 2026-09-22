@@ -44,6 +44,9 @@ interface DailyBriefing {
 interface LiveMarket {
   id: string;       // id cru do Polymarket → rota /apostas/poly-<id>
   question: string;
+  subtitulo?: string;
+  /** De quem é a probabilidade, quando não é Sim/Não (DAD-02). */
+  desfecho?: string;
   yesProb: number;  // 0–1
   volume: number;
   source: "Polymarket";
@@ -84,9 +87,16 @@ function LiveMarketCard({ market }: { market: LiveMarket }) {
   const inner = (
     <div className="w-[200px] h-full p-4 rounded-xl border border-border/30 group-hover:border-primary/40 transition-colors space-y-2">
       <p className="text-[0.8125rem] text-muted-foreground">Polymarket</p>
+      {market.subtitulo && (
+        <p className="text-[11px] text-muted-foreground leading-snug line-clamp-1">{market.subtitulo}</p>
+      )}
       <p className="text-xs text-foreground leading-snug line-clamp-3 group-hover:text-primary transition-colors">
         {market.question}
       </p>
+      {/* De quem é a probabilidade — sem isto, "61%" não diz nada (DAD-02). */}
+      {market.desfecho && (
+        <p className="text-[11px] font-medium text-foreground/90 leading-snug line-clamp-1">{market.desfecho}</p>
+      )}
       <div className="flex items-end justify-between pt-1">
         <span className="text-2xl font-mono font-semibold tabular-nums text-foreground">
           {pct}<span className="text-xs align-top text-muted-foreground">%</span>
@@ -253,6 +263,8 @@ export default function Home() {
         const items: LiveMarket[] = (dados?.destaques ?? []).map((m) => ({
           id: m.id,
           question: m.titulo,
+          subtitulo: m.subtitulo,
+          desfecho: m.desfecho,
           yesProb: m.prob,
           volume: m.volume,
           source: "Polymarket",

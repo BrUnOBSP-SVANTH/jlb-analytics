@@ -12,12 +12,33 @@ describe("montarDestaques — o pouco que a home precisa", () => {
     expect(totais).toEqual({ polymarket: 1, kalshi: 120 });
   });
 
-  it("o título do evento manda quando diz mais que a pergunta", () => {
-    // Em mercado agrupado a pergunta é a do desfecho líder, e sozinha engana.
-    const [d] = montarDestaques([mercado({ question: "25 bps", eventTitle: "Decisão do Fed em setembro" })], 0).destaques;
+  it("evento AGREGADO: o título é o evento e o número vem com o nome do desfecho", () => {
+    // Em mercado agrupado a pergunta que a plataforma manda é a do desfecho
+    // líder ("25 bps") — sozinha, não diz de que mercado se trata. Quem carrega
+    // o específico são os desfechos. Auditoria 21/09, DAD-01/DAD-02.
+    const [d] = montarDestaques([mercado({
+      question: "25 bps",
+      eventTitle: "Decisão do Fed em setembro",
+      outcomes: '["25 bps","Manter","50 bps"]',
+      outcomePrices: '["0.62","0.30","0.08"]',
+    })], 0).destaques;
     expect(d.titulo).toBe("Decisão do Fed em setembro");
-    // Evento curto ou igual à pergunta não substitui.
-    expect(montarDestaques([mercado({ eventTitle: "Clima" })], 0).destaques[0].titulo).toBe("Vai chover?");
+    expect(d.desfecho).toBe("25 bps");     // 62% de QUEM
+    expect(d.prob).toBeCloseTo(0.62, 3);
+  });
+
+  it("binário: a PERGUNTA é o título, e o evento vira subtítulo", () => {
+    // O contrário do caso acima, e o defeito que a auditoria fotografou: a home
+    // mostrava "Which party will win the House in 2026? 93%" — 93% de qual partido?
+    const [d] = montarDestaques([mercado({
+      question: "Will the Democratic Party control the House after the 2026 Midterm elections?",
+      eventTitle: "Which party will win the House in 2026?",
+      outcomes: '["Yes","No"]',
+      outcomePrices: '["0.925","0.075"]',
+    })], 0).destaques;
+    expect(d.titulo).toContain("Democratic Party");
+    expect(d.subtitulo).toBe("Which party will win the House in 2026?");
+    expect(d.desfecho).toBeUndefined();   // Sim/Não não precisa de nome
   });
 
   it("mercado sem preço real não vai para a tela", () => {

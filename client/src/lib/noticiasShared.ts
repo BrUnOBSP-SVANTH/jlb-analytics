@@ -30,6 +30,8 @@ export function timeAgoISO(iso: string): string {
 export interface PolyMarket {
   id: string;
   question: string;
+  /** O evento que agrupa — vira SUBTÍTULO, nunca substitui a pergunta (DAD-01). */
+  eventTitle?: string;
   slug: string;
   eventSlug?: string;
   volume?: number;

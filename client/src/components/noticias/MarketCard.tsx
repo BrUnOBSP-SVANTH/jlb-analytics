@@ -7,7 +7,8 @@ import { Link } from "wouter";
 import { Languages, ChevronUp, BookmarkPlus, Check, X as XIcon, ExternalLink, Zap, ArrowRight } from "lucide-react";
 import { type PolyMarket, parseOutcomePrices, daysLeft, formatVolume } from "@/lib/noticiasShared";
 import { CategoryBadge } from "@/components/noticias/cards";
-import { ProbHero, ProbBar, ProbSparkline, TituloDeMercado } from "@/components/mercados/cards";
+import { ProbHero, ProbBar, ProbSparkline, TituloDeMercado, MultiOutcomePills } from "@/components/mercados/cards";
+import { descreverPolymarket } from "@shared/descreverMercado";
 import AnimatedSection from "@/components/AnimatedSection";
 import { edge, kellyFraction, type StoredPrediction } from "@/lib/predictions";
 import { registrarPrevisao } from "@/lib/predictionsSync";
@@ -114,6 +115,10 @@ export function MarketCard({ market, savedIds, onSaved, highlight = false, indic
   const [translation, setTranslation] = useState<string | null>(null);
   const [translating, setTranslating] = useState(false);
   const prices = parseOutcomePrices(market.outcomePrices);
+  // DAD-01/DAD-02: "Brazil Presidential Election 61% CHANCE SIM · NÃO 39%" era um
+  // mercado de VÁRIOS desfechos desenhado como binário — 61% de quem?
+  const descricao = descreverPolymarket(market);
+  const ehBinarioSimNao = descricao.tipo === "sim-nao" || descricao.tipo === "escada-de-datas";
   const isSaved = savedIds.has(market.id);
 
   // ANL-04 / TRV-17: aqui a tradução era SOB DEMANDA, um clique por card,
@@ -190,7 +195,8 @@ export function MarketCard({ market, savedIds, onSaved, highlight = false, indic
         <div className="min-w-0 flex-1">
           {/* TRV-06: mesmo bloco de título e tradução das outras duas telas. */}
           <TituloDeMercado
-            titulo={market.question}
+            titulo={descricao.titulo}
+            subtitulo={descricao.subtitulo}
             traducao={translation}
             traduzindo={translating}
             href={`/mercados/poly-${market.id}`}
@@ -201,11 +207,14 @@ export function MarketCard({ market, savedIds, onSaved, highlight = false, indic
             </p>
           )}
         </div>
-        {prices && <ProbHero prob={prices.yes / 100} />}
+        {ehBinarioSimNao && prices && <ProbHero prob={prices.yes / 100} />}
       </div>
 
-      {/* Barra SIM/NÃO — a mesma linguagem visual do card de Apostas */}
-      {prices ? (
+      {/* Barra SIM/NÃO só quando os desfechos SÃO Sim/Não; nos demais, os
+          rótulos de verdade (Over/Under, candidatos, times). */}
+      {!ehBinarioSimNao ? (
+        <MultiOutcomePills outcomes={descricao.desfechos.filter((o) => o.prob > 0.005).map((o) => ({ label: o.rotulo, prob: o.prob }))} />
+      ) : prices ? (
         <div>
           <ProbBar prob={prices.yes / 100} />
           {/* O histórico de 7 dias, igual ao da aba Mercados Ao Vivo. Faltava

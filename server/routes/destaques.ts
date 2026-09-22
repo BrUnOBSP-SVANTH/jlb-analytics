@@ -15,6 +15,7 @@
 import { Router } from "express";
 import { getCache, setCache } from "../lib/cache.ts";
 import { parsePolyPrices } from "../lib/aiForecasts.ts";
+import { descreverPolymarket } from "../../shared/descreverMercado.ts";
 import { pctDoKalshi } from "../../shared/precoKalshi.ts";
 
 import type { Destaques, MercadoEmDestaque } from "../../shared/tiposDestaques.ts";
@@ -25,14 +26,16 @@ const router = Router();
 
 interface PolyBruto {
   id?: string; question?: string; eventTitle?: string;
+  outcomes?: string;
   outcomePrices?: string; volume?: number; volume24hr?: number;
   endDate?: string; closed?: boolean; active?: boolean;
 }
 
 /**
- * Monta a lista curta. É a MESMA regra de título que o card usava no cliente: o
- * título do evento manda quando diz mais que a pergunta (num mercado agrupado a
- * pergunta é do desfecho líder e sozinha engana).
+ * Monta a lista curta. A regra de como o mercado é descrito mora em
+ * `shared/descreverMercado.ts` e vale para TODAS as telas (Auditoria 21/09,
+ * DAD-01): binário mostra a pergunta; evento agregado mostra o evento e o nome
+ * do desfecho junto do número.
  */
 export function montarDestaques(
   poly: ReadonlyArray<PolyBruto>,
@@ -59,11 +62,17 @@ export function montarDestaques(
     // ocupando a vitrine de uma página que promete "o que o mundo está prevendo".
     // É a mesma régua da lista de divergências (lib/aiForecasts.ts).
     if (prob >= 0.97 || prob <= 0.03) continue;
-    const eventoDizMais = !!m.eventTitle && m.eventTitle.length > 10 && m.eventTitle !== m.question;
+    // DAD-01/DAD-02: a PERGUNTA é o título, e a probabilidade vem com o nome do
+    // desfecho quando não é Sim/Não. Antes a home mostrava o título do evento e
+    // um número sozinho ("Brazil Presidential Election 61%").
+    const descricao = descreverPolymarket(m);
+    const ehSimNao = descricao.tipo === "sim-nao" || descricao.tipo === "escada-de-datas";
     destaques.push({
       id,
-      titulo: (eventoDizMais ? m.eventTitle : m.question) ?? "Mercado preditivo",
-      prob,
+      titulo: descricao.titulo || "Mercado preditivo",
+      subtitulo: descricao.subtitulo,
+      desfecho: ehSimNao ? undefined : descricao.lider?.rotulo,
+      prob: ehSimNao ? prob : (descricao.lider?.prob ?? prob),
       volume: m.volume ?? m.volume24hr ?? 0,
     });
   }
