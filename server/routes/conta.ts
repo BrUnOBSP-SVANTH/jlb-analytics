@@ -15,6 +15,7 @@
 import { Router } from "express";
 import { isRateLimited } from "../lib/cache.ts";
 import { ehEmailDescartavel } from "../lib/identidadeCota.ts";
+import { log } from "../lib/log.ts";
 
 const router = Router();
 
@@ -54,17 +55,31 @@ router.get("/senha-vazada", async (req, res) => {
   const prefixo = String(req.query.prefixo ?? "").trim().toUpperCase();
   if (!PREFIXO_SHA1.test(prefixo)) return res.status(400).json({ error: "prefixo_invalido" });
 
-  try {
+  // ⚠️ DUAS TENTATIVAS, e a razão é a falha aberta. Medido em produção
+  // (23/09): uma consulta entre oito voltou 502 sozinha, e cada falha dessas
+  // deixa passar uma senha vazada sem ninguém saber — o pedido demora ~300ms,
+  // então tentar de novo custa quase nada e derruba muito essa janela.
+  const consultar = async () => {
     const r = await fetch(`https://api.pwnedpasswords.com/range/${prefixo}`, {
       headers: { "Add-Padding": "true", "User-Agent": "JLB-Analytics" },
       signal: AbortSignal.timeout(6_000),
     });
-    if (!r.ok) return res.status(502).json({ error: "consulta_indisponivel" });
-    res.type("text/plain").send(await r.text());
-  } catch {
-    // Falha ABERTA, de propósito: uma checagem de conveniência não pode impedir
-    // alguém de criar conta. Quem chama trata 502 como "não deu para verificar".
-    res.status(502).json({ error: "consulta_indisponivel" });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    return r.text();
+  };
+
+  for (const tentativa of [1, 2]) {
+    try {
+      return res.type("text/plain").send(await consultar());
+    } catch (e) {
+      if (tentativa === 2) {
+        // Falha ABERTA, de propósito: uma checagem de conveniência não pode
+        // impedir alguém de criar conta. Quem chama trata 502 como "não deu
+        // para verificar" — e é por isso que ela precisa falhar POUCO.
+        log.warn("senha-vazada", `HaveIBeenPwned não respondeu: ${String(e)}`);
+        return res.status(502).json({ error: "consulta_indisponivel" });
+      }
+    }
   }
 });
 
