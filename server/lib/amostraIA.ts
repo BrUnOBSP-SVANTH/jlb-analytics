@@ -147,6 +147,16 @@ export interface ResumoIA {
   /** Brier melhor que o do mercado, caso a caso. Mesmo denominador. */
   bateuMercado: number;
   bateuMercadoPct: number | null;
+  /**
+   * A divisão COMPLETA contra o mercado: melhor, empate e pior.
+   *
+   * Publicar só o primeiro número ("bateu em 14%") deixa o leitor supor que nos
+   * outros 86% a IA perdeu — quando boa parte é empate exato. Os três juntos
+   * respondem a pergunta, e a soma fecha com `comparaveis`.
+   */
+  comparaveis: number;
+  empatouMercado: number;
+  perdeuMercado: number;
 
   /**
    * O teste difícil: quando divergimos do preço e dissemos que o mercado errou,
@@ -200,10 +210,15 @@ export function resumir(a: Amostra): ResumoIA {
   const aiBrier = media(r.map((x) => n(x.brier)));
   const marketBrier = media(r.map((x) => n(x.market_brier)));
 
-  const bateu = r.filter((x) => {
-    const meu = n(x.brier), dele = n(x.market_brier);
-    return meu !== null && dele !== null && meu < dele;
-  }).length;
+  // MELHOR, EMPATE e PIOR — os três, não só o primeiro (Auditoria 21/09,
+  // IAC-02). Publicar apenas "bateu o mercado em 14%" deixa o leitor supor que
+  // nos outros 86% a IA perdeu; e "14% melhor calibrada que o mercado" ainda se
+  // lê como "14% melhor", que é outra coisa. Os três números respondem a
+  // pergunta de verdade, e a soma fecha.
+  const comparaveis = r.filter((x) => n(x.brier) !== null && n(x.market_brier) !== null);
+  const bateu = comparaveis.filter((x) => n(x.brier)! < n(x.market_brier)!).length;
+  const empatou = comparaveis.filter((x) => n(x.brier)! === n(x.market_brier)!).length;
+  const perdeu = comparaveis.length - bateu - empatou;
 
   const comLado = r.filter((x) => n(x.ai_fair_value) !== 50);
   const acertos = comLado.filter((x) => (n(x.ai_fair_value)! > 50) === !!x.outcome).length;
@@ -227,6 +242,9 @@ export function resumir(a: Amostra): ResumoIA {
   return {
     total: a.todas.length,
     resolvidas: r.length,
+    comparaveis: comparaveis.length,
+    empatouMercado: empatou,
+    perdeuMercado: perdeu,
     emAberto: a.emAberto.length,
     semDesfecho: a.semDesfecho.length,
 

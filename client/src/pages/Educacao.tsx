@@ -135,11 +135,21 @@ export default function Educacao() {
                 <h3 className="font-semibold text-foreground text-sm">Decidir com método</h3>
               </div>
               <ul className="space-y-2 text-xs text-muted-foreground">
+                {/* ⚠️ Duas destas frases eram desmentidas pelo nosso PRÓPRIO
+                    placar (Auditoria 21/09, IAC-02). "Só age quando há
+                    divergência real" vendia a divergência como sinal de
+                    vantagem — mas quando a IA diverge do preço, ela acerta 32%
+                    de 519. E "a gente PROVA o histórico de acertos" prometia
+                    prova de acerto, quando o que o track record prova é o
+                    histórico INTEIRO, acertos e erros na mesma conta: é isso
+                    que o torna auditável. Prometer prova de acerto numa página
+                    que ensina ceticismo é o erro mais caro que este site pode
+                    cometer. */}
                 {[
                   "Você calcula a probabilidade e a margem implícita de cada odd",
-                  "Só age quando há divergência real entre o modelo e o mercado",
+                  "Divergir do mercado é hipótese a investigar, não sinal de vantagem — e a nossa é medida",
                   "EV positivo e Kelly: o tamanho da posição vem da vantagem",
-                  "Track record auditável — a gente PROVA o histórico de acertos",
+                  "Track record auditável — acertos e erros na mesma conta, sem escolher os melhores",
                 ].map((x) => (
                   <li key={x} className="flex items-start gap-2"><CheckCircle className="w-3.5 h-3.5 text-positive shrink-0 mt-0.5" />{x}</li>
                 ))}

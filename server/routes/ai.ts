@@ -603,9 +603,14 @@ router.get("/track-record", async (_req, res) => {
       marketBrier: t.marketBrier,
       skillVsMarket: t.skillVsMarket,
 
-      // "Bateu o mercado" pelo BRIER, caso a caso.
+      // "Bateu o mercado" pelo BRIER, caso a caso — com a divisão COMPLETA.
+      // Só o primeiro número faz o leitor supor que nos outros 86% a IA perdeu,
+      // quando boa parte é empate exato (Auditoria 21/09, IAC-02).
       beatMarketCount: t.bateuMercado,
       beatMarketPct: t.bateuMercadoPct,
+      comparableCount: t.comparaveis,
+      tiedMarketCount: t.empatouMercado,
+      lostMarketCount: t.perdeuMercado,
 
       // "Bateu o mercado" AO DIVERGIR: das vezes em que discordamos do preço,
       // quantas acertamos. É o teste difícil, e o que a tela de análise já

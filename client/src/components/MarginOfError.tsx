@@ -11,12 +11,16 @@
 import { useEffect, useState } from "react";
 import { Link } from "wouter";
 import { Scale, ArrowRight } from "lucide-react";
-import { pct } from "@shared/formato";
+import { num, pct } from "@shared/formato";
 import { buscarJson } from "@/lib/api";
 
 interface TrackRecord {
   available?: boolean;
   resolvedCount: number;
+  /** O denominador da TAXA DE ACERTO: só as previsões com lado (exclui os 50%
+   *  exatos, que não apontam para nada). É menor que `resolvedCount`, e usar um
+   *  pelo outro foi o achado IAC-02. */
+  directionalCount?: number | null;
   hitRate: number | null;
   marketHitRate: number | null;
   skillVsMarket: number | null;
@@ -78,8 +82,22 @@ export default function MarginOfError() {
         <p className="text-xs sm:text-[13px] text-muted-foreground leading-relaxed">
           <strong className="text-foreground">Não somos perfeitos — e mostramos isso.</strong>{" "}
           Nossa IA acerta a direção <strong className="text-foreground">~{pct(hit)}</strong> das vezes (logo,{" "}
-          <strong className="text-negative">erra ~{pct(err)}</strong>), em {data!.resolvedCount} previsões já resolvidas.
+          <strong className="text-negative">erra ~{pct(err)}</strong>), em{" "}
+          {num(data!.directionalCount ?? data!.resolvedCount)} previsões com lado definido.
         </p>
+
+        {/* ⚠️ DOIS DENOMINADORES, e dizê-lo é o ponto (Auditoria 21/09, IAC-02).
+            A frase acima anunciava a taxa "em 1214 previsões já resolvidas", mas
+            a taxa divide por outro conjunto: as que têm LADO (exclui os 50%
+            exatos, que não apontam para nada). Numerador de um conjunto com
+            denominador de outro é exatamente o erro que este site ensina a
+            procurar — e ele estava na nossa própria página. */}
+        {data!.directionalCount != null && data!.directionalCount !== data!.resolvedCount && (
+          <p className="text-[11px] text-muted-foreground mt-1">
+            São {num(data!.resolvedCount)} previsões resolvidas no total; {num(data!.directionalCount)} delas
+            apontaram um lado — as demais ficaram exatamente em 50%, e 50% não erra nem acerta direção.
+          </p>
+        )}
 
         {/* A margem de erro PROPRIAMENTE DITA. Antes o selo chamava de "margem de
             erro" os {err}% que sobram do acerto — mas aquilo é a TAXA DE ERRO. A

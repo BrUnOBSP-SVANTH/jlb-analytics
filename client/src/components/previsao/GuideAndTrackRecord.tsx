@@ -72,6 +72,13 @@ export function SuperforecasterGuide() {
 
 // ── AI Track Record ───────────────────────────────────────────────────────────
 
+/** Quanto uma parte representa do todo, em 0–100. `null` sem todo: sem
+ *  denominador não se publica porcentagem. */
+function fatia(parte: number | null | undefined, todo: number | null | undefined): number | null {
+  if (parte == null || !todo) return null;
+  return Math.round((parte / todo) * 100);
+}
+
 interface TrackRecordData {
   available: boolean;
   resolvedCount: number;
@@ -79,6 +86,12 @@ interface TrackRecordData {
   aiBrier: number | null;
   marketBrier: number | null;
   beatMarketPct: number | null;
+  /** A divisão COMPLETA contra o preço: quantos comparáveis, quantos empatados
+   *  e quantos perdidos. Sem os três, "melhor em 14%" insinua "pior em 86%". */
+  beatMarketCount?: number | null;
+  comparableCount?: number | null;
+  tiedMarketCount?: number | null;
+  lostMarketCount?: number | null;
   avgAbsEdge: number | null;
   skillVsMarket: number | null;
   hitRate: number | null;          // taxa de acerto direcional da IA (migration 018)
@@ -159,7 +172,9 @@ export function AiTrackRecord() {
               (SIM/NÃO) <span className="text-foreground font-semibold">{data.hitRate}%</span> das vezes.
               {data.marketHitRate !== null && (
                 <> O mercado, no mesmo conjunto, acertou <span className="text-foreground font-semibold">{data.marketHitRate}%</span>
-                {" — "}{hitBeatsMarket ? "empatamos ou superamos o consenso." : "ainda atrás do consenso, e mostramos isso mesmo assim."}</>
+                {" — "}{data.hitRate === data.marketHitRate
+                  ? "empatamos com o consenso."
+                  : hitBeatsMarket ? "superamos o consenso." : "ainda atrás do consenso, e mostramos isso mesmo assim."}</>
               )}
             </p>
           </div>
@@ -179,22 +194,41 @@ export function AiTrackRecord() {
               análise usa para outra medida (acerto ao divergir). Na auditoria os
               dois números apareciam como 12% e 43% na mesma página, e a leitura
               natural é que um dos dois é maquiagem. Agora cada um diz o que mede. */}
+          {/* ⚠️ "14% melhor calibrada que o mercado" se lia como "14% MELHOR"
+              — e, pior, sugeria que nos outros 86% a IA perdeu. Boa parte é
+              EMPATE exato (Auditoria 21/09, IAC-02). Os três números juntos
+              respondem a pergunta; um sozinho insinua outra. */}
           <div className="text-center">
             <p className={`text-2xl font-mono font-bold ${beatMarket ? "text-positive" : "text-muted-foreground"}`}>
               {pct(data.beatMarketPct)}
             </p>
-            <p className="text-[11px] text-muted-foreground mt-0.5">Melhor calibrada<br />que o mercado</p>
+            <p className="text-[11px] text-muted-foreground mt-0.5">Dos mercados, ficamos<br />melhor que o preço</p>
           </div>
           <div className="text-center">
             <p className="text-2xl font-mono font-bold text-foreground">{num(data.avgAbsEdge, 1)} pp</p>
             <p className="text-[11px] text-muted-foreground mt-0.5">Distância média<br />do preço</p>
           </div>
         </div>
+        {/* A divisão COMPLETA contra o preço. Sem ela, "melhor em 14%" deixa o
+            leitor preencher os 86% com "pior" — e a maior parte é empate. */}
+        {data.comparableCount != null && data.tiedMarketCount != null && data.lostMarketCount != null && (
+          <p className="text-xs text-muted-foreground mt-3 text-center leading-relaxed">
+            Nos {num(data.comparableCount)} mercados comparáveis: ficamos{" "}
+            <strong className="text-foreground">melhor em {pct(fatia(data.beatMarketCount, data.comparableCount))}</strong>,{" "}
+            <strong className="text-foreground">empatamos em {pct(fatia(data.tiedMarketCount, data.comparableCount))}</strong> e{" "}
+            <strong className="text-foreground">ficamos pior em {pct(fatia(data.lostMarketCount, data.comparableCount))}</strong>.
+            {" "}Empate quer dizer que a IA publicou exatamente o preço do mercado — o que acontece com frequência,
+            porque ela parte dele.
+          </p>
+        )}
         <p className="text-xs text-muted-foreground mt-3 text-center leading-relaxed">
-          Taxa de acerto = direção certa (SIM/NÃO). Brier = calibração fina (menor é melhor).
-          <strong className="text-foreground/80"> Melhor calibrada que o mercado</strong> = em quantos
-          mercados nosso Brier foi menor que o dele. Todos os números desta página dividem pelas mesmas{" "}
-          {data.resolvedCount} resoluções, e cada uma é comparada ao resultado real da plataforma.
+          Taxa de acerto = direção certa (SIM/NÃO), sobre as {num(data.directionalCount)} previsões com lado.
+          Brier = calibração fina (menor é melhor), sobre as {num(data.resolvedCount)} resoluções.
+          {/* ⚠️ Aqui se afirmava "todos os números desta página dividem pelas
+              mesmas N resoluções" — e era falso justamente para a taxa de
+              acerto, que divide pelas com lado. Num site que ensina a conferir
+              denominador, a página errava o próprio. */}
+          {" "}São denominadores diferentes de propósito: 50% exato não erra nem acerta direção.
         </p>
       </div>
     </AnimatedSection>
