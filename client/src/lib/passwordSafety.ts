@@ -10,8 +10,15 @@
  * PRIVACIDADE (k-anonimato — a senha NUNCA sai do navegador):
  * calculamos o SHA-1 localmente, enviamos apenas os 5 PRIMEIROS caracteres do
  * hash e recebemos de volta todos os sufixos que começam com esse prefixo. A
- * comparação final acontece aqui. O servidor deles não tem como saber qual
- * senha foi testada — nem sequer o hash completo.
+ * comparação final acontece aqui. Nem o servidor deles nem o nosso têm como
+ * saber qual senha foi testada — nem sequer o hash completo.
+ *
+ * ⚠️ A CONSULTA PASSA PELO NOSSO SERVIDOR (Auditoria 21/09, SEG-04). Enquanto
+ * ela ia direto para `api.pwnedpasswords.com`, a CSP do site bloqueava a
+ * chamada — `connect-src` só libera o próprio domínio e o Supabase — e o
+ * `catch` abaixo devolvia `null`, que quer dizer "deixa passar". Resultado
+ * medido em produção: esta proteção nunca rodou. Uma regra que falha aberta
+ * precisa que alguém confira se ela está de pé.
  *
  * Falha ABERTA de propósito: se a API estiver fora do ar, o cadastro segue. Uma
  * verificação de conveniência não pode impedir alguém de criar conta.
@@ -62,7 +69,7 @@ export async function countBreaches(pwd: string): Promise<number | null> {
     const hash = await sha1Hex(pwd);
     const prefix = hash.slice(0, 5);
     const suffix = hash.slice(5);
-    const res = await fetch(`https://api.pwnedpasswords.com/range/${prefix}`, {
+    const res = await fetch(`/api/conta/senha-vazada?prefixo=${prefix}`, {
       signal: AbortSignal.timeout(6_000),
     });
     if (!res.ok) return null;

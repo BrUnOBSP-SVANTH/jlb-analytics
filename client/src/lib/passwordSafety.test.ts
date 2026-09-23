@@ -33,8 +33,12 @@ describe("countBreaches — k-anonimato e falha aberta", () => {
     globalThis.fetch = spy as unknown as typeof fetch;
     await countBreaches("girassol47bravo");
     const url = String(spy.mock.calls[0][0]);
-    const prefix = url.split("/range/")[1];
-    expect(prefix).toHaveLength(5);
+    // ⚠️ A consulta passa pelo NOSSO servidor desde o SEG-04: indo direto ao
+    // pwnedpasswords.com, a CSP bloqueava e a checagem nunca rodava. O
+    // k-anonimato é o mesmo — nem o nosso servidor vê mais que o prefixo.
+    expect(url).toContain("/api/conta/senha-vazada");
+    const prefixo = new URLSearchParams(url.split("?")[1]).get("prefixo");
+    expect(prefixo).toHaveLength(5);
     expect(url).not.toContain("girassol");     // a senha em si nunca trafega
   });
 
