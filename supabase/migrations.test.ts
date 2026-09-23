@@ -163,3 +163,47 @@ describe("SEG-05 — consenso com k-anonimato", () => {
     expect(hook).not.toMatch(/from\("market_community_forecast"\)/);
   });
 });
+
+/**
+ * Função SECURITY DEFINER precisa revogar de PUBLIC, não só dos papéis.
+ *
+ * 🔴 O erro que a 041 cometeu e a 046 consertou: no Postgres a função nasce com
+ * `EXECUTE` para `PUBLIC`, e `anon`/`authenticated` HERDAM desse grant. Revogar
+ * nominalmente dos dois deixa a função aberta — e `travas_de_escrita`, que é um
+ * mapa de onde estão as travas de segurança, ficou pública por um dia.
+ *
+ * Quem achou foi o advisor do Supabase, não um teste: os testes liam o arquivo
+ * da migration, e o arquivo declarava a intenção certa. Este aqui olha a FORMA
+ * da revogação, que é onde estava o engano.
+ */
+describe("SECURITY DEFINER — revogar de PUBLIC é o que fecha", () => {
+  /** Sem os comentários: a 046 CITA a linha errada no cabeçalho, para explicar
+   *  o engano, e um teste que lesse a prosa acusaria o próprio conserto. */
+  const semComentarios = (sql: string) => sql.split(/\r?\n/).map((l) => l.replace(/--.*$/, " ")).join(" ");
+
+  it("toda função SECURITY DEFINER que revoga de anon também revoga de PUBLIC", () => {
+    const codigo = arquivos().map((a) => ({ nome: a.nome, sql: semComentarios(a.sql) }));
+    const revogaDePublic = (funcao: string) =>
+      codigo.some(({ sql }) => sql.includes(`REVOKE ALL ON FUNCTION ${funcao}`) && /FROM PUBLIC/i.test(
+        sql.slice(sql.indexOf(`REVOKE ALL ON FUNCTION ${funcao}`)).split(";")[0]));
+
+    const faltando: string[] = [];
+    for (const { nome, sql } of codigo) {
+      for (const m of sql.matchAll(/REVOKE ALL ON FUNCTION\s+(public\.[a-z_]+)\([^)]*\)\s+FROM\s+([^;]+);/gi)) {
+        const [, funcao, papeis] = m;
+        if (/public/i.test(papeis)) continue;   // este já é o revoke de PUBLIC
+        if (!revogaDePublic(funcao)) faltando.push(`${nome}: ${funcao}`);
+      }
+    }
+    expect(
+      faltando,
+      `função que revoga só dos papéis nomeados — \`anon\` herda de PUBLIC e continua podendo executar: ${faltando.join(" · ")}`,
+    ).toEqual([]);
+  });
+
+  it("a régua acha mesmo as revogações (senão passaria sem olhar nada)", () => {
+    const todas = arquivos().flatMap(({ sql }) =>
+      [...semComentarios(sql).matchAll(/REVOKE ALL ON FUNCTION/gi)]);
+    expect(todas.length).toBeGreaterThan(0);
+  });
+});
