@@ -133,3 +133,33 @@ describe("SEG-01 — a previsão nasce pendente e não muda mais", () => {
     expect(s).toMatch(/GRANT EXECUTE ON FUNCTION public\.travas_de_escrita\(\) TO service_role/);
   });
 });
+
+/**
+ * SEG-05 — o "consenso da comunidade" publicava a previsão individual.
+ *
+ * Com o piso de 3 pessoas, `min_prob`, `median_prob` e `max_prob` SÃO as três
+ * previsões, em ordem. E `predictions` tem SELECT restrito ao dono justamente
+ * para isso não acontecer — a view, sendo SECURITY DEFINER, passava por cima.
+ */
+describe("SEG-05 — consenso com k-anonimato", () => {
+  const sql = () => arquivos().find((a) => a.nome.startsWith("044_"))!.sql;
+
+  it("o piso sobe para 5 previsores", () => {
+    expect(sql()).toMatch(/WHERE n >= 5/);
+  });
+
+  it("extremos só a partir de 10 — são eles que apontam a pessoa", () => {
+    expect(sql()).toMatch(/CASE WHEN n >= 10 THEN minimo END/);
+    expect(sql()).toMatch(/CASE WHEN n >= 10 THEN maximo END/);
+  });
+
+  it("o anônimo perde o SELECT direto na view", () => {
+    expect(sql()).toMatch(/REVOKE SELECT ON public\.market_community_forecast FROM anon, authenticated/);
+  });
+
+  it("a tela pergunta pela FUNÇÃO, não pela view", () => {
+    const hook = readFileSync(new URL("../client/src/hooks/useMarketDetail.ts", import.meta.url), "utf-8");
+    expect(hook).toContain("consenso_da_comunidade");
+    expect(hook).not.toMatch(/from\("market_community_forecast"\)/);
+  });
+});

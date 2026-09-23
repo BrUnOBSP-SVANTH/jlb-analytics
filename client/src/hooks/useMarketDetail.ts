@@ -346,10 +346,13 @@ export function useMarketDetail(marketId: string) {
 
   useEffect(() => {
     if (!rawId) return;
+    // ⚠️ FUNÇÃO, não a view (Auditoria 21/09, SEG-05). A view agregava a partir
+    // de TRÊS pessoas e devolvia min, mediana e max — que, com exatamente três,
+    // SÃO as três previsões individuais, em ordem. A função exige cinco, só
+    // mostra extremos a partir de dez, e entrega colunas explícitas em vez de
+    // um `SELECT *` que passaria a vazar qualquer coluna nova.
     void supabase
-      .from("market_community_forecast")
-      .select("*")
-      .eq("market_id", rawId)
+      .rpc("consenso_da_comunidade", { p_market_id: rawId })
       .maybeSingle()
       .then(({ data }) => {
         if (data) setCommunityForecast(data as CommunityForecast);

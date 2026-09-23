@@ -100,6 +100,18 @@ async function disparar(c: Cenario): Promise<{ status: number[]; saldoPorCaixa: 
   }
 }
 
+/**
+ * Prazo de REDE para todos os casos deste arquivo.
+ *
+ * ⚠️ Eles falam com o Supabase DE VERDADE, de propósito: a reserva atômica é
+ * uma RPC do banco, e simular o banco aqui não provaria nada sobre corrida. Os
+ * 5 segundos padrão do vitest são pouco para uma ida à rede — em 23/09 o
+ * primeiro caso estourou o prazo e derrubou os cinco seguintes em cascata,
+ * porque a cota do usuário de teste ficou suja no meio do caminho. Teste que
+ * falha à toa ensina a ignorar falha.
+ */
+vi.setConfig({ testTimeout: 20_000, hookTimeout: 20_000 });
+
 const quantos = (status: number[], codigo: number) => status.filter((s) => s === codigo).length;
 const vezes = (token: string, n: number) => Array.from({ length: n }, () => token);
 
