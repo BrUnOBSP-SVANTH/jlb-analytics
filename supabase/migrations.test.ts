@@ -191,7 +191,7 @@ describe("SECURITY DEFINER — revogar de PUBLIC é o que fecha", () => {
     for (const { nome, sql } of codigo) {
       for (const m of sql.matchAll(/REVOKE ALL ON FUNCTION\s+(public\.[a-z_]+)\([^)]*\)\s+FROM\s+([^;]+);/gi)) {
         const [, funcao, papeis] = m;
-        if (/public/i.test(papeis)) continue;   // este já é o revoke de PUBLIC
+        if (/(^|[^a-z_])public([^a-z_]|$)/i.test(papeis)) continue;   // este já é o revoke de PUBLIC
         if (!revogaDePublic(funcao)) faltando.push(`${nome}: ${funcao}`);
       }
     }
