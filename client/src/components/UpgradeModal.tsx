@@ -5,11 +5,12 @@
  * Reusa o mesmo checkout do PremiumUpgrade (Stripe), então é uma só fonte de verdade.
  */
 import { useEffect, useState } from "react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { toast } from "sonner";
 import { Star, CheckCircle, X } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { track } from "@/lib/analytics";
+import { apiFetch } from "@/lib/api";
 import { LINK_CADASTRO } from "@/lib/linkCadastro";
 import { COTA_GRATIS_MENSAL } from "@shared/planos";
 import type { UpgradeDetail } from "@/lib/upgrade";
@@ -23,11 +24,12 @@ const BENEFITS = [
 
 export default function UpgradeModal() {
   const { user } = useAuth();
+  const [, irPara] = useLocation();
   const [open, setOpen] = useState(false);
   const [detail, setDetail] = useState<UpgradeDetail>({ reason: "manual" });
   const [loading, setLoading] = useState(false);
-  const priceId = (import.meta.env.VITE_STRIPE_PREMIUM_PRICE_ID
-    ?? import.meta.env.VITE_STRIPE_PRICE_ID) as string | undefined;
+  // O preço mora no SERVIDOR (SEG-03): mandar `priceId` daqui deixava abrir um
+  // checkout de qualquer outro price da conta Stripe.
 
   useEffect(() => {
     const onOpen = (e: Event) => {
@@ -49,17 +51,21 @@ export default function UpgradeModal() {
   if (!open) return null;
 
   async function checkout() {
-    if (!user || !priceId) return;
+    if (!user) return;
     track("premium_click", { source: "paywall" });
     setLoading(true);
     try {
-      const res = await fetch("/api/stripe/checkout", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ priceId, userId: user.id, userEmail: user.email }),
-      });
-      const data = (await res.json()) as { url?: string; error?: string };
+      // `apiFetch` leva o cabeçalho Authorization — o servidor deriva a conta
+      // dele, em vez de acreditar no `userId` que o navegador mandasse.
+      const res = await apiFetch("/api/stripe/checkout", { method: "POST" });
+      const data = (await res.json()) as { url?: string; error?: string; message?: string };
       if (data.url) { window.location.href = data.url; return; }
-      toast.error(data.error ?? "Não foi possível iniciar o checkout.");
+      // Assinatura ainda não aberta: leva para /planos, que explica o estado em
+      // vez de deixar um aviso de erro no lugar de uma promessa. Antes esse
+      // desvio era decidido no navegador (pela ausência do price no bundle);
+      // agora quem sabe é o servidor, e a tela só reage.
+      if (data.error === "preco_nao_configurado") { setOpen(false); irPara("/planos"); return; }
+      toast.error(data.message ?? "Não foi possível iniciar o checkout.");
     } catch {
       toast.error("Erro ao conectar com o pagamento.");
     }
@@ -127,7 +133,7 @@ export default function UpgradeModal() {
               {isLogin ? "Criar conta grátis" : "Entrar para assinar"}
             </span>
           </Link>
-        ) : priceId ? (
+        ) : (
           <button
             onClick={checkout}
             disabled={loading}
@@ -138,17 +144,6 @@ export default function UpgradeModal() {
               : <Star className="w-4 h-4" />}
             Assinar Premium
           </button>
-        ) : (
-          // Sem Price ID do Stripe configurado, este é o botão que TODO mundo vê:
-          // ele prometia "Ver planos" e entregava a tela de perfil.
-          <Link href="/planos">
-            <span
-              className="block w-full text-center px-6 py-2.5 rounded-lg bg-gold text-on-accent text-sm font-semibold hover:opacity-90 transition-opacity cursor-pointer"
-              onClick={() => setOpen(false)}
-            >
-              Ver planos
-            </span>
-          </Link>
         )}
 
         <button

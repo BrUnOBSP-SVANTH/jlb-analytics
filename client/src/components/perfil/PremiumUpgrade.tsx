@@ -6,15 +6,18 @@ import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
 import AnimatedSection from "@/components/AnimatedSection";
 import { track } from "@/lib/analytics";
+import { apiFetch } from "@/lib/api";
 import { Star, CheckCircle } from "lucide-react";
 
 export function PremiumUpgrade({ userId, userEmail }: { userId: string; userEmail: string }) {
   const [plan, setPlan] = useState<"free" | "premium" | null>(null);
   const [loading, setLoading] = useState(false);
-  // Nome canônico é VITE_STRIPE_PREMIUM_PRICE_ID (.env / .env.example); mantém
-  // fallback ao nome antigo por segurança.
-  const priceId = (import.meta.env.VITE_STRIPE_PREMIUM_PRICE_ID
-    ?? import.meta.env.VITE_STRIPE_PRICE_ID) as string | undefined;
+  // ⚠️ O PREÇO NÃO MORA MAIS AQUI (Auditoria 21/09, SEG-03). O navegador
+  // mandava `priceId` no corpo do checkout, e o servidor obedecia: dava para
+  // abrir um checkout de qualquer outro price da conta Stripe. Agora quem sabe
+  // o preço é o servidor (`STRIPE_PREMIUM_PRICE_ID`), e a tela só descobre que
+  // ele não está configurado quando tenta — e então diz isso.
+  const [semPreco, setSemPreco] = useState(false);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -25,17 +28,34 @@ export function PremiumUpgrade({ userId, userEmail }: { userId: string; userEmai
   }, [userId]);
 
   async function handleUpgrade() {
-    if (!priceId) return;
     track("premium_click");
     setLoading(true);
     try {
-      const res = await fetch("/api/stripe/checkout", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ priceId, userId, userEmail }),
-      });
-      const data = await res.json() as { url?: string; error?: string };
+      // `apiFetch`, não `fetch` cru: sem o cabeçalho Authorization o servidor
+      // responde 401 e a tela fica pedindo login para sempre — o defeito que já
+      // mordeu 7 das 9 chamadas de IA deste site.
+      const res = await apiFetch("/api/stripe/checkout", { method: "POST" });
+      const data = await res.json() as { url?: string; error?: string; message?: string };
       if (data.url) { window.location.href = data.url; return; }
-      toast.error(data.error ?? "Não foi possível iniciar o checkout.");
+      if (data.error === "preco_nao_configurado") setSemPreco(true);
+      toast.error(data.message ?? "Não foi possível iniciar o checkout.");
+    } catch { toast.error("Erro ao conectar com o pagamento."); }
+    setLoading(false);
+  }
+
+  /**
+   * Abre o portal do Stripe: cancelar, trocar o cartão, ver as faturas.
+   *
+   * Existe porque até aqui não havia COMO cancelar sozinho — e plano pago
+   * difícil de cancelar é prática que este produto não adota (SEG-03).
+   */
+  async function abrirPortal() {
+    setLoading(true);
+    try {
+      const res = await apiFetch("/api/stripe/portal", { method: "POST" });
+      const data = await res.json() as { url?: string; message?: string };
+      if (data.url) { window.location.href = data.url; return; }
+      toast.error(data.message ?? "Não foi possível abrir a gestão da assinatura.");
     } catch { toast.error("Erro ao conectar com o pagamento."); }
     setLoading(false);
   }
@@ -47,10 +67,17 @@ export function PremiumUpgrade({ userId, userEmail }: { userId: string; userEmai
           <div className="w-10 h-10 rounded-xl bg-gold/15 flex items-center justify-center shrink-0">
             <Star className="w-5 h-5 text-gold" />
           </div>
-          <div>
+          <div className="min-w-0">
             <p className="text-sm font-bold text-gold">Plano Premium ativo</p>
             <p className="text-xs text-muted-foreground">Análises de IA ilimitadas e apoio ao projeto. Obrigado! 🙏</p>
           </div>
+          <button
+            onClick={abrirPortal}
+            disabled={loading}
+            className="ml-auto shrink-0 text-xs text-muted-foreground hover:text-foreground underline underline-offset-2 transition-colors disabled:opacity-50"
+          >
+            Gerenciar assinatura
+          </button>
         </div>
       </AnimatedSection>
     );
@@ -77,7 +104,11 @@ export function PremiumUpgrade({ userId, userEmail }: { userId: string; userEmai
             </div>
           ))}
         </div>
-        {priceId ? (
+        {semPreco ? (
+          <p className="text-[11px] text-muted-foreground">
+            A assinatura ainda não está aberta. Estamos terminando de configurar o pagamento.
+          </p>
+        ) : (
           <button
             onClick={handleUpgrade}
             disabled={loading}
@@ -86,10 +117,6 @@ export function PremiumUpgrade({ userId, userEmail }: { userId: string; userEmai
             {loading ? <span className="w-4 h-4 border-2 border-on-accent border-t-transparent rounded-full animate-spin" /> : <Star className="w-4 h-4" />}
             Assinar Premium
           </button>
-        ) : (
-          <p className="text-[11px] text-muted-foreground">
-            Checkout em configuração. Defina <code className="font-mono">VITE_STRIPE_PREMIUM_PRICE_ID</code> e <code className="font-mono">STRIPE_SECRET_KEY</code> para ativar.
-          </p>
         )}
       </div>
     </AnimatedSection>

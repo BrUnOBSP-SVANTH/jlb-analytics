@@ -17,10 +17,12 @@ COPY . .
 # os segredos de verdade entram só em runtime via fly secrets.
 ARG VITE_SUPABASE_URL
 ARG VITE_SUPABASE_ANON_KEY
-ARG VITE_STRIPE_PREMIUM_PRICE_ID
+# O price do Stripe NÃO entra mais no build: ele é do SERVIDOR, lido em runtime
+# (STRIPE_PREMIUM_PRICE_ID). Enquanto ia no bundle, o navegador mandava o price
+# no corpo do checkout e dava para pagar outro price da conta (SEG-03) — e
+# trocar de plano exigia rebuild do site inteiro.
 ENV VITE_SUPABASE_URL=$VITE_SUPABASE_URL \
-    VITE_SUPABASE_ANON_KEY=$VITE_SUPABASE_ANON_KEY \
-    VITE_STRIPE_PREMIUM_PRICE_ID=$VITE_STRIPE_PREMIUM_PRICE_ID
+    VITE_SUPABASE_ANON_KEY=$VITE_SUPABASE_ANON_KEY
 
 RUN pnpm build
 

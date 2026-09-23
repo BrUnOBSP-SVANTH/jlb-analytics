@@ -83,9 +83,14 @@ describe("preço do Premium", () => {
     expect(PAGINA).toMatch(/não está fechado/);
   });
 
-  it("sem Price ID, o botão do paywall leva mesmo à página de planos", () => {
-    // É o caminho que TODO mundo percorre hoje (o Price ID do Stripe ainda não
-    // foi configurado), e ele prometia "Ver planos" entregando o perfil.
-    expect(MODAL).toMatch(/href="\/planos"/);
+  it("sem assinatura aberta, o paywall leva mesmo à página de planos", () => {
+    // É o caminho que TODO mundo percorre hoje (o price do Stripe ainda não foi
+    // configurado), e ele já prometeu "Ver planos" entregando o perfil.
+    //
+    // ⚠️ Quem decide isso mudou de lado (SEG-03): antes o navegador olhava se o
+    // price estava no bundle; agora o preço é do SERVIDOR, e a tela reage ao
+    // `preco_nao_configurado` que ele devolve. O destino é o mesmo.
+    expect(MODAL).toMatch(/preco_nao_configurado/);
+    expect(MODAL).toMatch(/irPara\("\/planos"\)/);
   });
 });

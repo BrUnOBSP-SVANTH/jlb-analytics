@@ -27,7 +27,7 @@ Copie de `.env.example` e preencha no painel do provedor (NÃO commitar `.env`):
 | `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` | Cliente (injetadas no build) |
 | `NEWS_API_KEY` | Notícias contextuais na análise |
 | `BRAPI_TOKEN` | Cotações BR |
-| `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` / `VITE_STRIPE_PREMIUM_PRICE_ID` | Checkout premium |
+| `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` / `STRIPE_PREMIUM_PRICE_ID` | Checkout premium |
 | `NODE_ENV=production` | Ativa CORS restrito, CSP e cache de estáticos |
 | `APP_URL=https://jlbasset.com` | Origin permitido no CORS/CSP e nos links de email/OG |
 | `RESEND_API_KEY` / `EMAIL_FROM` | (Opcional) resumo semanal por email; sem isso os toggles se escondem |
