@@ -247,12 +247,21 @@ export default function Briefing() {
   const [error, setError] = useState<string | null>(null);
   const [preds] = useState<StoredPrediction[]>(() => loadPredictions());
 
-  async function fetchBriefing(force = false) {
+  /**
+   * Busca o briefing do dia.
+   *
+   * ⚠️ NÃO existe mais "forçar a geração" pela tela (Auditoria 21/09, SEG-02).
+   * O botão "Atualizar" mandava `?force=1`, que regerava tudo com IA, NewsAPI
+   * (100 chamadas/dia no plano grátis), Polymarket, Kalshi e BCB — numa rota
+   * pública, sem login e sem cota. Bastava alguém segurar o botão para queimar
+   * a cota do site inteiro. Agora o botão relê o briefing do dia, que é
+   * guardado no banco; regerar é coisa do servidor, com a chave de serviço.
+   */
+  async function fetchBriefing() {
     setLoading(true);
     setError(null);
     try {
-      const url = force ? "/api/ai/daily-briefing?force=1" : "/api/ai/daily-briefing";
-      const res = await fetch(url);
+      const res = await fetch("/api/ai/daily-briefing");
       if (res.status === 404) throw new Error("ENDPOINT_NOT_FOUND");
       if (!res.ok) {
         // O servidor manda o motivo em português ("a cota diária de IA acabou").
@@ -289,7 +298,7 @@ export default function Briefing() {
     <div className="max-w-4xl mx-auto px-4 py-8 space-y-8">
       <div className="flex justify-end">
         <button
-          onClick={() => void fetchBriefing(true)}
+          onClick={() => void fetchBriefing()}
           disabled={loading}
           className="flex items-center gap-2 px-3 py-2 rounded-lg border border-border/40 text-xs text-muted-foreground hover:text-foreground hover:border-border/60 transition-colors disabled:opacity-50"
         >

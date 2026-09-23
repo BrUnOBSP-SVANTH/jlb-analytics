@@ -7,6 +7,9 @@ import { callClaude } from "../anthropic.ts";
 import { extractJson } from "../extractJson.ts";
 import { INJECTION_GUARD } from "./promptSafety.ts";
 import { getCache, setCache } from "../cache.ts";
+import { autorizadoComChaveDeServico } from "../chaveDeServico.ts";
+import { hojeEmBrasilia, segundosAteVirarODia } from "../../../shared/dataBrasilia.ts";
+import { lerBriefingDoDia, gravarBriefingDoDia } from "./briefingGuardado.ts";
 import { tituloLimpo } from "../marketCatalog.ts";
 import { log } from "../log.ts";
 import type { NewsApiResponse, PolyEvent, KalshiEventsResponse } from "../types.ts";
@@ -37,12 +40,26 @@ export async function dailyBriefingHandler(req: Request, res: Response) {
     return res.status(503).json({ error: "ia_nao_configurada", message: "O briefing depende da IA, que não está configurada neste ambiente." });
   }
 
-  const today = new Date().toISOString().slice(0, 10);
-  const force = req.query.force === "1";
+  // O dia é o de BRASÍLIA. Com a data UTC, o briefing "de hoje" trocava às 21h
+  // — no meio da noite de quem lê — e a geração era paga de novo (SEG-02).
+  const today = hojeEmBrasilia();
+  // ⚠️ `force` regenera com IA, NewsAPI, Polymarket, Kalshi e BCB. Esta rota é
+  // PÚBLICA: até 21/09 qualquer visitante podia chamá-la com `?force=1` (era o
+  // que o botão "Atualizar" da tela fazia) e queimar a cota do site inteiro —
+  // 20 vezes por minuto por IP. Agora só quem tem a chave de serviço regenera;
+  // o botão relê o que está guardado.
+  const force = req.query.force === "1" && autorizadoComChaveDeServico(req.headers.authorization);
   const cacheKey = `daily-briefing:${today}`;
   if (!force) {
     const cached = getCache<object>(cacheKey);
     if (cached) return res.json({ ...cached, cached: true });
+    // Memória vazia não quer dizer "não existe": o processo reinicia a cada
+    // deploy, e o briefing do dia continua guardado no banco.
+    const guardado = await lerBriefingDoDia(today);
+    if (guardado) {
+      setCache(cacheKey, guardado, segundosAteVirarODia());
+      return res.json({ ...guardado, cached: true });
+    }
   }
 
   const [polyResult, kalshiResult, ratesResult] = await Promise.allSettled([
@@ -123,7 +140,11 @@ JSON exato (sem markdown). Em marketHighlights, "prob" é a probabilidade SIM do
         return { ...h, prob: Number.isFinite(n) ? Math.min(100, Math.max(0, Math.round(n))) : null };
       });
     const result = { ...parsed, marketHighlights, topMarkets, generatedAt: new Date().toISOString(), cached: false };
-    setCache(cacheKey, result, 86400);
+    // Guarda no banco ANTES de responder: se o processo cair em seguida (deploy,
+    // plano grátis dormindo), o briefing do dia não se perde e ninguém paga a
+    // geração de novo.
+    await gravarBriefingDoDia(today, result);
+    setCache(cacheKey, result, segundosAteVirarODia());
     res.json(result);
   } catch (err) {
     log.error("[daily-briefing] error:", err);

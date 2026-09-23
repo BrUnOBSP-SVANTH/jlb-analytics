@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest";
+import { readFileSync } from "node:fs";
 import { motivoDoBriefing } from "./briefing.ts";
 
 describe("motivoDoBriefing — o que a tela diz quando a IA não responde", () => {
@@ -29,5 +30,41 @@ describe("motivoDoBriefing — o que a tela diz quando a IA não responde", () =
 
   it("aguenta erro que não é Error", () => {
     expect(motivoDoBriefing(undefined).error).toBe("briefing_indisponivel");
+  });
+});
+
+/**
+ * SEG-02 — regenerar o briefing é caro, e a rota é pública.
+ *
+ * Cada geração gasta IA, NewsAPI (100 chamadas/dia no grátis), Polymarket,
+ * Kalshi e BCB. O botão "Atualizar" da tela mandava `?force=1` numa rota sem
+ * login nem cota: bastava segurar o botão para queimar a cota do site.
+ */
+describe("SEG-02 — o briefing não é regerado por quem passa na rua", () => {
+  const fonte = readFileSync(new URL("./briefing.ts", import.meta.url), "utf-8");
+
+  it("`force` exige a chave de serviço", () => {
+    expect(fonte).toMatch(/force[\s\S]{0,80}autorizadoComChaveDeServico/);
+  });
+
+  it("o dia é o de BRASÍLIA, não o de Londres", () => {
+    // Com a data UTC, o "briefing de hoje" virava às 21h — no meio da noite de
+    // quem lê — e a geração era paga de novo.
+    expect(fonte).toContain("hojeEmBrasilia()");
+    expect(fonte).not.toMatch(/const today = new Date\(\)\.toISOString\(\)/);
+  });
+
+  it("o briefing é guardado no banco antes de ir para a tela", () => {
+    // Só na memória, cada deploy jogava fora o do dia.
+    expect(fonte).toMatch(/await gravarBriefingDoDia\(today, result\)/);
+    expect(fonte).toMatch(/await lerBriefingDoDia\(today\)/);
+  });
+
+  it("a tela não pede mais a regeração", () => {
+    const tela = readFileSync(new URL("../../../client/src/pages/Briefing.tsx", import.meta.url), "utf-8");
+    // Olha a CHAMADA, não a prosa: o comentário que explica a mudança cita o
+    // `?force=1` de propósito, e um teste que reprovasse isso obrigaria a
+    // apagar justamente a explicação de por que o código é assim.
+    expect(tela).not.toContain("daily-briefing?force=1");
   });
 });
