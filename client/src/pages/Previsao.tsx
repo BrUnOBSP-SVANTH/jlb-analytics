@@ -348,8 +348,17 @@ export default function Previsao() {
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {[
-                  { icon: FlaskConical, color: "text-primary",   title: "Seleção automática de modelo", desc: `A IA escolhe entre ${MODEL_COUNT} modelos econométricos e matemáticos o mais adequado para sua pergunta — OLS, GARCH, Poisson, Elo, Taylor Rule, log-log e muito mais.` },
-                  { icon: BookOpen,     color: "text-neon-blue",  title: "Fórmula real + base de pesquisa", desc: "Mostra a equação matemática exata e cita a linha de pesquisa acadêmica (Harvard, USP, Stanford, ITA) que sustenta a metodologia." },
+                  // ⚠️ O QUE ESTAS DUAS LINHAS DIZIAM NÃO ERA O QUE O CÓDIGO FAZ
+                  // (Auditoria 21/09, IAC-01). Prometiam "a IA escolhe entre mais
+                  // de 30 modelos econométricos" e "mostra a equação matemática
+                  // exata e cita a linha de pesquisa acadêmica (Harvard, USP,
+                  // Stanford, ITA)". Em `server/lib/ai/modelPredict.ts` os modelos
+                  // são uma LISTA NO PROMPT: nenhum é ajustado com dados, os
+                  // coeficientes saem da própria IA e as citações podem ser
+                  // inventadas. Um site que ensina a desconfiar de número sem
+                  // fonte não pode ser a primeira coisa a publicar um.
+                  { icon: FlaskConical, color: "text-primary",   title: "Um modelo de referência como roteiro", desc: "A IA escolhe uma família de modelo conhecida (Poisson, Elo, Taylor Rule, log-log…) para organizar o raciocínio e explica por que ela cabe na sua pergunta. É um roteiro de análise — não um modelo ajustado aos seus dados." },
+                  { icon: BookOpen,     color: "text-neon-blue",  title: "A lógica à mostra, com as fontes que ela leu", desc: "Você vê a fórmula da família escolhida e o caminho do raciocínio. A fórmula é ILUSTRATIVA e os números são estimativa da IA, não um ajuste estatístico; as citações vêm das notícias e do acervo entregues a ela." },
                   { icon: Clock,        color: "text-gold",       title: "3 horizontes temporais", desc: "Previsão separada para curto, médio e longo prazo, cada uma com grau de confiança calibrado pelo modelo escolhido." },
                   { icon: Lightbulb,    color: "text-positive",   title: "Tradução em linguagem simples", desc: "Toda análise é traduzida para linguagem cotidiana — sem jargão — e inclui impacto no patrimônio se informado." },
                 ].map(({ icon: Icon, color, title, desc }) => (

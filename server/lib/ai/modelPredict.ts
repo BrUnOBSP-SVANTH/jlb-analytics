@@ -5,6 +5,7 @@ import { callClaude } from "../anthropic.ts";
 import { extractJson } from "../extractJson.ts";
 import { capConfidence } from "./guardrails.ts";
 import { INJECTION_GUARD, fenceUntrusted } from "./promptSafety.ts";
+import { macroParaPrompt } from "./macroParaPrompt.ts";
 import { humanizeCitations } from "../citations.ts";
 import type { PhaseEmit } from "./marketAnalysis.ts";
 
@@ -36,7 +37,14 @@ export async function runModelPredict(p: PredictParams, onPhase: PhaseEmit = () 
   const DOMAIN_LABELS: Record<string, string> = { sports: "Esportes", economy: "Economia / Macro", energy: "Energia / Commodities", politics: "Política", science: "Ciência / Tecnologia", crypto: "Cripto / Digital Assets", finance: "Finanças / Mercado", climate: "Clima / ENSO" };
   const HORIZON_MAP = { short: "curto prazo (dias a semanas)", medium: "médio prazo (1–6 meses)", long: "longo prazo (6 meses a 5 anos)" };
 
-  const systemPrompt = `Você é o melhor sistema de previsão quantitativa do mundo — combina a precisão de Nate Silver (538), a rigorosidade de Philip Tetlock (Superforecasting), os modelos de Daron Acemoglu e a prática de quantistas do JP Morgan e BCB.
+  // ⚠️ ESTE PROMPT JÁ COMEÇOU COM "Você é o melhor sistema de previsão
+  // quantitativa do mundo — combina a precisão de Nate Silver (538)… Acemoglu…
+  // JP Morgan" (Auditoria 21/09, IAC-01). Mandar o modelo se achar o melhor do
+  // mundo incentiva exatamente o que a plataforma ensina a evitar: excesso de
+  // confiança. E o track record mostra a conta — ao divergir do mercado, a IA
+  // acerta 33% de 504. Um analista que se acha infalível é pior que um
+  // cuidadoso, e o prompt é onde essa postura é escolhida.
+  const systemPrompt = `Você é um analista quantitativo cuidadoso e calibrado. Trabalha no protocolo Superforecaster de Philip Tetlock: base rate primeiro, ajuste depois, incerteza declarada. Você prefere dizer "não sei o suficiente" a produzir um número confiante sem lastro.
 
 Sua missão em cada análise:
 1. DETECTAR nível de expertise do usuário pela linguagem da pergunta
@@ -213,10 +221,21 @@ INTERMEDIARIO:
 
 AVANCADO:
 - formula: completa, com todas as variáveis explicitadas e derivação resumida
-- cite o paper original com ano e journal
 - plainLanguage: análise técnica com limitações epistêmicas
 - analogyExplanation: paralelo histórico preciso (ex: "similar ao que aconteceu em X com Y%de desvio")
 - mencione grau de incerteza paramétrica e sensibilidade a premissas
+
+REGRAS DE HONESTIDADE (inegociáveis):
+- A FÓRMULA E OS COEFICIENTES SÃO ILUSTRATIVOS. Você NÃO ajustou nenhum modelo a
+  dados: a família de modelo é um roteiro para organizar o raciocínio, e os
+  números que você escreve nela são a SUA estimativa. Diga isso em "limitations",
+  com estas palavras: "a fórmula é ilustrativa e os coeficientes são estimativa,
+  não um ajuste estatístico".
+- NÃO CITE paper, autor, ano ou journal que não esteja nas fontes entregues
+  acima. Em "researchBasis", descreva a LINHA de pesquisa em uma frase, sem
+  inventar referência ("modelos de contagem tipo Poisson para eventos raros"), e
+  cite [N] ou [C#] só quando a fonte realmente estiver na lista.
+- Um número sem lastro é pior do que nenhum. Prefira declarar a incerteza.
 
 ${INJECTION_GUARD}
 
@@ -235,7 +254,7 @@ RESPONDA SOMENTE COM O JSON ABAIXO, SEM TEXTO ANTES OU DEPOIS, SEM MARKDOWN:
   const userMessage = `DOMÍNIO: ${DOMAIN_LABELS[domain] ?? domain}\nPERGUNTA: ${question}\nCONTEXTO ADICIONAL: ${context ? fenceUntrusted(context, "CONTEXTO_DO_USUARIO") : "nenhum"}\nHORIZONTE: ${HORIZON_MAP[timeHorizon] ?? timeHorizon}\nBANKROLL: ${bankroll ? `R$ ${bankroll.toLocaleString("pt-BR")}` : "não informado"}
 
 DATA: ${new Date().toLocaleDateString("pt-BR", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
-MACRO BR: Selic ${selicVal ?? "~10.5"}% a.a. | IPCA ${ipcaVal ?? "~4.8"}% a.a.
+MACRO BR: ${macroParaPrompt({ selic: selicVal, ipca: ipcaVal })}
 
 ${newsBlock}${cerebroBlock}`;
 

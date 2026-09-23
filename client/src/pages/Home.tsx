@@ -611,11 +611,18 @@ export default function Home() {
                     probabilidade. Nome de modelo não prova competência para
                     quem não conhece o modelo; ele só avisa que o assunto não é
                     para ele. O que prova é o número, e ele está a um clique. */}
+                {/* ⚠️ Aqui se lia "…e a IA escolhe qual cabe em cada pergunta —
+                    com o acerto de cada um publicado". A segunda metade era
+                    FALSA (Auditoria 21/09, IAC-01): o track record publica o
+                    acerto por PROVEDOR e por TEMA, nunca por modelo. Prometer um
+                    número que a página de destino não tem é o tipo de coisa que
+                    este produto existe para não fazer. */}
                 <p className="text-sm text-muted-foreground mt-3">
-                  {MODEL_COUNT} modelos, e a IA escolhe qual cabe em cada pergunta —{" "}
+                  A IA escolhe uma família de modelo para organizar o raciocínio de cada pergunta, e{" "}
                   <Link href="/track-record" className="text-gold hover:underline">
-                    com o acerto de cada um publicado
-                  </Link>.
+                    o acerto dela fica publicado
+                  </Link>{" "}
+                  — por tema, com acertos e erros na mesma conta.
                 </p>
               </div>
               <Link href="/previsao" className="shrink-0">

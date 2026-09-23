@@ -364,11 +364,26 @@ export default function MarketDetail() {
                   <h2 className="text-sm font-semibold text-[var(--titulo)]">Análise por IA</h2>
                 </div>
 
+                {/* ⚠️ Esta explicação já disse "valor justo INDEPENDENTE do preço
+                    do mercado", e isso não era verdade (Auditoria 21/09, IAC-01):
+                    o preço entra no prompt e o resultado passa por
+                    `clampFairValue`, que prende a estimativa a ±15pp do mercado —
+                    menos ainda perto dos extremos — e nunca deixa sair abaixo de
+                    5% nem acima de 95%. Num site cujo produto é rigor, descrever
+                    a própria ferramenta melhor do que ela é custa mais caro do
+                    que a limitação em si. */}
                 <Explain>
                   A IA lê <strong className="text-foreground">notícias reais</strong> e compara este evento com casos parecidos do passado para
-                  estimar um <strong className="text-foreground">valor justo</strong> independente do preço do mercado. O{" "}
+                  estimar um <strong className="text-foreground">valor justo</strong>. O{" "}
                   <strong className="text-foreground"><Termo nome="edge">Edge</Termo></strong> é a diferença entre esse valor justo e o mercado — é ali que pode estar a vantagem.
                   Pense nela como uma segunda opinião fundamentada, com as fontes à mostra — nunca um palpite ou recomendação de compra.
+                  <br />
+                  <span className="block mt-2 text-muted-foreground">
+                    Como ela funciona, sem adornos: a IA <strong className="text-foreground">parte do preço do mercado</strong> e
+                    não se afasta mais de <strong className="text-foreground">15 pontos percentuais</strong> dele — perto dos extremos, menos
+                    ainda. E ela nunca publica abaixo de 5% nem acima de 95%, o que pesa contra ela em mercados quase decididos.
+                    É uma trava deliberada contra excesso de confiança, e o preço dela é este: o Edge que você vê aqui tem teto.
+                  </span>
                 </Explain>
 
                 <button

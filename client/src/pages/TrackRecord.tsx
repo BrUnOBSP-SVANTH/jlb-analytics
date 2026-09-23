@@ -31,6 +31,17 @@ const METHOD = [
     desc: "Cada previsão da IA é gravada com data e fair value antes do mercado resolver. Nada é editado depois — o histórico é imutável.",
   },
   {
+    // Auditoria 21/09, IAC-01: o número "distância média do preço: 1,1pp" desta
+    // página tem uma explicação, e ela não estava em lugar nenhum. Omitir a
+    // trava fazia a proximidade do mercado parecer concordância espontânea.
+    icon: Scale,
+    title: "A IA parte do preço — e isso limita o placar",
+    desc: "Ela não chuta do zero: recebe o preço do mercado e não pode se afastar mais de 15 pontos percentuais dele "
+      + "(perto dos extremos, menos). Também nunca publica abaixo de 5% nem acima de 95%. É uma trava contra excesso de "
+      + "confiança, e ela cobra o preço aqui: em mercados quase decididos, o teto de 95% conta como erro no Brier mesmo "
+      + "quando o desfecho acontece.",
+  },
+  {
     icon: ShieldCheck,
     title: "Comparamos com o resultado REAL",
     desc: "Quando o mercado liquida na plataforma (o mesmo settlement que paga as posições — Kalshi ‘result’, Polymarket UMA), cruzamos o que dissemos com o que aconteceu.",

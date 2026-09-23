@@ -11,6 +11,7 @@ import { autorizadoComChaveDeServico } from "../chaveDeServico.ts";
 import { hojeEmBrasilia, segundosAteVirarODia } from "../../../shared/dataBrasilia.ts";
 import { lerBriefingDoDia, gravarBriefingDoDia } from "./briefingGuardado.ts";
 import { tituloLimpo } from "../marketCatalog.ts";
+import { macroParaPrompt } from "./macroParaPrompt.ts";
 import { log } from "../log.ts";
 import type { NewsApiResponse, PolyEvent, KalshiEventsResponse } from "../types.ts";
 
@@ -116,7 +117,7 @@ export async function dailyBriefingHandler(req: Request, res: Response) {
 ${REGRA_LINGUAGEM}
 
 DATA: ${new Date().toLocaleDateString("pt-BR", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
-MACRO: Selic ${selic ?? "~10.5"}% | IPCA ${ipca ?? "~4.8"}% | USD/BRL ${usd ?? "~5.85"}
+MACRO: ${macroParaPrompt({ selic, ipca, usd })}
 
 TOP MERCADOS:
 ${marketsContext}
