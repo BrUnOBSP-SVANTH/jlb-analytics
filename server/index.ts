@@ -20,6 +20,7 @@ import { gravarSnapshotsDoCatalogo } from "./lib/snapshotsDoCatalogo.ts";
 import { destinoDoApelido, rotaExiste } from "../shared/rotas.ts";
 import { urlPublica, hostPublico, ehProducao } from "./lib/urlPublica.ts";
 import { tarefasAgendadasLigadas } from "./lib/orcamentoIA.ts";
+import { rodarSeVencida, execucoesDasTarefas, estaAtrasada } from "./lib/tarefas.ts";
 import { mercadoQueLiquida } from "../shared/liquidacao.ts";
 import { traduzirCatalogo } from "./lib/traducaoCatalogo.ts";
 import { mercadoMereceAlerta } from "./lib/alertasMercado.ts";
@@ -136,6 +137,38 @@ async function runMarketSnapshots() {
   log.info("[snapshots] Snapshots concluídos.");
 }
 registerSnapshotJob(runMarketSnapshots); // POST /api/snapshots/trigger dispara este job
+
+/**
+ * De quanto em quanto tempo cada tarefa DEVE rodar (Auditoria 21/09, INF-03).
+ *
+ * Os agendamentos abaixo são `setTimeout`/`setInterval` a partir do BOOT — e o
+ * boot acontece a cada deploy e a cada vez que o plano grátis do Render deixa
+ * o serviço dormir e acordar. Sem esta régua, a coleta do Cérebro disparava 30s
+ * depois de CADA subida (levando 429 do Reddit) e o seed da IA rodava a cada
+ * partida, gastando a cota.
+ *
+ * O intervalo mora aqui, num lugar só, porque ele é a resposta para duas
+ * perguntas diferentes: "já posso rodar?" e "isto está atrasado?" — e as duas
+ * precisam concordar.
+ */
+export const INTERVALO_DA_TAREFA: Record<string, number> = {
+  "cerebro-coleta":      CEREBRO_INTERVAL_MS,
+  "cerebro-limpeza":     24 * 60 * 60_000,
+  "snapshots":           SNAPSHOT_INTERVAL_MS,
+  "ia-placar-e-duelos":   6 * 60 * 60_000,
+  "previsoes-usuario":    6 * 60 * 60_000,
+  "banca-liquidacao":     6 * 60 * 60_000,
+  "ia-seed":              6 * 60 * 60_000,
+  "resumo-semanal":      24 * 60 * 60_000,
+  "embeddings-backfill": 24 * 60 * 60_000,
+  "esportes":            12 * 60 * 60_000,
+  "traducao-catalogo":    6 * 60 * 60_000,
+};
+
+/** Roda a tarefa só se ela não rodou dentro do próprio intervalo. */
+function agendar(nome: string, tarefa: () => unknown): Promise<boolean> {
+  return rodarSeVencida(nome, INTERVALO_DA_TAREFA[nome] ?? 6 * 60 * 60_000, async () => { await tarefa(); });
+}
 
 async function startServer() {
   // ── Env validation ─────────────────────────────────────────────────────────
@@ -359,11 +392,27 @@ async function startServer() {
       } catch { return null; }
     };
 
-    const [lastArticleAt, lastSnapshotAt] = await Promise.all([
+    const [lastArticleAt, lastSnapshotAt, execucoes] = await Promise.all([
       latest("cerebro_articles", "ingested_at"),
       latest("market_snapshots", "snapped_at"),
+      execucoesDasTarefas(),
     ]);
-    const result = { available: true, lastArticleAt, lastSnapshotAt };
+    // Quais tarefas rodaram, e quais estão atrasadas (INF-03).
+    //
+    // O frescor do DADO não conta a história toda: uma tarefa pode estar
+    // falhando há dias enquanto a tabela dela ainda tem linha recente de antes.
+    // Aqui aparece a última execução de CADA uma, com o resultado, e o atraso é
+    // medido contra o intervalo que a própria tarefa declara.
+    const tarefas = execucoes.map((e) => ({
+      nome: e.nome,
+      ultimaExecucao: e.ultimaExecucao,
+      resultado: e.resultado,
+      atrasada: estaAtrasada(e.ultimaExecucao, INTERVALO_DA_TAREFA[e.nome] ?? 6 * 60 * 60_000),
+    }));
+    const result = {
+      available: true, lastArticleAt, lastSnapshotAt, tarefas,
+      tarefasAtrasadas: tarefas.filter((t) => t.atrasada).map((t) => t.nome),
+    };
     setCache("health-data", result, 300);
     res.json(result);
   });
@@ -690,75 +739,75 @@ async function startServer() {
     log.info("   Tarefas agendadas DESLIGADAS fora da produção (JLB_TAREFAS=1 para ligar) — a cota de IA e o banco são os de produção.");
   }
   if (process.env.SUPABASE_SERVICE_KEY && tarefasAgendadasLigadas()) {
-    setTimeout(() => { void runCerebroCollection(); }, 30_000);
-    setInterval(() => { void runCerebroCollection(); }, CEREBRO_INTERVAL_MS);
+    setTimeout(() => { void agendar("cerebro-coleta", () => runCerebroCollection()); }, 30_000);
+    setInterval(() => { void agendar("cerebro-coleta", () => runCerebroCollection()); }, CEREBRO_INTERVAL_MS);
     log.info("   Cerebro: coleta automática a cada 2h ✅");
 
     // Limpeza do Cérebro: descarta notícia velha demais para servir a alguém.
     // Sem isto o acervo crescia para sempre (~660 artigos/dia) e o plano gratuito
     // de 500MB do Supabase enchia em menos de dois meses. Roda 1x/dia; a régua e o
     // porquê estão em lib/cerebroLimpeza.ts.
-    setTimeout(() => { void limparArtigosAntigos({ aplicar: true }); }, 5 * 60_000);
-    setInterval(() => { void limparArtigosAntigos({ aplicar: true }); }, 24 * 60 * 60_000);
+    setTimeout(() => { void agendar("cerebro-limpeza", () => limparArtigosAntigos({ aplicar: true })); }, 5 * 60_000);
+    setInterval(() => { void agendar("cerebro-limpeza", () => limparArtigosAntigos({ aplicar: true })); }, 24 * 60 * 60_000);
     log.info("   Cerebro: descarte de notícia antiga, 1×/dia ✅");
 
     // Snapshots de mercado: primeira coleta 2min após o boot, depois 1× por dia
-    setTimeout(() => { void runMarketSnapshots(); }, 2 * 60_000);
-    setInterval(() => { void runMarketSnapshots(); }, SNAPSHOT_INTERVAL_MS);
+    setTimeout(() => { void agendar("snapshots", () => runMarketSnapshots()); }, 2 * 60_000);
+    setInterval(() => { void agendar("snapshots", () => runMarketSnapshots()); }, SNAPSHOT_INTERVAL_MS);
     log.info("   Snapshots: coleta diária de mercados ✅");
 
     // Scoring das previsões da IA + resolução de duelos: mesmos preços extremos
-    setTimeout(() => { void scoreAiForecasts(); void resolveActiveDuels(); }, 3 * 60_000);
-    setInterval(() => { void scoreAiForecasts(); void resolveActiveDuels(); }, 6 * 60 * 60 * 1000); // a cada 6h
+    setTimeout(() => { void agendar("ia-placar-e-duelos", () => Promise.all([scoreAiForecasts(), resolveActiveDuels()])); }, 3 * 60_000);
+    setInterval(() => { void agendar("ia-placar-e-duelos", () => Promise.all([scoreAiForecasts(), resolveActiveDuels()])); }, 6 * 60 * 60 * 1000); // a cada 6h
     log.info("   AI track record + duelos: scoring automático a cada 6h ✅");
 
     // Previsões DO USUÁRIO: antes só resolviam quando ele abria o Dashboard —
     // quem sumia nunca via o resultado nem tinha motivo pra voltar (laço morto).
     // Agora o servidor resolve pelo settlement oficial e avisa por push.
-    setTimeout(() => { void resolveUserPredictions(); }, 5 * 60_000);
-    setInterval(() => { void resolveUserPredictions(); }, 6 * 60 * 60 * 1000);
+    setTimeout(() => { void agendar("previsoes-usuario", () => resolveUserPredictions()); }, 5 * 60_000);
+    setInterval(() => { void agendar("previsoes-usuario", () => resolveUserPredictions()); }, 6 * 60 * 60 * 1000);
     log.info("   Previsões do usuário: resolução oficial + push de retorno, a cada 6h ✅");
 
     // Banca simulada: paga (ou zera) as apostas fictícias cujo mercado resolveu.
     // Pelo MESMO settlement oficial — sem desfecho da plataforma, a aposta fica
     // aberta. Sem este job a banca nunca fecharia conta, e é justamente a conta
     // fechando que ensina.
-    setTimeout(() => { void resolvePaperBets(); }, 6 * 60_000);
-    setInterval(() => { void resolvePaperBets(); }, 6 * 60 * 60 * 1000);
+    setTimeout(() => { void agendar("banca-liquidacao", () => resolvePaperBets()); }, 6 * 60_000);
+    setInterval(() => { void agendar("banca-liquidacao", () => resolvePaperBets()); }, 6 * 60 * 60 * 1000);
     log.info("   Banca simulada: liquidação oficial das apostas, a cada 6h ✅");
 
     // Seed de previsões da IA: 4min após o boot, depois a cada 6h. Frequência
     // subiu de 24h→6h porque o seed agora é news-aware (lê o Cerebro): rodar
     // mais vezes mantém as previsões coladas às notícias recentes, em vez de
     // congeladas por um dia. Cota folgada: 18 mercados × 4/dia = 72 chamadas.
-    setTimeout(() => { void seedAiForecasts(); }, 4 * 60_000);
-    setInterval(() => { void seedAiForecasts(); }, 6 * 60 * 60 * 1000);
+    setTimeout(() => { void agendar("ia-seed", () => seedAiForecasts()); }, 4 * 60_000);
+    setInterval(() => { void agendar("ia-seed", () => seedAiForecasts()); }, 6 * 60 * 60 * 1000);
     log.info("   AI seed: previsões news-aware nos top mercados, a cada 6h ✅");
 
     // Resumo semanal por email: checa 1×/dia, RPC entrega só a quem está há 6+ dias sem receber
-    setInterval(() => { void sendWeeklyDigests(); }, 24 * 60 * 60 * 1000);
+    setInterval(() => { void agendar("resumo-semanal", () => sendWeeklyDigests()); }, 24 * 60 * 60 * 1000);
     log.info("   Resumo semanal: email aos inscritos (precisa RESEND_API_KEY) ✅");
 
     // Backfill de embeddings do Cerebro: 1×/dia, ~800 (deixa folga p/ as buscas
     // semânticas ao vivo no teto free de 1000/dia do Gemini). Auto-limita e para
     // sozinho quando todos os artigos têm vetor. Inerte sem GEMINI_API_KEY.
-    setTimeout(() => { void runDailyEmbedBackfill(); }, 6 * 60_000);
-    setInterval(() => { void runDailyEmbedBackfill(); }, 24 * 60 * 60 * 1000);
+    setTimeout(() => { void agendar("embeddings-backfill", () => runDailyEmbedBackfill()); }, 6 * 60_000);
+    setInterval(() => { void agendar("embeddings-backfill", () => runDailyEmbedBackfill()); }, 24 * 60 * 60 * 1000);
     log.info("   Embeddings Cerebro: backfill diário (~800/dia, respeita a cota free) ✅");
 
     // Pré-tradução do catálogo: 10min após o boot, depois a cada 6h. A cadeia
     // de IA traduz muito melhor que o tradutor automático e leva ~10s por lote
     // de 20 — espera que o visitante não pode pagar com 0,1 CPU. Aqui ninguém
     // está esperando, e cada título é traduzido UMA vez na vida (DAD-05).
-    setTimeout(() => { void traduzirCatalogo(`http://localhost:${process.env.PORT ?? 3001}`); }, 10 * 60_000);
-    setInterval(() => { void traduzirCatalogo(`http://localhost:${process.env.PORT ?? 3001}`); }, 6 * 60 * 60 * 1000);
+    setTimeout(() => { void agendar("traducao-catalogo", () => traduzirCatalogo(`http://localhost:${process.env.PORT ?? 3001}`)); }, 10 * 60_000);
+    setInterval(() => { void agendar("traducao-catalogo", () => traduzirCatalogo(`http://localhost:${process.env.PORT ?? 3001}`)); }, 6 * 60 * 60 * 1000);
     log.info("   Tradução: catálogo pré-traduzido pela IA, a cada 6h ✅");
 
     // Modelos esportivos: 8min após o boot, depois 2×/dia. Prever cedo importa —
     // a previsão só vale se estiver gravada ANTES do jogo; e resolver 2×/dia
     // fecha as rodadas do fim de semana sem esperar um dia inteiro.
-    setTimeout(() => { void runSportsForecast(); }, 8 * 60_000);
-    setInterval(() => { void runSportsForecast(); }, 12 * 60 * 60 * 1000);
+    setTimeout(() => { void agendar("esportes", () => runSportsForecast()); }, 8 * 60_000);
+    setInterval(() => { void agendar("esportes", () => runSportsForecast()); }, 12 * 60 * 60 * 1000);
     log.info("   Esportes: previsão dos próximos jogos + resolução, 2×/dia ✅");
   } else if (!process.env.SUPABASE_SERVICE_KEY) {
     log.warn("   Cerebro/Snapshots: SUPABASE_SERVICE_KEY ausente — coleta manual apenas.");
