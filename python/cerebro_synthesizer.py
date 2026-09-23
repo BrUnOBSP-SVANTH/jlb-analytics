@@ -121,7 +121,18 @@ async def upsert_analysis(
     service_key: str,
     analysis: dict,
 ) -> bool:
-    url = f"{supabase_url}/rest/v1/cerebro_analyses"
+    # ⚠️ `?on_conflict=slug` — sem isso, a SEGUNDA síntese do dia falha
+    # (Auditoria 21/09, INF-02).
+    #
+    # O slug é sha1(categoria:data): dentro do mesmo dia ele se repete de
+    # propósito, porque a rodada seguinte deve SUBSTITUIR a anterior. Só que o
+    # `resolution=merge-duplicates` do PostgREST resolve pela CHAVE PRIMÁRIA
+    # (aqui, `id`), não pela coluna única — e cada rodada manda um id novo.
+    # Resultado: 23505 e "Falha ao salvar síntese de macro/cripto/esportes/
+    # política/ciência/mercados", todo dia, a partir da segunda rodada.
+    #
+    # É o mesmo erro de `on_conflict` que já mordeu a cobertura da análise.
+    url = f"{supabase_url}/rest/v1/cerebro_analyses?on_conflict=slug"
     headers = {
         "apikey": service_key,
         "Authorization": f"Bearer {service_key}",

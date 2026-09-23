@@ -46,6 +46,20 @@ RUN pip3 install --no-cache-dir --break-system-packages -r python/requirements.t
 # Artefatos de build + scripts Python (rodados via cron pelo servidor)
 COPY --from=build /app/dist ./dist
 COPY python ./python
+# 🔴 E os scripts Node que o servidor SPAWNA (Auditoria 21/09, INF-01).
+#
+# `server/index.ts` roda `scripts/sports-forecast.mjs` duas vezes por dia, e
+# esta pasta não vinha para a imagem: em produção o spawn morria com
+# "Cannot find module", duas vezes por dia, desde sempre. A previsão esportiva
+# — a prova prospectiva que o pivô para apostas depende — NUNCA rodou no ar.
+#
+# O sintoma era invisível: o `child.on("error")` registrava um aviso no log e o
+# servidor seguia, então nada quebrava. Só não acontecia.
+#
+# ⚠️ Script novo que o servidor spawnar precisa entrar AQUI. O
+# `scripts/jlb-doctor.mjs` confere isso e acusa o que faltar.
+COPY scripts/sports-forecast.mjs ./scripts/sports-forecast.mjs
+COPY scripts/lib ./scripts/lib
 # Snapshots HTML p/ crawlers (gerados por `pnpm prerender`, commitados)
 COPY prerendered ./prerendered
 
