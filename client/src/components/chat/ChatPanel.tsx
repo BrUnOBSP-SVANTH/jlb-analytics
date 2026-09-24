@@ -63,6 +63,8 @@ export default function ChatPanel({ open, onClose, onReady }: { open: boolean; o
 
   const abortRef = useRef<AbortController | null>(null);
   const stoppedRef = useRef(false);
+  /** Id da ÚLTIMA resposta que o servidor gerou — o que o 👍/👎 cita (SEG-06). */
+  const respostaIdRef = useRef<string | null>(null);
   const logRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -162,13 +164,17 @@ export default function ChatPanel({ open, onClose, onReady }: { open: boolean; o
             else if (line.startsWith("data:")) dataStr += line.slice(5).trim();
           }
           if (!dataStr) continue;
-          const payload = JSON.parse(dataStr) as { text?: string; reply?: string; message?: string };
+          const payload = JSON.parse(dataStr) as { text?: string; reply?: string; message?: string; respostaId?: string };
           if (evt === "delta" && payload.text) {
             acc += payload.text;
             const current = acc;
             setMessages([...base, { role: "assistant", content: current }]);
           } else if (evt === "done") {
             acc = payload.reply ?? acc;
+            // O id do que o SERVIDOR respondeu — é o que o 👍/👎 cita agora
+            // (SEG-06). Antes o cliente mandava a pergunta e a resposta, e
+            // qualquer um podia gravar texto arbitrário na nossa base.
+            if (payload.respostaId) respostaIdRef.current = payload.respostaId;
           } else if (evt === "error") {
             throw new Error(payload.message ?? "stream_error");
           }
@@ -214,9 +220,11 @@ export default function ChatPanel({ open, onClose, onReady }: { open: boolean; o
 
   // Fire-and-forget: marca o voto na hora e envia em background
   const sendFeedback = useCallback((index: number, rating: 1 | -1) => {
-    const answer = messages[index]?.content;
-    const question = messages[index - 1]?.content;
-    if (!answer || !question) return;
+    // Só a ÚLTIMA resposta tem id vivo: é a que a pessoa acabou de ler, e é a
+    // que o servidor ainda guarda (15 min). Votar numa mensagem antiga do
+    // histórico não tem o que registrar — e o botão some nesse caso.
+    const id = respostaIdRef.current;
+    if (!id) return;
     setVoted((v) => ({ ...v, [index]: rating }));
     void supabase.auth.getSession().catch(() => ({ data: { session: null } })).then(({ data }) =>
       fetch("/api/ai/chat/feedback", {
@@ -225,10 +233,10 @@ export default function ChatPanel({ open, onClose, onReady }: { open: boolean; o
           "Content-Type": "application/json",
           ...(data.session?.access_token ? { Authorization: `Bearer ${data.session.access_token}` } : {}),
         },
-        body: JSON.stringify({ question, answer, rating }),
+        body: JSON.stringify({ respostaId: id, rating }),
       }),
     ).catch(() => { /* feedback é best-effort */ });
-  }, [messages]);
+  }, []);
 
   if (!open) return null;
 

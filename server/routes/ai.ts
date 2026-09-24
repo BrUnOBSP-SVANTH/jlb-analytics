@@ -1,9 +1,7 @@
-import { buscarTudo } from "../lib/supaPaginado.ts";
 import { montarCurva } from "../lib/ai/curvaCalibracao.ts";
 import { dedupPorMercado } from "../lib/calibrationData.ts";
 import { carregarAmostra, resumir, fatiar, MIN_AMOSTRA } from "../lib/amostraIA.ts";
 import { normalizeCategory } from "../lib/ai/calibration.ts";
-import { intervaloWilson, comparaComMercado } from "../lib/ai/incerteza.ts";
 import { Router, type Request, type Response, type NextFunction } from "express";
 import { getCache, setCache, isRateLimited } from "../lib/cache.ts";
 import { aiCreditsMiddleware, verifyUserId, verifyUser, lerCota, FREE_LIMIT } from "../middleware/aiCredits.ts";
@@ -25,6 +23,7 @@ import { runMarketAnalysis, ANALYZE_CACHE_KEY, exigirProbabilidade, type Analyze
 import { serieDoUsuario } from "../lib/calibracaoUsuario.ts";
 import { runModelPredict, PREDICT_CACHE_KEY, type PredictParams } from "../lib/ai/modelPredict.ts";
 import { dailyBriefingHandler } from "../lib/ai/briefing.ts";
+import { guardarResposta, consumirResposta } from "../lib/ai/respostasDoChat.ts";
 import { portfolioHandler } from "../lib/ai/portfolio.ts";
 import { crossrefHandler } from "../lib/ai/crossref.ts";
 import { nomeDaPlataforma } from "../../shared/plataforma.ts";
@@ -194,7 +193,9 @@ router.post("/chat", ipLimit("chat", 12, 60_000), aiCreditsMiddleware, async (re
   if (!chatGuards(req, res)) return;
   try {
     const reply = await runChat(req.body as ChatRequest);
-    res.json({ reply });
+    // O id do que o SERVIDOR respondeu: é ele que o 👍/👎 vai citar (SEG-06).
+    const respostaId = guardarResposta(String((req.body as ChatRequest)?.message ?? ""), reply);
+    res.json({ reply, respostaId });
   } catch (err) {
     log.error("[AI chat] error:", err);
     res.status(500).json({ error: "Internal error" });
@@ -212,7 +213,8 @@ router.post("/chat/stream", ipLimit("chat", 12, 60_000), aiCreditsMiddleware, as
     res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
   try {
     const reply = await runChat(req.body as ChatRequest, (text) => send("delta", { text }));
-    send("done", { reply });
+    const respostaId = guardarResposta(String((req.body as ChatRequest)?.message ?? ""), reply);
+    send("done", { reply, respostaId });
   } catch (err) {
     log.error("[AI chat/stream] error:", err);
     send("error", { message: "O assistente está indisponível agora. Tente de novo em instantes." });
@@ -226,9 +228,22 @@ router.post("/chat/feedback", async (req, res) => {
   const ip = req.ip ?? "unknown";
   if (isRateLimited(`chat-fb:${ip}`, 6, 60_000)) return res.status(429).json({ error: "rate_limited" });
 
-  const { question, answer, rating } = (req.body ?? {}) as { question?: string; answer?: string; rating?: number };
-  if (!question?.trim() || !answer?.trim() || (rating !== 1 && rating !== -1)) {
-    return res.status(400).json({ error: "invalid_feedback" });
+  // ⚠️ O TEXTO NÃO VEM MAIS DO CLIENTE (Auditoria 21/09, SEG-06). Esta rota
+  // recebia `question` e `answer` e gravava os dois: qualquer anônimo tinha um
+  // campo de escrita de 6 KB no nosso banco, e o que escrevesse ficaria
+  // guardado como se fosse uma conversa real com o Analista. A tabela existe
+  // para mostrar ONDE A IA ERRA — envenená-la é pior do que enchê-la.
+  //
+  // Agora o cliente manda só o ID da resposta que o SERVIDOR gerou, e o
+  // servidor recupera o que ele mesmo disse.
+  const { respostaId, rating } = (req.body ?? {}) as { respostaId?: string; rating?: number };
+  if (rating !== 1 && rating !== -1) return res.status(400).json({ error: "invalid_feedback" });
+
+  const guardada = consumirResposta(respostaId);
+  if (!guardada) {
+    // Id desconhecido ou vencido (15 min). Não é erro do usuário — a aba pode
+    // ter ficado aberta —, então a resposta é educada e não grava nada.
+    return res.status(410).json({ error: "resposta_expirada", message: "Esta conversa já saiu do histórico recente." });
   }
   if (!SUPABASE_URL || !SUPABASE_KEY) return res.json({ ok: true }); // degrada sem Supabase
 
@@ -240,8 +255,8 @@ router.post("/chat/feedback", async (req, res) => {
       headers: supaWriteHeaders(),
       body: JSON.stringify({
         user_id: userId,
-        question: question.slice(0, 2_000),
-        answer: answer.slice(0, 4_000),
+        question: guardada.pergunta,
+        answer: guardada.resposta,
         rating,
       }),
       signal: AbortSignal.timeout(6_000),

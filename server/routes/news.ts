@@ -2,6 +2,7 @@ import { Router } from "express";
 import { getCache, setCache } from "../lib/cache.ts";
 import { fetchJSON } from "../lib/fetcher.ts";
 import { translateToPt, traduzirLote } from "../lib/translate.ts";
+import { titulosDoCatalogo, filtrarConhecidos } from "../lib/titulosConhecidos.ts";
 import type { NewsArticle, NewsApiResponse } from "../lib/types.ts";
 import { log } from "../lib/log.ts";
 
@@ -51,13 +52,28 @@ router.post("/translate/lote", async (req, res) => {
   // veio substituir, e a lista visível de mercados nunca passa disso. Quem
   // manda mais do que isso é o cliente dividindo em lotes — e cada lote é uma
   // requisição, não uma fila que o servidor segura aberta.
-  const textos = bruto.slice(0, 40).map((t) => String(t ?? "").trim().slice(0, 500)).filter(Boolean);
+  const pedidos = bruto.slice(0, 40).map((t) => String(t ?? "").trim().slice(0, 500)).filter(Boolean);
+
+  // ⚠️ SÓ O QUE ESTÁ NO NOSSO CATÁLOGO (Auditoria 21/09, SEG-06). Esta rota era
+  // um tradutor aberto: 40 textos de 500 caracteres por chamada, sem login.
+  // Quem quisesse podia queimar o teto diário de IA numa tarde — e aí os
+  // mercados de verdade ficam em inglês até o dia seguinte — ou fazer o IP do
+  // servidor ser bloqueado pelo tradutor de último recurso, tirando a tradução
+  // de todo mundo sem ninguém entender por quê.
+  const catalogo = [
+    ...(getCache<Array<{ question?: string; eventTitle?: string; outcomes?: string }>>("polymarket:markets:active") ?? []),
+    ...(getCache<Array<{ title?: string }>>("kalshi:markets") ?? []),
+  ];
+  const { aceitos, recusados } = filtrarConhecidos(pedidos, titulosDoCatalogo(catalogo));
+  if (recusados.length > 0) {
+    log.warn("translate", `${recusados.length} texto(s) fora do catálogo recusado(s)`);
+  }
 
   // A lista inteira num pedido só (DAD-05): quem traduz é a cadeia de IA, e ela
   // precisa ver os títulos juntos para não gastar uma chamada por card. Título
   // que ainda não tem tradução volta em `pendentes` — está sendo traduzido
   // agora, em segundo plano, e o cliente não deve gravar "não tem" para ele.
-  const { traducoes, pendentes } = await traduzirLote(textos);
+  const { traducoes, pendentes } = await traduzirLote(aceitos);
   res.json({ traducoes, pendentes });
 });
 
