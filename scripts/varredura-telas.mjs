@@ -289,6 +289,34 @@ for (const rota of ROTAS) {
     if (espremidos.length > 0) achados.push(`TEXTO ESPREMIDO EM 390px: ${espremidos.join(" | ")}`);
 
     /**
+     * A FAIXA DO NOTEBOOK (Auditoria 21/09, UXP-01).
+     *
+     * A varredura media 1280px e 390px — e o defeito morava exatamente no meio.
+     * A navegação de desktop ligava só em 1280px, então TODO notebook de
+     * 1024–1279px (a tela mais comum de quem usa o site sentado) via um
+     * hambúrguer numa barra larga e vazia. Nenhuma das duas medidas via isso.
+     *
+     * A causa do breakpoint alto era real: em 1024px o conteúdo da barra pedia
+     * mais espaço do que havia e a página rolava de lado (NAV-01). Por isso a
+     * checagem aqui é dupla — o menu tem que APARECER e a página não pode rolar
+     * de lado. Consertar um quebrando o outro é o laço em que isto já entrou.
+     */
+    await p.setViewportSize({ width: 1024, height: 800 });
+    await p.waitForTimeout(400);
+    const notebook = await p.evaluate(() => {
+      const grupos = document.querySelector("header nav > div > div.flex-1");
+      const hamburguer = document.querySelector('[aria-label="Abrir menu"]');
+      const visivel = (el) => !!el && el.getBoundingClientRect().width > 0;
+      return {
+        menuDesktop: visivel(grupos),
+        hamburguer: visivel(hamburguer),
+        sobra: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+      };
+    });
+    if (notebook.sobra > 0) achados.push(`SOBRA HORIZONTAL EM 1024px: a página rola ${notebook.sobra}px de lado`);
+    if (!notebook.menuDesktop && notebook.hamburguer) achados.push("SEM MENU EM 1024px: a navegação de desktop sumiu na faixa do notebook (UXP-01)");
+
+    /**
      * NÚMERO FORA DO PADRÃO BRASILEIRO (Auditoria 21/09, TXT-01).
      *
      * A casa tem uma fonte única de formatação (`shared/formato.ts`) e ela

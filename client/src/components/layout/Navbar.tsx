@@ -5,6 +5,11 @@
  *  · NAV-01  o layout desktop ligava em `lg` (1024px) mas o conteúdo pedia
  *            1208px — entre 1024 e 1210 o site inteiro rolava de lado. Subiu
  *            para `xl`.
+ *  · UXP-01  …e aí notebook nenhum abaixo de 1280px tinha menu: a barra inteira
+ *            virava um hambúrguer numa tela larga e vazia. O remédio certo não
+ *            era o breakpoint, era fazer caber. De `lg` a `xl` a navegação é
+ *            COMPACTA (rótulo 13px, menos respiro, busca só com o ícone) e o
+ *            painel do menu saiu do fluxo — abri-lo não empurra mais a página.
  *  · NAV-02  `Escape` não fechava nada. Agora todo popover sai pelo mesmo hook
  *            (`useDispensar`): Esc, clique fora e rolagem.
  *  · NAV-03  o botão anunciava `⌘K` no Windows. O rótulo passou a ser o do
@@ -393,7 +398,8 @@ export function Navbar() {
     // NAV-10: landmark de cabeçalho. Era uma `div` — quem usa leitor de tela
     // não tinha como pular direto para a navegação.
     <header className="sticky top-0 z-40 bg-background/90 backdrop-blur-xl border-b border-border/30">
-      <nav aria-label="Navegação principal">
+      {/* `relative`: é a âncora do painel do menu, que flutua logo abaixo da barra. */}
+      <nav aria-label="Navegação principal" className="relative">
         <div className="container flex items-center justify-between h-14 gap-2" ref={(n) => { menuRef.current = n; dMenu.ref.current = n; }}>
 
           {/* Logo — monograma de assinatura (linha ascendente + ponto, igual ao favicon) */}
@@ -410,9 +416,16 @@ export function Navbar() {
             </div>
           </Link>
 
-          {/* Desktop nav groups — `xl` e não `lg`: em 1024–1210px o conteúdo
-              transbordava e a aplicação inteira rolava de lado (NAV-01). */}
-          <div className="hidden xl:flex items-center gap-0.5 ml-6 flex-1">
+          {/* Desktop nav groups — a partir de `lg` (UXP-01).
+              Ficou em `xl` por um tempo porque em 1024–1210px o conteúdo
+              transbordava e a aplicação rolava de lado (NAV-01) — só que o
+              remédio tirou o menu inteiro de todo notebook de 1280px para
+              baixo, que é a tela mais comum de quem usa o site sentado. A
+              conta, medida com a sessão aberta: logo 123 + grupos 489 +
+              ações 479 = 1115px de conteúdo para 960px de espaço em 1024.
+              Agora a faixa lg→xl é COMPACTA (rótulo menor, menos respiro, busca
+              só com o ícone) e cabe; de `xl` para cima nada muda. */}
+          <div className="hidden lg:flex items-center gap-0.5 ml-2 xl:ml-6 flex-1">
             {NAV_GROUPS.map((group) => {
               const isActive = group.children.some((c) => location === c.href || location.startsWith(c.href + "/"));
               const isOpen = activeMenu === group.id;
@@ -425,7 +438,7 @@ export function Navbar() {
                     onMouseEnter={() => { if (activeMenu !== null) setActiveMenu(group.id); }}
                     aria-expanded={isOpen}
                     aria-haspopup="menu"
-                    className={`alvo-toque flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg transition-colors whitespace-nowrap ${
+                    className={`alvo-toque flex items-center gap-1 xl:gap-1.5 px-2 xl:px-3 py-2 text-[13px] xl:text-sm font-medium rounded-lg transition-colors whitespace-nowrap ${
                       isActive || isOpen
                         ? "text-foreground bg-secondary/40"
                         : "text-muted-foreground hover:text-foreground hover:bg-secondary/20"
@@ -446,7 +459,7 @@ export function Navbar() {
           </div>
 
           {/* Right actions */}
-          <div className="hidden xl:flex items-center gap-1.5">
+          <div className="hidden lg:flex items-center gap-1 xl:gap-1.5">
             {/* Busca global — o rótulo do atalho segue o teclado de quem lê (NAV-03) */}
             <button
               onClick={() => document.dispatchEvent(new KeyboardEvent("keydown", {
@@ -456,8 +469,11 @@ export function Navbar() {
               aria-label="Abrir busca global"
             >
               <Search className="w-3 h-3" aria-hidden="true" />
-              <span>Buscar</span>
-              <kbd className="text-[11px] border border-border/20 rounded px-1 bg-secondary/20">{ATALHO_BUSCA}</kbd>
+              {/* Na faixa compacta (lg→xl) sobra só o ícone: são os 91px que
+                  faltavam para o menu caber no notebook. O nome da ação
+                  continua no `aria-label` e o atalho continua valendo. */}
+              <span className="hidden xl:inline">Buscar</span>
+              <kbd className="hidden xl:inline text-[11px] border border-border/20 rounded px-1 bg-secondary/20">{ATALHO_BUSCA}</kbd>
             </button>
             <AlertBell />
             <div className="w-px h-5 bg-border/40 mx-0.5" aria-hidden="true" />
@@ -467,7 +483,7 @@ export function Navbar() {
 
           {/* Mobile toggle — NAV-04: sem "sair" aqui. Encerrar a sessão a um
               toque de distância do botão de tema era acidente esperando. */}
-          <div className="flex xl:hidden items-center gap-1">
+          <div className="flex lg:hidden items-center gap-1">
             <UserMenu compacto />
             <AlertBell />
             <button
@@ -486,7 +502,17 @@ export function Navbar() {
 
         {/* ── Mobile menu ── */}
         {mobileOpen && (
-            <div className="xl:hidden overflow-hidden border-t border-border/30 bg-popover/98 backdrop-blur-xl animate-in slide-in-from-top-2 fade-in duration-200">
+            // UXP-01 — o painel sai do FLUXO e ganha rolagem própria.
+            // Medido antes: abrir o menu com a página rolada empurrava a
+            // leitura de 1166px para 1763px no tablet (o painel entrava no
+            // fluxo, o documento crescia e a âncora de rolagem escorregava), e
+            // 79px do pé ficavam CORTADOS — com `overflow-hidden` e header
+            // grudado, "Sair da conta" não tinha como ser alcançado. Agora ele
+            // flutua sobre a página (`absolute`), então o documento não muda de
+            // tamanho e nada se move atrás; e o que não couber na tela rola
+            // dentro do próprio painel. `dvh` porque no celular a barra do
+            // navegador entra e sai da conta de `vh`.
+            <div className="lg:hidden absolute left-0 right-0 top-full max-h-[calc(100dvh-3.5rem)] overflow-y-auto overscroll-contain border-t border-border/30 bg-popover/98 backdrop-blur-xl animate-in slide-in-from-top-2 fade-in duration-200">
               <div className="container py-3 space-y-0.5">
                 {/* Atalhos */}
                 <div className="flex flex-wrap gap-1.5 pb-3 border-b border-border/20 mb-2">
@@ -508,7 +534,7 @@ export function Navbar() {
                     qualquer destino custava dois cliques, com espaço de sobra na
                     tela. De 768px para cima as seções vêm abertas, em colunas, e
                     o botão de expandir dá lugar a um rótulo. */}
-                <div className="md:grid md:grid-cols-2 lg:grid-cols-3 md:gap-x-5">
+                <div className="md:grid md:grid-cols-2 md:gap-x-5">
                 {NAV_GROUPS.map((group) => (
                   <div key={group.id}>
                     <p className="hidden md:block px-3 pt-3 pb-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70">
