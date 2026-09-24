@@ -42,7 +42,7 @@ const QUESTIONS: { claim: string; answer: boolean; note: string }[] = [
   {
     claim: "No Polymarket, a maioria das carteiras tem prejuízo acumulado.",
     answer: true,
-    note: "Cerca de 70% dos endereços têm perdas históricas, e 0,04% das contas capturaram mais de 70% do lucro total (CryptoSlate, 2025).",
+    note: "Cerca de 70% dos endereços têm perdas históricas, e 0,04% das contas capturaram mais de 70% do lucro total (análise de DeFi Oasis sobre 1,7 milhão de endereços).",
   },
   {
     claim: "Um mercado que marca 90% acerta quase sempre — errar nessa faixa é sinal de mercado quebrado.",
@@ -52,7 +52,7 @@ const QUESTIONS: { claim: string; answer: boolean; note: string }[] = [
   {
     claim: "O brasileiro movimenta mais de R$ 20 bilhões por mês em apostas.",
     answer: true,
-    note: "O Banco Central estimou cerca de R$ 30 bilhões por mês em 2025 — mais do que o país gasta com muitos serviços públicos.",
+    note: "O Comsefaz mediu R$ 351 bilhões movimentados via Pix entre outubro de 2024 e março de 2026 — cerca de R$ 19,5 bilhões por mês. As famílias PERDERAM R$ 62,5 bilhões nesse período.",
   },
 ];
 const CONF = [50, 60, 70, 80, 90, 99];

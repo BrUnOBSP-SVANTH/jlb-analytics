@@ -185,9 +185,29 @@ const HOW_IT_WORKS = [
  * a plataforma copia sem conferir.
  */
 const SOCIAL_PROOF = [
-  { value: "70%",     label: "dos endereços no Polymarket têm perdas históricas",  source: "CryptoSlate 2025" },
-  { value: "0,04%",   label: "das contas capturaram 70%+ dos lucros totais",       source: "CryptoSlate 2025" },
-  { value: "R$ 30 bi", label: "fluxo mensal para apostas no Brasil",               source: "BCB 2025" },
+  {
+    value: "70%",
+    label: "dos endereços no Polymarket têm perdas históricas",
+    source: "Análise de DeFi Oasis sobre 1,7 mi de endereços",
+    url: "https://cryptonews.com/news/70-of-polymarket-traders-lost-money-as-top-0-04-captured-most-profits-research/",
+  },
+  {
+    value: "0,04%",
+    label: "das contas capturaram mais de 70% de todo o lucro",
+    source: "Análise de DeFi Oasis sobre 1,7 mi de endereços",
+    url: "https://cryptonews.com/news/70-of-polymarket-traders-lost-money-as-top-0-04-captured-most-profits-research/",
+  },
+  {
+    // ⚠️ AQUI SE LIA "R$ 30 bi — fluxo mensal para apostas (BCB 2025)", e as
+    // duas metades estavam erradas (Auditoria 21/09, TXT-04). A fonte é o
+    // Comsefaz, não o BCB, e o estudo mede R$ 351 bi em DEZOITO meses
+    // (out/2024 a mar/2026) — R$ 19,5 bi por mês, não 30. Conferido na fonte
+    // em 24/09.
+    value: "R$ 19,5 bi",
+    label: "movimentados por mês em apostas no Brasil, via Pix",
+    source: "Comsefaz, Boletim Fiscal dos Estados (ago/2026)",
+    url: "https://agenciabrasil.ebc.com.br/economia/noticia/2026-08/familias-brasileiras-perderam-r-625-bilhoes-para-bets-em-2025",
+  },
 ];
 
 // ── Main ───────────────────────────────────────────────────────────────────
@@ -670,7 +690,12 @@ export default function Home() {
                     significa alguma coisa. O número já é grande. */}
                 <div className="text-3xl font-mono font-semibold text-foreground mb-2">{stat.value}</div>
                 <p className="text-xs text-muted-foreground leading-snug">{stat.label}</p>
-                <p className="text-[11px] text-muted-foreground mt-1">{stat.source}</p>
+                {/* A fonte vira LINK: número de terceiro sem caminho para
+                    conferir é exatamente o que este site ensina a desconfiar. */}
+                <a href={stat.url} target="_blank" rel="noopener noreferrer"
+                   className="text-[11px] text-muted-foreground mt-1 inline-block hover:text-foreground hover:underline transition-colors">
+                  {stat.source}
+                </a>
               </div>
             ))}
           </div>

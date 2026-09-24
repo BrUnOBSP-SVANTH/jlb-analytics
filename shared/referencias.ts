@@ -21,15 +21,28 @@
 /**
  * Brier Score médio dos superforecasters do Good Judgment Project.
  *
- * FONTE: Good Judgment Inc. — "The Superforecasters' Track Record"
- * (goodjudgment.com/resources/the-superforecasters-track-record/). No torneio da
- * IARPA (2011–2015), os 2% do topo entre ~25 mil participantes sustentaram Brier
- * médio consistentemente ABAIXO de 0,12 no conjunto principal de questões —
- * cerca de 20% a 30% melhor que a mediana dos participantes.
+ * ⚠️ DUAS ESCALAS, E A CONVERSÃO É O PONTO (Auditoria 21/09, TXT-04).
  *
- * Publicamos 0,10 como a referência arredondada dessa faixa. Os outros dois
- * números que circulavam pelo site não se sustentam: 0,14 é pior que a faixa
- * medida, e 0,05 é melhor do que qualquer resultado publicado do GJP.
+ * O Good Judgment Project publica o Brier na definição ORIGINAL, que soma o
+ * erro das duas alternativas: numa pergunta binária ela vale o DOBRO da nossa.
+ * Nessa escala, chutar 50% em tudo dá 0,5 — na nossa dá 0,25. Comparar os dois
+ * números direto faria os superforecasters parecerem duas vezes piores do que
+ * são, e a nossa IA parecer perto deles sem estar.
+ *
+ * Os números publicados pelo GJP, e a conversão para a nossa escala:
+ *   · 0,25 para os superforecasters no 1º ano do torneio (Tetlock,
+ *     "Superforecasting"), contra 0,37 do restante dos participantes  → 0,125
+ *   · 0,166 por superforecaster individual em análises posteriores,
+ *     contra 0,259 dos previsores comuns                              → 0,083
+ *
+ * Publicamos 0,10, que é o meio dessa faixa (0,083–0,125) arredondado. Os
+ * outros dois números que circulavam pelo site não se sustentam em escala
+ * nenhuma: 0,14 é pior que a faixa medida, e 0,05 é melhor do que qualquer
+ * resultado publicado do GJP.
+ *
+ * FONTE: Good Judgment Inc. — "The Superforecasters' Track Record"
+ * (goodjudgment.com/resources/the-superforecasters-track-record/) e Tetlock &
+ * Gardner, "Superforecasting" (2015). Torneio da IARPA/ACE, 2011–2015.
  *
  * Contexto que o número sozinho não dá, e que as telas devem repetir: 0 é a
  * previsão perfeita e 0,25 é o que se consegue dizendo 50% em tudo. Brier só

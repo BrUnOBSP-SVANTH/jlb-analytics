@@ -56,11 +56,28 @@ function prose(it: FeedItem): string {
   return `há ${it.prob}% de chance${mv}, segundo o mercado preditivo`;
 }
 
+/**
+ * Os números que uma redação pode citar — com a fonte conferível ao lado.
+ *
+ * ⚠️ Três dos quatro estavam errados ou sem caminho (Auditoria 21/09, TXT-04):
+ * "R$30bi (BCB 2025)" atribuía ao Banco Central um estudo do Comsefaz e
+ * dividia R$ 351 bi por 12 meses quando o período medido tem DEZOITO
+ * (out/2024–mar/2026); "CryptoSlate 2025" creditava o veículo em vez do
+ * analista; e "Feb/26" é mês em inglês numa página em português. Numa página
+ * feita para ser citada, fonte errada vira erro de outra pessoa.
+ */
 const MARKET_FACTS = [
-  { stat: "70%",    desc: "dos endereços no Polymarket têm perdas históricas",                    source: "CryptoSlate 2025" },
-  { stat: "0,04%",  desc: "das contas capturaram mais de 70% de todos os lucros do mercado",      source: "CryptoSlate 2025" },
-  { stat: "R$30bi", desc: "fluxo mensal via Pix para casas de apostas no Brasil",                 source: "BCB 2025" },
-  { stat: "Feb/26", desc: "CVM aprovou a primeira operadora brasileira de mercados preditivos na B3", source: "CVM 2026" },
+  { stat: "70%",       desc: "dos endereços no Polymarket têm perdas históricas",
+    source: "Análise de DeFi Oasis (1,7 mi de endereços)",
+    url: "https://cryptonews.com/news/70-of-polymarket-traders-lost-money-as-top-0-04-captured-most-profits-research/" },
+  { stat: "0,04%",     desc: "das contas capturaram mais de 70% de todos os lucros do mercado",
+    source: "Análise de DeFi Oasis (1,7 mi de endereços)",
+    url: "https://cryptonews.com/news/70-of-polymarket-traders-lost-money-as-top-0-04-captured-most-profits-research/" },
+  { stat: "R$ 19,5 bi", desc: "movimentados por mês via Pix para casas de apostas no Brasil",
+    source: "Comsefaz, Boletim Fiscal dos Estados (ago/2026)",
+    url: "https://agenciabrasil.ebc.com.br/economia/noticia/2026-08/familias-brasileiras-perderam-r-625-bilhoes-para-bets-em-2025" },
+  { stat: "fev/2026",  desc: "CVM aprovou a primeira operadora brasileira de mercados preditivos na B3",
+    source: "CVM (2026)", url: undefined },
 ];
 
 const ROADMAP = [
@@ -200,7 +217,17 @@ export default function Imprensa() {
                 <span className="text-2xl font-bold font-mono text-gold shrink-0">{f.stat}</span>
                 <div>
                   <p className="text-sm text-foreground leading-snug">{f.desc}</p>
-                  <p className="text-[11px] text-muted-foreground mt-1">{f.source}</p>
+                  {/* A fonte vira link quando existe: esta página é feita para
+                      ser CITADA, e número sem caminho para conferir vira erro
+                      de outra pessoa. */}
+                  {f.url ? (
+                    <a href={f.url} target="_blank" rel="noopener noreferrer"
+                       className="text-[11px] text-muted-foreground mt-1 inline-block hover:text-foreground hover:underline transition-colors">
+                      {f.source}
+                    </a>
+                  ) : (
+                    <p className="text-[11px] text-muted-foreground mt-1">{f.source}</p>
+                  )}
                 </div>
               </div>
             ))}

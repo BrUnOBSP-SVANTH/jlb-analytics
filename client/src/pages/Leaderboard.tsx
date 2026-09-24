@@ -147,7 +147,13 @@ export default function Leaderboard() {
   }, []);
 
   const REFERENCIAS = [
-    { nome: "Superforecasters do Good Judgment Project", nota: FONTE_SUPERFORECASTER, brier: BRIER_SUPERFORECASTER },
+    // ⚠️ A ESCALA precisa vir junto do número (Auditoria 21/09, TXT-04). O GJP
+    // publica o Brier na definição original, em que chutar 50% dá 0,5; a nossa
+    // dá 0,25. O 0,10 abaixo já está convertido — ver shared/referencias.ts —
+    // e dizer isso é o que torna a comparação legítima em vez de sugestiva.
+    { nome: "Superforecasters do Good Judgment Project",
+      nota: `${FONTE_SUPERFORECASTER} · convertido para a nossa escala, em que 0 é perfeito e 0,25 é chutar 50%`,
+      brier: BRIER_SUPERFORECASTER },
     { nome: "O mercado (Polymarket e Kalshi)", nota: "medido nas mesmas perguntas que a nossa IA respondeu", brier: regua.marketBrier },
     { nome: "A IA da JLB", nota: "o nosso próprio número, publicado no Track Record", brier: regua.aiBrier },
     { nome: "Responder 50% em tudo", nota: "o piso: é o que se consegue sem saber nada", brier: BRIER_DO_CHUTE },

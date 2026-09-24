@@ -18,7 +18,7 @@ import {
 const OFFERINGS = [
   { icon: GraduationCap, title: "5 Níveis de Educação",        desc: "Progressão estruturada: Fundamentos → Dados → Modelos → Vieses → Análise Integrada. Cada nível com calculadoras interativas." },
   { icon: BarChart3,     title: "Modelos Quantitativos",        desc: "Poisson + Dixon-Coles, Elo, GARCH, Regra de Taylor, ENSO. Cada modelo com premissas e limites documentados — implementados em TypeScript." },
-  { icon: Calculator,    title: "Calculadoras EV, Kelly, Brier", desc: "Ferramentas interativas para Valor Esperado, Overround, Brier Score e Kelly — os fundamentos que 99% dos apostadores nunca calcularam." },
+  { icon: Calculator,    title: "Calculadoras EV, Kelly, Brier", desc: "Ferramentas interativas para Valor Esperado, Overround, Brier Score e Kelly — os fundamentos que quase ninguém calcula antes de decidir." },
   { icon: Activity,      title: "Simuladores Monte Carlo",      desc: "Lei dos Grandes Números, Kelly Criterion e calibração interativa. Simulações de até 1.000 rodadas com visualização em tempo real." },
   { icon: Brain,         title: "IA Adaptativa por Domínio",    desc: "Previsão Guiada detecta o nível do usuário (leigo / intermediário / avançado) e aplica o modelo econométrico correto para cada pergunta." },
   { icon: GitMerge,      title: "Cérebro — Base Proprietária",  desc: "Base de conhecimento curada: coleta notícias por RSS e gera sínteses por IA — o motor de contexto que alimenta todas as análises. (Contagem real na seção de métricas.)" },
@@ -33,7 +33,7 @@ const PRINCIPLES = [
 
 // Metrics fetched dynamically from Supabase where possible
 const STATIC_METRICS = [
-  { value: "18",  label: "endpoints de modelos econométricos", sub: "TypeScript nativo, sem dependências externas" },
+  { value: "5",   label: "níveis da trilha, do zero ao integrado", sub: "com exercícios e calculadoras em cada um" },
   { value: "5",   label: "níveis de educação progressiva",     sub: "do fundamento à análise integrada" },
 ];
 

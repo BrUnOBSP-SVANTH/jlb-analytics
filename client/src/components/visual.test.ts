@@ -192,9 +192,16 @@ describe("marca da casa e conteúdo próprio", () => {
   it("cada afirmação traz a explicação com procedência", () => {
     // A nota é o que transforma o teste em aprendizado: sem fonte, é só um
     // palpite nosso contra o palpite da pessoa.
+    //
+    // ⚠️ Este teste já prendeu os NOMES das fontes ("CryptoSlate", "Banco
+    // Central") — e as duas estavam erradas (Auditoria 21/09, TXT-04): o
+    // estudo do Polymarket é do analista DeFi Oasis, e o das apostas no Brasil
+    // é do Comsefaz. Um teste que fixa a atribuição impede justamente o
+    // conserto dela. O que ele deve cobrar é que EXISTA procedência.
     const notas = teste.match(/note:\s*"/g) ?? [];
     expect(notas.length).toBeGreaterThanOrEqual(5);
-    expect(teste).toMatch(/CryptoSlate|Banco Central|acompanhamos \d+/);
+    // Ao menos uma instituição, estudo ou medição nossa é nomeada.
+    expect(teste).toMatch(/Comsefaz|DeFi Oasis|Good Judgment|análise de|acompanhamos \d+/i);
   });
 });
 
