@@ -79,3 +79,34 @@ describe("precoCalculavel", () => {
     expect(precoCalculavel(NaN)).toBe(false);
   });
 });
+
+describe("neutro: os três cartões dizem a mesma coisa", () => {
+  /**
+   * UXP-02. O limiar sempre disse que abaixo de meio ponto percentual não há
+   * vantagem a declarar — mas quem zerava era a tela, e só em dois dos três
+   * cartões. O caso medido: mercado 52,0%, estimativa 52,4%.
+   */
+  it("🔴 edge abaixo do limiar não produz Kelly nem EV", () => {
+    const v = calcularVantagem(0.524, 0.52);
+    expect(v.neutro).toBe(true);
+    expect(v.kellyCheio).toBe(0);   // antes: 0,00833 → "0,8% da banca"
+    expect(v.kellyMeio).toBe(0);
+    expect(v.ev).toBe(0);
+    expect(v.abaixoDoMercado).toBe(false);
+  });
+
+  it("logo acima do limiar a conta volta a valer", () => {
+    // 0,6 pp passa do limiar: aqui zerar seria esconder vantagem de verdade.
+    const v = calcularVantagem(0.526, 0.52);
+    expect(v.neutro).toBe(false);
+    expect(v.kellyCheio).toBeGreaterThan(0);
+    expect(v.ev).toBeGreaterThan(0);
+  });
+
+  it("neutro para BAIXO também zera, e não vira 'abaixo do mercado'", () => {
+    const v = calcularVantagem(0.517, 0.52);
+    expect(v.neutro).toBe(true);
+    expect(v.kellyCheio).toBe(0);
+    expect(v.ev).toBe(0);
+  });
+});

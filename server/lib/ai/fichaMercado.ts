@@ -28,6 +28,7 @@ import { buscarTudo } from "../supaPaginado.ts";
 import { getCache, setCache } from "../cache.ts";
 import { log } from "../log.ts";
 import { reaisExatos, num } from "../../../shared/formato.ts";
+import { volumeNaMoeda } from "../../../shared/plataforma.ts";
 
 /** O que medimos numa categoria, olhando só o que já resolveu oficialmente. */
 export interface HistoricoCategoria {
@@ -232,8 +233,12 @@ export async function montarFicha(d: DadosFicha): Promise<string> {
   }
 
   if (typeof d.volume === "number" && d.volume > 0) {
+    // ⚠️ A UNIDADE DEPENDE DA FONTE (Auditoria 21/09, UXP-02). O Kalshi conta
+    // CONTRATOS em `volume_fp`, não dinheiro; escrever "US$" aqui não errava só
+    // o rótulo da tela — entrava no prompt como grandeza de liquidez e
+    // orientava o julgamento do modelo sobre quanta informação o preço carrega.
     linhas.push(
-      `LIQUIDEZ: US$ ${Math.round(d.volume).toLocaleString("pt-BR")} negociados. `
+      `LIQUIDEZ: ${volumeNaMoeda(Math.round(d.volume), d.plataforma.toLowerCase())} negociados. `
       + (d.volume >= 100_000
         ? `Volume alto — muita gente apostando, então o preço carrega mais informação.`
         : `Volume baixo — poucos participantes, então o preço é menos confiável como consenso.`),

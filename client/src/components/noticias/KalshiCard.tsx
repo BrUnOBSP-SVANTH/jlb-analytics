@@ -155,9 +155,9 @@ export function KalshiCard({ market }: { market: KalshiMarket }) {
       {/* Footer */}
       <div className="flex items-center justify-between pt-1 border-t border-border/20">
         <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-          <span>Vol: <span className="font-mono text-foreground">{formatVolume(market.volume)}</span></span>
+          <span>Vol: <span className="font-mono text-foreground">{formatVolume(market.volume, "kalshi")}</span></span>
           {market.volume24h != null && market.volume24h > 0 && (
-            <span className="text-[11px]">24h: <span className="font-mono text-foreground/80">{formatVolume(market.volume24h)}</span></span>
+            <span className="text-[11px]">24h: <span className="font-mono text-foreground/80">{formatVolume(market.volume24h, "kalshi")}</span></span>
           )}
           {market.openInterest != null && market.openInterest > 0 && (
             <span className="text-[11px]">OI: <span className="font-mono text-foreground/80">{market.openInterest.toLocaleString("pt-BR")}</span></span>

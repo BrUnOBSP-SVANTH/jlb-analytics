@@ -43,7 +43,7 @@ export default function MarketDetail() {
     market, snapshotRows, fonteHistorico, aiAnalysis, loadingMarket, loadingAi, aiError,
     communityForecast, cerebroArticles, trackRecord,
     handleAnalyzeAi,
-    chartData, currentProb, probPct, probColor, chartStroke, isResolved,
+    chartData, nomeDaSerie, currentProb, probPct, probColor, chartStroke, isResolved,
   } = useMarketDetail(marketId);
 
   /**
@@ -182,15 +182,22 @@ export default function MarketDetail() {
               </AnimatedSection>
             )}
 
-            {/* O histórico de cada desfecho vem ANTES da lista: o gráfico conta a
-                história e a lista dá o número exato de agora. */}
-            <HistoricoDesfechos market={market} />
-
+            {/* A LISTA VEM ANTES DO GRÁFICO (UXP-02).
+                O contrário parecia melhor — "o gráfico conta a história e a
+                lista dá o número exato de agora" — mas foi decidido olhando
+                para o desktop. Medido depois em 390px, num mercado de 12
+                desfechos: o título terminava em 439px, o gráfico ocupava de 521
+                a 938px e a primeira PROBABILIDADE só aparecia em 961px, com a
+                dobra em 844px. Quem abria pelo celular via a história de um
+                número que ainda não tinha lido. Agora a pergunta "quanto é?"
+                responde primeiro e "como chegou aqui" vem logo abaixo. */}
             <OutcomesBreakdown
               market={market}
               desfechoSelecionado={desfechoSelecionado ?? market.parsedOutcomes?.[0]?.id ?? null}
               onSelecionarDesfecho={(id) => selecionarDesfecho(id, { rolar: true })}
             />
+
+            <HistoricoDesfechos market={market} />
 
             {/* Stats row */}
             <AnimatedSection delay={0.1}>
@@ -220,7 +227,7 @@ export default function MarketDetail() {
                 <div className="glass-card rounded-xl p-4 text-center">
                   <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-1">Volume Total</p>
                   <p className="text-2xl font-mono font-bold text-foreground">
-                    {market.volume !== undefined ? formatVolume(market.volume) : "—"}
+                    {market.volume !== undefined ? formatVolume(market.volume, source) : "—"}
                   </p>
                   <p className="text-[11px] text-muted-foreground mt-1">Negociado</p>
                 </div>
@@ -231,7 +238,7 @@ export default function MarketDetail() {
                 {market.volume24h !== undefined && (
                   <div className="glass-card rounded-xl p-4 text-center">
                     <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-1"><Termo nome="volume">Volume 24h</Termo></p>
-                    <p className="text-2xl font-mono font-bold text-neon-blue">{formatVolume(market.volume24h)}</p>
+                    <p className="text-2xl font-mono font-bold text-neon-blue">{formatVolume(market.volume24h, source)}</p>
                     <p className="text-[11px] text-muted-foreground mt-1">nas últimas 24 horas</p>
                   </div>
                 )}
@@ -309,8 +316,15 @@ export default function MarketDetail() {
                           <stop offset="95%" stopColor={chartStroke} stopOpacity={0.02} />
                         </linearGradient>
                       </defs>
+                      {/* Eixo por TEMPO, não por categoria (UXP-02): sem isto,
+                          um buraco de dois meses na coleta ocupa a mesma largura
+                          de um dia e a linha inventa uma escalada. */}
                       <XAxis
-                        dataKey="date"
+                        dataKey="t"
+                        type="number"
+                        scale="time"
+                        domain={["dataMin", "dataMax"]}
+                        tickFormatter={(t: number) => new Date(t).toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })}
                         tick={CHART_TICK_STYLE}
                         tickLine={false}
                         axisLine={false}
@@ -325,7 +339,8 @@ export default function MarketDetail() {
                       />
                       <Tooltip
                         contentStyle={CHART_TOOLTIP_STYLE}
-                        formatter={(v: number) => [`${v}%`, "Prob SIM"]}
+                        formatter={(v: number) => [`${v}%`, nomeDaSerie]}
+                        labelFormatter={(t: number) => new Date(t).toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" })}
                         labelStyle={{ color: "oklch(0.85 0 0)", fontSize: 11 }}
                       />
                       <ReferenceLine y={50} stroke="oklch(0.6 0 0)" strokeDasharray="3 3" strokeOpacity={0.4} />

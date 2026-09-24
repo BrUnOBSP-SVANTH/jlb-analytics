@@ -26,6 +26,25 @@ describe("plataforma — a origem é dita, não deduzida por exclusão", () => {
     expect(volumeNaMoeda(undefined, "manifold")).toBe("—");
   });
 
+  it("🔴 volume do Kalshi é CONTRATO, nunca dólar", () => {
+    /**
+     * UXP-02. A API do Kalshi separa as duas coisas pelo sufixo: `_dollars` é
+     * dinheiro, `_fp` é contagem. Nós líamos `volume_fp` e escrevíamos "US$".
+     *
+     * O caso medido em 24/09, mercado KXTTELITEMATCH-26SEP241605SJAJMI-SJA:
+     * `volume_fp` = 1.497,43 (fracionário — dinheiro não vem assim) com
+     * `last_price_dollars` = 0,01. Publicávamos "US$ 1.497" para algo que
+     * negociou da ordem de US$ 15. Cem vezes mais — e volume é o número que
+     * usamos para dizer quais mercados merecem atenção.
+     */
+    expect(volumeNaMoeda(1_497, "kalshi")).toBe("1,5 mil contratos");
+    expect(volumeNaMoeda(1_497, "kalshi")).not.toMatch(/US\$/);
+    expect(volumeNaMoeda(1, "kalshi")).toBe("1 contrato");
+    expect(volumeNaMoeda(undefined, "kalshi")).toBe("—");
+    // O Polymarket continua em dólar: lá o gamma publica dinheiro mesmo.
+    expect(volumeNaMoeda(1_497, "polymarket")).toBe("US$ 1,5 mil");
+  });
+
   it("só Polymarket e Kalshi negociam dinheiro real", () => {
     expect(negociaDinheiroReal("polymarket")).toBe(true);
     expect(negociaDinheiroReal("kalshi")).toBe(true);

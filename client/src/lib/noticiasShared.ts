@@ -2,7 +2,7 @@
  * Tipos e utilitários compartilhados entre a página Notícias e os modais de análise.
  * Extraído para quebrar o arquivo gigante Noticias.tsx sem import circular.
  */
-import { dolar } from "@shared/formato";
+import { volumeNaMoeda } from "@shared/plataforma";
 
 
 export interface Article {
@@ -82,12 +82,14 @@ export interface RedditPost {
  * é dólar, e um site brasileiro que mostra "$681K" está dizendo outra moeda
  * para quem lê rápido.
  *
- * Agora sai por `dolar()`, a fonte única da casa: "US$ 681 mil", "US$ 2,7 mi".
+ * Agora sai por `volumeNaMoeda()`, a fonte única da casa: "US$ 681 mil" no
+ * Polymarket, "681 mil contratos" no Kalshi (UXP-02 — lá o volume conta
+ * contratos, não dinheiro).
  */
-export function formatVolume(v?: number | string): string {
+export function formatVolume(v: number | string | undefined, fonte: string | null | undefined): string {
   const n = typeof v === "string" ? parseFloat(v) : v;
   if (n == null || !Number.isFinite(n) || n === 0) return "—";
-  return dolar(n);
+  return volumeNaMoeda(n, fonte);
 }
 
 export function daysLeft(dateStr?: string): number | null {

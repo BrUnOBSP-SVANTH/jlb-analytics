@@ -325,8 +325,8 @@ export function hoursAgo(utcSeconds: number) {
  * Saía como `$108.6M`, `$898K`, `Liq: $2K` — formato en-US num produto
  * brasileiro que já formata corretamente em reais na Banca Simulada.
  */
-export function formatVolume(v: number) {
-  return dolar(v);
+export function formatVolume(v: number, fonte: string | null | undefined) {
+  return volumeNaMoeda(v, fonte);
 }
 
 export function formatOdds(prob: number): string {

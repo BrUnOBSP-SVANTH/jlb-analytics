@@ -231,12 +231,12 @@ export function MarketCard({ market, savedIds, onSaved, highlight = false, indic
       {/* Footer */}
       <div className="flex items-center justify-between pt-1 border-t border-border/20">
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          <span>Vol: <span className="font-mono text-foreground">{formatVolume(market.volume)}</span></span>
+          <span>Vol: <span className="font-mono text-foreground">{formatVolume(market.volume, "polymarket")}</span></span>
           {market.volume24hr != null && market.volume24hr > 0 && (
-            <span className="text-[11px]">24h: <span className="font-mono text-foreground/80">{formatVolume(market.volume24hr)}</span></span>
+            <span className="text-[11px]">24h: <span className="font-mono text-foreground/80">{formatVolume(market.volume24hr, "polymarket")}</span></span>
           )}
           {market.liquidity != null && market.liquidity > 0 && (
-            <span className="text-[11px]">Liq: <span className="font-mono text-foreground/80">{formatVolume(market.liquidity)}</span></span>
+            <span className="text-[11px]">Liq: <span className="font-mono text-foreground/80">{formatVolume(market.liquidity, "polymarket")}</span></span>
           )}
         </div>
         <div className="flex items-center gap-1.5">

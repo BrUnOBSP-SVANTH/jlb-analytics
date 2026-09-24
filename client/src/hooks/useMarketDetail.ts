@@ -23,6 +23,7 @@ import { montarDesfechos } from "@/lib/desfechos";
 import { termosDistintivos, filtrarRelacionados } from "@/lib/relevancia";
 import { historicoDoToken } from "@/lib/historicoPreco";
 import { serieDiaria } from "@/lib/serieDiaria";
+import { nomeDaSerie } from "@/components/marketDetail/utils";
 
 export function useMarketDetail(marketId: string) {
   const source = marketId.startsWith("kalshi-") ? "kalshi"
@@ -361,11 +362,34 @@ export function useMarketDetail(marketId: string) {
 
   // ── Chart data ────────────────────────────────────────────────────────────────
 
+  /**
+   * O EIXO X CARREGA O INSTANTE, não o rótulo (Auditoria 21/09, UXP-02).
+   *
+   * Antes o ponto levava só a data já formatada ("24 set") e o Recharts tratava
+   * isso como CATEGORIA: todo intervalo virava um passo do mesmo tamanho. Numa
+   * série com falha de coleta, dois meses de silêncio ficavam do tamanho de um
+   * dia, e a linha mostrava uma escalada onde houve ausência de dado.
+   *
+   * Não é caso raro. Medido no arquivo de produção em 24/09, nas séries com
+   * pontos suficientes para serem desenhadas (5.236): 557 têm buraco maior que
+   * 3 dias, 360 maior que 10 dias, e o maior chega a 60,9 dias.
+   *
+   * Com `t` em milissegundos e eixo numérico, a distância na tela passa a ser a
+   * distância no tempo — e o buraco aparece como buraco.
+   */
   const chartData = snapshotRows.map((pt) => ({
-    date: new Date(pt.t * 1000).toLocaleDateString("pt-BR", { day: "2-digit", month: "short" }),
+    t: pt.t * 1000,
     // yes_prob dos snapshots já é 0-100 (não 0-1) — o *100 dava "8720%" no eixo
     prob: Math.round(pt.p),
   }));
+
+  /**
+   * O NOME DA SÉRIE (UXP-02). O gráfico dizia "Prob SIM" sempre — inclusive num
+   * mercado de 12 desfechos, onde não existe "SIM": a série de reserva é a do
+   * PRIMEIRO desfecho (`clobTokenIds[0]`), então a tela mostrava a linha de um
+   * candidato com o nome de outro conceito. Agora ela diz o que está mostrando.
+   */
+  const nomeDaLinha = nomeDaSerie(market?.parsedOutcomes);
 
   const currentProb = market?.yesProb ?? 0;
   const probPct = Math.round(currentProb * 100);
@@ -382,6 +406,6 @@ export function useMarketDetail(marketId: string) {
     market, snapshotRows, fonteHistorico, aiAnalysis, loadingMarket, loadingAi, aiError,
     communityForecast, cerebroArticles, trackRecord,
     handleAnalyzeAi,
-    chartData, currentProb, probPct, probColor, chartStroke, isResolved,
+    chartData, nomeDaSerie: nomeDaLinha, currentProb, probPct, probColor, chartStroke, isResolved,
   };
 }

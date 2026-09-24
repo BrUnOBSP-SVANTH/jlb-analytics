@@ -46,8 +46,32 @@ export function negociaDinheiroReal(source: string | null | undefined): boolean 
   return source === "polymarket" || source === "kalshi";
 }
 
-/** Volume na moeda da plataforma: `US$ 898 mil` (Polymarket, Kalshi) ou `898 mil mana` (Manifold). */
+/**
+ * Volume na unidade que a plataforma REALMENTE usa: `US$ 898 mil` (Polymarket),
+ * `898 mil contratos` (Kalshi) ou `898 mil mana` (Manifold).
+ *
+ * ⚠️ O KALSHI NÃO PUBLICA VOLUME EM DINHEIRO (Auditoria 21/09, UXP-02). O campo
+ * é `volume_fp` e conta CONTRATOS — a própria API separa as duas coisas pelo
+ * sufixo: `_dollars` é dinheiro, `_fp` é contagem. Nós líamos `volume_fp` e
+ * escrevíamos "US$" na frente.
+ *
+ * Não é detalhe de rótulo. Medido em 24/09 no mercado
+ * KXTTELITEMATCH-26SEP241605SJAJMI-SJA: `volume_fp` = 1.497,43 — fracionário, o
+ * que por si só denuncia que não é dinheiro — com `last_price_dollars` = 0,01.
+ * O site publicava "US$ 1.497" onde o negociado foi da ordem de US$ 15. E o
+ * volume é justamente o número que usamos para dizer quais mercados merecem
+ * atenção, no site e no prompt da IA.
+ *
+ * Por que não converter para dólar: o valor negociado é contratos × preço MÉDIO
+ * de execução, e esse preço a API não dá. Multiplicar pelo último preço seria
+ * inventar um número. "1,5 mil contratos" é verdade e continua comparável entre
+ * mercados do Kalshi.
+ */
 export function volumeNaMoeda(v: number | null | undefined, source: string | null | undefined): string {
+  if (source === "kalshi") {
+    const corpo = magnitude(v);
+    return corpo === "—" ? corpo : `${corpo} ${Math.abs(Number(v)) === 1 ? "contrato" : "contratos"}`;
+  }
   if (source === "manifold") {
     const corpo = magnitude(v);
     return corpo === "—" ? corpo : `${corpo} mana`;

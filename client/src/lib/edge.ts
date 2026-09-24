@@ -92,6 +92,23 @@ export function calcularVantagem(q: number, p: number): Vantagem {
   const bruto = (q - p) / (1 - p);
   const kellyCheio = Math.max(0, bruto);
 
+  /**
+   * NEUTRO ZERA O QUE É DERIVADO (Auditoria 21/09, UXP-02).
+   *
+   * O limiar já declarava que abaixo de meio ponto percentual "não há vantagem
+   * a declarar, só arredondamento" — mas quem zerava era a TELA, e ela zerava
+   * só dois dos três cartões. Com mercado a 52,0% e estimativa 52,4%, a mesma
+   * fileira mostrava "EDGE 0,0 pp", "EV 0,0%" e "Kelly Completo 0,8% da banca".
+   * O leitor tinha três respostas para a mesma pergunta, e a única que sugeria
+   * agir era a que estava errada.
+   *
+   * Zerar aqui, e não lá, é o que impede o próximo cartão de nascer com o mesmo
+   * defeito: a regra passa a valer para quem chamar.
+   */
+  if (neutro) {
+    return { edgePp, ev: 0, kellyCheio: 0, kellyMeio: 0, abaixoDoMercado: false, neutro };
+  }
+
   return {
     edgePp,
     // `+ 0` mata o `-0`, que o JS produz e o formatador imprime como "-0,0".
