@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync, readdirSync, statSync } from "node:fs";
-import { join, dirname } from "node:path";
+import { join, dirname, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const AQUI = dirname(fileURLToPath(import.meta.url));
@@ -296,5 +296,37 @@ describe("botão flutuante do assistente", () => {
   it("com o painel aberto ele NÃO some", () => {
     // Esconder aí seria esconder o "fechar".
     expect(w).toMatch(/if \(open\) \{ setVisivel\(true\); return; \}/);
+  });
+});
+
+describe("exemplo dentro de campo também é número na tela", () => {
+  /**
+   * UXP-03/TXT-01. O detector da varredura lê o texto RENDERIZADO, e placeholder
+   * é atributo — por isso dois passaram por toda a auditoria de número:
+   *
+   *  · "ex: 0.45" no /nivel/1, a página que ENSINA a ler número;
+   *  · "Selic está a 10.5%" no campo de contexto da previsão, que além do ponto
+   *    decimal afirmava um valor que não é o da Selic.
+   *
+   * O segundo mora numa seção que nasce fechada e nem chega ao DOM, então o
+   * detector do navegador nunca o veria. Este teste lê o FONTE, e é o que
+   * fecha esse buraco.
+   *
+   * Passa `1.234` (milhar) e `0.01`/`step` (atributo técnico, não texto lido).
+   */
+  const PONTO_DECIMAL = /(?<![\d.])\d{1,3}\.\d{1,2}(?![\d])/;
+
+  it("🔴 nenhum placeholder escreve número com ponto decimal", () => {
+    const culpados: string[] = [];
+    for (const arquivo of arquivos(SRC)) {
+      const conteudo = readFileSync(arquivo, "utf-8");
+      for (const m of conteudo.matchAll(/placeholder=(?:"([^"]*)"|\{`([^`]*)`\})/g)) {
+        const texto = m[1] ?? m[2] ?? "";
+        if (PONTO_DECIMAL.test(texto)) {
+          culpados.push(`${relative(SRC, arquivo)}: "${texto.slice(0, 48)}"`);
+        }
+      }
+    }
+    expect(culpados).toEqual([]);
   });
 });

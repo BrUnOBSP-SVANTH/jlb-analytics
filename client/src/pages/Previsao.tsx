@@ -96,19 +96,19 @@ export default function Previsao() {
           <KlementSection onClose={() => setShowKlement(false)} />
         )}
 
-        {/* Margem de erro em destaque — empresa de previsão não se vende como perfeita */}
-        <MarginOfError />
+        {/* ── Formulário ──
+            ELE VEM PRIMEIRO (Auditoria 21/09, UXP-03). Antes havia quatro blocos
+            de credibilidade entre o título e o campo — margem de erro, track
+            record, comparador e guia. Cada um se justifica sozinho; juntos,
+            empurravam a ferramenta para fora da tela. Medido em 390px: o campo
+            de escrever começava em 1.104px e o botão "Analisar com IA" em
+            1.576px, com a dobra em 844px — uma tela e meia de rolagem antes de
+            poder fazer a única coisa que a página existe para fazer.
 
-        {/* ── Track record verificado da IA ── */}
-        <AiTrackRecord />
-
-        {/* ── Comparador: nossa previsão × mercado × resultado real ── */}
-        <ResultComparator />
-
-        {/* ── Guia Superforecaster ── */}
-        <SuperforecasterGuide />
-
-        {/* ── Formulário ── */}
+            A prova de credibilidade não saiu: ela desce para logo abaixo do
+            formulário, onde continua sendo lida por quem hesita — e onde ela
+            responde a uma pergunta que a pessoa já formulou ("posso confiar
+            nisto?"), em vez de antecipá-la. */}
         <AnimatedSection>
           <div className="glass-card rounded-2xl p-6 space-y-6">
 
@@ -230,7 +230,12 @@ export default function Previsao() {
                   value={context}
                   onChange={(e) => setContext(e.target.value)}
                   rows={2}
-                  placeholder="Ex: Considere que a Selic está a 10.5%, há eleição em outubro, o petróleo subiu 15% no mês..."
+                  /* SEM NÚMERO INVENTADO (TXT-01/IAC-04). O exemplo afirmava
+                     "Selic a 10.5%" — errado no valor e escrito com ponto
+                     decimal, num campo que a pessoa lê como se fosse dado do
+                     site. O exemplo agora ensina o FORMATO do contexto sem
+                     afirmar nada; quem souber o número escreve o número. */
+                  placeholder="Ex: leve em conta a Selic de hoje, a eleição de outubro e a alta recente do petróleo..."
                   className="mt-2 w-full px-4 py-3 rounded-xl bg-secondary/50 border border-border/50 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary resize-none"
                 />
               )}
@@ -358,6 +363,20 @@ export default function Previsao() {
             )}
           </div>
         </AnimatedSection>
+
+        {/* Margem de erro em destaque — empresa de previsão não se vende como
+            perfeita. Fica logo abaixo do formulário: continua antes de qualquer
+            resultado, que é onde a ressalva precisa estar. */}
+        <MarginOfError />
+
+        {/* ── Track record verificado da IA ── */}
+        <AiTrackRecord />
+
+        {/* ── Comparador: nossa previsão × mercado × resultado real ── */}
+        <ResultComparator />
+
+        {/* ── Guia Superforecaster ── */}
+        <SuperforecasterGuide />
 
         {/* ── Como funciona (só quando não tem resultado) ── */}
         {!result && !loading && (

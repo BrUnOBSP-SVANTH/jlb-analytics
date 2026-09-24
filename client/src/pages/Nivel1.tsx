@@ -121,7 +121,11 @@ function EVCalculator() {
               onChange={(e) => updateRow(i, "probability", e.target.value)}
               step="0.01" min="0" max="1"
               className="w-full min-w-0 px-3 py-2 rounded-lg bg-secondary/50 border border-border/50 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-              placeholder="ex: 0.45"
+              /* VÍRGULA, como o Brasil escreve (TXT-01). O exemplo estava em
+                 "0.45" na página que ENSINA a ler número. Medido em 24/09 nos
+                 dois locales: o campo aceita os dois separadores e guarda 0.45
+                 do mesmo jeito, então escrever certo não custa nada. */
+              placeholder="ex: 0,45"
             />
             {rows.length > 2 && (
               <button onClick={() => removeRow(i)} className="text-xs text-negative hover:underline text-left">Remover</button>

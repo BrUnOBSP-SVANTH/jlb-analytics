@@ -366,6 +366,38 @@ for (const rota of ROTAS) {
     if (numerosErrados.length > 0) {
       achados.push(`NÚMERO FORA DO PADRÃO pt-BR: ${numerosErrados.join(" | ")} — use shared/formato.ts`);
     }
+
+    /**
+     * O MESMO, MAS NO PLACEHOLDER (Auditoria 21/09, UXP-03).
+     *
+     * A checagem acima lê o texto RENDERIZADO, e placeholder não é texto
+     * renderizado: é atributo. Por isso dois escaparam da varredura inteira —
+     * "ex: 0.45" na página que ENSINA a ler número, e "Selic está a 10.5%" no
+     * campo de contexto da previsão, que ainda por cima afirmava um valor que
+     * não é o da Selic.
+     *
+     * Exemplo dentro de um campo é lido como se fosse dado da casa. Vale a
+     * mesma régua do resto da tela.
+     *
+     * ⚠️ LIMITE, medido ao provar este detector: ele só enxerga o que está
+     * MONTADO. O placeholder da Selic mora numa seção que nasce fechada e nem
+     * chega ao DOM, então passou aqui. Quem fecha esse buraco é o teste de
+     * código-fonte em client/src/components/visual.test.ts — os dois juntos
+     * cobrem o que cada um sozinho não cobre.
+     */
+    const placeholdersErrados = await p.evaluate(() => {
+      const PONTO_DECIMAL = /(?<![\d.])\d{1,3}\.\d{1,2}(?![\d])\s?(%|pp|$)/;
+      const saida = [];
+      for (const e of document.querySelectorAll("[placeholder]")) {
+        const texto = e.getAttribute("placeholder") ?? "";
+        if (PONTO_DECIMAL.test(texto)) saida.push(`"${texto.slice(0, 50)}"`);
+        if (saida.length >= 3) break;
+      }
+      return saida;
+    });
+    if (placeholdersErrados.length > 0) {
+      achados.push(`NÚMERO FORA DO PADRÃO pt-BR EM PLACEHOLDER: ${placeholdersErrados.join(" | ")}`);
+    }
   } catch (e) {
     achados.push(`não carregou: ${String(e.message).slice(0, 120)}`);
   }
