@@ -6,8 +6,14 @@ import AnimatedSection from "@/components/AnimatedSection";
 import { useSEO } from "@/hooks/useSEO";
 
 /** Versionado junto com os Termos — ver a nota em pages/Termos.tsx (LEG-01). */
-const VERSAO = "1.0";
-const UPDATED = "24 de junho de 2026";
+// ⚠️ Mudou o texto, muda a VERSÃO. A 1.1 (24/09/2026) declarou o que o site já
+// fazia e a 1.0 não dizia: Google (Gemini) e Groq na cadeia de IA, Render como
+// hospedagem, transferência internacional, o que o 👍/👎 do chat guarda, o que
+// os alertas do navegador guardam, e os prazos de retenção (Auditoria 21/09,
+// PRV-01). Política que descreve menos do que o produto faz é a pior espécie
+// de letra miúda: a que nem está escrita.
+const VERSAO = "1.1";
+const UPDATED = "24 de setembro de 2026";
 
 function Section({ n, title, children }: { n: string; title: string; children: React.ReactNode }) {
   return (
@@ -36,13 +42,25 @@ export default function Privacidade() {
               <ul className="list-disc pl-5 space-y-1">
                 <li><strong className="text-foreground">Cadastro:</strong> email e dados de autenticação (via Supabase).</li>
                 <li><strong className="text-foreground">Uso da plataforma:</strong> previsões registradas, pontos, progresso e métricas de calibração — armazenados localmente (localStorage) e, se logado, sincronizados na sua conta.</li>
-                <li><strong className="text-foreground">Uso de IA:</strong> registros de chamadas às análises (endpoint, modelo, latência) para controle de cota e melhoria do serviço.</li>
+                {/* Este item descrevia uma tabela (`ai_usage`) que guardava ENDEREÇO
+                    DE IP e que nenhum código escrevia — zero referências, zero
+                    linhas (PRV-01). A tabela foi APAGADA (migration 047), e a
+                    descrição passa a ser o que de fato acontece: contamos
+                    análises para a cota, sem registrar IP. */}
+                <li><strong className="text-foreground">Uso de IA:</strong> contamos quantas análises sua conta fez no mês, para aplicar a cota gratuita. Não registramos o seu endereço de IP.</li>
                 {/* Setembro/2026: a cota grátis passou a ser por pessoa, contada
                     por um hash do e-mail normalizado (server/lib/identidadeCota.ts).
                     Tratar dado derivado do e-mail para outra finalidade exige
                     dizer aqui qual é, e o que NÃO fazemos com ele. */}
                 <li><strong className="text-foreground">Controle da cota grátis:</strong> para que a cota de análises valha por pessoa, e não por conta, guardamos uma <em>impressão digital</em> (hash) do seu e-mail normalizado — sem pontos e sem o trecho depois do &quot;+&quot;. Ela serve só para reconhecer que duas contas usam a mesma caixa de e-mail; não é possível recuperar o e-mail a partir dela, e ela não é usada para mais nada. Base legal: legítimo interesse em impedir o abuso do plano gratuito.</li>
-                <li><strong className="text-foreground">Técnicos:</strong> dados de navegação e métricas agregadas de uso (analytics).</li>
+                <li><strong className="text-foreground">Técnicos:</strong> dados de navegação e métricas agregadas de uso (analytics), coletados só com o seu consentimento.</li>
+                {/* Setembro/2026 (Auditoria 21/09, PRV-01): estas três coisas o
+                    site já fazia e a política não dizia. Tratamento não
+                    declarado não deixa de existir por não estar escrito — só
+                    deixa de ser informado, que é o que a LGPD cobra. */}
+                <li><strong className="text-foreground">Chat com o Analista:</strong> quando você avalia uma resposta com 👍 ou 👎, guardamos a <em>pergunta e a resposta daquela conversa</em> junto da avaliação, para descobrir onde a IA erra. Se você estiver logado, a avaliação fica ligada à sua conta.</li>
+                <li><strong className="text-foreground">Alertas no navegador:</strong> se você ativar as notificações, guardamos o endereço técnico de entrega do seu navegador, as chaves de criptografia que ele gera e a lista de mercados que você acompanha — é o mínimo para conseguir avisar você.</li>
+                <li><strong className="text-foreground">Lista de mercados acompanhados:</strong> fica no seu aparelho e, se você ativar alertas, também no servidor, para o aviso ser enviado.</li>
               </ul>
               <p>Não coletamos dados financeiros de apostas reais — a plataforma é educacional e o portfólio é simulado.</p>
             </Section>
@@ -62,17 +80,46 @@ export default function Privacidade() {
 
             <Section n="5" title="Compartilhamento com terceiros">
               <p>Compartilhamos o mínimo necessário com operadores que viabilizam o serviço:</p>
+              {/* ⚠️ A lista citava só Anthropic, Supabase, Stripe e e-mail —
+                  e a IA do site funciona em CADEIA: quando a Anthropic não
+                  responde, quem processa é o Google ou a Groq (Auditoria 21/09,
+                  PRV-01). Hoje, na prática, o Google é o provedor que mais
+                  atende. Omitir isso é omitir para quem o texto da pessoa foi. */}
               <ul className="list-disc pl-5 space-y-1">
                 <li><strong className="text-foreground">Supabase</strong> — autenticação e banco de dados.</li>
-                <li><strong className="text-foreground">Anthropic (Claude)</strong> — processamento das análises de IA.</li>
+                <li><strong className="text-foreground">Anthropic (Claude), Google (Gemini) e Groq</strong> — processamento das análises de IA. A análise passa pelos três em cadeia: se o primeiro não responde, o pedido segue para o seguinte, e é ele que recebe o texto que você escreveu. Hoje o Google é, na prática, quem mais atende.</li>
+                <li><strong className="text-foreground">Render</strong> — hospedagem da aplicação.</li>
                 <li><strong className="text-foreground">Stripe</strong> — pagamentos do plano premium (quando aplicável).</li>
                 <li><strong className="text-foreground">Provedor de email</strong> — envio dos comunicados opt-in.</li>
               </ul>
+              <p className="mt-3">
+                <strong className="text-foreground">Transferência internacional.</strong> Todos esses operadores
+                processam dados <strong className="text-foreground">fora do Brasil</strong>, principalmente nos Estados
+                Unidos. Ao usar a plataforma, seus dados são tratados nesses servidores (art. 33 da LGPD).
+              </p>
+              <p className="mt-3">
+                <strong className="text-foreground">Um aviso honesto sobre os planos gratuitos de IA.</strong> Usamos
+                camadas gratuitas desses provedores, e os termos de alguns deles permitem que o conteúdo enviado seja
+                usado para treinar os modelos. Por isso a regra da casa:{" "}
+                <strong className="text-foreground">não escreva dado pessoal, sigiloso ou de terceiros</strong> nos
+                campos de análise e no chat.
+              </p>
               <p>Não vendemos seus dados pessoais.</p>
             </Section>
 
             <Section n="6" title="Armazenamento e segurança">
-              <p>Adotamos medidas técnicas e organizacionais (RLS no banco, controle de acesso por chave de serviço, rate limiting, criptografia em trânsito). Dados ficam retidos enquanto sua conta existir ou conforme exigências legais; previsões locais ficam no seu dispositivo até você limpá-las.</p>
+              <p>Adotamos medidas técnicas e organizacionais (RLS no banco, controle de acesso por chave de serviço, rate limiting, criptografia em trânsito).</p>
+              {/* Prazo de retenção era o que faltava: "enquanto a conta existir"
+                  não é prazo para o que NÃO está ligado à conta (PRV-01). */}
+              <p className="mt-3"><strong className="text-foreground">Por quanto tempo guardamos:</strong></p>
+              <ul className="list-disc pl-5 space-y-1">
+                <li><strong className="text-foreground">Conta, previsões e progresso:</strong> enquanto a conta existir. Ao excluí-la, apagamos em até 30 dias.</li>
+                <li><strong className="text-foreground">Avaliações do chat (👍/👎):</strong> até 12 meses.</li>
+                <li><strong className="text-foreground">Alertas no navegador:</strong> enquanto a permissão estiver ativa; revogando no navegador, apagamos o registro.</li>
+                <li><strong className="text-foreground">Hash do e-mail (cota):</strong> enquanto a conta existir.</li>
+                <li><strong className="text-foreground">Analytics:</strong> métricas agregadas, sem identificação, por até 24 meses.</li>
+                <li><strong className="text-foreground">Previsões locais:</strong> ficam no seu dispositivo até você limpá-las.</li>
+              </ul>
             </Section>
 
             <Section n="7" title="Seus direitos (art. 18 da LGPD)">

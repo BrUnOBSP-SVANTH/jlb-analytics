@@ -16,6 +16,7 @@ import { Router } from "express";
 import { isRateLimited } from "../lib/cache.ts";
 import { ehEmailDescartavel } from "../lib/identidadeCota.ts";
 import { log } from "../lib/log.ts";
+import { verifyUser } from "../middleware/aiCredits.ts";
 
 const router = Router();
 
@@ -80,6 +81,69 @@ router.get("/senha-vazada", async (req, res) => {
         return res.status(502).json({ error: "consulta_indisponivel" });
       }
     }
+  }
+});
+
+/**
+ * Excluir a conta — de verdade, e a pedido da própria pessoa.
+ *
+ * POR QUE EXISTE (Auditoria 21/09, PRV-01). A Política promete o art. 18 da
+ * LGPD, que inclui a ELIMINAÇÃO dos dados, mas o único caminho era mandar
+ * e-mail e esperar. Direito que depende da boa vontade de quem lê a caixa de
+ * entrada não é direito exercível — é promessa.
+ *
+ * O que apaga, e por quê:
+ *  · o usuário no Auth (e, em cascata, tudo que tem FK para ele: previsões,
+ *    apostas da banca, perfil, créditos, inscrições de alerta);
+ *  · a identidade da cota (o hash do e-mail), que não tem FK e ficaria órfã —
+ *    e que é justamente um dado derivado do e-mail da pessoa.
+ *
+ * ⚠️ O que NÃO apaga, e a tela diz isso antes: as previsões já RESOLVIDAS que
+ * entraram no track record público saem do seu nome, mas a contagem agregada
+ * permanece. Apagar resultado depois de saber o desfecho é o cherry-picking que
+ * a plataforma existe para não fazer — e é o mesmo princípio da migration 041.
+ * Como a exclusão do usuário leva as linhas em cascata, o agregado é
+ * recalculado sem elas; o que fica é o histórico de que aquelas resoluções
+ * existiram, sem dono.
+ */
+router.delete("/minha-conta", async (req, res) => {
+  const SUPABASE_URL = process.env.SUPABASE_URL ?? process.env.VITE_SUPABASE_URL ?? "";
+  const CHAVE = process.env.SUPABASE_SERVICE_KEY ?? "";
+  if (!SUPABASE_URL || !CHAVE) return res.status(503).json({ error: "indisponivel" });
+
+  if (isRateLimited(`excluir-conta:${req.ip ?? "?"}`, 5, 60_000)) {
+    return res.status(429).json({ error: "rate_limited" });
+  }
+
+  const usuario = await verifyUser(String(req.headers.authorization ?? ""));
+  if (!usuario) return res.status(401).json({ error: "login_necessario", message: "Entre na sua conta." });
+
+  // ⚠️ CONFIRMAÇÃO EXPLÍCITA no corpo. Um DELETE que apaga tudo não pode
+  // depender só de um clique: a tela pede a palavra, e o servidor confere.
+  const confirmacao = String((req.body as { confirmacao?: unknown })?.confirmacao ?? "").trim().toUpperCase();
+  if (confirmacao !== "EXCLUIR") {
+    return res.status(400).json({ error: "confirmacao_ausente", message: "Confirme digitando EXCLUIR." });
+  }
+
+  const cabecalho = { apikey: CHAVE, Authorization: `Bearer ${CHAVE}`, "Content-Type": "application/json" };
+  try {
+    // A identidade da cota não tem FK para o usuário: some aqui ou fica órfã.
+    await fetch(`${SUPABASE_URL}/rest/v1/cota_ia_identidade?user_id=eq.${encodeURIComponent(usuario.id)}`, {
+      method: "DELETE", headers: cabecalho, signal: AbortSignal.timeout(10_000),
+    });
+
+    const r = await fetch(`${SUPABASE_URL}/auth/v1/admin/users/${encodeURIComponent(usuario.id)}`, {
+      method: "DELETE", headers: cabecalho, signal: AbortSignal.timeout(10_000),
+    });
+    if (!r.ok) {
+      log.error("conta", `falha ao excluir ${usuario.id}: HTTP ${r.status}`);
+      return res.status(502).json({ error: "falha_ao_excluir", message: "Não foi possível excluir agora. Tente de novo em alguns minutos." });
+    }
+    log.info("conta", `conta ${usuario.id} excluída a pedido da pessoa`);
+    res.json({ excluida: true });
+  } catch (e) {
+    log.error("conta", `erro ao excluir conta: ${String(e)}`);
+    res.status(502).json({ error: "falha_ao_excluir", message: "Não foi possível excluir agora." });
   }
 });
 

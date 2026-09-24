@@ -27,6 +27,7 @@ import { BadgesSection, type BadgeContext } from "@/components/perfil/badges";
 import { PremiumUpgrade } from "@/components/perfil/PremiumUpgrade";
 import { CotaDeAnalises } from "@/components/perfil/CotaDeAnalises";
 import { EmailPreferences } from "@/components/perfil/EmailPreferences";
+import { ExcluirConta } from "@/components/perfil/ExcluirConta";
 import { ProfilePublicSettings } from "@/components/perfil/ProfilePublicSettings";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -505,6 +506,9 @@ export default function Perfil() {
 
         {/* ── Notificações por email ── */}
         <EmailPreferences userId={user.id} />
+
+        {/* ── Excluir a conta (art. 18 da LGPD) ── */}
+        <ExcluirConta />
 
       </div>
     </div>

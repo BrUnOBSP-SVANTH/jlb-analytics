@@ -1,0 +1,25 @@
+-- ─────────────────────────────────────────────────────────────────────────────
+-- JLB Analytics — 047_remove_ai_usage.sql
+--
+-- Auditoria 21/09, PRV-01: uma tabela que guardava ENDEREÇO DE IP e que nenhum
+-- código escrevia.
+--
+-- `ai_usage` tinha as colunas (id, user_id, ip_address, endpoint, model,
+-- tokens_in, tokens_out, latency_ms, created_at). Conferido em 24/09:
+--   · ZERO referências em todo o repositório (server, scripts, python);
+--   · ZERO linhas no banco de produção.
+--
+-- Ou seja: uma estrutura pronta para coletar IP, sem nada coletando, sem
+-- ninguém lembrando que ela existe — e sem estar descrita na Política de
+-- Privacidade. É exatamente o tipo de coisa que a minimização de dados da LGPD
+-- existe para evitar: no dia em que alguém precisasse de um log rápido, a
+-- coluna estaria ali, convidativa, e o IP entraria no banco sem que a política
+-- dissesse uma palavra.
+--
+-- Apagar é mais honesto do que documentar. Se um dia houver necessidade real de
+-- medir uso por IP, a decisão volta à mesa — com a política junto.
+--
+-- Reversível: o esquema está no histórico do git (migrations anteriores).
+-- ─────────────────────────────────────────────────────────────────────────────
+
+DROP TABLE IF EXISTS public.ai_usage;

@@ -110,7 +110,7 @@ export default function Termos() {
             </Section>
 
             <Section n="8" title="Dados de terceiros e disponibilidade">
-              <p>Usamos APIs públicas (Polymarket, Kalshi, Banco Central do Brasil, Yahoo Finance, NewsAPI) e IA (Anthropic). Esses dados podem ter atraso, indisponibilidade ou imprecisão. Não garantimos disponibilidade ininterrupta nem exatidão de dados de terceiros.</p>
+              <p>Usamos APIs públicas (Polymarket, Kalshi, Banco Central do Brasil, Yahoo Finance, NewsAPI) e IA de terceiros — <strong className="text-foreground">Anthropic, Google e Groq</strong>, em cadeia: quando um não responde, o pedido segue para o seguinte. Esses dados podem ter atraso, indisponibilidade ou imprecisão. Não garantimos disponibilidade ininterrupta nem exatidão de dados de terceiros. A <a href="/privacidade" className="text-gold hover:underline">Política de Privacidade</a> detalha o que cada um recebe.</p>
             </Section>
 
             <Section n="9" title="Isenção de responsabilidade">

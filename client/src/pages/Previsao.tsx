@@ -33,6 +33,7 @@ import {
   PredictionTimeline, PlainLanguageCard,
 } from "@/components/previsao/ResultCards";
 import { SuperforecasterGuide, AiTrackRecord, ResultComparator } from "@/components/previsao/GuideAndTrackRecord";
+import { reaisExatos } from "@shared/formato";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -260,10 +261,10 @@ export default function Previsao() {
               </div>
             </div>
 
-            {/* Bankroll */}
+            {/* Valor de referência — NÃO SOBE PARA A IA (PRV-01) */}
             <div>
               <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2 font-medium">
-                4. Seu patrimônio / bankroll em jogo — opcional
+                4. Valor de referência — opcional
               </p>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">R$</span>
@@ -277,9 +278,29 @@ export default function Previsao() {
                   className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-secondary/50 border border-border/50 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
                 />
               </div>
+              {/* ⚠️ O texto dizia "a IA calcula o impacto estimado no seu
+                  patrimônio" — e para isso o número ERA ENVIADO ao provedor de
+                  IA, que pode ser uma camada gratuita cujos termos permitem
+                  treinar com o conteúdo (PRV-01). A conta que a pessoa quer ver
+                  é aritmética simples: ela é feita aqui, no navegador. */}
               <p className="text-[11px] text-muted-foreground mt-1">
-                Se informado, a IA calcula o impacto estimado no seu patrimônio.
+                Fica só no seu aparelho — não é enviado para a IA nem gravado por nós. Serve para traduzir a
+                análise em reais.
               </p>
+              {Number(bankroll) > 0 && (
+                <div className="mt-2 p-3 rounded-lg bg-secondary/20 border border-border/20">
+                  <p className="text-[11px] text-muted-foreground">
+                    Para referência, sobre {reaisExatos(Number(bankroll))}:{" "}
+                    <strong className="text-foreground">1% = {reaisExatos(Number(bankroll) * 0.01)}</strong> ·{" "}
+                    <strong className="text-foreground">2% = {reaisExatos(Number(bankroll) * 0.02)}</strong> ·{" "}
+                    <strong className="text-foreground">5% = {reaisExatos(Number(bankroll) * 0.05)}</strong>.
+                  </p>
+                  <p className="text-[11px] text-muted-foreground mt-1">
+                    O tamanho de posição por Kelly precisa do PREÇO do mercado, que esta tela não tem —
+                    a calculadora da ficha de cada mercado faz essa conta.
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* Botão */}

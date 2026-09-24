@@ -141,7 +141,14 @@ export function usePrevisao() {
             question: question.trim(),
             context: enrichedContext,
             timeHorizon: horizon,
-            bankroll: bankroll ? parseFloat(bankroll) : undefined,
+            // ⚠️ O VALOR DE REFERÊNCIA NÃO SOBE (Auditoria 21/09, PRV-01).
+            //
+            // Este campo perguntava "seu patrimônio / bankroll em jogo" e
+            // mandava o número para o prompt — ou seja, para a Anthropic, o
+            // Google ou a Groq, conforme quem atendesse. Os termos das camadas
+            // gratuitas de alguns desses provedores permitem usar o conteúdo
+            // enviado para treinar modelos. Quanto a pessoa tem é dela; a conta
+            // que ela quer ver é aritmética e cabe no navegador.
           }),
         });
         if (!res.ok || !res.body) {

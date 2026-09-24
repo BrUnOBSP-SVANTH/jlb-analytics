@@ -446,9 +446,14 @@ async function startServer() {
   // Dá a pesquisadores um canal pra REPORTAR falhas em vez de vazar/vender/explorar.
   // Sinal de maturidade e defesa via colaboração (muitos white-hats checam isto 1º).
   app.get("/.well-known/security.txt", (_req, res) => {
-    const contact = process.env.SECURITY_CONTACT || (APP_URL ? `${APP_URL}/sobre` : "https://jlb.analytics/sobre");
+    // ⚠️ `Contact:` TEM que ser um canal de contato — a RFC 9116 pede mailto:,
+    // tel: ou uma página de reporte. Isto apontava para /sobre, que não tem
+    // contato de segurança nenhum (Auditoria 21/09, PRV-01): quem achasse uma
+    // falha chegava numa página institucional e desistia — ou publicava.
+    const contact = process.env.SECURITY_CONTACT || "mailto:contato.jlbanalytics@gmail.com";
     const expires = new Date(Date.now() + 365 * 86_400_000).toISOString();
-    res.type("text/plain").send(`Contact: ${contact}\nExpires: ${expires}\nPreferred-Languages: pt, en\n`);
+    const politica = urlPublica() ? `\nPolicy: ${urlPublica()}/privacidade` : "";
+    res.type("text/plain").send(`Contact: ${contact}\nExpires: ${expires}${politica}\nPreferred-Languages: pt, en\n`);
   });
 
   // ── Static files + SPA fallback ────────────────────────────────────────────
