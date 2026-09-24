@@ -17,6 +17,17 @@ export interface WatchlistItem {
 
 const KEY = "jlb_watchlist_v1";
 
+/**
+ * Avisa a aplicação que a lista mudou (Auditoria 21/09, UXP-04).
+ *
+ * O sino de alertas precisa saber QUAIS mercados a pessoa segue para decidir o
+ * que mostrar. Sem este aviso ele leria a lista uma vez, na montagem, e quem
+ * seguisse um mercado durante a visita só passaria a receber alerta dele depois
+ * de recarregar a página — o tipo de "não funciona" que ninguém reporta porque
+ * some sozinho.
+ */
+export const EVENTO_WATCHLIST = "jlb:watchlist";
+
 export function loadWatchlist(): WatchlistItem[] {
   try {
     return JSON.parse(localStorage.getItem(KEY) ?? "[]") as WatchlistItem[];
@@ -25,6 +36,8 @@ export function loadWatchlist(): WatchlistItem[] {
 
 function save(list: WatchlistItem[]): void {
   localStorage.setItem(KEY, JSON.stringify(list));
+  try { window.dispatchEvent(new CustomEvent(EVENTO_WATCHLIST)); }
+  catch { /* fora do navegador (teste de nó): nada a avisar */ }
 }
 
 export function addToWatchlist(item: Omit<WatchlistItem, "savedAt">): void {
@@ -42,8 +55,15 @@ export function isWatched(id: string): boolean {
   return loadWatchlist().some((w) => w.id === id);
 }
 
+/** Só os ids, que é o que o filtro de alertas precisa comparar. */
+export function idsDaWatchlist(): Set<string> {
+  return new Set(loadWatchlist().map((w) => w.id));
+}
+
 export function clearWatchlist(): void {
   localStorage.removeItem(KEY);
+  try { window.dispatchEvent(new CustomEvent(EVENTO_WATCHLIST)); }
+  catch { /* idem */ }
 }
 
 /**

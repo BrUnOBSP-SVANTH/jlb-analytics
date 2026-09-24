@@ -1,13 +1,27 @@
 /**
- * Store de preços ao vivo via WebSocket.
- * O servidor transmite `market_prices` (mapa id→prob 0-100) a cada ~90s. Aqui
- * mantemos UMA conexão compartilhada; os cards assinam via useLivePrice e
- * atualizam a probabilidade + "flash" quando o preço muda — estilo Polymarket.
+ * A CONEXÃO AO VIVO DO SITE — uma só, compartilhada.
+ *
+ * O servidor transmite pelo mesmo `/ws/quotes` duas coisas: `market_prices`
+ * (mapa id→prob, para o card piscar quando muda) e `market_alerts` (os
+ * movimentos de 3 pp que alimentam o sino).
+ *
+ * ⚠️ ERAM DUAS CONEXÕES (Auditoria 21/09, UXP-04). Este módulo abria a sua e o
+ * `useMarketAlerts` abria outra, para o mesmo endereço, no mesmo navegador. Em
+ * qualquer página com cards havia sempre as duas abertas, porque o sino mora na
+ * barra e a barra está em toda tela. Consequências: o dobro de sockets vivos no
+ * plano de 0,1 CPU do Render, cada transmissão enviada duas vezes para a mesma
+ * pessoa e — o que engana de verdade — `wsClients.size` contando o dobro de
+ * gente conectada, num site cuja audiência inteira cabe em duas dezenas.
+ *
+ * Agora quem quer ouvir assina por TIPO de mensagem. A conexão nasce com o
+ * primeiro assinante e morre com o último.
  */
 import { useEffect, useRef, useState } from "react";
 
 const prices = new Map<string, number>(); // id (poly-/kalshi-) → prob 0-100
 const listeners = new Set<() => void>();
+/** tipo da mensagem → quem quer ouvir. */
+const assinantes = new Map<string, Set<(msg: unknown) => void>>();
 let ws: WebSocket | null = null;
 let refCount = 0;
 let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
@@ -26,6 +40,12 @@ function connect() {
           }
           listeners.forEach((l) => l());
         }
+        // Um assinante que estoura não pode calar os outros nem derrubar a
+        // conexão: cada um corre no seu try.
+        // `Array.from`: o alvo de TS deste projeto não itera Set direto.
+        for (const ouvir of Array.from(assinantes.get(String(msg.type)) ?? [])) {
+          try { ouvir(msg); } catch { /* assinante com defeito é problema dele */ }
+        }
       } catch { /* ignora frame inválido */ }
     };
     ws.onclose = () => {
@@ -36,6 +56,31 @@ function connect() {
     };
     ws.onerror = () => { try { ws?.close(); } catch { /* noop */ } };
   } catch { ws = null; }
+}
+
+/**
+ * Ouvir um tipo de mensagem da conexão ao vivo. Devolve a função de cancelar.
+ *
+ * Quem assina segura a conexão aberta enquanto estiver ouvindo — mesma
+ * contagem de referências que os cards usam, para a conexão fechar sozinha
+ * quando a última tela que precisava dela sair.
+ */
+export function assinarAoVivo(tipo: string, ouvir: (msg: unknown) => void): () => void {
+  if (typeof window === "undefined") return () => {};
+  const doTipo = assinantes.get(tipo) ?? new Set();
+  doTipo.add(ouvir);
+  assinantes.set(tipo, doTipo);
+  refCount++;
+  connect();
+  return () => {
+    doTipo.delete(ouvir);
+    refCount--;
+    if (refCount <= 0) {
+      try { ws?.close(); } catch { /* noop */ }
+      ws = null;
+      if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
+    }
+  };
 }
 
 /**

@@ -73,3 +73,27 @@ export function filtrarAlertas(entrada: MarketAlert[]): MarketAlert[] {
 
   return escolhidos.slice(0, MAX_ALERTAS);
 }
+
+/**
+ * O que DESTE lote interessa a quem está olhando.
+ *
+ * O servidor transmite todo movimento ≥ 3 pp para todos os conectados — é uma
+ * transmissão só, e quem escolhe é o navegador. Esta é a escolha.
+ *
+ * ⚠️ LISTA VAZIA = NENHUM ALERTA (Auditoria 21/09, UXP-04). A regra era o
+ * oposto: sem watchlist, tudo passava. E o sino da barra nem recebia a lista,
+ * então avisava sobre mercados que a pessoa nunca escolheu seguir.
+ *
+ * Um alerta é uma promessa — "algo que VOCÊ acompanha se mexeu". Quebrada a
+ * promessa, o sino vira ruído; e sino que virou ruído deixa de ser olhado
+ * inclusive no dia em que traz o alerta certo.
+ */
+export function alertasQueInteressam<T extends { id: string; key?: string }>(
+  lote: ReadonlyArray<T>,
+  seguidos: ReadonlySet<string>,
+): T[] {
+  if (seguidos.size === 0) return [];
+  // `key` é o id prefixado que o servidor manda ("poly-…"/"kalshi-…") e é o
+  // mesmo formato da watchlist; o id cru fica de reserva para alerta antigo.
+  return lote.filter((a) => seguidos.has(a.key ?? a.id));
+}

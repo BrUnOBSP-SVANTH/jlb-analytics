@@ -245,7 +245,7 @@ function UserMenu({ compacto = false }: { compacto?: boolean }) {
 // ── Alert bell ────────────────────────────────────────────────────────────────
 
 function AlertBell() {
-  const { alerts, unreadCount, markAllRead } = useMarketAlerts();
+  const { alerts, unreadCount, markAllRead, semSeguidos } = useMarketAlerts();
   const [open, setOpen] = useState(false);
   // Desestruturado: ler `d.ref` no JSX conta como acesso a ref durante a
   // renderização para o React Compiler; `ref` solto é reconhecido como ref.
@@ -295,10 +295,32 @@ function AlertBell() {
           </div>
 
           {alerts.length === 0 ? (
+            /* UXP-04: "Acompanhando os mercados em tempo real" dizia que algo
+               estava sendo feito por você — e, sem nenhum mercado seguido, não
+               estava: o sino agora só fala do que você escolheu acompanhar. O
+               vazio passa a dizer como receber o primeiro, com o caminho a um
+               clique. */
             <div className="px-4 py-6 text-center">
               <Bell className="w-6 h-6 text-muted-foreground mx-auto mb-2" aria-hidden="true" />
-              <p className="text-xs text-muted-foreground">Nenhum alerta ainda.</p>
-              <p className="text-[11px] text-muted-foreground mt-1">Acompanhando os mercados em tempo real.</p>
+              {semSeguidos ? (
+                <>
+                  <p className="text-xs text-foreground">Você ainda não segue nenhum mercado.</p>
+                  <p className="text-[11px] text-muted-foreground mt-1">
+                    O alerta avisa quando um mercado que VOCÊ segue se mexe a partir de 3 pp.
+                  </p>
+                  <Link href="/mercados" onClick={() => setOpen(false)}
+                    className="inline-flex items-center gap-1.5 mt-3 px-3 py-1.5 rounded-lg text-[11px] font-semibold bg-primary text-primary-foreground hover:opacity-90 transition-opacity">
+                    Escolher mercados para seguir
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <p className="text-xs text-muted-foreground">Nenhum alerta ainda.</p>
+                  <p className="text-[11px] text-muted-foreground mt-1">
+                    Os mercados que você segue não se mexeram 3 pp desde a última checagem.
+                  </p>
+                </>
+              )}
             </div>
           ) : (
             <div className="max-h-80 overflow-y-auto">

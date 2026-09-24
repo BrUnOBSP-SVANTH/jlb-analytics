@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { filtrarAlertas, ehLiquidacao, MAX_ALERTAS } from "./alertas.ts";
+import { alertasQueInteressam, filtrarAlertas, ehLiquidacao, MAX_ALERTAS } from "./alertas.ts";
 import type { MarketAlert } from "@/hooks/useMarketAlerts";
 
 const min = (n: number) => new Date(Date.now() - n * 60_000).toISOString();
@@ -69,5 +69,41 @@ describe("o sino mostra evento, não tique de preço", () => {
       a({ id: "novo", key: "poly-novo", receivedAt: min(2) }),
     ]);
     expect(r.map((x) => x.id)).toEqual(["novo", "velho"]);
+  });
+});
+
+describe("o sino só fala do que você escolheu seguir", () => {
+  /**
+   * UXP-04. O servidor transmite todo movimento ≥ 3 pp para todos os
+   * conectados; quem escolhe é o navegador. A regra era
+   * `if (!watchlistIds || watchlistIds.size === 0) return true` — lista vazia
+   * deixava passar TUDO — e o sino da barra chamava o hook sem lista nenhuma.
+   * Resultado: avisos sobre mercados que a pessoa nunca escolheu.
+   */
+  const lote = [
+    { id: "123", key: "poly-123", title: "Mercado seguido" },
+    { id: "999", key: "poly-999", title: "Mercado qualquer" },
+    { id: "KX-ABC", title: "Alerta antigo, sem key" },
+  ];
+
+  it("🔴 sem watchlist, nenhum alerta — não 'todos'", () => {
+    expect(alertasQueInteressam(lote, new Set())).toEqual([]);
+  });
+
+  it("com watchlist, só o que está nela", () => {
+    const so = alertasQueInteressam(lote, new Set(["poly-123"]));
+    expect(so.map((a) => a.id)).toEqual(["123"]);
+  });
+
+  it("⚠️ alerta antigo sem `key` ainda casa pelo id cru", () => {
+    // Retrocompatibilidade: alerta guardado no navegador antes de o servidor
+    // passar a mandar a chave prefixada. Sem isto, quem já usava o site perderia
+    // os alertas dos mercados que já seguia.
+    const so = alertasQueInteressam(lote, new Set(["KX-ABC"]));
+    expect(so.map((a) => a.id)).toEqual(["KX-ABC"]);
+  });
+
+  it("a lista de quem não segue nada não vaza para quem segue", () => {
+    expect(alertasQueInteressam([], new Set(["poly-123"]))).toEqual([]);
   });
 });

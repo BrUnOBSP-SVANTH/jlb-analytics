@@ -55,6 +55,7 @@ import engineRouter from "./routes/engine.ts";
 import { sendAlertPushes, pushEnabled, vapidPublicKey } from "./lib/push.ts";
 import { recordSecurityEvent, isBanned } from "./lib/security.ts";
 import { log } from "./lib/log.ts";
+import { callClaude } from "./lib/anthropic.ts";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -581,31 +582,37 @@ async function startServer() {
 
   const alertContextCache = new Map<string, { ts: number; context: string }>();
 
+  /**
+   * A frase que explica o movimento — e que NÃO chegava a ninguém.
+   *
+   * O QUE ACONTECIA (Auditoria 21/09, UXP-04). Esta função era chamada sem
+   * `await`: o `broadcast` logo abaixo é síncrono e saía antes de a promessa
+   * resolver, então a frase era escrita num objeto JÁ SERIALIZADO E ENVIADO.
+   * O único caminho para ela aparecer era um segundo alerta do MESMO mercado na
+   * MESMA probabilidade arredondada dentro de 5 minutos — com ciclo de 90s e
+   * gatilho de 3pp, praticamente nunca.
+   *
+   * Ou seja: pagávamos uma chamada de IA por ciclo com alerta e jogávamos a
+   * resposta fora. Num projeto em que o teto diário de IA é a restrição mais
+   * apertada que existe, isso é o pior tipo de desperdício — o que não aparece.
+   *
+   * Agora a chamada é esperada, com prazo curto, e o alerta sai com a frase ou
+   * sem ela. E passa pela cadeia (Anthropic → Gemini → Groq) em vez de ir
+   * direto na Anthropic: a chave da Anthropic está sem crédito, então o
+   * caminho antigo falhava silenciosamente em toda tentativa.
+   */
   async function generateAlertContext(alert: { title: string; prob: number; prevProb: number; delta: number }): Promise<string> {
     try {
-      const apiKey = process.env.ANTHROPIC_API_KEY ?? "";
-      if (!apiKey) return "";
-      const response = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-api-key": apiKey,
-          "anthropic-version": "2023-06-01",
-        },
-        body: JSON.stringify({
-          model: "claude-haiku-4-5-20251001",
-          max_tokens: 80,
-          messages: [{
-            role: "user",
-            content: `Mercado: "${alert.title.slice(0, 80)}", era ${Math.round(alert.prevProb * 100)}%, agora ${Math.round(alert.prob * 100)}%. Em 1 frase curta (pt-BR), qual a hipótese mais provável para este movimento?`,
-          }],
-        }),
-        signal: AbortSignal.timeout(10_000),
+      const texto = await callClaude({
+        model: "claude-haiku-4-5-20251001",
+        maxTokens: 80,
+        timeoutMs: 8_000,
+        messages: [{
+          role: "user",
+          content: `Mercado: "${alert.title.slice(0, 80)}", era ${Math.round(alert.prevProb * 100)}%, agora ${Math.round(alert.prob * 100)}%. Em 1 frase curta (pt-BR), qual a hipótese mais provável para este movimento?`,
+        }],
       });
-      if (!response.ok) return "";
-      const data = await response.json() as { content: Array<{ type: string; text: string }> };
-      const block = data.content.find((b) => b.type === "text");
-      return block ? block.text.trim() : "";
+      return texto.trim();
     } catch { return ""; }
   }
 
@@ -688,10 +695,14 @@ async function startServer() {
         if (cachedCtx && Date.now() - cachedCtx.ts < 5 * 60 * 1000) {
           biggestMover.context = cachedCtx.context;
         } else {
-          generateAlertContext(biggestMover).then(ctx => {
+          // ⚠️ COM `await` (UXP-04). Sem ele, a frase era escrita depois do
+          // envio e nunca saía daqui. O ciclo é de 90s; esperar até 8s por
+          // ela não atrasa nada que alguém perceba.
+          const ctx = await generateAlertContext(biggestMover).catch(() => "");
+          if (ctx) {
             alertContextCache.set(contextCacheKey, { ts: Date.now(), context: ctx });
             biggestMover.context = ctx;
-          }).catch(() => {});
+          }
         }
 
         broadcast({ type: "market_alerts", updatedAt: new Date().toISOString(), alerts });
