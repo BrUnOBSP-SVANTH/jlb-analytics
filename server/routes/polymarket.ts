@@ -391,6 +391,52 @@ interface GammaSingleMarket {
   closed?: boolean; active?: boolean; umaResolutionStatus?: string;
 }
 
+/**
+ * A REGRA DE RESOLUÇÃO deste mercado (Auditoria 21/09, UXP-02).
+ *
+ * A tela mostrava preço, prazo, volume e análise — e não mostrava o que decide
+ * o resultado. É a informação que separa a aposta que a pessoa acha que está
+ * fazendo da que existe: "Xi deixa o poder" resolve por remoção do cargo, não
+ * por renúncia anunciada; jogo adiado além de 48h vira cancelamento no Kalshi.
+ *
+ * Endpoint PRÓPRIO e não campo do catálogo: são 600 a 2.000 caracteres por
+ * mercado, e o catálogo carrega 300 de uma vez — entraria como 180KB que
+ * ninguém lê na lista. Aqui é uma ida só, quando alguém abre o mercado.
+ *
+ * `ev-<n>` é card de evento montado por nós: a regra mora no evento, e é a
+ * mesma dos desfechos (conferido no evento 30829, 128 mercados).
+ */
+router.get("/regra/:id", async (req, res) => {
+  const id = String(req.params.id).replace(/[^a-zA-Z0-9_-]/g, "");
+  if (!id) return res.status(400).json({ error: "id required" });
+  const evento = /^ev-(\d+)$/.exec(id);
+  try {
+    const dado = await swr<{ description?: string; resolutionSource?: string } | null>(
+      `poly:regra:${id}`, 900, async () => {
+        const url = evento
+          ? `https://gamma-api.polymarket.com/events/${evento[1]}`
+          : `https://gamma-api.polymarket.com/markets/${id}`;
+        try {
+          return await fetchJSON<{ description?: string; resolutionSource?: string }>(url) ?? null;
+        } catch (e) {
+          // 404 é resposta, não falha: o mercado não existe (ou saiu do ar) e a
+          // tela simplesmente não mostra a seção. Só erro de verdade vira 502 —
+          // "a fonte não respondeu" e "a fonte não tem" são coisas diferentes, e
+          // misturar as duas é como a tela passa a mentir por omissão.
+          if (e instanceof Error && /HTTP 404/.test(e.message)) return {};
+          throw e;
+        }
+      });
+    const regra = (dado?.description ?? "").trim();
+    // Sem regra publicada a tela não inventa nem esconde: ela diz que a fonte
+    // não publicou. Por isso 200 com `regra: null`, e não 404.
+    res.json({ regra: regra || null, fonteDaRegra: (dado?.resolutionSource ?? "").trim() || null });
+  } catch (err) {
+    log.error(`[Polymarket/regra/${id}] error:`, err instanceof Error ? err.message : err);
+    res.status(502).json({ error: "unavailable" });
+  }
+});
+
 router.get("/market/:id", async (req, res) => {
   const id = String(req.params.id).replace(/[^a-zA-Z0-9_-]/g, "");
   if (!id) return res.status(400).json({ error: "id required" });

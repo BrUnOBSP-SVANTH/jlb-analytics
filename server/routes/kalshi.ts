@@ -396,8 +396,37 @@ interface KalshiSingleResp {
     volume_fp?: string; volume_24h_fp?: string; open_interest_fp?: string;
     liquidity_dollars?: string; close_time?: string; category?: string;
     status?: string; result?: string;
+    /** As duas metades da regra de resolução — ver GET /regra/:ticker. */
+    rules_primary?: string; rules_secondary?: string;
   };
 }
+
+/**
+ * A REGRA DE RESOLUÇÃO deste mercado (Auditoria 21/09, UXP-02).
+ * Ver o gêmeo em routes/polymarket.ts para o porquê de ser endpoint próprio.
+ *
+ * No Kalshi vem em duas partes e as DUAS importam: a primária diz o que faz o
+ * mercado pagar; a secundária trata do que dá errado — adiamento, cancelamento,
+ * fonte oficial indisponível. É justamente a parte que decide o dinheiro quando
+ * o mundo não colabora.
+ */
+router.get("/regra/:ticker", async (req, res) => {
+  const ticker = String(req.params.ticker).replace(/[^A-Za-z0-9_-]/g, "");
+  if (!ticker) return res.status(400).json({ error: "ticker required" });
+  try {
+    const m = await swr<{ rules_primary?: string; rules_secondary?: string } | null>(
+      `kalshi:regra:${ticker}`, 900, async () => {
+        const d = await fetchWithRetry<KalshiSingleResp>(
+          `https://api.elections.kalshi.com/trade-api/v2/markets/${ticker}`, { "Accept": "application/json" });
+        return d?.market ?? null;
+      });
+    const regra = (m?.rules_primary ?? "").trim();
+    res.json({ regra: regra || null, regraSecundaria: (m?.rules_secondary ?? "").trim() || null });
+  } catch (err) {
+    log.error(`[Kalshi/regra/${ticker}] error:`, err instanceof Error ? err.message : err);
+    res.status(502).json({ error: "unavailable" });
+  }
+});
 
 router.get("/market/:ticker", async (req, res) => {
   const ticker = String(req.params.ticker).replace(/[^A-Za-z0-9_-]/g, "");

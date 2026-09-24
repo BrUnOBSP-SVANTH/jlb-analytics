@@ -25,6 +25,7 @@ import { ForecastEvolution } from "@/components/marketDetail/ForecastEvolution";
 import { MarketHeader } from "@/components/marketDetail/MarketHeader";
 import { OutcomesBreakdown } from "@/components/marketDetail/OutcomesBreakdown";
 import { HistoricoDesfechos } from "@/components/marketDetail/HistoricoDesfechos";
+import { RegraDeResolucao } from "@/components/marketDetail/RegraDeResolucao";
 import { Termo } from "@/components/Termo";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
@@ -269,6 +270,13 @@ export default function MarketDetail() {
                   costuma significar que algo novo aconteceu, e vale entender o porquê.
                 </Explain>
               </div>
+            </AnimatedSection>
+
+            {/* A REGRA DE RESOLUÇÃO (UXP-02) vem ANTES do consenso, da análise e
+                da calculadora: é o que define o que está sendo comprado, e lê-la
+                depois de formar opinião é ler tarde. */}
+            <AnimatedSection delay={0.12}>
+              <RegraDeResolucao source={source} rawId={rawId} externalUrl={market.externalUrl} />
             </AnimatedSection>
 
             {/* Consenso JLB — unifica mercado + IA + comunidade */}
