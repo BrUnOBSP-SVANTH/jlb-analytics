@@ -404,15 +404,23 @@ export function TituloDeMercado({ titulo, subtitulo, traducao, href, traduzindo 
   }`;
 
   return (
+    /**
+     * `data-fonte="externa"`: o título e o subtítulo são da PLATAFORMA, com a
+     * grafia dela — "(HIGH) $110", "Over/Under 21.5". O detector de número fora
+     * do padrão (pnpm varredura) pula o que está marcado assim, porque a regra
+     * do pt-BR vale para os NOSSOS números: reformatar a citação seria
+     * adulterá-la. A TRADUÇÃO abaixo é nossa e continua sujeita à regra — e é
+     * por isso que a marca fica só no bloco do original.
+     */
     <div className="min-w-0">
       {subtitulo && (
-        <p className="text-[11px] text-muted-foreground leading-snug line-clamp-1 mb-0.5" title={subtitulo}>
+        <p className="text-[11px] text-muted-foreground leading-snug line-clamp-1 mb-0.5" title={subtitulo} data-fonte="externa">
           {subtitulo}
         </p>
       )}
       {href
-        ? <Link href={href}><p className={`${classe} hover:text-gold transition-colors cursor-pointer`}>{titulo}</p></Link>
-        : <p className={classe}>{titulo}</p>}
+        ? <Link href={href}><p className={`${classe} hover:text-gold transition-colors cursor-pointer`} data-fonte="externa">{titulo}</p></Link>
+        : <p className={classe} data-fonte="externa">{titulo}</p>}
 
       {traducao && traducao !== titulo && (
         <p className="text-xs text-[var(--gold-legivel)] mt-1 leading-snug italic">{traducao}</p>

@@ -13,6 +13,7 @@ import { useEffect, useState } from "react";
 import { Target } from "lucide-react";
 import { Termo } from "@/components/Termo";
 import { buscarJson } from "@/lib/api";
+import { pct } from "@shared/formato";
 
 interface Faixa {
   faixa: string; n: number; prometido: number;
@@ -68,7 +69,7 @@ export function CurvaCalibracao() {
               <tr key={f.faixa} className="border-b border-border/15 last:border-0">
                 <td className="py-2 text-foreground/90">{f.faixa}</td>
                 <td className="py-2 text-right text-muted-foreground">{f.n}</td>
-                <td className="py-2 text-right text-foreground font-semibold">{f.aconteceu}%</td>
+                <td className="py-2 text-right text-foreground font-semibold">{pct(f.aconteceu, 1)}</td>
                 <td className="py-2 text-right text-muted-foreground hidden sm:table-cell">±{f.margemPp}</td>
                 <td className={`py-2 text-right font-sans text-[11px] ${f.dentroDaMargem ? "text-positive" : "text-gold"}`}>
                   {f.dentroDaMargem

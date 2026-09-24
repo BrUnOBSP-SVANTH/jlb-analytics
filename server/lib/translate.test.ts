@@ -61,6 +61,16 @@ describe("número e patamar são a identidade do mercado", () => {
     expect(ehTraducaoUtil(original, "Mapa 2 — Total de Rounds: Mais/Menos 21,5")).toBe(true);
   });
 
+  it("cifrão sozinho em português vira US$ — senão lê-se como real", () => {
+    // Achado pelo detector da varredura (TXT-01): a tradução saía "atingirá
+    // (MÁXIMA) $110", e num texto em português "$110" é cento e dez REAIS.
+    const p = montarPromptDeTraducao(["Will WTI Crude Oil hit (HIGH) $110 in September?"]);
+    expect(p).toMatch(/o cifrão do original é DÓLAR/);
+    expect(p).toContain('escreva "US$ 110"');
+    // E o número tem que sobreviver à troca do símbolo:
+    expect(numerosPreservados("hit (HIGH) $110", "atingir (MÁXIMA) US$ 110")).toBe(true);
+  });
+
   it("o termo comum de aposta é traduzido; o nome do time, não", () => {
     const p = montarPromptDeTraducao(["Map 2 Total Rounds: Over/Under 21.5"]);
     expect(p).toMatch(/"Over\/Under" = "Mais\/Menos"/);

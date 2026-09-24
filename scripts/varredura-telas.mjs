@@ -287,6 +287,57 @@ for (const rota of ROTAS) {
       return saida;
     });
     if (espremidos.length > 0) achados.push(`TEXTO ESPREMIDO EM 390px: ${espremidos.join(" | ")}`);
+
+    /**
+     * NÚMERO FORA DO PADRÃO BRASILEIRO (Auditoria 21/09, TXT-01).
+     *
+     * A casa tem uma fonte única de formatação (`shared/formato.ts`) e ela
+     * existe porque a plataforma inteira fala português: "7,3%", não "7.3%".
+     * Mesmo assim, 28 lugares chamavam `toFixed` direto e publicavam ponto
+     * decimal — "±4.3", "0.147", "Brier 0.15", "Vol: $2.7M".
+     *
+     * Um detector estático não resolveria: boa parte dos `toFixed` alimenta
+     * GRÁFICO (arredondar antes do Recharts é legítimo e não vira texto). Só o
+     * texto RENDERIZADO responde, e é o que esta checagem olha.
+     *
+     * Duas regras:
+     *  · `1.234,5` é separador de milhar em pt-BR e passa; `4.3%` não;
+     *  · cifrão sozinho é dólar escrito como se fosse real — "US$" ou "R$".
+     */
+    await p.setViewportSize({ width: 1280, height: 900 });
+    await p.waitForTimeout(300);
+    const numerosErrados = await p.evaluate(() => {
+      const saida = [];
+      // Ponto decimal seguido de 1–3 dígitos e de um sinal de porcentagem, pp
+      // ou fim — mas NUNCA com 3 dígitos exatos depois (isso é milhar: 1.234).
+      const PONTO_DECIMAL = /(?<![\d.])\d{1,3}\.\d{1,2}(?![\d])\s?(%|pp)/;
+      const CIFRAO_SOZINHO = /(?<![RU]S?)\$\s?\d/;
+      const vistos = new Set();
+      for (const e of document.querySelectorAll("p, span, li, td, th, h1, h2, h3, h4, strong, div")) {
+        // Só o nó de texto PRÓPRIO: sem isto, um `<div>` pai reporta o número
+        // do filho e o mesmo achado sai dez vezes.
+        const proprio = Array.from(e.childNodes)
+          .filter((n) => n.nodeType === 3)
+          .map((n) => n.textContent || "")
+          .join(" ")
+          .trim();
+        if (!proprio || proprio.length > 160) continue;
+        // Texto que CITAMOS da plataforma (título de mercado em inglês) não
+        // segue o nosso padrão — e reformatá-lo seria adulterar a citação.
+        if (e.closest("[data-fonte=\"externa\"]")) continue;
+        const m = proprio.match(PONTO_DECIMAL) || proprio.match(CIFRAO_SOZINHO);
+        if (!m) continue;
+        const chave = m[0];
+        if (vistos.has(chave)) continue;
+        vistos.add(chave);
+        saida.push(`"${proprio.slice(0, 50)}"`);
+        if (saida.length >= 4) break;
+      }
+      return saida;
+    });
+    if (numerosErrados.length > 0) {
+      achados.push(`NÚMERO FORA DO PADRÃO pt-BR: ${numerosErrados.join(" | ")} — use shared/formato.ts`);
+    }
   } catch (e) {
     achados.push(`não carregou: ${String(e.message).slice(0, 120)}`);
   }

@@ -14,6 +14,7 @@
 import { useEffect, useState } from "react";
 import { Layers } from "lucide-react";
 import { buscarJson } from "@/lib/api";
+import { num, pct, pp } from "@shared/formato";
 
 interface Tema {
   tema: string; n: number;
@@ -84,11 +85,14 @@ export function PorTema() {
             {comVeredito.map((t) => (
               <tr key={t.tema} className="border-b border-border/15 last:border-0">
                 <td className="py-2 font-sans text-foreground/90">{NOMES[t.tema] ?? t.tema}</td>
-                <td className="py-2 text-right text-muted-foreground">{t.n}</td>
+                <td className="py-2 text-right text-muted-foreground">{num(t.n)}</td>
                 <td className="py-2 text-right text-foreground font-semibold">
-                  {t.acerto}% <span className="text-muted-foreground font-normal">±{t.margemPp}</span>
+                  {/* `pct`/`pp` e não interpolação crua: o site inteiro fala
+                      português, e "7.7%" com ponto decimal é o número de outra
+                      língua (Auditoria 21/09, TXT-01). */}
+                  {pct(t.acerto, 1)} <span className="text-muted-foreground font-normal">±{pp(t.margemPp).replace("+", "")}</span>
                 </td>
-                <td className="py-2 text-right text-muted-foreground">{t.acertoMercado}%</td>
+                <td className="py-2 text-right text-muted-foreground">{pct(t.acertoMercado, 1)}</td>
                 <td className={`py-2 text-right font-sans text-[11px] ${LEITURA[t.comparacao ?? "empate"].cor}`}>
                   {LEITURA[t.comparacao ?? "empate"].texto}
                 </td>

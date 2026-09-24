@@ -124,7 +124,7 @@ export default function Imprensa() {
                   <p className="text-2xl font-display font-bold text-foreground tabular-nums">{featured.prob}%</p>
                 </div>
                 <div className="px-4 py-3 border-l border-gold/20 flex flex-col justify-center min-w-0">
-                  <p className="text-xs text-foreground line-clamp-2">{featured.question}</p>
+                  <p className="text-xs text-foreground line-clamp-2" data-fonte="externa">{featured.question}</p>
                   <div className="mt-1 flex items-center gap-2 flex-wrap">
                     <MovementChip delta={featured.delta7d} />
                     <span className="text-[11px] text-muted-foreground">via JLB Analytics</span>
@@ -158,7 +158,10 @@ export default function Imprensa() {
                     <div className="mt-1.5 flex justify-center"><MovementChip delta={it.delta7d} /></div>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-display font-semibold text-foreground text-sm leading-snug text-balance">{it.question}</h3>
+                    {/* `data-fonte="externa"`: a pergunta é da PLATAFORMA, com a
+                        grafia dela ("$110", "82,000"). Reformatar seria adulterar
+                        a citação — e este feed existe para redações citarem. */}
+                    <h3 className="font-display font-semibold text-foreground text-sm leading-snug text-balance" data-fonte="externa">{it.question}</h3>
                     <p className="text-xs text-muted-foreground mt-1">{it.read}</p>
                     <div className="flex items-center gap-2 mt-2">
                       <span className="text-[11px] px-1.5 py-0.5 rounded bg-muted/50 text-muted-foreground">{SOURCE_LABEL[it.source] ?? it.source}</span>

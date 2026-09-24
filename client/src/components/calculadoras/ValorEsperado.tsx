@@ -5,6 +5,7 @@ import { useState, useMemo } from "react";
 import { Calculator } from "lucide-react";
 import { CalcCard, FormulaBox, ResultBox, InsightBox, Field, inputClass, labelClass } from "@/components/calculadoras/CalcPrimitives";
 import { num } from "@shared/formato";
+import { pct } from "@shared/formato";
 
 interface Outcome { prob: number; payout: number }
 
@@ -123,7 +124,7 @@ export function ValorEsperado() {
             {outcomes.map((o, i) => (
               <div key={i} className="flex justify-between text-xs mt-1">
                 <span className="text-muted-foreground">Cenário {i + 1} (odd {num(o.payout, 2)})</span>
-                <span className="font-mono text-foreground">{o.payout > 0 ? (100 / o.payout).toFixed(1) : "—"}%</span>
+                <span className="font-mono text-foreground">{o.payout > 0 ? pct(100 / o.payout, 1) : "—"}</span>
               </div>
             ))}
           </div>

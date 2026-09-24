@@ -180,6 +180,8 @@ REGRAS (cada uma corrige um erro real de tradução automática):
 - PRESERVE todos os números, patamares e símbolos exatamente: "(HIGH) $3.0T",
   "21.5", "25 bps". Pode trocar o separador decimal para vírgula ("21,5").
 - Português do BRASIL: "Irã" (não "Irão"), "time" (não "equipa").
+- MOEDA: o cifrão do original é DÓLAR. Em português, "$110" se lê como REAL —
+  escreva "US$ 110". O número não muda; só o símbolo ganha a marca da moeda.
 - Traduza só o título. Não explique, não comente, não acrescente contexto.
 - Se o título já estiver em português, repita-o igual.
 

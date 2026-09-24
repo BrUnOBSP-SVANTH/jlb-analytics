@@ -13,6 +13,7 @@
 import { useEffect, useState } from "react";
 import { TrendingUp } from "lucide-react";
 import { buscarJson } from "@/lib/api";
+import { pct, pp } from "@shared/formato";
 
 interface Mes {
   mes: string; n: number;
@@ -77,7 +78,11 @@ export function Evolucao() {
               <div className="absolute h-full w-px bg-gold" style={{ left: `${m.acerto}%` }} />
             </div>
             <span className="text-[11px] font-mono text-foreground w-24 text-right shrink-0">
-              {m.acerto}% <span className="text-muted-foreground">±{m.margemPp}</span>
+              {/* ⚠️ Só o TEXTO muda. Os `${m.baixo}%` do `style` acima são
+                  largura em CSS: formatar com vírgula quebraria o layout — é o
+                  contraexemplo que mostra por que a regra é sobre o que a
+                  PESSOA lê, não sobre todo número do arquivo. */}
+              {pct(m.acerto, 1)} <span className="text-muted-foreground">±{pp(m.margemPp).replace("+", "")}</span>
             </span>
             <span className="text-[11px] font-mono text-muted-foreground w-10 text-right shrink-0">{m.n}</span>
           </div>

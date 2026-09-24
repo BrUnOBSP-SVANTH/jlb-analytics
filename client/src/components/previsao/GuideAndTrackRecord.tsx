@@ -289,7 +289,13 @@ export function ResultComparator({ limit = 8 }: { limit?: number }) {
                 {badge.mark}
               </span>
               <div className="flex-1 min-w-0">
-                <p className="text-xs text-foreground truncate">{it.title}</p>
+                {/* `data-fonte="externa"`: este texto é o título do mercado
+                    COMO A PLATAFORMA PUBLICA — "WTI Crude Oil… 67.5". Ele tem
+                    ponto decimal porque é em inglês, e reformatá-lo seria
+                    adulterar a citação. O detector de número fora do padrão
+                    (pnpm varredura) pula o que está marcado assim: a regra vale
+                    para os NOSSOS números, não para os que citamos. */}
+                <p className="text-xs text-foreground truncate" data-fonte="externa">{it.title}</p>
                 <div className="flex flex-wrap items-center gap-x-2.5 gap-y-0.5 mt-1 text-[11px] text-muted-foreground">
                   <span>IA: <span className="text-foreground font-semibold">{it.aiProb}%</span> SIM</span>
                   <span className="text-muted-foreground">·</span>

@@ -174,10 +174,18 @@ const HOW_IT_WORKS = [
   },
 ];
 
+/**
+ * Os três números que a home usa para dizer por que a plataforma existe.
+ *
+ * ⚠️ Escritos como o Brasil escreve (Auditoria 21/09, TXT-01): "0,04%" e
+ * "R$ 30 bi", não "0.04%" e "R$30bi". Número é texto: se ele aparece na língua
+ * errada numa página em português, a primeira coisa que o leitor aprende é que
+ * a plataforma copia sem conferir.
+ */
 const SOCIAL_PROOF = [
-  { value: "70%",    label: "dos endereços no Polymarket têm perdas históricas",   source: "CryptoSlate 2025" },
-  { value: "0.04%",  label: "das contas capturaram 70%+ dos lucros totais",         source: "CryptoSlate 2025" },
-  { value: "R$30bi", label: "fluxo mensal para apostas no Brasil",                  source: "BCB 2025" },
+  { value: "70%",     label: "dos endereços no Polymarket têm perdas históricas",  source: "CryptoSlate 2025" },
+  { value: "0,04%",   label: "das contas capturaram 70%+ dos lucros totais",       source: "CryptoSlate 2025" },
+  { value: "R$ 30 bi", label: "fluxo mensal para apostas no Brasil",               source: "BCB 2025" },
 ];
 
 // ── Main ───────────────────────────────────────────────────────────────────

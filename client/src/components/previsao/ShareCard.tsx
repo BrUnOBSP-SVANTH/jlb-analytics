@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { Share2, Download } from "lucide-react";
 import AnimatedSection from "@/components/AnimatedSection";
 import { buscarJson } from "@/lib/api";
+import { num, pct } from "@shared/formato";
 
 interface TrackRecordData {
   available: boolean;
@@ -34,12 +35,12 @@ function buildSvg(d: TrackRecordData): string {
   const mkt = d.marketHitRate;
   const skill = d.skillVsMarket;
   const skillStr = skill != null ? `${skill >= 0 ? "+" : ""}${Math.round(skill * 100)}%` : "—";
-  const aiB = d.aiBrier != null ? d.aiBrier.toFixed(2) : "—";
-  const mktB = d.marketBrier != null ? d.marketBrier.toFixed(2) : "—";
+  const aiB = d.aiBrier != null ? num(d.aiBrier, 2) : "—";
+  const mktB = d.marketBrier != null ? num(d.marketBrier, 2) : "—";
   const beats = hit != null && mkt != null && hit >= mkt;
 
   const heroColor = beats ? "#4ade80" : "#e8b74a";
-  const compare = `de acerto, contra ${mkt ?? "—"}% do mercado  ·  Brier ${aiB} vs ${mktB}  ·  skill ${skillStr}`;
+  const compare = `de acerto, contra ${mkt != null ? pct(mkt) : "—"} do mercado  ·  Brier ${aiB} vs ${mktB}  ·  skill ${skillStr}`;
   const honest = `${d.resolvedCount} previsões resolvidas — medidas contra o resultado REAL da plataforma, sem cherry-picking.`;
 
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" font-family="system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif">
@@ -70,7 +71,7 @@ function buildSvg(d: TrackRecordData): string {
   <text x="70" y="352" fill="url(#gold)" font-size="76" font-weight="800" letter-spacing="-2">quando erramos.</text>
 
   <line x1="72" y1="404" x2="${W - 72}" y2="404" stroke="#1c2838" stroke-width="1.5"/>
-  <text x="72" y="462" fill="${heroColor}" font-size="46" font-weight="800">${hit ?? "—"}%</text>
+  <text x="72" y="462" fill="${heroColor}" font-size="46" font-weight="800">${hit != null ? pct(hit) : "—"}</text>
   <text x="160" y="462" fill="#dfe6ef" font-size="27" font-weight="600">${esc(compare)}</text>
   <text x="72" y="512" fill="#93a1b3" font-size="24">${esc(honest)}</text>
 

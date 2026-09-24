@@ -11,6 +11,7 @@ import { useEffect, useState } from "react";
 import { Layers } from "lucide-react";
 import { buscarJson } from "@/lib/api";
 import { num } from "@shared/formato";
+import { pct } from "@shared/formato";
 
 interface ProviderRow {
   provider: string;
@@ -94,10 +95,10 @@ export function ProviderBreakdown() {
                   </td>
                   <td className="py-2 px-2 text-right font-mono text-foreground/80 tabular-nums">{r.resolvedCount}</td>
                   <td className="py-2 px-2 text-right font-mono text-foreground/80 tabular-nums">
-                    {r.hitRate !== null ? `${r.hitRate}%` : "—"}
+                    {r.hitRate !== null ? pct(r.hitRate) : "—"}
                   </td>
                   <td className="py-2 px-2 text-right font-mono text-foreground/80 tabular-nums">
-                    {r.aiBrier !== null ? r.aiBrier.toFixed(3) : "—"}
+                    {r.aiBrier !== null ? num(r.aiBrier, 3) : "—"}
                   </td>
                   <td className={`py-2 pl-2 text-right font-mono tabular-nums ${
                     thin ? "text-muted-foreground" : beats ? "text-positive" : "text-negative"

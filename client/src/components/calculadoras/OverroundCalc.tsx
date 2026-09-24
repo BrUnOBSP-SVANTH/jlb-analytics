@@ -4,7 +4,7 @@
 import { useState } from "react";
 import { Percent } from "lucide-react";
 import { CalcCard, FormulaBox, ResultBox, InsightBox, inputClass, labelClass } from "@/components/calculadoras/CalcPrimitives";
-import { num } from "@shared/formato";
+import { num, pctDeProb } from "@shared/formato";
 
 export function OverroundCalc() {
   const [odds, setOdds] = useState<string[]>(["1.90", "1.90"]);
@@ -56,7 +56,7 @@ export function OverroundCalc() {
             {parsed.map((o, i) => (
               <div key={i} className="flex justify-between text-xs">
                 <span className="text-muted-foreground">Odd {num(o, 2)}</span>
-                <span className="font-mono text-foreground">{o > 0 ? (impliedProbs[i] * 100).toFixed(1) : "—"}%</span>
+                <span className="font-mono text-foreground">{o > 0 ? pctDeProb(impliedProbs[i], 1) : "—"}</span>
               </div>
             ))}
             <div className="border-t border-border/20 mt-1 pt-1 flex justify-between text-xs">
@@ -87,7 +87,7 @@ export function OverroundCalc() {
             {fairOdds.map((fo, i) => (
               <div key={i} className="flex justify-between text-xs">
                 <span className="text-muted-foreground">Odd {i + 1} (original: {num(parsed[i], 2)})</span>
-                <span className="font-mono text-neon-blue">{fo > 0 ? fo.toFixed(3) : "—"}</span>
+                <span className="font-mono text-neon-blue">{fo > 0 ? num(fo, 3) : "—"}</span>
               </div>
             ))}
           </div>
