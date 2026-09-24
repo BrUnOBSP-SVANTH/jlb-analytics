@@ -202,11 +202,19 @@ export default function Educacao() {
                 )}
                 <div className={`rounded-xl border ${level.border} ${level.bg} overflow-hidden`}>
                   <div className="p-5">
-                    <div className="flex items-start gap-4">
+                    {/* ⚠️ A LINHA QUEBRA NO CELULAR (Auditoria 21/09, UXP-06).
+                        São três peças na mesma linha — ícone, conteúdo e o botão
+                        "Acessar" — e o conteúdo é `flex-1`. Em 360px sobravam
+                        127px para ele, e a frase "Ao concluir: …" era desenhada
+                        com 83px de largura por 176px de altura: uma palavra por
+                        linha, num cartão que existe para convencer a pessoa a
+                        começar a trilha. `basis` obriga o botão a descer quando
+                        não há espaço, em vez de espremer o texto. */}
+                    <div className="flex flex-wrap items-start gap-4">
                       <div className="w-10 h-10 rounded-lg bg-background/50 flex items-center justify-center shrink-0">
                         <Icon className={`w-5 h-5 ${level.color}`} />
                       </div>
-                      <div className="flex-1">
+                      <div className="flex-1 min-w-0 basis-56">
                         <div className="flex items-center gap-2 flex-wrap mb-2">
                           <span className="text-xs text-muted-foreground font-medium">Nível {level.n}</span>
                           <span className="font-bold text-foreground">{level.title}</span>

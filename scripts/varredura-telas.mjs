@@ -255,10 +255,21 @@ for (const rota of ROTAS) {
      * Redimensionar em vez de navegar de novo: as media queries reaplicam na
      * hora e a verificação custa um quadro, não uma carga.
      */
+    /**
+     * ⚠️ 360px TAMBÉM (Auditoria 21/09, UXP-06). 390 é o iPhone; 360 é a largura
+     * mais comum do Android no Brasil — Galaxy A, Moto G, a base instalada de
+     * quem este site quer alcançar. São 30px, e é neles que a linha de botões
+     * que cabia justo deixa de caber.
+     */
+    for (const largura of [390, 360]) {
+      await p.setViewportSize({ width: largura, height: 844 });
+      await p.waitForTimeout(400);
+      const sobra = await p.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+      if (sobra > 0) achados.push(`SOBRA HORIZONTAL EM ${largura}px: a página rola ${sobra}px de lado`);
+    }
+    // O resto das medidas de celular segue em 390px.
     await p.setViewportSize({ width: 390, height: 844 });
-    await p.waitForTimeout(400);
-    const sobra = await p.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
-    if (sobra > 0) achados.push(`SOBRA HORIZONTAL EM 390px: a página rola ${sobra}px de lado`);
+    await p.waitForTimeout(300);
 
     /**
      * TEXTO ESPREMIDO NO CELULAR.

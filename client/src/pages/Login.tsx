@@ -298,12 +298,16 @@ export default function Login() {
           <div className="mt-6 space-y-2 text-center">
             {mode === "login" && (
               <>
-                <button onClick={() => switchMode("reset")} className="text-xs text-muted-foreground hover:text-foreground transition-colors">
+                {/* `py-2 -my-2` (UXP-06): a área de toque cresce de 16px para
+                    ~32px sem mover uma vírgula do layout — a margem negativa
+                    devolve o espaço que o padding tomou. Em 360px, no dedo, 16px
+                    é alvo que se erra. */}
+                <button onClick={() => switchMode("reset")} className="text-xs text-muted-foreground hover:text-foreground transition-colors px-2 py-2 -mx-2 -my-2">
                   Esqueci minha senha
                 </button>
                 <p className="text-xs text-muted-foreground">
                   Não tem conta?{" "}
-                  <button onClick={() => switchMode("signup")} className="text-primary hover:underline font-medium">
+                  <button onClick={() => switchMode("signup")} className="text-primary hover:underline font-medium py-1.5 -my-1.5">
                     Criar gratuitamente
                   </button>
                 </p>
@@ -332,9 +336,12 @@ export default function Login() {
         {/* Guest access */}
         <p className="text-center text-xs text-muted-foreground mt-6">
           Prefere não criar conta?{" "}
+          {/* UXP-05/UXP-06: quem escolhe NÃO criar conta não deve cair no
+              painel, que é a área de quem tem conta — volta para a tela de onde
+              veio, ou para a home. E o alvo de toque cresce sem mexer na frase. */}
           <button
-            onClick={() => navigate("/dashboard")}
-            className="text-primary hover:underline"
+            onClick={() => navigate(consumirDestino() ?? "/")}
+            className="text-primary hover:underline py-1.5 -my-1.5"
           >
             Continuar como visitante
           </button>

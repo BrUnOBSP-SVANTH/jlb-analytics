@@ -27,8 +27,14 @@ export function ToolIntro({ icon: Icon, tagline, description, example, accuracy 
           <Icon className="w-5 h-5 text-primary" aria-hidden="true" />
         </div>
         <div className="space-y-1 flex-1">
-          <div className="flex items-start justify-between gap-2">
-            <p className="text-sm font-semibold text-foreground">{tagline}</p>
+          {/* ⚠️ `flex-wrap` + `min-w-0` (Auditoria 21/09, UXP-06). A etiqueta é
+              `shrink-0` — e deve ser, senão "Precisão: 100% (matemático)" vira
+              uma palavra por linha. Só que numa linha que NÃO quebra, 162px de
+              etiqueta ao lado do texto estouravam a tela: medido em 360px, a
+              página de calculadoras rolava 18px de lado. 360px é a largura mais
+              comum do Android no Brasil, e a varredura só olhava 390px. */}
+          <div className="flex flex-wrap items-start justify-between gap-2">
+            <p className="min-w-0 text-sm font-semibold text-foreground">{tagline}</p>
             {accuracy && (
               <span className={`shrink-0 text-[11px] font-semibold px-2 py-0.5 rounded-full border ${accuracy.color}`}>
                 {accuracy.label}: {accuracy.value}

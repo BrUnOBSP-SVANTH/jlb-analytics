@@ -330,3 +330,38 @@ describe("exemplo dentro de campo também é número na tela", () => {
     expect(culpados).toEqual([]);
   });
 });
+
+describe("o celular estreito (360px) é medido e cabe", () => {
+  /**
+   * UXP-06. A varredura media 390px — o iPhone. 360px é a largura mais comum do
+   * Android no Brasil (Galaxy A, Moto G), ou seja, a base instalada de quem
+   * este site quer alcançar. São 30px de diferença, e é neles que a linha que
+   * cabia justo deixa de caber.
+   *
+   * Na PRIMEIRA medição em 360px a varredura já achou defeito: /calculadoras
+   * rolava 18px de lado por causa de uma etiqueta `shrink-0` de 162px
+   * ("Precisão: 100% (matemático)") ao lado do texto, numa linha que não
+   * quebrava. E o /educacao desenhava a frase "Ao concluir: …" com 83px de
+   * largura por 176px de altura — uma palavra por linha, no cartão que existe
+   * para convencer alguém a começar a trilha.
+   */
+  it("🔴 a varredura mede 360px, não só 390px", () => {
+    const varredura = readFileSync(join(SRC, "../../scripts/varredura-telas.mjs"), "utf-8");
+    expect(varredura).toMatch(/for \(const largura of \[390, 360\]\)/);
+  });
+
+  it("a linha do cabeçalho da calculadora quebra em vez de estourar", () => {
+    const fonte = readFileSync(join(SRC, "components/calculadoras/CalcPrimitives.tsx"), "utf-8");
+    const inicio = fonte.indexOf("items-start justify-between");
+    const linha = fonte.slice(inicio - 60, fonte.indexOf("</div>", inicio));
+    expect(linha).toContain("flex-wrap");
+    // A etiqueta continua `shrink-0`: encolher faria dela uma palavra por linha.
+    expect(linha).toContain("shrink-0");
+  });
+
+  it("a linha do nível da trilha quebra, e o texto tem largura mínima", () => {
+    const fonte = readFileSync(join(SRC, "pages/Educacao.tsx"), "utf-8");
+    expect(fonte).toMatch(/flex flex-wrap items-start gap-4/);
+    expect(fonte).toMatch(/flex-1 min-w-0 basis-56/);
+  });
+});
