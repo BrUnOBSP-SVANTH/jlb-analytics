@@ -12,6 +12,7 @@ import { track } from "@/lib/analytics";
 import { checkPassword, MIN_PASSWORD_LEN } from "@/lib/passwordSafety";
 import { marcarAceitePendente } from "@/lib/aceite";
 import { modoInicialDoLogin } from "@/lib/linkCadastro";
+import { consumirDestino } from "@/lib/retornoLogin";
 
 type Mode = "login" | "signup" | "reset";
 
@@ -74,7 +75,9 @@ export default function Login() {
         setErrorMsg(translateError(error));
       } else {
         track("login");
-        navigate("/dashboard");
+        // UXP-05: de volta para onde a pessoa estava quando clicou em "Entrar".
+        // O painel só entra como reserva — para quem abriu /login direto.
+        navigate(consumirDestino() ?? "/dashboard");
       }
     } else if (mode === "signup") {
       // Regras locais + checagem no HaveIBeenPwned (k-anonimato: a senha não sai

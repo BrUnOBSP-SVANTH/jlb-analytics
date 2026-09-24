@@ -44,6 +44,7 @@ import { prefetchRoute } from "@/lib/prefetch";
 import { EVENTO_IA_USADA } from "@/lib/api";
 import { COTA_GRATIS_MENSAL } from "@shared/planos";
 import { rotuloDoNivel, nivelPorNumero } from "@shared/niveis";
+import { lembrarOndeEstou } from "@/lib/retornoLogin";
 
 // ── Nav structure ────────────────────────────────────────────────────────────
 
@@ -191,7 +192,8 @@ function UserMenu({ compacto = false }: { compacto?: boolean }) {
   if (!user) {
     return (
       <button
-        onClick={() => navigate("/login")}
+        // UXP-05: guarda onde a pessoa está antes de levá-la ao login.
+        onClick={() => { lembrarOndeEstou(); navigate("/login"); }}
         className="alvo-toque flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold bg-primary text-primary-foreground hover:opacity-90 transition-opacity"
       >
         <LogIn className="w-3.5 h-3.5" aria-hidden="true" />

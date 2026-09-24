@@ -33,6 +33,7 @@ import SignupNudge from "@/components/SignupNudge";
 import WatchlistSection from "@/components/dashboard/WatchlistSection";
 import { Termo } from "@/components/Termo";
 import { useSEO } from "@/hooks/useSEO";
+import { lembrarOndeEstou } from "@/lib/retornoLogin";
 
 // ── Constants ──────────────────────────────────────────────────────────────
 
@@ -74,7 +75,7 @@ function GuestView() {
           Brier Score, Skill Score, calibração e histórico de previsões ficam salvos na sua conta.
         </p>
         <div className="flex flex-col gap-2.5 pt-1">
-          <Link href="/login">
+          <Link href="/login" onClick={lembrarOndeEstou}>
             <span className="flex items-center justify-center gap-2 w-full px-6 py-3 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:opacity-90 transition-opacity">
               <LogIn className="w-4 h-4" aria-hidden="true" /> Entrar / Criar conta
             </span>

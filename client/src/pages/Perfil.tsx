@@ -29,6 +29,7 @@ import { CotaDeAnalises } from "@/components/perfil/CotaDeAnalises";
 import { EmailPreferences } from "@/components/perfil/EmailPreferences";
 import { ExcluirConta } from "@/components/perfil/ExcluirConta";
 import { ProfilePublicSettings } from "@/components/perfil/ProfilePublicSettings";
+import { lembrarOndeEstou } from "@/lib/retornoLogin";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -88,7 +89,7 @@ function GuestPrompt() {
         Seu histórico de previsões, pontos acumulados e progresso nos níveis ficam
         salvos aqui. Crie uma conta gratuita para não perder o avanço.
       </p>
-      <Link href="/login">
+      <Link href="/login" onClick={lembrarOndeEstou}>
         <span className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity">
           <LogIn className="w-4 h-4" /> Entrar / Criar conta
         </span>

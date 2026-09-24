@@ -34,6 +34,7 @@ import { NovaApostaModal } from "@/components/portfolio/NovaApostaModal";
 import { ApostaCard } from "@/components/portfolio/ApostaCard";
 import { PortfolioAnalysisPanel } from "@/components/portfolio/PortfolioAnalysisPanel";
 import { posicoesAntigas, descartarAntigas, baixarAntigasCSV, type PosicaoAntiga } from "@/components/portfolio/shared";
+import { lembrarOndeEstou } from "@/lib/retornoLogin";
 
 type Aba = "abertas" | "fechadas";
 
@@ -112,7 +113,7 @@ export default function Portfolio() {
               sem perder nada — e é o que deixa o site liquidar suas apostas sozinho quando o
               mercado resolve.
             </p>
-            <Link href="/login">
+            <Link href="/login" onClick={lembrarOndeEstou}>
               <span className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity cursor-pointer">
                 <LogIn className="w-4 h-4" /> Entrar e começar a banca
               </span>

@@ -17,6 +17,7 @@ import {
   ChevronRight, Shield, Scale, Info,
 } from "lucide-react";
 import { num } from "@shared/formato";
+import { lembrarOndeEstou } from "@/lib/retornoLogin";
 
 // ── Tipos ──────────────────────────────────────────────────────────────────
 
@@ -273,7 +274,7 @@ export default function Duelos() {
             Crie uma conta gratuita para desafiar outros forecasters.
           </p>
           <button
-            onClick={() => navigate("/login")}
+            onClick={() => { lembrarOndeEstou(); navigate("/login"); }}
             className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:opacity-90 transition-opacity"
           >
             <LogIn className="w-4 h-4" aria-hidden="true" /> Entrar / Criar conta
