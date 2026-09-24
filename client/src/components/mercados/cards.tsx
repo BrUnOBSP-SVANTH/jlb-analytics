@@ -9,7 +9,7 @@ import { Link } from "wouter";
 import { Languages } from "lucide-react";
 import type { DynamicBadge, Source } from "@/lib/trending";
 import { historicoDoToken, type PontoPreco } from "@/lib/historicoPreco";
-import { num } from "@shared/formato";
+import { num, tempoRestante } from "@shared/formato";
 
 // ─── Sparkline ───────────────────────────────────────────────────────────────
 
@@ -168,9 +168,11 @@ export function MarketBadge({ badge, endDate }: { badge: DynamicBadge; endDate?:
   if (badge === "encerrando" && endDate) {
     const diff = new Date(endDate).getTime() - Date.now();
     if (diff > 0) {
-      const days = Math.floor(diff / 86_400_000);
-      const hrs  = Math.floor((diff % 86_400_000) / 3_600_000);
-      label = days > 0 ? `⏳ ${days}d ${hrs}h` : `⏳ ${hrs}h`;
+      // ⚠️ "⏳ 0h" (Auditoria 21/09, TXT-02): faltando 40 minutos, a divisão
+      // inteira dava zero e o selo anunciava zero hora — que se lê como "já
+      // acabou" justamente no mercado mais urgente da tela. `tempoRestante`
+      // (shared/formato.ts) já resolve isso, com o piso de 1 minuto.
+      label = `⏳ ${tempoRestante(diff)}`;
     }
   }
 

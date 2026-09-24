@@ -227,7 +227,10 @@ export default function Perfil() {
                 </div>
                 <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-primary/10 border border-primary/20">
                   <Target className="w-3.5 h-3.5 text-primary" />
-                  <span className="text-sm font-medium text-primary">{predictions.length} previsões</span>
+                  {/* `plural` e não "{n} previsões": com uma única previsão a tela
+                      escrevia "1 previsões" (Auditoria 21/09, TXT-02) — e o
+                      primeiro número que um usuário novo vê é justamente 1. */}
+                  <span className="text-sm font-medium text-primary">{plural(predictions.length, "previsão", "previsões")}</span>
                 </div>
                 {accuracy !== null && (
                   <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-positive/10 border border-positive/20">

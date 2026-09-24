@@ -11,7 +11,7 @@ import { TituloDeMercado } from "@/components/mercados/cards";
 import { registrarPrevisao } from "@/lib/predictionsSync";
 import { awardPoints } from "@/lib/userProgress";
 import { track } from "@/lib/analytics";
-import { num } from "@shared/formato";
+import { num, prazoEmPalavras } from "@shared/formato";
 
 export function KalshiCard({ market }: { market: KalshiMarket }) {
   const [translation, setTranslation] = useState<string | null>(null);
@@ -61,10 +61,10 @@ export function KalshiCard({ market }: { market: KalshiMarket }) {
     <div className="glass-card rounded-xl p-4 flex flex-col gap-3 hover:border-gold/20 transition-colors">
       {/* Badges */}
       <div className="flex flex-wrap items-center gap-1">
-        <CategoryBadge category={market.category} />
+        <CategoryBadge category={market.category} source="kalshi" />
         {d !== null && (
           <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-semibold border ${d <= 3 ? "text-negative bg-negative/10 border-negative/20" : "text-muted-foreground bg-secondary/40 border-border/20"}`}>
-            {d === 0 ? "Encerra hoje" : `${d}d restantes`}
+            {prazoEmPalavras(d)}
           </span>
         )}
         {prevDiff !== null && prevDiff !== 0 && (

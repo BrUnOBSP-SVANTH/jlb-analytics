@@ -4,6 +4,7 @@
  */
 import { useState, useEffect } from "react";
 import { Link } from "wouter";
+import { NIVEIS, rotuloDoNivel } from "@shared/niveis";
 
 /** O e-mail que existe de verdade — o mesmo da Política de Privacidade. */
 const EMAIL_CONTATO = "contato.jlbanalytics@gmail.com";
@@ -72,11 +73,11 @@ export function Footer() {
             <div className="space-y-1.5">
               {[
                 { label: "Trilha Completa",         href: "/educacao" },
-                { label: "Nível 1 — Fundamentos",   href: "/nivel/1" },
-                { label: "Nível 2 — Dados",         href: "/nivel/2" },
-                { label: "Nível 3 — Modelos",       href: "/nivel/3" },
-                { label: "Nível 4 — Psicologia",    href: "/nivel/4" },
-                { label: "Nível 5 — Integrado",     href: "/nivel/5" },
+                // Nome do nível vem de shared/niveis.ts: o rodapé dizia
+                // "Psicologia" para o que a página chama de "Vieses e
+                // Psicologia", e quem clicava achava que tinha errado o
+                // caminho (TXT-02).
+                ...NIVEIS.map((nv) => ({ label: rotuloDoNivel(nv.n, true), href: nv.href })),
               ].map((l) => (
                 <Link key={l.href} href={l.href}>
                   <span className="block text-sm text-muted-foreground hover:text-foreground transition-colors">{l.label}</span>

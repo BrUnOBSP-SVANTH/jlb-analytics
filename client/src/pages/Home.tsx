@@ -5,7 +5,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/lib/supabase";
-import { dolar, reaisExatos, num } from "@shared/formato";
+import { dolar, reaisExatos, num, haQuantoTempo } from "@shared/formato";
 import { FONTES_AO_VIVO, QUANTAS_FONTES } from "@shared/plataforma";
 import { buscarJson } from "@/lib/api";
 import { useSEO } from "@/hooks/useSEO";
@@ -22,6 +22,7 @@ import {
   ArrowRight, Zap, Target, CheckCircle, AlertTriangle, X,
   Newspaper, ChevronDown, ChevronUp,
 } from "lucide-react";
+import { NIVEIS } from "@shared/niveis";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -139,13 +140,14 @@ function LiveMarketCard({ market }: { market: LiveMarket }) {
  * aberto e o que ainda não está. É isso que o desenho passa a dizer, e a borda
  * tracejada diz sozinha, sem gastar cor.
  */
-const LEVELS = [
-  { n: 1, title: "Fundamentos",      href: "/nivel/1", icon: GraduationCap, aberto: true,  nota: "aberto" },
-  { n: 2, title: "Leitura de dados", href: "/nivel/2", icon: BarChart3,     aberto: true,  nota: "aberto" },
-  { n: 3, title: "Modelos básicos",  href: "/nivel/3", icon: TrendingUp,    aberto: true,  nota: "aberto" },
-  { n: 4, title: "Vieses",           href: "/nivel/4", icon: Brain,         aberto: false, nota: "conclua 3 níveis" },
-  { n: 5, title: "Integrado",        href: "/nivel/5", icon: GitMerge,      aberto: false, nota: "conclua 4 níveis" },
-];
+// Título de shared/niveis.ts (TXT-02): a home dizia "Vieses" e "Integrado" para
+// o que a página chama de "Vieses e Psicologia" e "Análise Integrada".
+const ICONES_DO_NIVEL = [GraduationCap, BarChart3, TrendingUp, Brain, GitMerge];
+const LEVELS = NIVEIS.map((nv, i) => ({
+  n: nv.n, title: nv.titulo, href: nv.href, icon: ICONES_DO_NIVEL[i],
+  aberto: nv.n <= 3,
+  nota: nv.n <= 3 ? "aberto" : `conclua ${nv.n - 1} níveis`,
+}));
 
 const HOW_IT_WORKS = [
   {
@@ -452,8 +454,14 @@ export default function Home() {
                   <Newspaper className="w-3.5 h-3.5 text-gold" aria-hidden="true" />
                 </div>
                 <div className="min-w-0 text-left">
+                  {/* ⚠️ Aqui se lia "— gerado agora" sempre que `cached` era
+                      falso, e `cached` só diz que a resposta NÃO veio do cache
+                      desta requisição — o briefing podia ter sido gerado de
+                      madrugada (Auditoria 21/09, TXT-02). O horário de
+                      `generatedAt` é o que responde "de quando é isto", e é o
+                      que importa para quem lê uma análise de mercado. */}
                   <p className="text-[0.8125rem]  text-gold mb-0.5">
-                    Briefing do Dia{briefing.cached ? "" : " — gerado agora"}
+                    Briefing do Dia{briefing.generatedAt ? ` · ${haQuantoTempo(briefing.generatedAt)}` : ""}
                   </p>
                   <p className="text-sm font-medium text-foreground truncate">{briefing.headline}</p>
                 </div>

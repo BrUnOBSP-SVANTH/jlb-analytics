@@ -15,6 +15,7 @@ import { useSEO } from "@/hooks/useSEO";
 import LevelNav from "@/components/LevelNav";
 import PageHeader from "@/components/PageHeader";
 import { num } from "@shared/formato";
+import { rotuloDoNivel } from "@shared/niveis";
 
 // ─── Tipos de resposta da API ─────────────────────────────────────────────────
 interface EVResult {
@@ -330,7 +331,7 @@ function BayesCalculator() {
 
 // ─── Página principal ─────────────────────────────────────────────────────────
 export default function Nivel1() {
-  useSEO("Nível 1 — Fundamentos", "Probabilidade, odds e Valor Esperado do zero: a base matemática para operar com lógica.");
+  useSEO(rotuloDoNivel(1), "Probabilidade, odds e Valor Esperado do zero: a base matemática para operar com lógica.");
   useEffect(() => {
     awardPoints("level_visited", "Visitou o Nível 1 — Fundamentos", "level_visited_1");
   }, []);

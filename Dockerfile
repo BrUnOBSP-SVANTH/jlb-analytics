@@ -14,7 +14,8 @@ COPY . .
 
 # Variáveis VITE_* são embutidas no bundle do cliente EM BUILD TIME.
 # São valores públicos por design (anon key vai ao browser de qualquer forma);
-# os segredos de verdade entram só em runtime via fly secrets.
+# os segredos de verdade entram só em runtime, pelas variáveis do Render
+# (o fly.toml é legado — ver DEPLOY.md).
 ARG VITE_SUPABASE_URL
 ARG VITE_SUPABASE_ANON_KEY
 # O price do Stripe NÃO entra mais no build: ele é do SERVIDOR, lido em runtime

@@ -14,6 +14,7 @@ import { useSEO } from "@/hooks/useSEO";
 import LevelNav from "@/components/LevelNav";
 import PageHeader from "@/components/PageHeader";
 import { num } from "@shared/formato";
+import { rotuloDoNivel } from "@shared/niveis";
 
 interface DivergenceResult {
   divergence_pct: number; signal: string; label: string;
@@ -266,7 +267,7 @@ function EnsembleCalculator() {
 }
 
 export default function Nivel5() {
-  useSEO("Nível 5 — Análise Integrada", "Combine modelos, dados e julgamento calibrado numa análise completa de mercado.");
+  useSEO(rotuloDoNivel(5), "Combine modelos, dados e julgamento calibrado numa análise completa de mercado.");
   // Gate de pontos REMOVIDO (mesmo motivo do Nível 4): o conteúdo do núcleo não deve
   // ficar preso atrás de um grind em localStorage. Nível acessível a todos.
   useEffect(() => {

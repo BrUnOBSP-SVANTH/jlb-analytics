@@ -6,33 +6,42 @@
 import { type RedditPost, type Article, timeAgo, timeAgoISO } from "@/lib/noticiasShared";
 import { analyzeSentiment } from "@/lib/predictions";
 import { ExternalLink, Globe, Clock, Zap } from "lucide-react";
+import { normalizeCategory, CATEGORY_LABELS, type CategoryFilter, type Source } from "@/lib/trending";
 
 
-const CATEGORY_COLORS: Record<string, string> = {
-  "Politics": "text-blue-400 bg-blue-400/10 border-blue-400/20",
-  "Elections": "text-blue-400 bg-blue-400/10 border-blue-400/20",
-  "Crypto": "text-orange-400 bg-orange-400/10 border-orange-400/20",
-  "Criptomoedas": "text-orange-400 bg-orange-400/10 border-orange-400/20",
-  "Sports": "text-green-400 bg-green-400/10 border-green-400/20",
-  "Esportes": "text-green-400 bg-green-400/10 border-green-400/20",
-  "Science": "text-purple-400 bg-purple-400/10 border-purple-400/20",
-  "Tecnologia e Ciência": "text-purple-400 bg-purple-400/10 border-purple-400/20",
-  "World": "text-sky-400 bg-sky-400/10 border-sky-400/20",
-  "Economy": "text-emerald-400 bg-emerald-400/10 border-emerald-400/20",
-  "Economy/Markets": "text-emerald-400 bg-emerald-400/10 border-emerald-400/20",
-  "Finanças": "text-emerald-400 bg-emerald-400/10 border-emerald-400/20",
-  "Finance": "text-emerald-400 bg-emerald-400/10 border-emerald-400/20",
-  "Pop-Culture ": "text-pink-400 bg-pink-400/10 border-pink-400/20",
-  "Climate": "text-teal-400 bg-teal-400/10 border-teal-400/20",
-  "Clima": "text-teal-400 bg-teal-400/10 border-teal-400/20",
+/**
+ * A cor de cada categoria — pelas categorias DA CASA, não pelas da plataforma.
+ *
+ * O QUE ACONTECIA (Auditoria 21/09, TXT-02): o selo mostrava o que a origem
+ * mandava, em inglês e em caixa alta — "POLITICS", "UNITED STATES", "IRAN",
+ * "FED", "ALIENS", "MILITARY STRIKES". Num site em português, cada card dizia a
+ * categoria numa língua diferente, e "ALIENS" não é categoria de nada.
+ *
+ * `normalizeCategory` já traduzia isso para as nove categorias do site (é ela
+ * que alimenta os filtros de /mercados); o selo é que não usava.
+ */
+const CORES_DA_CATEGORIA: Record<CategoryFilter, string> = {
+  all:         "text-muted-foreground bg-secondary/50 border-border/30",
+  macro:       "text-emerald-400 bg-emerald-400/10 border-emerald-400/20",
+  elections:   "text-blue-400 bg-blue-400/10 border-blue-400/20",
+  geopolitics: "text-sky-400 bg-sky-400/10 border-sky-400/20",
+  sports:      "text-green-400 bg-green-400/10 border-green-400/20",
+  crypto:      "text-orange-400 bg-orange-400/10 border-orange-400/20",
+  tech:        "text-purple-400 bg-purple-400/10 border-purple-400/20",
+  business:    "text-emerald-400 bg-emerald-400/10 border-emerald-400/20",
+  culture:     "text-pink-400 bg-pink-400/10 border-pink-400/20",
+  other:       "text-muted-foreground bg-secondary/50 border-border/30",
 };
 
-export function CategoryBadge({ category }: { category?: string }) {
+export function CategoryBadge({ category, source }: { category?: string; source?: Source }) {
   if (!category) return null;
-  const colors = CATEGORY_COLORS[category] ?? "text-muted-foreground bg-secondary/50 border-border/30";
+  const normalizada = normalizeCategory(category, source);
+  // "Outros" não é informação: ocupa espaço no card e não ajuda ninguém a
+  // escolher. Sem categoria reconhecida, o selo simplesmente não aparece.
+  if (normalizada === "other") return null;
   return (
-    <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-semibold uppercase tracking-wider border ${colors}`}>
-      {category}
+    <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-semibold uppercase tracking-wider border ${CORES_DA_CATEGORIA[normalizada]}`}>
+      {CATEGORY_LABELS[normalizada]}
     </span>
   );
 }

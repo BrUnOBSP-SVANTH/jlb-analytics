@@ -43,7 +43,7 @@ const BADGE_DEFS: BadgeDef[] = [
   {
     id: "calibrated",
     name: "Calibrado",
-    desc: "Brier Score < 0.15 em 5+ previsões resolvidas",
+    desc: "Brier abaixo de 0,15 em 5+ previsões resolvidas",
     icon: Sigma,
     color: "text-positive",
     bg: "bg-positive/10",
@@ -52,7 +52,7 @@ const BADGE_DEFS: BadgeDef[] = [
   },
   {
     id: "shark",
-    name: "Shark",
+    name: "Tubarão",
     desc: "Bateu o mercado em 60%+ das previsões (mín. 10)",
     icon: TrendingUp,
     color: "text-gold",
@@ -79,8 +79,8 @@ const BADGE_DEFS: BadgeDef[] = [
   },
   {
     id: "expert",
-    name: "Expert",
-    desc: "Skill Score > 0.3",
+    name: "Especialista",
+    desc: "Skill Score acima de 0,3 — mede o quanto você supera a baseline",
     icon: Award,
     color: "text-purple-400",
     bg: "bg-purple-400/10",
@@ -88,7 +88,7 @@ const BADGE_DEFS: BadgeDef[] = [
   },
   {
     id: "early_adopter",
-    name: "Early Adopter",
+    name: "Dos Primeiros",
     desc: "Conta criada antes de junho de 2026",
     icon: Star,
     color: "text-yellow-400",
@@ -99,8 +99,8 @@ const BADGE_DEFS: BadgeDef[] = [
   },
   {
     id: "streak_3",
-    name: "Streak ×3",
-    desc: "3 previsões seguidas com Brier Score < 0.15",
+    name: "3 seguidas",
+    desc: "3 previsões seguidas com Brier abaixo de 0,15",
     icon: Zap,
     color: "text-neon-blue",
     bg: "bg-neon-blue/10",
@@ -118,8 +118,8 @@ const BADGE_DEFS: BadgeDef[] = [
   },
   {
     id: "streak_5",
-    name: "Streak ×5",
-    desc: "5 previsões seguidas com Brier Score < 0.15",
+    name: "5 seguidas",
+    desc: "5 previsões seguidas com Brier abaixo de 0,15",
     icon: Flame,
     color: "text-orange-400",
     bg: "bg-orange-400/10",
@@ -137,8 +137,8 @@ const BADGE_DEFS: BadgeDef[] = [
   },
   {
     id: "streak_10",
-    name: "Streak ×10",
-    desc: "10 previsões seguidas com Brier Score < 0.15",
+    name: "10 seguidas",
+    desc: "10 previsões seguidas com Brier abaixo de 0,15",
     icon: Flame,
     color: "text-positive",
     bg: "bg-positive/10",
@@ -187,8 +187,11 @@ const BADGE_DEFS: BadgeDef[] = [
   },
   {
     id: "master_levels",
-    name: "Mestre dos Níveis",
-    desc: "Acumulou 100+ pontos",
+    // ⚠️ Chamava-se "Mestre dos Níveis" e era concedida por PONTOS, que se
+    // ganham em qualquer lugar do site (Auditoria 21/09, TXT-02). Prometia uma
+    // coisa e media outra — numa tela cuja função é dizer o que você conquistou.
+    name: "100 pontos",
+    desc: "Acumulou 100 pontos na plataforma",
     icon: Trophy,
     color: "text-gold",
     bg: "bg-gold/10",

@@ -14,6 +14,7 @@ import { useSEO } from "@/hooks/useSEO";
 import LevelNav from "@/components/LevelNav";
 import PageHeader from "@/components/PageHeader";
 import { num } from "@shared/formato";
+import { rotuloDoNivel } from "@shared/niveis";
 
 interface ProspectResult { ev_objective: number; subjective_value: number; gap: number; loss_aversion_lambda: number; signal: string; bias_diagnosis: string; explanation: string; }
 interface BrierResult { brier_score: number; skill_score: number; resolution: number; reliability: number; n: number; stable: boolean; signal: string; explanation: string; calibration_by_decile?: { confidence_range: string; avg_confidence: number; actual_accuracy: number; n: number; calibration_error: number }[]; }
@@ -301,7 +302,7 @@ function MaturityCalculator() {
 }
 
 export default function Nivel4() {
-  useSEO("Nível 4 — Vieses e Psicologia", "Loss aversion, falácia do apostador e overconfidence: domine a psicologia da decisão.");
+  useSEO(rotuloDoNivel(4), "Loss aversion, falácia do apostador e overconfidence: domine a psicologia da decisão.");
   // Gate de pontos REMOVIDO: o conteúdo mais valioso do site (Brier/calibração) não
   // deve ficar preso atrás de um grind em localStorage que não protege nada nem gera
   // receita (o Premium de verdade é o Stripe, separado). Nível acessível a todos.

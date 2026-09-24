@@ -14,6 +14,7 @@ import { useSEO } from "@/hooks/useSEO";
 import LevelNav from "@/components/LevelNav";
 import PageHeader from "@/components/PageHeader";
 import { num } from "@shared/formato";
+import { rotuloDoNivel } from "@shared/niveis";
 
 interface TaylorResult { selic_observed: number; taylor_implied: number; divergence_pp: number; signal: string; explanation: string; }
 interface PoissonResult { p_home_win: number; p_draw: number; p_away_win: number; lambda_home: number; lambda_away: number; top_scores: { score: string; probability: number }[]; explanation: string; }
@@ -323,7 +324,7 @@ function EloCalculator() {
 }
 
 export default function Nivel3() {
-  useSEO("Nível 3 — Modelos Básicos", "Poisson, regressão e Elo: os primeiros modelos quantitativos para previsões.");
+  useSEO(rotuloDoNivel(3), "Poisson, regressão e Elo: os primeiros modelos quantitativos para previsões.");
   useEffect(() => {
     awardPoints("level_visited", "Visitou o Nível 3 — Modelos Básicos", "level_visited_3");
   }, []);

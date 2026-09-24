@@ -260,3 +260,33 @@ describe("a frase começa com maiúscula", () => {
     expect(whyTrendingMarket({ volume: 1_000, source: "polymarket", yesProb: 0.42 })).toBe("");
   });
 });
+
+describe("TXT-02 — categoria crua que não decide nada, o título decide", () => {
+  // Todos os pares abaixo foram MEDIDOS no catálogo ao vivo em 24/09: à esquerda
+  // a categoria que a plataforma manda, à direita a pergunta do mercado.
+  const casos: Array<[string, string, string, string]> = [
+    ["United States",        "Democratic Presidential Nominee 2028",                        "elections",   "eleição americana caía em Outros"],
+    ["United States",        "Republican Presidential Nominee 2028",                        "elections",   "idem"],
+    ["President",            "Presidential Election Winner 2028",                           "elections",   "categoria 'President' não era mapeada"],
+    ["Parent For Derivative","Will the Democratic Party control the House after 2026?",      "elections",   "metadado interno do Polymarket"],
+    ["Politics",             "Bab el-Mandeb Strait effectively closed by September 30?",     "geopolitics", "estreito não é eleição"],
+  ];
+
+  for (const [crua, titulo, esperado, porque] of casos) {
+    it(`"${crua}" + "${titulo.slice(0, 38)}…" → ${esperado} (${porque})`, () => {
+      expect(normalizeCategory(crua, "polymarket", undefined, titulo)).toBe(esperado);
+    });
+  }
+
+  it("categoria ESPECÍFICA da plataforma continua mandando", () => {
+    // O título é rede de segurança, não substituto: quando a origem sabe, ela
+    // decide. "Oil" é macro mesmo que a pergunta fale de estreito.
+    expect(normalizeCategory("Crypto", "polymarket", undefined, "Will Lula win?")).toBe("crypto");
+    expect(normalizeCategory("NBA", "polymarket", undefined, "Fed cuts rates?")).toBe("sports");
+  });
+
+  it("sem título e sem categoria reconhecida, continua Outros — não inventa", () => {
+    expect(normalizeCategory("Parent For Derivative", "polymarket")).toBe("other");
+    expect(normalizeCategory(undefined, "polymarket", undefined, "algo sem termo nenhum aqui")).toBe("other");
+  });
+});

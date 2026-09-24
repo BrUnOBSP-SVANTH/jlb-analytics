@@ -121,6 +121,23 @@ export function tempoRestante(ms: number): string {
   return `${Math.max(1, min)}min`;
 }
 
+/**
+ * Quanto falta para o mercado fechar, em linguagem de gente.
+ *
+ * O QUE ACONTECIA (Auditoria 21/09, TXT-02): os cards escreviam "1d restantes"
+ * — plural errado e palavra que ninguém usa. "Termina amanhã" é a mesma
+ * informação dita como se fala, e é mais fácil de decidir em cima.
+ *
+ * `null` quando não há data: prazo desconhecido não vira "0 dias".
+ */
+export function prazoEmPalavras(dias: number | null | undefined): string | null {
+  if (dias == null || !Number.isFinite(dias) || dias < 0) return null;
+  if (dias === 0) return "termina hoje";
+  if (dias === 1) return "termina amanhã";
+  if (dias <= 30) return `termina em ${num(dias)} dias`;
+  return `termina em ${num(Math.round(dias / 30))} ${Math.round(dias / 30) === 1 ? "mês" : "meses"}`;
+}
+
 /** "há 16 minutos" — sem falar em cache, snapshot ou fallback (ver TRV-19). */
 export function haQuantoTempo(iso: string | number | Date | null | undefined): string {
   if (iso == null) return "—";

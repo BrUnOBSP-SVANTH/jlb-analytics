@@ -13,6 +13,7 @@ import {
   ArrowRight, AlertCircle, Activity, Trophy, Target, Sparkles,
 } from "lucide-react";
 import { loadPredictions, meanBrierScore } from "@/lib/predictions";
+import { NIVEIS } from "@shared/niveis";
 
 /**
  * Nenhum nível é trancado (auditoria de 14/09, item 4). Este mapa trancava os
@@ -20,13 +21,12 @@ import { loadPredictions, meanBrierScore } from "@/lib/predictions";
  * abria para qualquer um e /planos dizia "tudo grátis". Concluído = exercício
  * resolvido, a mesma régua de `niveisConcluidos`.
  */
-const LEVELS = [
-  { n: 1, title: "Fundamentos",         href: "/nivel/1", icon: GraduationCap, color: "text-positive" },
-  { n: 2, title: "Leitura de Dados",    href: "/nivel/2", icon: BarChart3,     color: "text-primary" },
-  { n: 3, title: "Modelos Básicos",     href: "/nivel/3", icon: TrendingUp,    color: "text-level3" },
-  { n: 4, title: "Vieses e Psicologia", href: "/nivel/4", icon: Brain,         color: "text-level4" },
-  { n: 5, title: "Análise Integrada",   href: "/nivel/5", icon: GitMerge,      color: "text-neon-blue" },
-];
+// Título de shared/niveis.ts; ícone e cor continuam sendo escolha desta tela.
+const ICONES = [GraduationCap, BarChart3, TrendingUp, Brain, GitMerge];
+const CORES = ["text-positive", "text-primary", "text-level3", "text-level4", "text-neon-blue"];
+const LEVELS = NIVEIS.map((nv, i) => ({
+  n: nv.n, title: nv.titulo, href: nv.href, icon: ICONES[i], color: CORES[i],
+}));
 
 const MATURITY_LABELS = [
   "Iniciante — decisões majoritariamente intuitivas",

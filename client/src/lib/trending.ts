@@ -119,16 +119,62 @@ export const CATEGORY_LABELS: Record<CategoryFilter, string> = {
   other: "Outros",
 };
 
-/** Normaliza categoria bruta da API → CategoryFilter */
-export function normalizeCategory(raw?: string, source?: Source, subreddit?: string): CategoryFilter {
+/**
+ * Categorias cruas que NÃO decidem nada sozinhas.
+ *
+ * Medido no catálogo ao vivo em 24/09 (Auditoria 21/09, TXT-02):
+ *   "Democratic Presidential Nominee 2028"      → categoria crua "United States"
+ *   "Presidential Election Winner 2028"         → "President"
+ *   "Will the Democratic Party control the House"→ "Parent For Derivative"
+ *   "Bab el-Mandeb Strait effectively closed"   → "Politics"
+ *
+ * As três primeiras caíam em "Outros" — as eleições americanas de 2028, que são
+ * o assunto mais previsível de um site de mercados preditivos, sem categoria. E
+ * "Politics" é genérica demais: serve tanto para eleição quanto para o Estreito
+ * de Bab el-Mandeb, que é geopolítica.
+ *
+ * Nesses casos o TÍTULO decide, pelas mesmas listas. "Parent For Derivative" é
+ * metadado interno do Polymarket e nunca diz nada.
+ */
+const CATEGORIA_CRUA_GENERICA = [
+  "politics", "president", "united states", "us", "world", "parent for derivative",
+  "derivative", "other", "outros", "geral",
+  // "Oil" é a commodity AFETADA, não o assunto: o Polymarket marca assim o
+  // mercado sobre o Estreito de Ormuz, que é geopolítica. Quando o título fala
+  // mesmo de preço do petróleo, o `classificar("oil")` abaixo ainda devolve
+  // macro — a rede não atrapalha o caso legítimo.
+  "oil",
+];
+
+/**
+ * Normaliza categoria bruta da API → CategoryFilter.
+ *
+ * `titulo` é a rede de segurança: quando a categoria da plataforma não resolve
+ * (ausente, genérica ou desconhecida), a pergunta do mercado decide.
+ */
+export function normalizeCategory(raw?: string, source?: Source, subreddit?: string, titulo?: string): CategoryFilter {
   if (source === "reddit") {
     if (subreddit === "sportsbook" || subreddit === "futebol" || subreddit === "soccer") return "sports";
     if (subreddit === "geopolitics") return "geopolitics";
     if (subreddit === "wallstreetbets" || subreddit === "investing") return "business";
     return "other";
   }
-  if (!raw) return "other";
-  const r = raw.toLowerCase();
+
+  const crua = (raw ?? "").trim().toLowerCase();
+  const generica = !crua || CATEGORIA_CRUA_GENERICA.includes(crua);
+  // Categoria que não decide → o título decide. Se ele também não disser nada,
+  // a categoria crua ainda tem a última palavra (pode ser específica e apenas
+  // desconhecida das listas).
+  if (generica && titulo) {
+    const pelaPergunta = classificar(titulo.toLowerCase());
+    if (pelaPergunta !== "other") return pelaPergunta;
+  }
+  if (!crua) return "other";
+  return classificar(crua);
+}
+
+/** A régua, aplicada a um texto qualquer — categoria crua ou título. */
+function classificar(r: string): CategoryFilter {
 
   // A ORDEM IMPORTA: o primeiro grupo que casar vence, e é isso que resolve as
   // ambiguidades. Macro vem antes de Empresas porque "Fed", "juros" e "inflação"
@@ -182,7 +228,11 @@ const RADICAIS = {
                 "candidat", "nominee", "poll", "governor", "senate race", "presidential",
                 "polit", "govern", "govt", "congress", "senate", "parliament", "minister", "court"],
   geopolitics: ["geopolit", "military", "militar", "war", "guerra", "regime", "sanction", "sanç",
-                "unrest", "strike", "invasion", "nato", "treaty", "ceasefire", "hostage", "conflict"],
+                "unrest", "strike", "invasion", "nato", "treaty", "ceasefire", "hostage", "conflict",
+                // Passagem marítima é geopolítica, não commodity: "Strait of
+                // Hormuz", "Bab el-Mandeb" e "blockade" vinham marcados pela
+                // plataforma como "Oil" e "Politics" (TXT-02).
+                "strait", "estreito", "blockade", "bloqueio", "embargo", "airspace"],
   sports:      ["sport", "soccer", "football", "futebol", "baseball", "tennis", "boxing", "hockey",
                 "basket", "golf", "racing", "cricket", "brasileir", "libertadores"],
   crypto:      ["crypto", "bitcoin", "ethereum", "defi", "web3", "blockchain", "token", "stablecoin"],
@@ -197,7 +247,11 @@ const RADICAIS = {
 
 const SIGLAS = {
   macro:       ["fed", "cpi", "rate", "rates", "davos", "opec", "oil", "bcb", "ipca", "igp"],
-  elections:   ["lula", "bolsonaro", "biden", "trump", "harris", "vance", "tse"],
+  // "House" e "Party" entram aqui porque "Will the Democratic Party control the
+  // House" vinha com categoria crua "Parent For Derivative" — metadado interno
+  // do Polymarket — e caía em Outros.
+  elections:   ["lula", "bolsonaro", "biden", "trump", "harris", "vance", "tse",
+                "house", "party", "democrat", "democratic", "republican", "gop"],
   geopolitics: ["world", "iran", "israel", "china", "russia", "ukraine", "nato", "cuba", "venezuela",
                 "putin", "zelensky", "middle east", "gaza", "taiwan", "north korea", "hamas", "resign"],
   sports:      ["nba", "nfl", "mlb", "mls", "nhl", "ufc", "mma", "ucl", "atp", "wta", "us open", "f1", "cbf"],
@@ -567,7 +621,9 @@ export function buildPolyItem(bet: PolyBet): TrendingItem | null {
     sentiment: analyzeSentiment(displayTitle),
     ageHours: 0,
     category: bet.category,
-    normalizedCategory: normalizeCategory(bet.category, "polymarket"),
+    // O TÍTULO entra como rede: "Democratic Presidential Nominee 2028" vem
+    // com categoria crua "United States", que não diz nada (TXT-02).
+    normalizedCategory: normalizeCategory(bet.category, "polymarket", undefined, displayTitle),
     badge,
     endDate: bet.endDate,
   };
@@ -606,7 +662,7 @@ export function buildKalshiItem(m: KalshiMarket): TrendingItem | null {
     // sem esse recurso, todo jogo da semana cairia em "Outros" e ficaria invisível
     // no filtro. O título costuma dizer ("...college football game?"), e ler o
     // título é honesto; inventar categoria no servidor não seria.
-    normalizedCategory: normalizeCategory(m.category ?? m.title, "kalshi"),
+    normalizedCategory: normalizeCategory(m.category, "kalshi", undefined, m.title),
     badge,
   };
 }

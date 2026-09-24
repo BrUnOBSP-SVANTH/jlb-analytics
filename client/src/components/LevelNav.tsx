@@ -6,14 +6,20 @@
  */
 import { Link } from "wouter";
 import { ArrowRight, ArrowLeft, GraduationCap, Target, LineChart } from "lucide-react";
+import { NIVEIS } from "@shared/niveis";
 
-const LEVELS: Record<number, { title: string; teaser: string }> = {
-  1: { title: "Fundamentos", teaser: "Valor esperado, margem da casa e atualização bayesiana" },
-  2: { title: "Leitura de Dados", teaser: "Correlação vs. causalidade, intervalo de confiança e anomalias" },
-  3: { title: "Modelos Básicos", teaser: "Taylor, Poisson, GARCH, ENSO e Elo — o que cada um calcula e quando falha" },
-  4: { title: "Vieses e Psicologia", teaser: "Prospect Theory, Brier/calibração, falácia do jogador e overconfidence" },
-  5: { title: "Análise Integrada", teaser: "Quando o modelo diverge do mercado e ensemble ponderado por skill" },
+// Título de shared/niveis.ts (TXT-02). O TEASER continua aqui: ele é mais
+// longo do que o resumo do menu e serve só a esta navegação entre níveis.
+const TEASERS: Record<number, string> = {
+  1: "Valor esperado, margem da casa e atualização bayesiana",
+  2: "Correlação vs. causalidade, intervalo de confiança e anomalias",
+  3: "Taylor, Poisson, GARCH, ENSO e Elo — o que cada um calcula e quando falha",
+  4: "Prospect Theory, Brier/calibração, falácia do jogador e overconfidence",
+  5: "Quando o modelo diverge do mercado e ensemble ponderado por skill",
 };
+const LEVELS: Record<number, { title: string; teaser: string }> = Object.fromEntries(
+  NIVEIS.map((nv) => [nv.n, { title: nv.titulo, teaser: TEASERS[nv.n] }]),
+);
 
 export default function LevelNav({ current }: { current: number }) {
   const prev = current > 1 ? current - 1 : null;

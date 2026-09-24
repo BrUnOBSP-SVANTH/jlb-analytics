@@ -8,6 +8,7 @@ import { useLocation } from "wouter";
 import { Search, X, FileText, LayoutDashboard, Brain, Zap, BookOpen, BarChart3, Calculator, GraduationCap, Newspaper, Wallet } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { trapTab } from "@/lib/focusTrap";
+import { rotuloDoNivel } from "@shared/niveis";
 
 interface CmdPage {
   type: "page";
@@ -37,11 +38,11 @@ const PAGES: CmdPage[] = [
   { type: "page", label: "Simulador EV",       href: "/simulador",   icon: BarChart3,      keywords: "simulador kelly monte carlo" },
   { type: "page", label: "Calculadoras",       href: "/calculadoras",icon: Calculator,     keywords: "calculadoras ev overround brier kelly correlação" },
   { type: "page", label: "Trilha Completa",    href: "/educacao",    icon: GraduationCap,  keywords: "educação níveis aprender" },
-  { type: "page", label: "Nível 1 — Fundamentos",   href: "/nivel/1", icon: BookOpen,     keywords: "nível 1 valor esperado bayes overround" },
-  { type: "page", label: "Nível 2 — Dados",         href: "/nivel/2", icon: BookOpen,     keywords: "nível 2 z-score correlação IC" },
-  { type: "page", label: "Nível 3 — Modelos",       href: "/nivel/3", icon: BookOpen,     keywords: "nível 3 taylor poisson garch enso" },
-  { type: "page", label: "Nível 4 — Vieses",        href: "/nivel/4", icon: BookOpen,     keywords: "nível 4 prospect theory gambler overconfidence" },
-  { type: "page", label: "Nível 5 — Integrado",     href: "/nivel/5", icon: BookOpen,     keywords: "nível 5 divergência ensemble" },
+  { type: "page", label: rotuloDoNivel(1), href: "/nivel/1", icon: BookOpen, keywords: "nível 1 valor esperado bayes overround fundamentos" },
+  { type: "page", label: rotuloDoNivel(2), href: "/nivel/2", icon: BookOpen, keywords: "nível 2 z-score correlação IC dados leitura" },
+  { type: "page", label: rotuloDoNivel(3), href: "/nivel/3", icon: BookOpen, keywords: "nível 3 taylor poisson garch enso modelos" },
+  { type: "page", label: rotuloDoNivel(4), href: "/nivel/4", icon: BookOpen, keywords: "nível 4 prospect theory gambler overconfidence vieses psicologia" },
+  { type: "page", label: rotuloDoNivel(5), href: "/nivel/5", icon: BookOpen, keywords: "nível 5 divergência ensemble integrado" },
   { type: "page", label: "Perfil",             href: "/perfil",      icon: FileText,       keywords: "perfil pontos badges conquistas" },
   { type: "page", label: "Sobre",              href: "/sobre",       icon: FileText,       keywords: "sobre missão roadmap modelo negócio" },
 ];

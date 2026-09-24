@@ -38,6 +38,7 @@ import { useDispensar, ATALHO_BUSCA, ehMac } from "@/hooks/useDispensar";
 import { prefetchRoute } from "@/lib/prefetch";
 import { EVENTO_IA_USADA } from "@/lib/api";
 import { COTA_GRATIS_MENSAL } from "@shared/planos";
+import { rotuloDoNivel, nivelPorNumero } from "@shared/niveis";
 
 // ── Nav structure ────────────────────────────────────────────────────────────
 
@@ -72,11 +73,14 @@ const NAV_GROUPS: NavGroup[] = [
     label: "Aprender",
     children: [
       { label: "Trilha Completa",             href: "/educacao", icon: Map,           desc: "Os cinco níveis, em ordem" },
-      { label: "Nível 1 — Fundamentos",       href: "/nivel/1",  icon: GraduationCap, desc: "EV, margem da casa, Bayes" },
-      { label: "Nível 2 — Leitura de Dados",  href: "/nivel/2",  icon: BarChart3,     desc: "Z-score, intervalo, correlação" },
-      { label: "Nível 3 — Modelos Básicos",   href: "/nivel/3",  icon: LineChart,     desc: "Poisson, GARCH e vizinhos" },
-      { label: "Nível 4 — Vieses",            href: "/nivel/4",  icon: Brain,         desc: "Por que erramos com convicção" },
-      { label: "Nível 5 — Análise Integrada", href: "/nivel/5",  icon: GitCompare,    desc: "Seu número contra o mercado" },
+      // Nome e resumo vêm de shared/niveis.ts — o menu dizia "Vieses" para o
+      // que o rodapé chamava de "Psicologia" e a página, de "Vieses e
+      // Psicologia" (TXT-02). O ícone continua sendo escolha do menu.
+      { label: rotuloDoNivel(1), href: "/nivel/1", icon: GraduationCap, desc: nivelPorNumero(1)!.resumo },
+      { label: rotuloDoNivel(2), href: "/nivel/2", icon: BarChart3,     desc: nivelPorNumero(2)!.resumo },
+      { label: rotuloDoNivel(3), href: "/nivel/3", icon: LineChart,     desc: nivelPorNumero(3)!.resumo },
+      { label: rotuloDoNivel(4), href: "/nivel/4", icon: Brain,         desc: nivelPorNumero(4)!.resumo },
+      { label: rotuloDoNivel(5), href: "/nivel/5", icon: GitCompare,    desc: nivelPorNumero(5)!.resumo },
     ],
   },
   {

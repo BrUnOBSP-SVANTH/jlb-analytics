@@ -16,7 +16,7 @@ import { idCanonicoDeMercado } from "@shared/liquidacao";
 import { awardPoints } from "@/lib/userProgress";
 import { track } from "@/lib/analytics";
 import { traduzir, pareceEmPortugues } from "@/lib/traducao";
-import { num } from "@shared/formato";
+import { num, prazoEmPalavras } from "@shared/formato";
 
 interface TrackFormProps {
   market: PolyMarket;
@@ -177,10 +177,10 @@ export function MarketCard({ market, savedIds, onSaved, highlight = false, indic
             ★ Destaque
           </span>
         )}
-        <CategoryBadge category={market.category} />
+        <CategoryBadge category={market.category} source="polymarket" />
         {(() => { const d = daysLeft(market.endDate); return d !== null ? (
           <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-semibold border ${d <= 3 ? "text-negative bg-negative/10 border-negative/20" : "text-muted-foreground bg-secondary/40 border-border/20"}`}>
-            {d === 0 ? "Encerra hoje" : `${d}d restantes`}
+            {prazoEmPalavras(d)}
           </span>
         ) : null; })()}
         {market.weekPriceChange !== undefined && market.weekPriceChange !== 0 && (
