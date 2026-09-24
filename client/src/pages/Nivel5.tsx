@@ -62,7 +62,7 @@ function DivergenceCalculator() {
         <GitMerge className="w-5 h-5 text-primary" />
         <h2 className="font-semibold text-foreground">Divergência Modelo vs. Mercado</h2>
       </div>
-      <p className="text-sm text-muted-foreground">
+      <p className="max-w-prose text-sm text-muted-foreground">
         O sistema compara a probabilidade calculada pelos modelos com a probabilidade
         precificada pelo mercado preditivo e explica o desvio. Nunca recomenda posição.
       </p>
@@ -285,7 +285,7 @@ export default function Nivel5() {
 
       {/* Aviso pedagógico principal */}
       <div className="p-4 rounded-xl border border-primary/30 bg-primary/5">
-        <p className="text-xs text-muted-foreground leading-relaxed">
+        <p className="max-w-prose text-xs text-muted-foreground leading-relaxed">
           <strong className="text-foreground">Princípio central do Nível 5:</strong>{" "}
           divergência modelo-mercado não é sinal de compra ou venda. É um sinal de investigação.
           O mercado pode ter informação que o modelo não tem. O modelo pode ter capturado uma

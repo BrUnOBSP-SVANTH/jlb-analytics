@@ -322,7 +322,7 @@ export default function Leaderboard() {
                 ))}
               </div>
 
-              <p className="text-xs text-muted-foreground text-center leading-relaxed">
+              <p className="max-w-prose mx-auto text-xs text-muted-foreground text-center leading-relaxed">
                 Para entrar no ranking: ative o perfil público em Configurações do Perfil e resolva
                 pelo menos uma previsão. Menor é melhor — o Brier mede a distância entre o que você
                 disse e o que aconteceu.

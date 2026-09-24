@@ -59,7 +59,15 @@ export default function AvisoDeCookies() {
             as rotas até a pessoa escolher. O tom é um diferencial e fica; o
             tamanho não precisava ser. Duas linhas dizem a mesma coisa, e o resto
             mora na lista completa — que já existe e é boa. */}
-        <p className="text-xs text-muted-foreground leading-relaxed flex-1">
+        {/* ⚠️ MEDIDA DE LINHA (Auditoria 21/09, UXP-07). Sem limite, em 1440px
+            este parágrafo abria para 908px — cerca de 151 caracteres por linha,
+            quando o confortável para leitura fica perto de 65. E não é um texto
+            qualquer: é o aviso de consentimento, a primeira coisa que um
+            visitante novo lê, e o único lugar onde explicamos o que guardamos
+            do aparelho dele. Texto que ninguém termina de ler é consentimento
+            que ninguém deu de verdade.
+            `max-w-prose` em vez de largura fixa: acompanha o tamanho da fonte. */}
+        <p className="text-xs text-muted-foreground leading-relaxed flex-1 max-w-prose">
           <strong className="text-foreground">Guardamos algumas coisas no seu aparelho.</strong>{" "}
           O essencial (sessão, tema, suas previsões) não dá para desligar. Opcional: um{" "}
           <strong className="text-foreground/80">identificador aleatório</strong>, sem nome, e-mail

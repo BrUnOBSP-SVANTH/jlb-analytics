@@ -41,7 +41,9 @@ export function ToolIntro({ icon: Icon, tagline, description, example, accuracy 
               </span>
             )}
           </div>
-          <p className="text-sm text-muted-foreground leading-relaxed">{description}</p>
+          {/* `max-w-prose` (UXP-07): em 1440px esta descrição ia a 1.118px —
+              cerca de 160 caracteres por linha. */}
+          <p className="max-w-prose text-sm text-muted-foreground leading-relaxed">{description}</p>
           <p className="text-xs text-primary/80 font-medium mt-2">Exemplo: {example}</p>
         </div>
       </div>

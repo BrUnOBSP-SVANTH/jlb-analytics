@@ -409,6 +409,41 @@ for (const rota of ROTAS) {
     if (placeholdersErrados.length > 0) {
       achados.push(`NÚMERO FORA DO PADRÃO pt-BR EM PLACEHOLDER: ${placeholdersErrados.join(" | ")}`);
     }
+
+    /**
+     * MEDIDA DE LINHA NO DESKTOP LARGO (Auditoria 21/09, UXP-07).
+     *
+     * Parágrafo sem largura máxima ocupa o que a tela der. Medido em 1440px:
+     * o aviso de cookies — o texto de CONSENTIMENTO, o primeiro que um
+     * visitante novo lê — abria para 908px, cerca de 151 caracteres por linha,
+     * e aparecia assim em todas as rotas. Em /mercados a ressalva institucional
+     * chegava a 216. O olho perde a linha de volta e o texto deixa de ser lido;
+     * num site que se sustenta em explicar, isso é a função quebrando em
+     * silêncio.
+     *
+     * ⚠️ O LIMITE É 120, não 65. O confortável para leitura fica perto de 65
+     * caracteres, mas documento denso (termos, política, glossário) vive bem
+     * entre 100 e 120 e reflow em tudo isso seria mexer onde não dói. Acima de
+     * 120 não há caso defensável — e era exatamente onde estavam os defeitos.
+     */
+    const linhasLongas = await p.evaluate(() => {
+      const saida = [];
+      for (const e of document.querySelectorAll("p, li")) {
+        const t = (e.textContent || "").trim();
+        if (t.length < 150) continue;               // texto curto não faz linha longa
+        const r = e.getBoundingClientRect();
+        if (r.width < 600) continue;
+        const tamanho = parseFloat(getComputedStyle(e).fontSize);
+        // ~0,5em por caractere é a regra prática para estimar medida de linha.
+        const caracteres = Math.round(r.width / (tamanho * 0.5));
+        if (caracteres > 120) saida.push(`~${caracteres} car. em "${t.slice(0, 34)}…"`);
+        if (saida.length >= 3) break;
+      }
+      return saida;
+    });
+    if (linhasLongas.length > 0) {
+      achados.push(`LINHA LONGA DEMAIS EM 1280px: ${linhasLongas.join(" | ")} — use max-w-prose`);
+    }
   } catch (e) {
     achados.push(`não carregou: ${String(e.message).slice(0, 120)}`);
   }

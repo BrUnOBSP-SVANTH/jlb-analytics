@@ -736,7 +736,9 @@ export default function Apostas() {
         })()}
 
         {!loading && filtered.length > 0 && viewMode === "list" && (
-          <p className="text-xs text-muted-foreground text-center mb-4">
+          // `max-w-prose` (UXP-07): sem limite, em 1440px esta linha ia a
+          // 1.216px — cerca de 203 caracteres, quando o confortável é ~65.
+          <p className="text-xs text-muted-foreground text-center mb-4 max-w-prose mx-auto">
             A barra é a chance que o mercado dá ao desfecho principal. Clique no título para abrir o
             mercado, ou na seta para ver a nossa análise sem sair da lista.
           </p>
@@ -745,7 +747,9 @@ export default function Apostas() {
         {!loading && (
           <AnimatedSection>
             <div className={`mt-6 p-3 rounded-xl border border-border/15 bg-obsidian/20 ${compareMap.size > 0 ? "mb-44" : ""}`}>
-              <p className="text-[11px] text-muted-foreground text-center leading-relaxed">
+              {/* 216 caracteres por linha antes do limite — e é a ressalva
+                  institucional, justamente o texto que precisa ser lido. */}
+              <p className="text-[11px] text-muted-foreground text-center leading-relaxed max-w-prose mx-auto">
                 Caráter educacional e informativo. Nada aqui é recomendação de posição ou investimento.
                 Prever é errar parte das vezes — é para isso que a plataforma mede e publica os próprios erros.
               </p>

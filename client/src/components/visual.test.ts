@@ -365,3 +365,30 @@ describe("o celular estreito (360px) é medido e cabe", () => {
     expect(fonte).toMatch(/flex-1 min-w-0 basis-56/);
   });
 });
+
+describe("medida de linha no desktop largo", () => {
+  /**
+   * UXP-07. Parágrafo sem largura máxima ocupa o que a tela der. Medido em
+   * 1440px: o aviso de cookies — o texto de CONSENTIMENTO, o primeiro que um
+   * visitante novo lê — abria para 908px, cerca de 151 caracteres por linha, em
+   * todas as rotas. Em /mercados a ressalva institucional chegava a 216.
+   *
+   * O olho perde a linha de volta e o texto deixa de ser lido. Num site que se
+   * sustenta em explicar, é a função quebrando em silêncio — e no caso do aviso
+   * de cookies, é consentimento que ninguém leu de verdade.
+   */
+  it("🔴 o aviso de consentimento tem largura de leitura", () => {
+    const fonte = readFileSync(join(SRC, "components/AvisoDeCookies.tsx"), "utf-8");
+    const paragrafo = fonte.slice(fonte.indexOf("Guardamos algumas coisas") - 400, fonte.indexOf("Guardamos algumas coisas"));
+    expect(paragrafo).toMatch(/max-w-prose/);
+  });
+
+  it("a varredura mede a linha e reclama acima de 120 caracteres", () => {
+    // 120 e não 65: documento denso (termos, política) vive bem entre 100 e
+    // 120, e reflow em tudo isso seria mexer onde não dói. Acima de 120 não há
+    // caso defensável.
+    const varredura = readFileSync(join(SRC, "../../scripts/varredura-telas.mjs"), "utf-8");
+    expect(varredura).toMatch(/caracteres > 120/);
+    expect(varredura).toMatch(/LINHA LONGA DEMAIS/);
+  });
+});

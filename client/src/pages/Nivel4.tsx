@@ -228,7 +228,7 @@ function MaturityCalculator() {
         <TrendingUp className="w-4 h-4 text-primary" />
         <h2 className="font-semibold text-sm text-foreground">Perfil de Maturidade Analítica</h2>
       </div>
-      <p className="text-xs text-muted-foreground">
+      <p className="max-w-prose text-xs text-muted-foreground">
         Combina suas métricas comportamentais para classificar seu estágio analítico
         e indicar o foco de melhoria mais urgente. Dado de impacto para investidores do produto.
       </p>

@@ -49,7 +49,7 @@ export default function LevelNav({ current }: { current: number }) {
             <Target className="w-4 h-4 text-gold" aria-hidden="true" />
             <p className="text-sm font-semibold text-foreground">Trilha concluída. Agora vire forecaster.</p>
           </div>
-          <p className="text-xs text-muted-foreground mb-3 leading-relaxed">
+          <p className="max-w-prose text-xs text-muted-foreground mb-3 leading-relaxed">
             A teoria só vira habilidade quando você registra previsões e mede sua calibração
             (Brier Score) contra o mercado real. É assim que se descobre se você tem vantagem de verdade.
           </p>

@@ -222,7 +222,7 @@ function CorrelationCalculator() {
       </div>
 
       <div className="p-3 rounded-lg border border-warning/30 bg-warning/5">
-        <p className="text-xs text-muted-foreground">
+        <p className="max-w-prose text-xs text-muted-foreground">
           <strong className="text-foreground">Aviso crítico:</strong> correlação mede associação LINEAR.
           Séries temporais não-estacionárias produzem correlações espúrias altíssimas sem nenhuma relação causal real
           (ex.: vendas de sorvete e afogamentos têm r ≈ 0,9 por conta do calor).

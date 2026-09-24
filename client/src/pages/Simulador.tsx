@@ -53,7 +53,11 @@ function SimIntro({ icon: Icon, tagline, description, insight }: {
         </div>
         <div className="space-y-1">
           <p className="text-sm font-semibold text-foreground">{tagline}</p>
-          <p className="text-sm text-muted-foreground leading-relaxed">{description}</p>
+          {/* ⚠️ Este bloco é gêmeo de `ToolIntro` (components/calculadoras/
+              CalcPrimitives.tsx) — mesma estrutura, mesmo defeito de medida de
+              linha (160 caracteres em 1440px), consertado duas vezes. Quem for
+              mexer aqui de novo deve unificar os dois. */}
+          <p className="max-w-prose text-sm text-muted-foreground leading-relaxed">{description}</p>
           <p className="text-xs text-primary/80 font-medium mt-2">O que você vai aprender: {insight}</p>
         </div>
       </div>

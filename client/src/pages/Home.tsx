@@ -701,7 +701,7 @@ export default function Home() {
           </div>
           <div className="mt-8 p-5 rounded-xl border border-border/20 bg-secondary/5 flex items-start gap-3">
             <AlertTriangle className="w-4 h-4 text-warning shrink-0 mt-0.5" aria-hidden="true" />
-            <p className="text-xs text-muted-foreground leading-relaxed">
+            <p className="text-xs text-muted-foreground leading-relaxed max-w-prose">
               A JLB Analytics <strong className="text-foreground">não recomenda posições, apostas ou investimentos</strong>.
               Somos uma plataforma de educação quantitativa — o objetivo é que você faça os cálculos certos antes de qualquer decisão.
             </p>
