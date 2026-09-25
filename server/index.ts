@@ -25,8 +25,6 @@ import { mercadoQueLiquida } from "../shared/liquidacao.ts";
 import { traduzirCatalogo } from "./lib/traducaoCatalogo.ts";
 import { mercadoMereceAlerta } from "./lib/alertasMercado.ts";
 import { emailEnabled } from "./lib/email.ts";
-import { fetchBrapiQuotes } from "./lib/brapi.ts";
-import { fetchYahooQuotes } from "./lib/yahoo.ts";
 
 import marketRouter   from "./routes/market.ts";
 import polymarketRouter from "./routes/polymarket.ts";
@@ -577,7 +575,8 @@ async function startServer() {
     wsClients.add(ws);
     wsAlive.set(ws, true);
     ws.on("pong", () => wsAlive.set(ws, true));
-    void broadcastQuotes();
+    // Aqui havia `void broadcastQuotes()` — uma ida a BRAPI e Yahoo a cada nova
+    // conexão, para uma mensagem que nenhum cliente lê (DES-04).
     ws.on("close", () => wsClients.delete(ws));
     ws.on("error", () => wsClients.delete(ws));
   });
@@ -593,24 +592,6 @@ async function startServer() {
   function broadcast(payload: unknown) {
     const msg = JSON.stringify(payload);
     wsClients.forEach((ws) => { if (ws.readyState === WebSocket.OPEN) ws.send(msg); });
-  }
-
-  async function broadcastQuotes() {
-    if (wsClients.size === 0) return;
-    try {
-      const [brRaw, usRaw] = await Promise.allSettled([
-        fetchBrapiQuotes(["PETR4", "VALE3", "ITUB4"]),
-        fetchYahooQuotes(["AAPL", "MSFT", "^BVSP", "^GSPC"]),
-      ]);
-      broadcast({
-        type: "quotes",
-        updatedAt: new Date().toISOString(),
-        br: brRaw.status === "fulfilled" ? brRaw.value.map((q) => ({ ticker: q.symbol, price: q.regularMarketPrice, change: q.regularMarketChangePercent })) : [],
-        us: usRaw.status === "fulfilled" ? usRaw.value.map((q) => ({ ticker: q.symbol, price: q.regularMarketPrice ?? 0, change: q.regularMarketChangePercent ?? 0 })) : [],
-      });
-    } catch (err) {
-      log.error("[WS] Broadcast error:", err);
-    }
   }
 
   // Detecta variações ≥ ALERT_THRESHOLD_PP nos mercados Polymarket+Kalshi
@@ -754,7 +735,18 @@ async function startServer() {
     }
   }
 
-  setInterval(() => { void broadcastQuotes(); }, 30_000);
+  /**
+   * 🔴 O TIMER DE 30s SAIU (Auditoria 21/09, DES-04).
+   *
+   * `broadcastQuotes` consultava BRAPI e Yahoo a cada 30 segundos — e também a
+   * cada nova conexão — para transmitir uma mensagem `type: "quotes"` que
+   * NENHUM cliente consome (conferido: zero referências no cliente inteiro).
+   *
+   * Ou seja: enquanto alguém tivesse o site aberto, o servidor queimava cota de
+   * duas APIs externas duas vezes por minuto, gastava CPU num plano de 0,1 e
+   * arriscava o IP no Yahoo, tudo para jogar o resultado fora. É o pior tipo de
+   * desperdício — o que não aparece em nenhuma tela para alguém notar.
+   */
   setInterval(() => { void broadcastMarketAlerts(); }, 90_000); // 90s: preços ao vivo + alertas
 
   // ── Start ──────────────────────────────────────────────────────────────────

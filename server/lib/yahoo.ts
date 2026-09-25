@@ -1,11 +1,7 @@
 import { getCache, setCache } from "./cache.ts";
 import { fetchJSON } from "./fetcher.ts";
 
-export interface YahooQuote {
-  symbol: string; shortName?: string; longName?: string;
-  regularMarketPrice?: number; regularMarketChange?: number; regularMarketChangePercent?: number;
-  trailingPE?: number; priceToBook?: number; dividendYield?: number;
-}
+
 interface YahooCrumb { crumb: string; cookie: string }
 let yahooCrumb: YahooCrumb | null = null;
 
@@ -58,21 +54,9 @@ export async function fetchYahooHistory(ticker: string, intervalMonths = 12): Pr
   } catch { return []; }
 }
 
-export async function fetchYahooQuotes(tickers: string[]): Promise<YahooQuote[]> {
-  const cacheKey = `yahoo:${tickers.sort().join(",")}`;
-  const cached = getCache<YahooQuote[]>(cacheKey);
-  if (cached) return cached;
-  try {
-    const crumb = await getYahooCrumb();
-    const url = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${tickers.join(",")}&fields=shortName,longName,regularMarketPrice,regularMarketChange,regularMarketChangePercent,trailingPE,priceToBook,dividendYield&crumb=${crumb?.crumb ?? ""}`;
-    const headers: Record<string, string> = {
-      "User-Agent": "Mozilla/5.0",
-      ...(crumb ? { Cookie: crumb.cookie } : {}),
-    };
-    interface YahooResponse { quoteResponse: { result: YahooQuote[] } }
-    const data = await fetchJSON<YahooResponse>(url, headers);
-    const results = data.quoteResponse?.result ?? [];
-    setCache(cacheKey, results, 60);
-    return results;
-  } catch { return []; }
-}
+/**
+ * 🔴 `fetchYahooQuotes` SAIU (Auditoria 21/09, DES-04). O único consumidor era o
+ * `broadcastQuotes`, que transmitia cotações a cada 30 segundos para uma
+ * mensagem que nenhum cliente lia. Ficou só o histórico, que a aba de correlação
+ * do Nível 2 usa de verdade.
+ */
