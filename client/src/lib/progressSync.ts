@@ -33,6 +33,8 @@ interface DbProgress {
   total_points: number;
   activities: ActivityEntry[] | null;
   one_time_done: string[] | null;
+  /** Níveis com exercício resolvido (APR-01, migração 048). */
+  levels_completed?: number[] | null;
   updated_at: string;
 }
 
@@ -45,11 +47,25 @@ export function mergeProgress(local: UserProgress, remote: DbProgress): UserProg
     .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
     .slice(0, 200);
 
+  /**
+   * 🔴 A TRILHA TAMBÉM (Auditoria 21/09, APR-01). Este objeto era montado sem
+   * `levelsCompleted`, então todo PULL devolvia `undefined` e apagava os níveis
+   * concluídos do aparelho que sincronizou. Quem estudasse no computador e
+   * entrasse no celular não só não via o avanço: perdia o que tinha ali.
+   *
+   * UNIÃO, e não "o maior": concluir o nível 3 no celular e o 4 no computador
+   * tem que dar os dois. É a mesma lógica de `oneTimeDone` logo acima.
+   */
+  const levelsCompleted = Array.from(
+    new Set([...(local.levelsCompleted ?? []), ...(remote.levels_completed ?? [])]),
+  ).sort((a, b) => a - b);
+
   return {
     totalPoints: Math.max(local.totalPoints, remote.total_points ?? 0),
     activities,
     oneTimeDone,
     dailyCounts: local.dailyCounts,
+    levelsCompleted,
   };
 }
 
@@ -96,6 +112,8 @@ export async function pushProgress(userId: string): Promise<void> {
         total_points: p.totalPoints,
         activities: p.activities,
         one_time_done: p.oneTimeDone,
+        // APR-01: sem esta linha a trilha ficava só no aparelho.
+        levels_completed: p.levelsCompleted ?? [],
         updated_at: new Date().toISOString(),
       },
       { onConflict: "user_id" },

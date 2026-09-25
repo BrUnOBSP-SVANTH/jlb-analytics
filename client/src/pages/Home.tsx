@@ -143,10 +143,25 @@ function LiveMarketCard({ market }: { market: LiveMarket }) {
 // Título de shared/niveis.ts (TXT-02): a home dizia "Vieses" e "Integrado" para
 // o que a página chama de "Vieses e Psicologia" e "Análise Integrada".
 const ICONES_DO_NIVEL = [GraduationCap, BarChart3, TrendingUp, Brain, GitMerge];
+/**
+ * 🔴 OS CINCO ESTÃO ABERTOS (Auditoria 21/09, APR-01).
+ *
+ * A home dizia "conclua 3 níveis" no Nível 4 e "conclua 4 níveis" no Nível 5,
+ * com borda tracejada e ícone apagado — e o link ABRIA o nível assim mesmo.
+ * Era o pior dos três mundos: parecia trancado, dizia trancado e não estava.
+ *
+ * Trava não existe desde a auditoria de 14/09 (item 4), e as outras telas já
+ * contam a verdade: /educacao diz "os cinco níveis são gratuitos e estão
+ * abertos desde o começo". Quem chega pela home via o oposto, na primeira tela
+ * — e "dois quintos do conteúdo estão fechados" é exatamente o tipo de coisa
+ * que faz alguém não começar.
+ *
+ * No lugar do aviso falso, o que a pessoa realmente precisa para escolher por
+ * onde entrar: o assunto de cada nível, de `shared/niveis.ts`.
+ */
 const LEVELS = NIVEIS.map((nv, i) => ({
   n: nv.n, title: nv.titulo, href: nv.href, icon: ICONES_DO_NIVEL[i],
-  aberto: nv.n <= 3,
-  nota: nv.n <= 3 ? "aberto" : `conclua ${nv.n - 1} níveis`,
+  nota: nv.resumo,
 }));
 
 const HOW_IT_WORKS = [
@@ -596,14 +611,10 @@ export default function Home() {
               const Icon = level.icon;
               return (
                 <Link key={level.n} href={level.href} onClick={() => track("cta_click", { id: "home_nivel_card", nivel: level.n })}>
-                  <div className={`h-full p-4 rounded-xl border transition-colors cursor-pointer ${
-                    level.aberto
-                      ? "border-border/40 hover:border-primary/40"
-                      : "border-dashed border-border/50 hover:border-border/80"
-                  }`}>
+                  <div className="h-full p-4 rounded-xl border border-border/40 hover:border-primary/40 transition-colors cursor-pointer">
                     <div className="flex items-center gap-2.5 mb-2.5">
                       <span className="font-mono text-[0.8125rem] tabular-nums text-muted-foreground">{level.n}</span>
-                      <Icon className={`w-4 h-4 shrink-0 ${level.aberto ? "text-primary" : "text-muted-foreground"}`} aria-hidden="true" />
+                      <Icon className="w-4 h-4 shrink-0 text-primary" aria-hidden="true" />
                     </div>
                     <p className="text-sm text-foreground leading-snug">{level.title}</p>
                     <p className="text-[0.8125rem] text-muted-foreground mt-1.5">{level.nota}</p>

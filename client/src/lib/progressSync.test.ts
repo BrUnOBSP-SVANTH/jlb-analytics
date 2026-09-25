@@ -68,3 +68,34 @@ describe("mergeProgress — trocar de aparelho não pode custar progresso", () =
     expect(r.oneTimeDone).toEqual([]);
   });
 });
+
+describe("🔴 a trilha também viaja entre aparelhos (APR-01)", () => {
+  /**
+   * Desde a auditoria de 14/09, "nível concluído" significa "resolveu um
+   * exercício dele" — e essa informação vive em `levelsCompleted`. Ela nunca
+   * subiu para a nuvem: a tabela não tinha a coluna e o push não a enviava.
+   *
+   * O pior não era a falta de sincronia. Este merge montava o objeto a partir
+   * dos campos que conhecia, e não conhecia este — então o campo voltava
+   * `undefined` e CADA PULL APAGAVA a trilha do aparelho que sincronizou. Quem
+   * estudasse no computador e entrasse no celular perdia o avanço que tinha
+   * ali. Medido antes do conserto: [1,2,3] entrava e `undefined` saía.
+   */
+  it("o pull não apaga mais os níveis concluídos", () => {
+    const r = mergeProgress(local({ levelsCompleted: [1, 2, 3] }), nuvem());
+    expect(r.levelsCompleted).toEqual([1, 2, 3]);
+  });
+
+  it("une os dois aparelhos, em ordem e sem repetir", () => {
+    // Concluir o 3 no celular e o 4 no computador tem que dar os dois — é a
+    // mesma lógica dos marcos únicos.
+    const r = mergeProgress(local({ levelsCompleted: [3, 1] }), nuvem({ levels_completed: [4, 3] }));
+    expect(r.levelsCompleted).toEqual([1, 3, 4]);
+  });
+
+  it("nuvem antiga, sem a coluna, não derruba o que é local", () => {
+    // Linha gravada antes da migração 048 volta sem o campo.
+    const r = mergeProgress(local({ levelsCompleted: [2] }), nuvem({ levels_completed: undefined }));
+    expect(r.levelsCompleted).toEqual([2]);
+  });
+});

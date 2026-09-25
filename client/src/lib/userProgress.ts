@@ -96,6 +96,58 @@ const DAILY_LIMITS: Partial<Record<ActivityType, number>> = {
   market_analyzed: 3,
 };
 
+/**
+ * COMO GANHAR PONTOS — a lista que a tela mostra, montada a partir da REGRA.
+ *
+ * O QUE ACONTECIA (Auditoria 21/09, APR-01). A tabela do Perfil era uma lista
+ * fixa no JSX. Ela prometia "+10 por visitar um novo nível" quando a regra dá
+ * +2 — o toast na tela mostrava "+2 pts" logo depois de a tabela prometer 10 —
+ * e simplesmente OMITIA "resolver exercício", que vale 10 e é a atividade que
+ * o site mais quer que aconteça. Também omitia a vitória em duelo.
+ *
+ * Duas listas para a mesma verdade divergem; foi o que aconteceu. Agora existe
+ * uma só: quem muda `POINTS` muda a tela junto, sem lembrar de nada.
+ */
+export interface ComoGanharPontos {
+  tipo: ActivityType;
+  rotulo: string;
+  pontos: number;
+  limite: string;
+}
+
+/** O nome de cada atividade para quem lê — o resto vem de POINTS/DAILY_LIMITS. */
+const ROTULO: Record<ActivityType, string> = {
+  prediction_made: "Registrar uma previsão",
+  prediction_resolved: "Resolver uma previsão",
+  calculator_used: "Usar uma calculadora",
+  market_analyzed: "Analisar mercado com IA",
+  level_visited: "Visitar um novo nível",
+  exercise_done: "Resolver um exercício",
+  first_login: "Primeiro acesso à plataforma",
+  duel_won: "Vencer um duelo de previsão",
+};
+
+/** Quando o limite não é diário, é este — e ele também precisa ser verdade. */
+const LIMITE_ESPECIAL: Partial<Record<ActivityType, string>> = {
+  level_visited: "uma vez por nível",
+  exercise_done: "uma vez por exercício",
+  first_login: "uma vez",
+  duel_won: "uma vez por duelo",
+};
+
+export function comoGanharPontos(): ComoGanharPontos[] {
+  return (Object.keys(POINTS) as ActivityType[])
+    .map((tipo) => ({
+      tipo,
+      rotulo: ROTULO[tipo],
+      pontos: POINTS[tipo],
+      limite: LIMITE_ESPECIAL[tipo] ?? (DAILY_LIMITS[tipo] ? `máx ${DAILY_LIMITS[tipo]}/dia` : "sem limite"),
+    }))
+    // Mais pontos primeiro: a lista passa a dizer o que o site quer que a
+    // pessoa faça, em vez de repetir a ordem em que alguém escreveu o objeto.
+    .sort((a, b) => b.pontos - a.pontos);
+}
+
 
 // ── Storage ───────────────────────────────────────────────────────────────────
 

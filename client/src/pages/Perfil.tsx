@@ -14,15 +14,31 @@ import AnimatedSection from "@/components/AnimatedSection";
 import { useSEO } from "@/hooks/useSEO";
 import { useAuth } from "@/contexts/AuthContext";
 import { plural, num } from "@shared/formato";
-import { loadProgress, niveisConcluidos, type ActivityType } from "@/lib/userProgress";
+import { loadProgress, niveisConcluidos, comoGanharPontos, type ActivityType } from "@/lib/userProgress";
 import { loadPredictions, meanBrierScore, skillScore } from "@/lib/predictions";
 import { pullFromSupabase } from "@/lib/predictionsSync";
 import { pullProgress } from "@/lib/progressSync";
 import {
   LogIn, Star, Trophy, Target, CheckCircle, X as XIcon,
   Zap, Calculator, Brain, BarChart2, TrendingUp, ArrowRight,
-  Calendar, Clock, BookOpen,
+  Calendar, Clock, BookOpen, Swords,
 } from "lucide-react";
+
+/**
+ * O ícone é escolha da TELA; ponto e limite vêm da regra (APR-01).
+ * Se uma atividade nova nascer sem ícone aqui, a estrela genérica cobre — a
+ * lista não some por causa de um desenho que faltou.
+ */
+const ICONE_DA_ATIVIDADE: Partial<Record<ActivityType, typeof Star>> = {
+  prediction_made: Target,
+  prediction_resolved: CheckCircle,
+  calculator_used: Calculator,
+  market_analyzed: Brain,
+  level_visited: BookOpen,
+  exercise_done: Trophy,
+  first_login: Star,
+  duel_won: Swords,
+};
 import { BadgesSection, type BadgeContext } from "@/components/perfil/badges";
 import { PremiumUpgrade } from "@/components/perfil/PremiumUpgrade";
 import { CotaDeAnalises } from "@/components/perfil/CotaDeAnalises";
@@ -98,13 +114,20 @@ function GuestPrompt() {
   );
 }
 
-function PointsBar({ points, target }: { points: number; target: number }) {
-  const pct = Math.min(100, Math.round((points / target) * 100));
+/**
+ * ⚠️ A UNIDADE É PARÂMETRO (Auditoria 21/09, APR-01). Esta barra nasceu para
+ * contar pontos e passou a contar NÍVEIS quando a régua mudou (NVL-01) — mas o
+ * "pts" continuou escrito no código. O resultado era "Progresso na trilha:
+ * 0 pts / 5 pts" para uma barra que media níveis concluídos, com a legenda logo
+ * abaixo dizendo "0 níveis concluídos de 5". A mesma barra, duas unidades.
+ */
+function BarraDeProgresso({ atual, alvo, unidade }: { atual: number; alvo: number; unidade: string }) {
+  const pct = Math.min(100, Math.round((atual / alvo) * 100));
   return (
     <div>
       <div className="flex justify-between text-xs text-muted-foreground mb-1">
-        <span>{points} pts</span>
-        <span>{target} pts</span>
+        <span>{atual} {unidade}</span>
+        <span>{alvo} {unidade}</span>
       </div>
       <div className="h-2 rounded-full bg-secondary/40 overflow-hidden">
         <div
@@ -267,7 +290,7 @@ export default function Perfil() {
                 Um nível conta como concluído quando você <span className="text-foreground">resolve um exercício</span> dele.
                 Os cinco estão abertos desde o começo — a ordem é só uma sugestão.
               </p>
-              <PointsBar points={concluidos} target={5} />
+              <BarraDeProgresso atual={concluidos} alvo={5} unidade="níveis" />
               <p className="text-xs text-muted-foreground text-center">
                 {plural(concluidos, "nível concluído", "níveis concluídos")} de 5.
               </p>
@@ -476,23 +499,25 @@ export default function Perfil() {
               <h2 className="font-semibold text-[var(--titulo)]">Como ganhar pontos</h2>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-              {[
-                { icon: Target,      label: "Registrar uma previsão",      pts: "+5",  limit: "máx 3/dia" },
-                { icon: CheckCircle, label: "Resolver uma previsão",        pts: "+5",  limit: "máx 3/dia" },
-                { icon: Calculator,  label: "Usar uma calculadora",         pts: "+2",  limit: "máx 5/dia" },
-                { icon: Brain,       label: "Analisar mercado com IA",      pts: "+3",  limit: "máx 3/dia" },
-                { icon: BookOpen,    label: "Visitar um novo nível",        pts: "+10", limit: "uma vez/nível" },
-                { icon: Star,        label: "Primeiro acesso à plataforma", pts: "+10", limit: "uma vez" },
-              ].map(({ icon: Icon, label, pts, limit }) => (
-                <div key={label} className="flex items-center gap-3 p-3 rounded-lg bg-secondary/10 border border-border/10">
-                  <Icon className="w-4 h-4 text-gold shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs font-medium text-foreground">{label}</p>
-                    <p className="text-[11px] text-muted-foreground">{limit}</p>
+              {/* 🔴 A LISTA VEM DA REGRA (Auditoria 21/09, APR-01). Era fixa aqui
+                  e divergia: prometia "+10 por visitar um novo nível" quando a
+                  regra dá +2 — o toast mostrava "+2 pts" logo depois —, e
+                  omitia "resolver um exercício", que vale 10 e é justamente a
+                  atividade que o site mais quer que aconteça. O ícone continua
+                  sendo escolha da tela; ponto e limite vêm de userProgress. */}
+              {comoGanharPontos().map(({ tipo, rotulo, pontos, limite }) => {
+                const Icon = ICONE_DA_ATIVIDADE[tipo] ?? Star;
+                return (
+                  <div key={tipo} className="flex items-center gap-3 p-3 rounded-lg bg-secondary/10 border border-border/10">
+                    <Icon className="w-4 h-4 text-gold shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-medium text-foreground">{rotulo}</p>
+                      <p className="text-[11px] text-muted-foreground">{limite}</p>
+                    </div>
+                    <span className="text-sm font-bold text-gold">+{pontos}</span>
                   </div>
-                  <span className="text-sm font-bold text-gold">{pts}</span>
-                </div>
-              ))}
+                );
+              })}
             </div>
             <div className="mt-2 p-3 rounded-lg bg-primary/5 border border-primary/10">
               <p className="text-xs text-muted-foreground text-center">
