@@ -43,6 +43,11 @@ export const EVENTOS = [
   // "limite" (429) ou "erro". A análise exige conta, então "barrada" mede
   // quantos visitantes bateram no muro do cadastro no momento de valor.
   "analise_ia",
+  // A checagem que conclui um nível da trilha (APR-02). `meta.acertos` e
+  // `meta.total` dizem quantas a pessoa acertou — é o que permite descobrir se
+  // alguma pergunta está mal escrita (todo mundo errando a mesma) em vez de a
+  // matéria ser difícil.
+  "checagem_nivel",
 ] as const;
 
 export type Evento = (typeof EVENTOS)[number];

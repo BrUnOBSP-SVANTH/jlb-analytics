@@ -260,6 +260,34 @@ export function niveisConcluidos(): number[] {
   return [...(loadProgress().levelsCompleted ?? [])].sort((a, b) => a - b);
 }
 
+/** Os três estados que um nível pode ter para quem está olhando o mapa. */
+export type EstadoDoNivel = "nao_iniciado" | "em_andamento" | "concluido";
+
+/**
+ * Em que pé está cada nível (Auditoria 21/09, APR-02).
+ *
+ * O mapa só sabia dizer SIM ou NÃO — concluído ou nada —, e com isso quem tinha
+ * lido três níveis sem fazer as checagens via a mesma tela de quem nunca abriu
+ * o site. "Em andamento" é a informação que faz a pessoa voltar: ela mostra
+ * onde ela parou, em vez de um vazio que parece recomeço.
+ *
+ * "Começou" = a visita já registrada em `oneTimeDone` desde sempre; o dado
+ * existia e ninguém usava.
+ */
+export function estadoDoNivel(n: number): EstadoDoNivel {
+  const p = loadProgress();
+  if ((p.levelsCompleted ?? []).includes(n)) return "concluido";
+  if (p.oneTimeDone.includes(`level_visited_${n}`)) return "em_andamento";
+  return "nao_iniciado";
+}
+
+/** O rótulo de cada estado, em português, num lugar só. */
+export const ROTULO_DO_ESTADO: Record<EstadoDoNivel, string> = {
+  nao_iniciado: "não iniciado",
+  em_andamento: "em andamento",
+  concluido: "concluído",
+};
+
 /**
  * Marca um nível como concluído — chamada quando um EXERCÍCIO é resolvido.
  *

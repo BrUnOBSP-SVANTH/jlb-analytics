@@ -15,6 +15,7 @@ import LevelNav from "@/components/LevelNav";
 import PageHeader from "@/components/PageHeader";
 import { num } from "@shared/formato";
 import { rotuloDoNivel } from "@shared/niveis";
+import { ChecagemDeAprendizagem } from "@/components/ChecagemDeAprendizagem";
 
 interface TaylorResult { selic_observed: number; taylor_implied: number; divergence_pp: number; signal: string; explanation: string; }
 interface PoissonResult { p_home_win: number; p_draw: number; p_away_win: number; lambda_home: number; lambda_away: number; top_scores: { score: string; probability: number }[]; explanation: string; }
@@ -344,6 +345,9 @@ export default function Nivel3() {
         <EnsoCalculator />
         <EloCalculator />
       </div>
+
+      {/* APR-02: é a checagem que conclui o nível — não a calculadora. */}
+      <ChecagemDeAprendizagem nivel={3} titulo="Concluiu o Nível 3 — Modelos Básicos" />
 
       <LevelNav current={3} />
     </div>

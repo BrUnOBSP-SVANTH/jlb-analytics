@@ -16,6 +16,7 @@ import LevelNav from "@/components/LevelNav";
 import PageHeader from "@/components/PageHeader";
 import { num } from "@shared/formato";
 import { rotuloDoNivel } from "@shared/niveis";
+import { ChecagemDeAprendizagem } from "@/components/ChecagemDeAprendizagem";
 
 interface ZResult { z: number; p_two_tail: number; signal: string; explanation: string; }
 interface CIResult { lower: number; upper: number; margin: number; se: number; dist_used: string; level_pct: number; signal: string; explanation: string; }
@@ -293,6 +294,9 @@ export default function Nivel2() {
         <CICalculator />
         <CorrelationCalculator />
       </div>
+
+      {/* APR-02: é a checagem que conclui o nível — não a calculadora. */}
+      <ChecagemDeAprendizagem nivel={2} titulo="Concluiu o Nível 2 — Leitura de Dados" />
 
       <LevelNav current={2} />
     </div>

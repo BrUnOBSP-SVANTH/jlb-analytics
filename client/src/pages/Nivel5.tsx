@@ -15,6 +15,7 @@ import LevelNav from "@/components/LevelNav";
 import PageHeader from "@/components/PageHeader";
 import { num } from "@shared/formato";
 import { rotuloDoNivel } from "@shared/niveis";
+import { ChecagemDeAprendizagem } from "@/components/ChecagemDeAprendizagem";
 
 interface DivergenceResult {
   divergence_pct: number; signal: string; label: string;
@@ -302,6 +303,9 @@ export default function Nivel5() {
           <EnsembleCalculator />
         </div>
       </div>
+
+      {/* APR-02: é a checagem que conclui o nível — não a calculadora. */}
+      <ChecagemDeAprendizagem nivel={5} titulo="Concluiu o Nível 5 — Análise Integrada" />
 
       <LevelNav current={5} />
     </div>

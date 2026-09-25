@@ -14,7 +14,7 @@ import AnimatedSection from "@/components/AnimatedSection";
 import { useSEO } from "@/hooks/useSEO";
 import { useAuth } from "@/contexts/AuthContext";
 import { plural, num } from "@shared/formato";
-import { loadProgress, niveisConcluidos, comoGanharPontos, type ActivityType } from "@/lib/userProgress";
+import { loadProgress, niveisConcluidos, comoGanharPontos, estadoDoNivel, ROTULO_DO_ESTADO, type ActivityType } from "@/lib/userProgress";
 import { loadPredictions, meanBrierScore, skillScore } from "@/lib/predictions";
 import { pullFromSupabase } from "@/lib/predictionsSync";
 import { pullProgress } from "@/lib/progressSync";
@@ -308,24 +308,27 @@ export default function Perfil() {
               <h2 className="font-semibold text-[var(--titulo)]">Mapa de Progressão</h2>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-5 gap-3">
+              {/* TRÊS ESTADOS, não dois (APR-02). O mapa só sabia dizer
+                  "concluído" ou nada, e quem tinha lido três níveis sem fazer
+                  as checagens via a mesma tela de quem nunca abriu o site.
+                  "Em andamento" é o que faz a pessoa voltar: diz onde ela
+                  parou, em vez de um vazio que parece recomeço. */}
               {LEVELS.map((lvl) => {
-                // Concluído = exercício resolvido, a mesma régua do Dashboard. Antes
-                // era "visitou a página" e o nível trancava por pontos.
-                const feito = feitos.includes(lvl.n);
+                const estado = estadoDoNivel(lvl.n);
+                const visual = {
+                  concluido:    { borda: "border-positive/30 bg-positive/5 hover:border-positive/50", icone: <CheckCircle className="w-5 h-5 text-positive" aria-hidden="true" /> },
+                  em_andamento: { borda: "border-primary/25 bg-primary/5 hover:border-primary/50",    icone: <Clock className="w-5 h-5 text-primary" aria-hidden="true" /> },
+                  nao_iniciado: { borda: "border-border/25 hover:border-border/50",                   icone: <ArrowRight className="w-5 h-5 text-muted-foreground" aria-hidden="true" /> },
+                }[estado];
                 return (
                   <Link key={lvl.n} href={lvl.href}>
-                    <div className={`p-4 rounded-xl border text-center transition-colors ${
-                      feito
-                        ? "border-positive/30 bg-positive/5 hover:border-positive/50"
-                        : "border-primary/20 bg-primary/5 hover:border-primary/40"
-                    }`}>
-                      <div className="flex items-center justify-center mb-2">
-                        {feito
-                          ? <CheckCircle className="w-5 h-5 text-positive" aria-label="Concluído" />
-                          : <ArrowRight className="w-5 h-5 text-primary" />}
-                      </div>
+                    <div className={`p-4 rounded-xl border text-center transition-colors ${visual.borda}`}>
+                      <div className="flex items-center justify-center mb-2">{visual.icone}</div>
                       <p className="text-xs font-semibold text-foreground">Nível {lvl.n}</p>
                       <p className="text-[11px] text-muted-foreground mt-0.5">{lvl.title}</p>
+                      {/* O estado escrito, e não só pela cor: quem não
+                          distingue verde de dourado precisa ler. */}
+                      <p className="text-[11px] text-muted-foreground mt-1.5">{ROTULO_DO_ESTADO[estado]}</p>
                     </div>
                   </Link>
                 );

@@ -15,6 +15,7 @@ import LevelNav from "@/components/LevelNav";
 import PageHeader from "@/components/PageHeader";
 import { num } from "@shared/formato";
 import { rotuloDoNivel } from "@shared/niveis";
+import { ChecagemDeAprendizagem } from "@/components/ChecagemDeAprendizagem";
 
 interface ProspectResult { ev_objective: number; subjective_value: number; gap: number; loss_aversion_lambda: number; signal: string; bias_diagnosis: string; explanation: string; }
 interface BrierResult { brier_score: number; skill_score: number; resolution: number; reliability: number; n: number; stable: boolean; signal: string; explanation: string; calibration_by_decile?: { confidence_range: string; avg_confidence: number; actual_accuracy: number; n: number; calibration_error: number }[]; }
@@ -324,6 +325,9 @@ export default function Nivel4() {
         <GamblerCalculator />
         <MaturityCalculator />
       </div>
+
+      {/* APR-02: é a checagem que conclui o nível — não a calculadora. */}
+      <ChecagemDeAprendizagem nivel={4} titulo="Concluiu o Nível 4 — Vieses e Psicologia" />
 
       <LevelNav current={4} />
     </div>

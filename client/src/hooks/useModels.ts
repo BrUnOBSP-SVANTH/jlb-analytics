@@ -5,7 +5,7 @@
  */
 
 import { useState, useCallback } from "react";
-import { niveisConcluidos, concluirNivel } from "@/lib/userProgress";
+import { niveisConcluidos } from "@/lib/userProgress";
 
 type ModelState<T> = {
   data: T | null;
@@ -38,19 +38,6 @@ function nivelDeAcesso(): number {
  * por isso a conclusão é marcada aqui, e não espalhada por cinco páginas com
  * dezenas de botões, onde alguém esqueceria um e o nível nunca fecharia.
  */
-function nivelDoEndpoint(endpoint: string): number | null {
-  const m = /\/level([1-5])\//.exec(endpoint);
-  return m ? Number(m[1]) : null;
-}
-
-const NOME_DO_NIVEL: Record<number, string> = {
-  1: "Resolveu um exercício do Nível 1 — Fundamentos",
-  2: "Resolveu um exercício do Nível 2 — Leitura de Dados",
-  3: "Resolveu um exercício do Nível 3 — Modelos Básicos",
-  4: "Resolveu um exercício do Nível 4 — Vieses",
-  5: "Resolveu um exercício do Nível 5 — Análise Integrada",
-};
-
 const OFFLINE_MSG =
   "Serviço de cálculo indisponível no momento. Tente novamente em instantes.";
 
@@ -128,13 +115,20 @@ export function useModelCall<T>(endpoint: string) {
       const { data, error } = await callModel<T>(endpoint, body);
       setState({ data, loading: false, error });
 
-      // Exercício resolvido — só quando o cálculo VOLTOU. Erro de rede não é
-      // aprendizado, e marcar na tentativa traria de volta o defeito que esta
-      // mudança conserta: progresso por clique.
-      if (data && !error) {
-        const nivel = nivelDoEndpoint(endpoint);
-        if (nivel) concluirNivel(nivel, NOME_DO_NIVEL[nivel]);
-      }
+      /**
+       * 🔴 CALCULAR NÃO CONCLUI MAIS O NÍVEL (Auditoria 21/09, APR-02).
+       *
+       * Aqui havia `concluirNivel(...)` quando a calculadora respondia. Já foi
+       * melhor do que era (antes bastava ABRIR a página), mas apertar
+       * "calcular" com os valores que já estavam no campo não é aprendizado —
+       * é um clique com mais passos. E "nível concluído" é o que mede a
+       * trilha, vale 10 pontos e diz à pessoa onde ela está.
+       *
+       * Quem conclui agora é a checagem de aprendizagem do fim da página
+       * (components/ChecagemDeAprendizagem.tsx): três perguntas, dois acertos.
+       * Usar a calculadora continua valendo pontos pelo que é — uso de
+       * calculadora — no caminho de sempre.
+       */
       return { data, error };
     },
     [endpoint, callModel],

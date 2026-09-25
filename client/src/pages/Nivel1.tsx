@@ -16,6 +16,7 @@ import LevelNav from "@/components/LevelNav";
 import PageHeader from "@/components/PageHeader";
 import { num } from "@shared/formato";
 import { rotuloDoNivel } from "@shared/niveis";
+import { ChecagemDeAprendizagem } from "@/components/ChecagemDeAprendizagem";
 
 // ─── Tipos de resposta da API ─────────────────────────────────────────────────
 interface EVResult {
@@ -382,6 +383,9 @@ export default function Nivel1() {
           em vez de ancorar em opiniões antigas.
         </div>
       </div>
+
+      {/* APR-02: é a checagem que conclui o nível — não a calculadora. */}
+      <ChecagemDeAprendizagem nivel={1} titulo="Concluiu o Nível 1 — Fundamentos" />
 
       <LevelNav current={1} />
     </div>

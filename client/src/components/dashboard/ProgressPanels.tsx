@@ -10,10 +10,11 @@ import { MIN_AMOSTRA } from "@shared/referencias";
 import { MODEL_COUNT } from "@/lib/brand";
 import {
   GraduationCap, BarChart3, TrendingUp, Brain, GitMerge, CheckCircle,
-  ArrowRight, AlertCircle, Activity, Trophy, Target, Sparkles,
+  ArrowRight, AlertCircle, Activity, Trophy, Target, Sparkles, Clock,
 } from "lucide-react";
 import { loadPredictions, meanBrierScore } from "@/lib/predictions";
 import { NIVEIS } from "@shared/niveis";
+import { estadoDoNivel } from "@/lib/userProgress";
 
 /**
  * Nenhum nível é trancado (auditoria de 14/09, item 4). Este mapa trancava os
@@ -47,28 +48,39 @@ export function LevelMap({ feitos }: { feitos: number[] }) {
         <span className="text-xs text-muted-foreground">{feitos.length} de 5 concluídos</span>
       </div>
       <div className="space-y-2">
+        {/* TRÊS ESTADOS (APR-02): o mapa dizia "Concluído" ou nada, e quem
+            estava no meio da trilha via a mesma linha de quem nunca entrou. */}
         {LEVELS.map((level) => {
           const Icon = level.icon;
-          const feito = feitos.includes(level.n);
+          const estado = estadoDoNivel(level.n);
+          const borda = estado === "concluido"
+            ? "border-positive/25 bg-positive/5 hover:border-positive/45"
+            : estado === "em_andamento"
+              ? "border-primary/20 bg-primary/5 hover:border-primary/40"
+              : "border-border/25 hover:border-border/50";
           return (
             <Link key={level.n} href={level.href}>
-              <div className={`flex items-center gap-3 p-3 rounded-lg border transition-colors cursor-pointer
-                ${feito ? "border-positive/25 bg-positive/5 hover:border-positive/45" : "border-primary/20 bg-primary/5 hover:border-primary/40"}`}>
+              <div className={`flex items-center gap-3 p-3 rounded-lg border transition-colors cursor-pointer ${borda}`}>
                 <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-primary/10">
                   <Icon className={`w-4 h-4 ${level.color}`} aria-hidden="true" />
                 </div>
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-xs text-muted-foreground">Nível {level.n}</span>
-                    {feito && (
+                    {estado === "concluido" && (
                       <span className="inline-flex items-center gap-1 text-xs text-positive font-medium">
                         <CheckCircle className="w-3 h-3" aria-hidden="true" /> Concluído
+                      </span>
+                    )}
+                    {estado === "em_andamento" && (
+                      <span className="inline-flex items-center gap-1 text-xs text-primary font-medium">
+                        <Clock className="w-3 h-3" aria-hidden="true" /> Em andamento
                       </span>
                     )}
                   </div>
                   <p className="text-sm font-medium text-foreground">{level.title}</p>
                 </div>
-                <ArrowRight className="w-3.5 h-3.5 text-muted-foreground" />
+                <ArrowRight className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
               </div>
             </Link>
           );
