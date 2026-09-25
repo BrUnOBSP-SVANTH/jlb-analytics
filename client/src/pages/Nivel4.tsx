@@ -16,6 +16,7 @@ import PageHeader from "@/components/PageHeader";
 import { num } from "@shared/formato";
 import { rotuloDoNivel } from "@shared/niveis";
 import { ChecagemDeAprendizagem } from "@/components/ChecagemDeAprendizagem";
+import { idDoCampo } from "@/lib/campo";
 
 interface ProspectResult { ev_objective: number; subjective_value: number; gap: number; loss_aversion_lambda: number; signal: string; bias_diagnosis: string; explanation: string; }
 interface BrierResult { brier_score: number; skill_score: number; resolution: number; reliability: number; n: number; stable: boolean; signal: string; explanation: string; calibration_by_decile?: { confidence_range: string; avg_confidence: number; actual_accuracy: number; n: number; calibration_error: number }[]; }
@@ -46,17 +47,17 @@ function ProspectCalculator() {
         <h2 className="font-semibold text-sm text-foreground">Prospect Theory — Como o cérebro avalia risco</h2>
       </div>
       <p className="text-xs text-muted-foreground">
-        Kahneman & Tversky (1992): perdas psicologicamente pesam 2.25× mais que ganhos equivalentes.
+        Kahneman e Tversky (1992): perdas psicologicamente pesam 2,25× mais que ganhos equivalentes.
         Isso explica por que apostadores aceitam EV negativo quando há chance de recuperar perdas.
       </p>
       <div className="space-y-2">
         {rows.map((row, i) => (
           <div key={i} className="grid grid-cols-2 gap-2">
-            <input type="number" value={row.outcome}
+            <input type="number" value={row.outcome} aria-label={`Resultado ${i + 1} em reais`}
               onChange={(e) => setRows((p) => p.map((r, idx) => idx === i ? { ...r, outcome: e.target.value } : r))}
               placeholder="Resultado R$"
               className="px-3 py-2 rounded-lg bg-secondary/50 border border-border/50 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary" />
-            <input type="number" value={row.probability} step="0.01" min="0" max="1"
+            <input type="number" value={row.probability} step="0.01" min="0" max="1" aria-label={`Probabilidade do resultado ${i + 1}, de 0 a 1`}
               onChange={(e) => setRows((p) => p.map((r, idx) => idx === i ? { ...r, probability: e.target.value } : r))}
               placeholder="Probabilidade"
               className="px-3 py-2 rounded-lg bg-secondary/50 border border-border/50 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary" />
@@ -121,8 +122,8 @@ function BrierCalculator() {
           { label: "Resultados reais (0 ou 1)", val: outcomesText, set: setOutcomesText, hint: "ex: 1, 1, 0" },
         ].map(({ label, val, set, hint }) => (
           <div key={label}>
-            <label className="block text-xs text-muted-foreground mb-1">{label} <span className="text-muted-foreground">{hint}</span></label>
-            <input type="text" value={val} onChange={(e) => set(e.target.value)}
+            <label htmlFor={idDoCampo(label)} className="block text-xs text-muted-foreground mb-1">{label} <span className="text-muted-foreground">{hint}</span></label>
+            <input id={idDoCampo(label)} type="text" value={val} onChange={(e) => set(e.target.value)}
               className="w-full px-3 py-2 rounded-lg bg-secondary/50 border border-border/50 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary" />
           </div>
         ))}
@@ -182,8 +183,8 @@ function GamblerCalculator() {
         Detecta padrões em sequências que criam a ilusão de dependência onde existe independência.
       </p>
       <div>
-        <label className="block text-xs text-muted-foreground mb-1">Sequência de resultados (0=perda, 1=ganho)</label>
-        <input type="text" value={seqText} onChange={(e) => setSeqText(e.target.value)}
+        <label htmlFor={idDoCampo("Sequência de resultados (0=perda, 1=ganho)")} className="block text-xs text-muted-foreground mb-1">Sequência de resultados (0=perda, 1=ganho)</label>
+        <input id={idDoCampo("Sequência de resultados (0=perda, 1=ganho)")} type="text" value={seqText} onChange={(e) => setSeqText(e.target.value)}
           className="w-full px-3 py-2 rounded-lg bg-secondary/50 border border-border/50 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary" />
       </div>
       <button onClick={() => run({ sequence: seqText.split(",").map((v) => parseInt(v.trim())).filter((v) => v === 0 || v === 1) })}
@@ -235,30 +236,30 @@ function MaturityCalculator() {
       </p>
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
         <div>
-          <label className="block text-xs text-muted-foreground mb-1">Brier Skill Score</label>
-          <input type="number" value={bss} onChange={(e) => setBss(e.target.value)} step="0.01" min="-1" max="1"
+          <label htmlFor={idDoCampo("Brier Skill Score")} className="block text-xs text-muted-foreground mb-1">Brier Skill Score</label>
+          <input id={idDoCampo("Brier Skill Score")} type="number" value={bss} onChange={(e) => setBss(e.target.value)} step="0.01" min="-1" max="1"
             className="w-full px-3 py-2 rounded-lg bg-secondary/50 border border-border/50 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary" />
         </div>
         <div>
-          <label className="block text-xs text-muted-foreground mb-1">Overconfidence index</label>
-          <input type="number" value={oi} onChange={(e) => setOi(e.target.value)} step="0.01"
+          <label htmlFor={idDoCampo("Overconfidence index")} className="block text-xs text-muted-foreground mb-1">Overconfidence index</label>
+          <input id={idDoCampo("Overconfidence index")} type="number" value={oi} onChange={(e) => setOi(e.target.value)} step="0.01"
             className="w-full px-3 py-2 rounded-lg bg-secondary/50 border border-border/50 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary" />
         </div>
         <div>
-          <label className="block text-xs text-muted-foreground mb-1">Risco falácia jogador</label>
-          <select value={gfr} onChange={(e) => setGfr(e.target.value)}
+          <label htmlFor={idDoCampo("Risco falácia jogador")} className="block text-xs text-muted-foreground mb-1">Risco falácia jogador</label>
+          <select id={idDoCampo("Risco falácia jogador")} value={gfr} onChange={(e) => setGfr(e.target.value)}
             className="w-full px-3 py-2 rounded-lg bg-secondary/50 border border-border/50 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary">
             <option value="baixo">Baixo</option><option value="moderado">Moderado</option><option value="alto">Alto</option>
           </select>
         </div>
         <div>
-          <label className="block text-xs text-muted-foreground mb-1">Sessões de análise</label>
-          <input type="number" value={ns} onChange={(e) => setNs(e.target.value)} min="0"
+          <label htmlFor={idDoCampo("Sessões de análise")} className="block text-xs text-muted-foreground mb-1">Sessões de análise</label>
+          <input id={idDoCampo("Sessões de análise")} type="number" value={ns} onChange={(e) => setNs(e.target.value)} min="0"
             className="w-full px-3 py-2 rounded-lg bg-secondary/50 border border-border/50 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary" />
         </div>
         <div>
-          <label className="block text-xs text-muted-foreground mb-1">Loss aversion ratio (λ)</label>
-          <input type="number" value={lar} onChange={(e) => setLar(e.target.value)} step="0.1" min="0.1"
+          <label htmlFor={idDoCampo("Loss aversion ratio (λ)")} className="block text-xs text-muted-foreground mb-1">Loss aversion ratio (λ)</label>
+          <input id={idDoCampo("Loss aversion ratio (λ)")} type="number" value={lar} onChange={(e) => setLar(e.target.value)} step="0.1" min="0.1"
             className="w-full px-3 py-2 rounded-lg bg-secondary/50 border border-border/50 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary" />
         </div>
       </div>

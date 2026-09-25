@@ -245,6 +245,43 @@ for (const rota of ROTAS) {
     if (a11y.h1 === 0) achados.push("SEM H1: a página não tem título principal");
 
     /**
+     * CAMPO SEM NOME (Auditoria 21/09, APR-03).
+     *
+     * As calculadoras da trilha escreviam `<label>Rótulo</label>` seguido de
+     * `<input>`, sem `htmlFor` e sem `id`. Na tela parece rótulo; para o
+     * navegador não é — um `<label>` só se associa envolvendo o campo ou por
+     * `htmlFor`. Quem usa leitor de tela ouvia "caixa de edição" e mais nada,
+     * numa trilha que ENSINA a calcular, onde saber qual campo é qual é a
+     * tarefa inteira. Eram 51 campos nas cinco páginas de nível; 21 sem nome.
+     *
+     * ⚠️ Esta checagem mora no NAVEGADOR de propósito. A primeira versão era um
+     * teste de regex no fonte, e ela não enxergou três `<select>` — justamente
+     * porque procurava `<input>`. Aqui a pergunta é a mesma que o leitor de
+     * tela faz: este controle tem nome?
+     *
+     * `placeholder` NÃO conta: ele some quando a pessoa começa a digitar, que é
+     * exatamente quando ela mais precisa saber onde está.
+     */
+    const camposSemNome = await p.evaluate(() => {
+      const saida = [];
+      for (const c of document.querySelectorAll("input, textarea, select")) {
+        if (c.type === "hidden") continue;
+        const r = c.getBoundingClientRect();
+        if (r.width < 2 && r.height < 2) continue;
+        const porFor = c.id ? document.querySelector(`label[for="${CSS.escape(c.id)}"]`) : null;
+        const envolvente = c.closest("label");
+        const nome = (c.getAttribute("aria-label") || porFor?.textContent || envolvente?.textContent || "").trim();
+        if (nome) continue;
+        saida.push(`<${c.tagName.toLowerCase()} type="${c.type}">`);
+        if (saida.length >= 3) break;
+      }
+      return saida;
+    });
+    if (camposSemNome.length > 0) {
+      achados.push(`CAMPO SEM NOME ACESSÍVEL: ${camposSemNome.join(" | ")} — use <label htmlFor> ou aria-label`);
+    }
+
+    /**
      * SOBRA HORIZONTAL NO CELULAR.
      *
      * A varredura rodava só em 1280px, e em 16/09 o /nivel/1 rolava de lado em

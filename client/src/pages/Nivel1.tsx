@@ -15,6 +15,8 @@ import { useSEO } from "@/hooks/useSEO";
 import LevelNav from "@/components/LevelNav";
 import PageHeader from "@/components/PageHeader";
 import { num } from "@shared/formato";
+import { calcularVantagem, precoCalculavel } from "@/lib/edge";
+import { idDoCampo } from "@/lib/campo";
 import { rotuloDoNivel } from "@shared/niveis";
 import { ChecagemDeAprendizagem } from "@/components/ChecagemDeAprendizagem";
 
@@ -66,6 +68,97 @@ function ErrorBox({ text }: { text: string }) {
   );
 }
 
+/**
+ * EV NO MERCADO DE PREVISÃO — a forma que este site usa de verdade.
+ *
+ * O QUE FALTAVA (Auditoria 21/09, APR-03). A trilha ensinava valor esperado só
+ * na linguagem de casa de apostas: montar uma tabela de cenários, inventar a
+ * linha de perda, pensar em odd. Só que o produto inteiro é sobre mercado de
+ * previsão, onde a conta é mais simples e mais direta — o contrato paga R$ 1 se
+ * o evento acontece, o preço JÁ É a probabilidade que o mercado cobra, e o
+ * retorno por real sai de uma divisão:
+ *
+ *     EV por R$ = sua probabilidade ÷ preço − 1
+ *
+ * Quem aprende só a primeira forma sai da trilha sem saber ler a tela principal
+ * do próprio site.
+ *
+ * A conta vem de `lib/edge.ts` — a mesma que a Calculadora de Edge da página de
+ * mercado usa. Reescrevê-la aqui seria criar a segunda fonte do número que a
+ * plataforma mais publica.
+ */
+function EVDeMercadoPrevisao() {
+  const [preco, setPreco] = useState("40");
+  const [minha, setMinha] = useState("50");
+
+  const p = Number(preco) / 100;
+  const q = Number(minha) / 100;
+  const v = calcularVantagem(q, p);
+  const calculavel = precoCalculavel(p) && Number.isFinite(q);
+
+  return (
+    <div className="glass-card rounded-xl p-6 space-y-4">
+      <div className="flex items-center gap-2">
+        <Calculator className="w-4 h-4 text-neon-blue" />
+        <h2 className="font-semibold text-foreground text-sm">EV no mercado de previsão — p ÷ preço − 1</h2>
+      </div>
+      <p className="text-xs text-muted-foreground leading-relaxed">
+        No mercado de previsão o contrato paga <strong className="text-foreground">R$ 1</strong> se o evento
+        acontecer, e o preço já é a probabilidade que o mercado cobra. Não há odd nem cenário de perda para
+        montar: basta comparar a sua probabilidade com o preço.
+      </p>
+
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="text-xs text-muted-foreground" htmlFor="ev-mercado-preco">Preço do SIM (%)</label>
+          <input
+            id="ev-mercado-preco"
+            type="number" min="1" max="99" step="1"
+            value={preco}
+            onChange={(e) => setPreco(e.target.value)}
+            className="w-full min-w-0 mt-1 px-3 py-2 rounded-lg bg-secondary/50 border border-border/50 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+          />
+        </div>
+        <div>
+          <label className="text-xs text-muted-foreground" htmlFor="ev-mercado-minha">Sua probabilidade (%)</label>
+          <input
+            id="ev-mercado-minha"
+            type="number" min="0" max="100" step="1"
+            value={minha}
+            onChange={(e) => setMinha(e.target.value)}
+            className="w-full min-w-0 mt-1 px-3 py-2 rounded-lg bg-secondary/50 border border-border/50 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+          />
+        </div>
+      </div>
+
+      <div className="p-4 rounded-lg bg-obsidian/50 border border-border/20 space-y-1">
+        <p className="text-xs text-muted-foreground">Valor esperado por R$ 1 apostado</p>
+        <p className={`text-2xl font-mono font-bold tabular-nums ${
+          !calculavel || v.neutro ? "text-muted-foreground" : v.ev! > 0 ? "text-positive" : "text-negative"
+        }`}>
+          {!calculavel
+            ? "—"
+            : `${v.ev! > 0 ? "+" : ""}${num(v.ev! * 100, 1)}%`}
+        </p>
+        <p className="text-[11px] text-muted-foreground leading-relaxed">
+          {!calculavel
+            ? "Fora da faixa em que a conta significa alguma coisa (o preço precisa estar entre 1% e 99%)."
+            : v.neutro
+              ? "Sua probabilidade é a do mercado: não há vantagem de nenhum lado."
+              : v.ev! > 0
+                ? `${num(q * 100, 0)} ÷ ${num(p * 100, 0)} − 1. Se você estiver certo, cada R$ 1 apostado vale ${num((1 + v.ev!), 2)} em média — no longo prazo, repetindo apostas como esta.`
+                : `${num(q * 100, 0)} ÷ ${num(p * 100, 0)} − 1. O mercado cobra mais do que a sua probabilidade justifica: no longo prazo, esta posição perde.`}
+        </p>
+      </div>
+
+      <p className="text-[11px] text-muted-foreground">
+        É a mesma conta da Calculadora de Edge que aparece em cada mercado do site — aqui sem o mercado,
+        para você praticar com números seus.
+      </p>
+    </div>
+  );
+}
+
 // ─── Calculadora de Valor Esperado ────────────────────────────────────────────
 function EVCalculator() {
   const [rows, setRows] = useState([
@@ -103,20 +196,30 @@ function EVCalculator() {
           (~150px) e não encolhe sozinho dentro de grade ou flex. Em 390px os dois
           cards desta página saíam 20px para fora da tela e ela rolava de lado —
           a única das 27 rotas com esse defeito (medido em 16/09). */}
+      {/* ⚠️ CADA CAMPO TEM `<label>` (Auditoria 21/09, APR-03). Os títulos das
+          colunas eram `<span>`: visualmente pareciam rótulo e, para o leitor de
+          tela, os campos eram "caixa de edição" sem nome nenhum — numa página
+          que ensina a CALCULAR, onde saber qual campo é qual é a tarefa
+          inteira. `sr-only` porque o título da coluna já aparece na tela; o que
+          faltava era a ligação entre ele e o campo. */}
       <div className="space-y-2">
-        <div className="grid grid-cols-3 gap-2 text-xs text-muted-foreground font-medium px-1">
+        <div className="grid grid-cols-3 gap-2 text-xs text-muted-foreground font-medium px-1" aria-hidden="true">
           <span>Resultado (R$)</span><span>Probabilidade <span className="whitespace-nowrap">(0–1)</span></span><span />
         </div>
         {rows.map((row, i) => (
           <div key={i} className="grid grid-cols-3 gap-2">
+            <label className="sr-only" htmlFor={`ev-resultado-${i}`}>Resultado {i + 1} em reais</label>
             <input
+              id={`ev-resultado-${i}`}
               type="number"
               value={row.outcome}
               onChange={(e) => updateRow(i, "outcome", e.target.value)}
               className="w-full min-w-0 px-3 py-2 rounded-lg bg-secondary/50 border border-border/50 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
               placeholder="ex: 100"
             />
+            <label className="sr-only" htmlFor={`ev-prob-${i}`}>Probabilidade do resultado {i + 1}, de 0 a 1</label>
             <input
+              id={`ev-prob-${i}`}
               type="number"
               value={row.probability}
               onChange={(e) => updateRow(i, "probability", e.target.value)}
@@ -193,8 +296,9 @@ function HouseEdgeCalculator() {
       <div className="space-y-2">
         {odds.map((o, i) => (
           <div key={i} className="flex items-center gap-2">
-            <span className="text-xs text-muted-foreground w-24 sm:w-28 shrink-0">{labels[i] ?? `Resultado ${i + 1}`}</span>
+            <label className="text-xs text-muted-foreground w-24 sm:w-28 shrink-0" htmlFor={`odd-${i}`}>{labels[i] ?? `Resultado ${i + 1}`}</label>
             <input
+              id={`odd-${i}`}
               type="number"
               value={o}
               onChange={(e) => setOdds((prev) => prev.map((v, idx) => idx === i ? e.target.value : v))}
@@ -277,8 +381,9 @@ function BayesCalculator() {
           { label: "P(E|¬H)", hint: "Prob. da evidência se o evento NÃO ocorrer", value: lFalse, set: setLFalse },
         ].map(({ label, hint, value, set }) => (
           <div key={label}>
-            <label className="block text-xs text-muted-foreground mb-1">{label} <span className="text-muted-foreground">— {hint}</span></label>
+            <label className="block text-xs text-muted-foreground mb-1" htmlFor={idDoCampo(label, "bayes")}>{label} <span className="text-muted-foreground">— {hint}</span></label>
             <input
+              id={idDoCampo(label, "bayes")}
               type="range" min="0.01" max="0.99" step="0.01"
               value={value}
               onChange={(e) => set(e.target.value)}
@@ -370,6 +475,7 @@ export default function Nivel1() {
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <HouseEdgeCalculator />
         <EVCalculator />
+        <EVDeMercadoPrevisao />
       </div>
       <BayesCalculator />
 

@@ -16,6 +16,7 @@ import PageHeader from "@/components/PageHeader";
 import { num } from "@shared/formato";
 import { rotuloDoNivel } from "@shared/niveis";
 import { ChecagemDeAprendizagem } from "@/components/ChecagemDeAprendizagem";
+import { idDoCampo } from "@/lib/campo";
 
 interface TaylorResult { selic_observed: number; taylor_implied: number; divergence_pp: number; signal: string; explanation: string; }
 interface PoissonResult { p_home_win: number; p_draw: number; p_away_win: number; lambda_home: number; lambda_away: number; top_scores: { score: string; probability: number }[]; explanation: string; }
@@ -66,8 +67,8 @@ function TaylorCalculator() {
           { label: "Hiato do produto (%)", val: gap, set: setGap },
         ].map(({ label, val, set }) => (
           <div key={label}>
-            <label className="block text-xs text-muted-foreground mb-1">{label}</label>
-            <input type="number" value={val} onChange={(e) => set(e.target.value)} step="0.1"
+            <label htmlFor={idDoCampo(label)} className="block text-xs text-muted-foreground mb-1">{label}</label>
+            <input id={idDoCampo(label)} type="number" value={val} onChange={(e) => set(e.target.value)} step="0.1"
               className="w-full px-3 py-2 rounded-lg bg-secondary/50 border border-border/50 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary" />
           </div>
         ))}
@@ -123,8 +124,8 @@ function PoissonCalculator() {
           { label: "Visitante — Defesa", val: aDef, set: setADef },
         ].map(({ label, val, set }) => (
           <div key={label}>
-            <label className="block text-xs text-muted-foreground mb-1">{label}</label>
-            <input type="number" value={val} onChange={(e) => set(e.target.value)} step="0.05" min="0.1"
+            <label htmlFor={idDoCampo(label)} className="block text-xs text-muted-foreground mb-1">{label}</label>
+            <input id={idDoCampo(label)} type="number" value={val} onChange={(e) => set(e.target.value)} step="0.05" min="0.1"
               className="w-full px-3 py-2 rounded-lg bg-secondary/50 border border-border/50 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary" />
           </div>
         ))}
@@ -189,8 +190,8 @@ function GarchCalculator() {
       </div>
       <WarnBox text="GARCH prevê TAMANHO da variação, não direção. Não use para timing de entrada ou saída. Use para dimensionar risco." />
       <div>
-        <label className="block text-xs text-muted-foreground mb-1">Retornos diários (separados por vírgula)</label>
-        <textarea value={returnsText} onChange={(e) => setReturnsText(e.target.value)} rows={3}
+        <label htmlFor={idDoCampo("Retornos diários (separados por vírgula)")} className="block text-xs text-muted-foreground mb-1">Retornos diários (separados por vírgula)</label>
+        <textarea id={idDoCampo("Retornos diários (separados por vírgula)")} value={returnsText} onChange={(e) => setReturnsText(e.target.value)} rows={3}
           className="w-full px-3 py-2 rounded-lg bg-secondary/50 border border-border/50 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary resize-none" />
       </div>
       <button onClick={async () => {
@@ -233,8 +234,8 @@ function EnsoCalculator() {
         <h2 className="font-semibold text-sm text-foreground">ENSO — Fase El Niño / La Niña</h2>
       </div>
       <div>
-        <label className="block text-xs text-muted-foreground mb-1">Índice ONI (Oceanic Niño Index)</label>
-        <input type="range" min="-3" max="3" step="0.1" value={oni}
+        <label htmlFor={idDoCampo("Índice ONI (Oceanic Niño Index)")} className="block text-xs text-muted-foreground mb-1">Índice ONI (Oceanic Niño Index)</label>
+        <input id={idDoCampo("Índice ONI (Oceanic Niño Index)")} type="range" min="-3" max="3" step="0.1" value={oni}
           onChange={(e) => setOni(e.target.value)} className="w-full accent-primary" />
         <div className="flex justify-between text-xs text-muted-foreground mt-0.5">
           <span>−3 (La Niña forte)</span>
@@ -286,13 +287,13 @@ function EloCalculator() {
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-xs text-muted-foreground mb-1">Rating A (mandante)</label>
-          <input type="number" value={ratingA} onChange={(e) => setRatingA(e.target.value)}
+          <label htmlFor={idDoCampo("Rating A (mandante)")} className="block text-xs text-muted-foreground mb-1">Rating A (mandante)</label>
+          <input id={idDoCampo("Rating A (mandante)")} type="number" value={ratingA} onChange={(e) => setRatingA(e.target.value)}
             className="w-full px-3 py-2 rounded-lg bg-secondary/50 border border-border/50 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary" />
         </div>
         <div>
-          <label className="block text-xs text-muted-foreground mb-1">Rating B (visitante)</label>
-          <input type="number" value={ratingB} onChange={(e) => setRatingB(e.target.value)}
+          <label htmlFor={idDoCampo("Rating B (visitante)")} className="block text-xs text-muted-foreground mb-1">Rating B (visitante)</label>
+          <input id={idDoCampo("Rating B (visitante)")} type="number" value={ratingB} onChange={(e) => setRatingB(e.target.value)}
             className="w-full px-3 py-2 rounded-lg bg-secondary/50 border border-border/50 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary" />
         </div>
       </div>

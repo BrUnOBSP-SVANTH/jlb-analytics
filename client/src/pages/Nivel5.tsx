@@ -16,6 +16,7 @@ import PageHeader from "@/components/PageHeader";
 import { num } from "@shared/formato";
 import { rotuloDoNivel } from "@shared/niveis";
 import { ChecagemDeAprendizagem } from "@/components/ChecagemDeAprendizagem";
+import { idDoCampo } from "@/lib/campo";
 
 interface DivergenceResult {
   divergence_pct: number; signal: string; label: string;
@@ -70,8 +71,8 @@ function DivergenceCalculator() {
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
-          <label className="block text-xs text-muted-foreground mb-1">Probabilidade do modelo (0–1)</label>
-          <input type="range" min="0.01" max="0.99" step="0.01" value={modelP}
+          <label htmlFor={idDoCampo("Probabilidade do modelo (0–1)")} className="block text-xs text-muted-foreground mb-1">Probabilidade do modelo (0–1)</label>
+          <input id={idDoCampo("Probabilidade do modelo (0–1)")} type="range" min="0.01" max="0.99" step="0.01" value={modelP}
             onChange={(e) => setModelP(e.target.value)} className="w-full accent-primary" />
           <div className="flex justify-between text-xs mt-0.5">
             <span className="text-muted-foreground">0%</span>
@@ -80,8 +81,8 @@ function DivergenceCalculator() {
           </div>
         </div>
         <div>
-          <label className="block text-xs text-muted-foreground mb-1">Probabilidade do mercado (0–1)</label>
-          <input type="range" min="0.01" max="0.99" step="0.01" value={marketP}
+          <label htmlFor={idDoCampo("Probabilidade do mercado (0–1)")} className="block text-xs text-muted-foreground mb-1">Probabilidade do mercado (0–1)</label>
+          <input id={idDoCampo("Probabilidade do mercado (0–1)")} type="range" min="0.01" max="0.99" step="0.01" value={marketP}
             onChange={(e) => setMarketP(e.target.value)} className="w-full accent-primary" />
           <div className="flex justify-between text-xs mt-0.5">
             <span className="text-muted-foreground">0%</span>
@@ -90,8 +91,8 @@ function DivergenceCalculator() {
           </div>
         </div>
         <div>
-          <label className="block text-xs text-muted-foreground mb-1">Confiança no modelo (Skill Score calibrado)</label>
-          <input type="range" min="0" max="1" step="0.05" value={confidence}
+          <label htmlFor={idDoCampo("Confiança no modelo (Skill Score calibrado)")} className="block text-xs text-muted-foreground mb-1">Confiança no modelo (Skill Score calibrado)</label>
+          <input id={idDoCampo("Confiança no modelo (Skill Score calibrado)")} type="range" min="0" max="1" step="0.05" value={confidence}
             onChange={(e) => setConfidence(e.target.value)} className="w-full accent-primary" />
           <div className="flex justify-between text-xs mt-0.5">
             <span className="text-muted-foreground">0%</span>
@@ -100,8 +101,8 @@ function DivergenceCalculator() {
           </div>
         </div>
         <div>
-          <label className="block text-xs text-muted-foreground mb-1">Segmento</label>
-          <select value={context} onChange={(e) => setContext(e.target.value)}
+          <label htmlFor={idDoCampo("Segmento")} className="block text-xs text-muted-foreground mb-1">Segmento</label>
+          <select id={idDoCampo("Segmento")} value={context} onChange={(e) => setContext(e.target.value)}
             className="w-full px-3 py-2 rounded-lg bg-secondary/50 border border-border/50 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary">
             {["economia", "esportes", "eleições", "clima", "tecnologia", "empresas", "cripto"].map((s) => (
               <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>
@@ -201,13 +202,13 @@ function EnsembleCalculator() {
 
       <div className="grid gap-3 lg:grid-cols-2">
         <div>
-          <label className="block text-xs text-muted-foreground mb-1">Probabilidades dos modelos (JSON)</label>
-          <textarea value={modelsText} onChange={(e) => setModelsText(e.target.value)} rows={5}
+          <label htmlFor={idDoCampo("Probabilidades dos modelos (JSON)")} className="block text-xs text-muted-foreground mb-1">Probabilidades dos modelos (JSON)</label>
+          <textarea id={idDoCampo("Probabilidades dos modelos (JSON)")} value={modelsText} onChange={(e) => setModelsText(e.target.value)} rows={5}
             className="w-full px-3 py-2 rounded-lg bg-secondary/50 border border-border/50 text-sm font-mono text-foreground focus:outline-none focus:ring-1 focus:ring-primary resize-none" />
         </div>
         <div>
-          <label className="block text-xs text-muted-foreground mb-1">Skill Scores históricos (JSON)</label>
-          <textarea value={skillsText} onChange={(e) => setSkillsText(e.target.value)} rows={5}
+          <label htmlFor={idDoCampo("Skill Scores históricos (JSON)")} className="block text-xs text-muted-foreground mb-1">Skill Scores históricos (JSON)</label>
+          <textarea id={idDoCampo("Skill Scores históricos (JSON)")} value={skillsText} onChange={(e) => setSkillsText(e.target.value)} rows={5}
             className="w-full px-3 py-2 rounded-lg bg-secondary/50 border border-border/50 text-sm font-mono text-foreground focus:outline-none focus:ring-1 focus:ring-primary resize-none" />
         </div>
       </div>

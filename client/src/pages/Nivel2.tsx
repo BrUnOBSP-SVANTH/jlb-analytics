@@ -17,6 +17,7 @@ import PageHeader from "@/components/PageHeader";
 import { num } from "@shared/formato";
 import { rotuloDoNivel } from "@shared/niveis";
 import { ChecagemDeAprendizagem } from "@/components/ChecagemDeAprendizagem";
+import { idDoCampo } from "@/lib/campo";
 
 interface ZResult { z: number; p_two_tail: number; signal: string; explanation: string; }
 interface CIResult { lower: number; upper: number; margin: number; se: number; dist_used: string; level_pct: number; signal: string; explanation: string; }
@@ -69,8 +70,8 @@ function ZScoreCalculator() {
           { label: "Desvio padrão (σ)", val: std, set: setStd },
         ].map(({ label, val, set }) => (
           <div key={label}>
-            <label className="block text-xs text-muted-foreground mb-1">{label}</label>
-            <input type="number" value={val} onChange={(e) => set(e.target.value)}
+            <label htmlFor={idDoCampo(label)} className="block text-xs text-muted-foreground mb-1">{label}</label>
+            <input id={idDoCampo(label)} type="number" value={val} onChange={(e) => set(e.target.value)}
               className="w-full px-3 py-2 rounded-lg bg-secondary/50 border border-border/50 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary" />
           </div>
         ))}
@@ -137,14 +138,14 @@ function CICalculator() {
           { label: "Tamanho da amostra (n)", val: n, set: setN, step: "1" },
         ].map(({ label, val, set, step }) => (
           <div key={label}>
-            <label className="block text-xs text-muted-foreground mb-1">{label}</label>
-            <input type="number" value={val} onChange={(e) => set(e.target.value)} step={step}
+            <label htmlFor={idDoCampo(label)} className="block text-xs text-muted-foreground mb-1">{label}</label>
+            <input id={idDoCampo(label)} type="number" value={val} onChange={(e) => set(e.target.value)} step={step}
               className="w-full px-3 py-2 rounded-lg bg-secondary/50 border border-border/50 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary" />
           </div>
         ))}
         <div>
-          <label className="block text-xs text-muted-foreground mb-1">Nível de confiança</label>
-          <select value={level} onChange={(e) => setLevel(e.target.value)}
+          <label htmlFor={idDoCampo("Nível de confiança")} className="block text-xs text-muted-foreground mb-1">Nível de confiança</label>
+          <select id={idDoCampo("Nível de confiança")} value={level} onChange={(e) => setLevel(e.target.value)}
             className="w-full px-3 py-2 rounded-lg bg-secondary/50 border border-border/50 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary">
             <option value="0.90">90%</option>
             <option value="0.95">95%</option>
@@ -233,13 +234,13 @@ function CorrelationCalculator() {
 
       <div className="grid gap-3 lg:grid-cols-2">
         <div>
-          <label className="block text-xs text-muted-foreground mb-1">Série X (separada por vírgulas)</label>
-          <textarea value={xText} onChange={(e) => setXText(e.target.value)} rows={2}
+          <label htmlFor={idDoCampo("Série X (separada por vírgulas)")} className="block text-xs text-muted-foreground mb-1">Série X (separada por vírgulas)</label>
+          <textarea id={idDoCampo("Série X (separada por vírgulas)")} value={xText} onChange={(e) => setXText(e.target.value)} rows={2}
             className="w-full px-3 py-2 rounded-lg bg-secondary/50 border border-border/50 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary resize-none" />
         </div>
         <div>
-          <label className="block text-xs text-muted-foreground mb-1">Série Y (separada por vírgulas)</label>
-          <textarea value={yText} onChange={(e) => setYText(e.target.value)} rows={2}
+          <label htmlFor={idDoCampo("Série Y (separada por vírgulas)")} className="block text-xs text-muted-foreground mb-1">Série Y (separada por vírgulas)</label>
+          <textarea id={idDoCampo("Série Y (separada por vírgulas)")} value={yText} onChange={(e) => setYText(e.target.value)} rows={2}
             className="w-full px-3 py-2 rounded-lg bg-secondary/50 border border-border/50 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary resize-none" />
         </div>
       </div>

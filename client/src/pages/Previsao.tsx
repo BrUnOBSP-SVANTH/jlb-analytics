@@ -201,10 +201,14 @@ export default function Previsao() {
 
             {/* Pergunta */}
             <div>
-              <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2 font-medium">
+              {/* O número do passo já era o rótulo na tela; faltava ser rótulo
+                  para o navegador (APR-03). Sem `htmlFor`, o campo PRINCIPAL
+                  desta página era "caixa de edição" sem nome no leitor de tela. */}
+              <label htmlFor="previsao-pergunta" className="block text-xs text-muted-foreground uppercase tracking-wider mb-2 font-medium">
                 2. O que você quer prever?
-              </p>
+              </label>
               <textarea
+                id="previsao-pergunta"
                 value={question}
                 onChange={(e) => setQuestion(e.target.value)}
                 rows={3}
@@ -227,6 +231,7 @@ export default function Previsao() {
               </button>
               {showContext && (
                 <textarea
+                  aria-label="Contexto adicional: dados, eventos recentes e referências"
                   value={context}
                   onChange={(e) => setContext(e.target.value)}
                   rows={2}
@@ -268,12 +273,13 @@ export default function Previsao() {
 
             {/* Valor de referência — NÃO SOBE PARA A IA (PRV-01) */}
             <div>
-              <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2 font-medium">
+              <label htmlFor="previsao-patrimonio" className="block text-xs text-muted-foreground uppercase tracking-wider mb-2 font-medium">
                 4. Valor de referência — opcional
-              </p>
+              </label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">R$</span>
                 <input
+                  id="previsao-patrimonio"
                   type="number"
                   value={bankroll}
                   onChange={(e) => setBankroll(e.target.value)}

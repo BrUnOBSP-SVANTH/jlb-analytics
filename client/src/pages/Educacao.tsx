@@ -56,7 +56,7 @@ const LEVELS = [
     color: "text-level4",
     bg: "bg-level4/10",
     border: "border-level4/30",
-    topics: ["Prospect Theory — λ=2.25 (Kahneman & Tversky 1992)", "Brier Score + Skill Score — calibração real", "Falácia do Jogador — independência de eventos", "Overconfidence Index por decil", "Perfil de Maturidade Analítica"],
+    topics: ["Prospect Theory — λ = 2,25 (Kahneman e Tversky, 1992)", "Brier Score + Skill Score — calibração real", "Falácia do Jogador — independência de eventos", "Overconfidence Index por decil", "Perfil de Maturidade Analítica"],
     outcome: "Você mede seus próprios vieses com matemática e identifica onde o comportamento destrói retorno.",
   },
   {
@@ -68,7 +68,13 @@ const LEVELS = [
     color: "text-neon-blue",
     bg: "bg-neon-blue/10",
     border: "border-neon-blue/30",
-    topics: ["Divergência modelo vs. mercado — 5 tiers", "Ensemble skill-weighted (modelos com SS ≤ 0 são excluídos)", "Nota educacional obrigatória em todo output", "Filtro de output por nível de usuário"],
+    // ⚠️ ERA LISTA DE FUNCIONALIDADE, NÃO DE MATÉRIA (Auditoria 21/09, APR-03).
+    // Dois dos quatro tópicos descreviam o que o SISTEMA faz — "nota
+    // educacional obrigatória em todo output", "filtro de output por nível de
+    // usuário" — e o terceiro era detalhe de implementação do nosso ensemble.
+    // Nada disso é algo que a pessoa aprende; é algo que acontece com ela.
+    // Quem lê a trilha para decidir se vale a pena entender o que vai estudar.
+    topics: ["Divergência modelo vs. mercado — o que a diferença significa", "Ensemble — por que juntar modelos melhora, e quando não melhora", "Peso por desempenho — em qual modelo confiar mais", "Decisão sob incerteza — o que fazer quando as fontes discordam"],
     outcome: "Você interpreta quando o modelo diverge do mercado, por que diverge e o que isso significa para investigar.",
   },
 ];
