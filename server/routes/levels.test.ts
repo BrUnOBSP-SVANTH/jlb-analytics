@@ -143,3 +143,68 @@ describe("Nível 5 — ensemble ponderado por skill", () => {
     expect(body.ensemble_probability).toBeCloseTo(0.5, 4);
   });
 });
+
+/**
+ * DES-03 — seis das dezoito calculadoras não validavam nada.
+ *
+ * Campo ausente ou com texto no lugar de número virava `undefined` no meio da
+ * conta. Duas delas quebravam com uma página HTML de 500 (taylor-rule, enso); as
+ * outras quatro faziam pior: respondiam 200 com um VEREDITO tirado do nada.
+ *
+ * Flagrado ao capturar a saída das 18 rotas para comparação, com dois casos meus
+ * de nome de campo errado:
+ *  · `maturity` devolvia "Iniciante — decisões majoritariamente intuitivas",
+ *    score 0 — um diagnóstico sobre a pessoa, montado de dados que não existiam;
+ *  · `divergence` devolvia `divergence: null` e ao mesmo tempo `tier:
+ *    "extreme"` — classificava como extrema uma divergência inexistente.
+ *
+ * Num site cujo argumento é não publicar número sem lastro, é o pior defeito
+ * possível: ele não falha, ele inventa.
+ */
+describe("entrada inválida é recusada, não interpretada", () => {
+  const SEM_VALIDACAO: Array<[string, Record<string, unknown>, string]> = [
+    ["/api/level3/taylor-rule", { inflation: 4.5 },                 "selic_observed"],
+    ["/api/level3/enso",        { oni: 1.4 },                        "oni_index"],
+    ["/api/level3/elo",         { a: 1800, b: 1650 },                "rating_a"],
+    ["/api/level3/poisson",     { attack: 1.6 },                     "home_attack"],
+    ["/api/level4/maturity",    { brier_skill: 0.1 },                "brier_skill_score"],
+    ["/api/level5/divergence",  { model_prob: 0.7, market_prob: 0.5 }, "model_probability"],
+  ];
+
+  for (const [rota, corpoRuim, campo] of SEM_VALIDACAO) {
+    it(`🔴 ${rota} devolve 422 dizendo qual campo falta`, async () => {
+      const { status, body } = await post(rota, corpoRuim);
+      expect(status).toBe(422);
+      expect(String(body.error)).toContain(campo);
+    });
+  }
+
+  it("🔴 nenhuma delas devolve veredito quando o dado não existe", async () => {
+    // O caso que mais dói: score, estágio, tier — qualquer conclusão sobre a
+    // pessoa ou sobre o mercado montada a partir de campo ausente.
+    for (const [rota, corpoRuim] of SEM_VALIDACAO) {
+      const { body } = await post(rota, corpoRuim);
+      for (const chave of ["stage", "label", "tier", "signal", "score"]) {
+        expect(body[chave], `${rota} devolveu "${chave}"`).toBeUndefined();
+      }
+    }
+  });
+
+  it("⚠️ com os campos certos, as seis continuam calculando igual", async () => {
+    // A validação não pode ter mudado o resultado de quem manda dado válido.
+    const { status: s1, body: b1 } = await post("/api/level3/taylor-rule",
+      { selic_observed: 13.75, ipca_12m: 4.5, output_gap_pct: -1.2 });
+    expect(s1).toBe(200);
+    expect(b1.taylor_implied).toBeCloseTo(6.65, 2);
+    expect(b1.divergence_pp).toBeCloseTo(7.1, 2);
+
+    const { status: s2, body: b2 } = await post("/api/level5/divergence",
+      { model_probability: 0.7, market_probability: 0.55 });
+    expect(s2).toBe(200);
+    expect(b2.divergence).toBeCloseTo(0.15, 4);
+
+    const { status: s3, body: b3 } = await post("/api/level3/enso", { oni_index: 1.4 });
+    expect(s3).toBe(200);
+    expect(b3.phase).toBeTruthy();
+  });
+});

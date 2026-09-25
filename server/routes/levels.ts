@@ -62,6 +62,28 @@ function logComb(n: number, k: number): number {
 
 // ── Nível 1 ───────────────────────────────────────────────────────────────────
 
+/**
+ * 🔴 CAMPO QUE FALTA PASSA A SER 422, NÃO 500 (Auditoria 21/09, DES-03).
+ *
+ * Seis das dezoito calculadoras não validavam nada. Um campo ausente ou com
+ * texto no lugar de número virava `undefined` no meio da conta, e o primeiro
+ * `.toFixed()` derrubava o handler: o chamador recebia uma PÁGINA HTML de erro
+ * 500 em vez de uma frase dizendo o que faltou. Flagrado ao capturar a saída das
+ * 18 rotas para comparação — dois casos meus com nome de campo errado deram 500
+ * onde as outras doze rotas davam 422 com explicação.
+ *
+ * Não é só acabamento: 500 enche o log de erro de verdade com erro de digitação,
+ * e é assim que erro de verdade deixa de ser visto.
+ */
+function faltamNumeros(corpo: unknown, campos: string[]): string | null {
+  const o = (corpo ?? {}) as Record<string, unknown>;
+  const ruins = campos.filter((c) => !Number.isFinite(Number(o[c])));
+  if (ruins.length === 0) return null;
+  return ruins.length === 1
+    ? `O campo "${ruins[0]}" precisa ser um número.`
+    : `Estes campos precisam ser números: ${ruins.join(", ")}.`;
+}
+
 router.post("/level1/ev", (req, res) => {
   const { outcomes, probabilities } = req.body as { outcomes: number[]; probabilities: number[] };
   if (!Array.isArray(outcomes) || !Array.isArray(probabilities) || outcomes.length !== probabilities.length)
@@ -216,6 +238,8 @@ router.post("/level2/correlation", (req, res) => {
 // ── Nível 3 ───────────────────────────────────────────────────────────────────
 
 router.post("/level3/taylor-rule", (req, res) => {
+  const faltou = faltamNumeros(req.body, ["selic_observed", "ipca_12m", "output_gap_pct"]);
+  if (faltou) return res.status(422).json({ error: faltou });
   const { selic_observed, ipca_12m, output_gap_pct } = req.body as { selic_observed: number; ipca_12m: number; output_gap_pct: number };
 
   const taylorRate = TAYLOR.r_star + ipca_12m + TAYLOR.phi_pi * (ipca_12m - TAYLOR.pi_target) + TAYLOR.phi_y * output_gap_pct;
@@ -238,6 +262,8 @@ router.post("/level3/taylor-rule", (req, res) => {
 });
 
 router.post("/level3/poisson", (req, res) => {
+  const faltou = faltamNumeros(req.body, ["home_attack", "home_defense", "away_attack", "away_defense"]);
+  if (faltou) return res.status(422).json({ error: faltou });
   const { home_attack, home_defense, away_attack, away_defense, league_avg_goals = 1.35, is_home = true } = req.body as {
     home_attack: number; home_defense: number; away_attack: number; away_defense: number; league_avg_goals?: number; is_home?: boolean;
   };
@@ -296,6 +322,8 @@ router.post("/level3/poisson", (req, res) => {
 });
 
 router.post("/level3/elo", (req, res) => {
+  const faltou = faltamNumeros(req.body, ["rating_a", "rating_b"]);
+  if (faltou) return res.status(422).json({ error: faltou });
   const { rating_a, rating_b, home_advantage = true } = req.body as { rating_a: number; rating_b: number; home_advantage?: boolean };
 
   const rA = rating_a + (home_advantage ? ELO.home_advantage : 0);
@@ -339,6 +367,8 @@ router.post("/level3/garch", (req, res) => {
 });
 
 router.post("/level3/enso", (req, res) => {
+  const faltou = faltamNumeros(req.body, ["oni_index"]);
+  if (faltou) return res.status(422).json({ error: faltou });
   const { oni_index } = req.body as { oni_index: number };
 
   let phase: string, signal: string, label: string, brazil_impact: string;
@@ -511,6 +541,8 @@ router.post("/level4/gambler", (req, res) => {
 });
 
 router.post("/level4/maturity", (req, res) => {
+  const faltou = faltamNumeros(req.body, ["brier_skill_score", "overconfidence_idx", "n_sessions", "loss_aversion_ratio"]);
+  if (faltou) return res.status(422).json({ error: faltou });
   const { brier_skill_score, overconfidence_idx, gambler_fallacy_risk, n_sessions, loss_aversion_ratio } = req.body as {
     brier_skill_score: number; overconfidence_idx: number; gambler_fallacy_risk: string; n_sessions: number; loss_aversion_ratio: number;
   };
@@ -550,6 +582,8 @@ router.post("/level4/maturity", (req, res) => {
 // ── Nível 5 ───────────────────────────────────────────────────────────────────
 
 router.post("/level5/divergence", (req, res) => {
+  const faltou = faltamNumeros(req.body, ["model_probability", "market_probability"]);
+  if (faltou) return res.status(422).json({ error: faltou });
   const { model_probability: mp, market_probability: mkp, model_confidence = 0.5, context = "" } = req.body as {
     model_probability: number; market_probability: number; model_confidence?: number; context?: string;
   };
