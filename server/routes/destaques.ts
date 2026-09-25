@@ -42,6 +42,9 @@ export function montarDestaques(
   totalKalshi: number,
   n = 8,
   agora = Date.now(),
+  /** Catálogo real do Polymarket, antes do corte da rota (DES-02). Sem ele, a
+   *  home contaria o LIMITE PEDIDO como se fosse o que existe. */
+  totalPoly = poly.length,
 ): Destaques {
   const destaques: MercadoEmDestaque[] = [];
   for (const m of poly) {
@@ -76,7 +79,7 @@ export function montarDestaques(
       volume: m.volume ?? m.volume24hr ?? 0,
     });
   }
-  return { destaques, totais: { polymarket: poly.length, kalshi: totalKalshi } };
+  return { destaques, totais: { polymarket: totalPoly, kalshi: totalKalshi } };
 }
 
 /**
@@ -102,22 +105,40 @@ router.get("/destaques", async (req, res) => {
   if (pronto) return res.json(pronto);
 
   const base = `http://localhost:${process.env.PORT ?? 3001}`;
-  const pedir = async <T>(caminho: string): Promise<T[]> => {
+  /**
+   * ⚠️ `total` vem da rota, e NÃO é `markets.length` (Auditoria 21/09, DES-02).
+   *
+   * A home escrevia "600+ mercados monitorados" somando os comprimentos das
+   * duas listas — que são o LIMITE PEDIDO (300 e 300), não o que existe. O "+"
+   * prometia "pelo menos 600" quando 600 era exatamente o teto. Pior: quando
+   * uma página da fonte não chegava a tempo, o catálogo vinha com 140 e a home
+   * anunciava "440+", um número que se mexia por motivo nenhum do mundo real.
+   */
+  const pedir = async <T>(caminho: string): Promise<{ itens: T[]; total: number }> => {
     try {
       const r = await fetch(`${base}${caminho}`, { signal: AbortSignal.timeout(20_000) });
-      if (!r.ok) return [];
-      return ((await r.json()) as { markets?: T[] }).markets ?? [];
-    } catch { return []; }
+      if (!r.ok) return { itens: [], total: 0 };
+      const corpo = (await r.json()) as { markets?: T[]; total?: number };
+      const itens = corpo.markets ?? [];
+      return { itens, total: typeof corpo.total === "number" ? corpo.total : itens.length };
+    } catch { return { itens: [], total: 0 }; }
   };
 
-  const [poly, kalshi] = await Promise.all([
+  const [respPoly, respKalshi] = await Promise.all([
     pedir<PolyBruto>("/api/polymarket/markets?limit=300"),
     pedir<{ yesProb?: number }>("/api/kalshi/markets?limit=300"),
   ]);
+  const poly = respPoly.itens;
+  const kalshi = respKalshi.itens;
 
-  // Conta só o mercado com preço de verdade: é o que a tela promete ("monitorados").
-  const totalKalshi = kalshi.filter((m) => pctDoKalshi(m.yesProb) !== null).length;
-  const payload = montarDestaques(poly, totalKalshi, Math.min(Number(req.query.n) || 8, 20));
+  // Conta só o mercado com preço de verdade: é o que a tela promete
+  // ("monitorados"). A proporção dos que têm preço na amostra recebida vale
+  // para o catálogo inteiro — é a mesma lista, só cortada.
+  const comPreco = kalshi.filter((m) => pctDoKalshi(m.yesProb) !== null).length;
+  const totalKalshi = kalshi.length > 0
+    ? Math.round(respKalshi.total * (comPreco / kalshi.length))
+    : 0;
+  const payload = montarDestaques(poly, totalKalshi, Math.min(Number(req.query.n) || 8, 20), Date.now(), respPoly.total);
 
   // Cache curto: o catálogo por trás já é SWR de 90s, então nada aqui fica velho
   // além do que a própria /mercados mostra — e agora também nunca sobrevive ao

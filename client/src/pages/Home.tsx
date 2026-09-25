@@ -737,7 +737,12 @@ export default function Home() {
                   dot: "bg-gold", label: "artigos no Cérebro", sub: "atualizado diariamente",
                 },
                 stats.markets > 0 && {
-                  value: <>{stats.markets}<span className="text-lg sm:text-2xl text-muted-foreground">+</span></>,
+                  // ⚠️ SEM O "+" (Auditoria 21/09, DES-02). O número era a soma
+                  // dos comprimentos das duas listas — ou seja, dos LIMITES
+                  // PEDIDOS (300 e 300) —, e o "+" prometia "pelo menos 600"
+                  // quando 600 era exatamente o teto. Agora `totais` traz o
+                  // catálogo real, que é um número certo: não precisa de "+".
+                  value: <>{stats.markets.toLocaleString("pt-BR")}</>,
                   dot: "bg-neon-blue", label: "mercados monitorados", sub: "Polymarket + Kalshi",
                 },
                 stats.predictions > 0 && {

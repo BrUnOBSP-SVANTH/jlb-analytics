@@ -1,5 +1,10 @@
 import { describe, it, expect } from "vitest";
 import { montarDestaques, ttlDaVitrine } from "./destaques.ts";
+import { readFileSync } from "node:fs";
+import { join, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
+
+const AQUI = dirname(fileURLToPath(import.meta.url));
 
 const mercado = (over: Record<string, unknown> = {}) => ({
   id: "1", question: "Vai chover?", outcomePrices: '["0.42","0.58"]', volume: 1000, ...over,
@@ -139,5 +144,41 @@ describe("ttlDaVitrine — o cache não pode sobreviver ao fechamento", () => {
 
   it("data no passado não encurta nada — quem filtra o vencido é montarDestaques", () => {
     expect(ttlDaVitrine([daqui(-100), daqui(3600)], AGORA)).toBe(60);
+  });
+});
+
+describe("o número da home é o catálogo, não o limite pedido", () => {
+  /**
+   * DES-02. A home escrevia "600+ mercados monitorados" somando os comprimentos
+   * das duas listas recebidas — que são o LIMITE PEDIDO (300 e 300), não o que
+   * existe. O "+" prometia "pelo menos 600" quando 600 era exatamente o teto.
+   *
+   * Medido em 25/09: o catálogo real do Polymarket tem 356 mercados. Ou seja, o
+   * site subestimava o que monitora enquanto o "+" sugeria o contrário — errado
+   * nos dois sentidos ao mesmo tempo.
+   *
+   * E quando uma página da fonte não chegava a tempo, a lista vinha com 140 e a
+   * home anunciava "440+": um número que se mexia por motivo nenhum do mundo.
+   */
+  it("🔴 o total vem de fora da lista, não do comprimento dela", () => {
+    // A rota entrega 300 cortados de um catálogo de 356.
+    const recebidos = Array.from({ length: 300 }, (_, i) => mercado({ id: `m${i}` }));
+    const { totais } = montarDestaques(recebidos, 300, 8, Date.now(), 356);
+    expect(totais.polymarket).toBe(356);
+  });
+
+  it("sem o total informado, cai no comprimento — e não quebra", () => {
+    // Rota antiga (ou fonte fora) não manda `total`. O padrão do parâmetro
+    // preserva o comportamento em vez de zerar o número na home.
+    const { totais } = montarDestaques([mercado(), mercado({ id: "b" })], 7);
+    expect(totais.polymarket).toBe(2);
+  });
+
+  it("⚠️ a home não escreve mais '+' depois do número", () => {
+    // Com o catálogo real, o número é certo: "+" seria promessa sem lastro.
+    const home = readFileSync(join(AQUI, "../../client/src/pages/Home.tsx"), "utf-8")
+      .replace(/\/\*[\s\S]*?\*\//g, "").replace(/\{\/\*[\s\S]*?\*\/\}/g, "").replace(/^\s*\/\/.*$/gm, "");
+    const bloco = home.slice(home.indexOf("mercados monitorados") - 400, home.indexOf("mercados monitorados"));
+    expect(bloco).not.toMatch(/>\+<\/span>/);
   });
 });

@@ -380,7 +380,8 @@ router.get("/markets", async (req, res) => {
     // o limit, então guardar a lista já cortada fazia o primeiro chamador definir o
     // tamanho para todos: quem pedisse 60 congelava 60 para quem pedisse 200 — e o
     // seed da IA, que lê esse mesmo cache, herdava o corte. Cacheamos o superconjunto.
-    res.json({ markets: markets.slice(0, limit), source: "live" });
+    // `total` = catálogo real antes do corte — ver o gêmeo em polymarket.ts.
+    res.json({ markets: markets.slice(0, limit), total: markets.length, source: "live" });
   } catch (err) {
     const msg = err instanceof Error ? err.message : "unknown";
     log.error("[Kalshi] error:", msg);

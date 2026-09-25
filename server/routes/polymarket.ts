@@ -249,7 +249,12 @@ router.get("/markets", async (req, res) => {
     // guardar a lista cortada faria o primeiro chamador definir o tamanho para
     // todos. Cacheamos o superconjunto e cada um leva o pedaço que pediu.
     const limit = limitePedido(req.query.limit, 300, 400);
-    res.json({ markets: markets.slice(0, limit).map(paraLista), source: "live" });
+    // `total` é o tamanho REAL do catálogo, antes do corte (Auditoria 21/09,
+    // DES-02). A home contava `markets.length` para dizer "600+ mercados
+    // monitorados", e esse comprimento é o LIMITE PEDIDO, não o que existe —
+    // 300 + 300. O "+" prometia "pelo menos 600" quando 600 era o teto, e o
+    // número se mexia quando uma página da fonte não chegava a tempo.
+    res.json({ markets: markets.slice(0, limit).map(paraLista), total: markets.length, source: "live" });
   } catch (err) {
     const msg = err instanceof Error ? err.message : "unknown";
     log.error("[Polymarket] error:", msg);
