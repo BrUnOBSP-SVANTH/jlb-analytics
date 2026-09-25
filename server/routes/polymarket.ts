@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { swr, getCache, setCache } from "../lib/cache.ts";
+import { lerCatalogo, salvarCatalogo } from "../lib/catalogoPersistido.ts";
 import { fetchWithRetry, fetchJSON } from "../lib/fetcher.ts";
 import { parseYesPrice, polyEventUrl, rankOutcomes } from "../lib/marketNormalize.ts";
 import type { PolyEvent, PolyMarket } from "../lib/types.ts";
@@ -9,12 +10,15 @@ import { montarCardDoEvento } from "../lib/eventoAgregado.ts";
 
 const router = Router();
 
-router.get("/markets", async (req, res) => {
-  const closed = req.query.closed === "true";
-  const cacheKey = `polymarket:markets:${closed ? "closed" : "active"}`;
-  try {
-    // SWR: cache fresco na hora; se venceu, devolve o velho e atualiza em bg.
-    const markets = await swr<PolyMarket[]>(cacheKey, closed ? 600 : 90, async () => {
+/**
+ * Monta o catálogo do Polymarket a partir da fonte.
+ *
+ * Extraída de dentro da rota (Auditoria 21/09, DES-02) para poder ser chamada
+ * também FORA de um pedido — quando a resposta já saiu da cópia guardada e a
+ * montagem vai para segundo plano. O conteúdo é o mesmo de antes, linha por
+ * linha; o que mudou é quem pode chamar.
+ */
+async function montarCatalogoPoly(closed: boolean): Promise<PolyMarket[]> {
     const toNum = (v: unknown) => (v === undefined || v === null) ? undefined : parseFloat(String(v)) || undefined;
 
     const eventsUrl = (order: string, limit: number, extra = "") => {
@@ -239,12 +243,54 @@ router.get("/markets", async (req, res) => {
     // quando há colisão, para não poluir o card do mercado que já é específico.
     // No Polymarket o distinguidor vem ANTES ("LoL: A vs B — Game 1: ..."), então
     // o sufixo é o próprio título do evento e o rótulo entra invertido de propósito.
-    return desambiguarPorPai(
+    const catalogo = desambiguarPorPai(
       sorted,
       { titulo: (m) => m.question, pai: (m) => m.eventSlug ?? m.id, sufixo: (m) => m.eventTitle },
       (m, _t) => ({ ...m, question: `${m.eventTitle} — ${m.question}` }),
     );
-    });
+
+    // Guarda a versão boa para o próximo arranque frio (DES-02). `void`: se o
+    // banco estiver fora, a rota não pode nem atrasar nem falhar por causa
+    // disso — é aceleração, não dependência. Só o catálogo ABERTO vale a pena:
+    // o de mercados fechados é consultado raramente e vive 10 minutos no cache.
+    if (!closed) void salvarCatalogo("polymarket", catalogo);
+    return catalogo;
+}
+
+router.get("/markets", async (req, res) => {
+  const closed = req.query.closed === "true";
+  const cacheKey = `polymarket:markets:${closed ? "closed" : "active"}`;
+  try {
+    /**
+     * ARRANQUE FRIO (Auditoria 21/09, DES-02).
+     *
+     * Medido em 25/09 na produção: a PRIMEIRA chamada depois de o serviço subir
+     * levou 10,5s; a segunda, 0,3s. A diferença é este builder rodando com um
+     * navegador esperando. E quase todo visitante é o primeiro — o plano grátis
+     * do Render dorme em 15 minutos e o site recebe ~53 pessoas por mês.
+     *
+     * Então, quando a memória está vazia, servimos a última versão boa guardada
+     * no banco e mandamos a montagem para segundo plano. A resposta sai com
+     * `source: "arquivo"` e `atualizadoEm`: cópia servida sem dizer que é cópia
+     * seria a plataforma parecer rápida às custas de ser honesta.
+     */
+    if (!closed && !getCache<PolyMarket[]>(cacheKey)) {
+      const copia = await lerCatalogo<PolyMarket>("polymarket");
+      if (copia) {
+        const limiteDaCopia = limitePedido(req.query.limit, 300, 400);
+        res.json({
+          markets: copia.itens.slice(0, limiteDaCopia).map(paraLista),
+          total: copia.itens.length,
+          source: "arquivo",
+          atualizadoEm: copia.atualizadoEm,
+        });
+        // Monta agora, para quem chegar em seguida — e para a própria cópia.
+        void swr<PolyMarket[]>(cacheKey, 90, () => montarCatalogoPoly(closed)).catch(() => {});
+        return;
+      }
+    }
+    // SWR: cache fresco na hora; se venceu, devolve o velho e atualiza em bg.
+    const markets = await swr<PolyMarket[]>(cacheKey, closed ? 600 : 90, () => montarCatalogoPoly(closed));
     // Corta na RESPOSTA, não dentro do cache: a chave não inclui o limit, então
     // guardar a lista cortada faria o primeiro chamador definir o tamanho para
     // todos. Cacheamos o superconjunto e cada um leva o pedaço que pediu.

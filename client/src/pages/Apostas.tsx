@@ -29,6 +29,7 @@ import {
   fontesSemResposta, fraseDasFontes, motivoDaListaVazia, type FonteMercado,
 } from "@/lib/fontesDoCatalogo";
 import { num } from "@shared/formato";
+import { procedenciaDoCatalogo } from "@/lib/marketsCache";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -125,6 +126,13 @@ export default function Apostas() {
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [compareMap, setCompareMap] = useState<Map<string, TrendingItem>>(new Map());
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  /**
+   * De quando é o dado, quando o servidor entregou a CÓPIA guardada (DES-02).
+   * Ele faz isso ao acordar frio — e a tela precisa dizer, porque "atualizado
+   * agora" em cima de dado de uma hora atrás é a plataforma mentindo para
+   * parecer rápida.
+   */
+  const [copiaDe, setCopiaDe] = useState<string | null>(null);
   const [countdown, setCountdown]   = useState(REFRESH_INTERVAL);
   const [newCount, setNewCount]     = useState(0);
   const [notifPerm, setNotifPerm]   = useState<NotificationPermission>(
@@ -246,6 +254,7 @@ export default function Apostas() {
         [...redditItems, ...polyItems, ...kalshiItems, ...manifoldItems].sort((a, b) => b.score - a.score),
       );
 
+      setCopiaDe(procedenciaDoCatalogo()?.atualizadoEm ?? null);
       const ok = buildAndSet(all, silent);
       // Só vale marcar quem faltou quando a rodada de fato trouxe algo: se TUDO
       // falhou, a lista antiga continua na tela e o aviso de erro é outro.
@@ -469,9 +478,11 @@ export default function Apostas() {
                 {/* aria-live: a lista se atualiza sozinha a cada 3 minutos e nada
                     anunciava isso a quem usa leitor de tela (TRV-14). */}
                 <span aria-live="polite">
-                  {lastUpdated
-                    ? <>atualizado {lastUpdated.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}</>
-                    : "atualizando"}
+                  {copiaDe
+                    ? <>preços de {new Date(copiaDe).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })} · buscando os de agora</>
+                    : lastUpdated
+                      ? <>atualizado {lastUpdated.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}</>
+                      : "atualizando"}
                 </span>
                 <span aria-hidden="true">·</span>
                 <span>

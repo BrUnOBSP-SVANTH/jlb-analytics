@@ -18,6 +18,35 @@ export type MarketSource = "polymarket" | "kalshi";
 
 interface CacheEntry<T> { data: T[]; ts: number }
 
+interface RespostaDoCatalogo { markets?: unknown[]; source?: string; atualizadoEm?: string }
+
+/** De onde veio a última resposta de cada fonte — ver `procedenciaDoCatalogo`. */
+export interface ProcedenciaDoCatalogo {
+  /** `true` quando o servidor serviu a cópia guardada, não a montagem ao vivo. */
+  deArquivo: boolean;
+  /** ISO de quando a cópia foi feita. `null` quando o dado é ao vivo. */
+  atualizadoEm: string | null;
+}
+
+const procedencia = new Map<MarketSource, ProcedenciaDoCatalogo>();
+
+/**
+ * A cópia mais VELHA entre as fontes que responderam de arquivo, ou `null` se
+ * está tudo ao vivo.
+ *
+ * A mais velha, e não a mais nova: se uma fonte está ao vivo e a outra é de uma
+ * hora atrás, a tela não pode se apresentar como atualizada. O número que vale
+ * para quem lê é o pior dos dois.
+ */
+export function procedenciaDoCatalogo(): ProcedenciaDoCatalogo | null {
+  let pior: ProcedenciaDoCatalogo | null = null;
+  for (const p of Array.from(procedencia.values())) {
+    if (!p.deArquivo || !p.atualizadoEm) continue;
+    if (!pior || (pior.atualizadoEm && p.atualizadoEm < pior.atualizadoEm)) pior = p;
+  }
+  return pior;
+}
+
 const TTL_MS = 60_000; // 60s — alinhado ao cache do servidor (90s)
 const cache = new Map<MarketSource, CacheEntry<unknown>>();
 const inflight = new Map<MarketSource, Promise<unknown[]>>();
@@ -37,9 +66,17 @@ export async function getMarkets<T = Record<string, unknown>>(source: MarketSour
   if (existing) return existing as Promise<T[]>;
 
   const p = fetch(`/api/${source}/markets?limit=300`)
-    .then((r) => (r.ok ? r.json() as Promise<{ markets?: unknown[] }> : { markets: [] }))
+    .then((r) => (r.ok ? r.json() as Promise<RespostaDoCatalogo> : { markets: [] }))
     .then((j) => {
       const arr = j.markets ?? [];
+      // De onde veio ESTA resposta (DES-02). Quando o servidor acorda frio, ele
+      // entrega a última versão boa guardada no banco e diz `source: "arquivo"`.
+      // A tela PRECISA saber disso: escrever "atualizado agora" em cima de dado
+      // de uma hora atrás seria a plataforma mentir para parecer rápida.
+      procedencia.set(source, {
+        deArquivo: j.source === "arquivo",
+        atualizadoEm: typeof j.atualizadoEm === "string" ? j.atualizadoEm : null,
+      });
       cache.set(source, { data: arr, ts: Date.now() });
       inflight.delete(source);
       return arr;

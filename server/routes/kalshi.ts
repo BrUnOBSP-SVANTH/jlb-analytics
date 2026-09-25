@@ -1,5 +1,6 @@
 import { Router } from "express";
-import { swr } from "../lib/cache.ts";
+import { swr, getCache } from "../lib/cache.ts";
+import { lerCatalogo, salvarCatalogo } from "../lib/catalogoPersistido.ts";
 import { fetchWithRetry } from "../lib/fetcher.ts";
 import { kalshiMarketUrl, kalshiYesProb, kalshiTemPrecoReal } from "../lib/marketNormalize.ts";
 import type { KalshiEventsResponse, KalshiMarket, KalshiEvent, KalshiNestedMarket } from "../lib/types.ts";
@@ -154,14 +155,17 @@ async function fetchRankedEvents(maxPaginas: number, prazoFinal = Date.now() + O
     volume24hDoEvento(b) - volume24hDoEvento(a) || volumeTotalDoEvento(b) - volumeTotalDoEvento(a));
 }
 
-router.get("/markets", async (req, res) => {
-  // Teto 300 (era 100) e padrão 150 (era 40). O catálogo vivo do Kalshi comporta:
-  // dos ~2.000 eventos varridos, 379 têm volume em 24h. Com 40 o site mostrava uma
-  // fração mínima do que existe.
-  const limit = limitePedido(req.query.limit, 150, TETO_KALSHI);
-  try {
-    // SWR: serve cache fresco na hora; se venceu, devolve o velho e atualiza em bg.
-    const markets = await swr<KalshiMarket[]>("kalshi:markets", 120, async () => {
+/**
+ * Monta o catálogo do Kalshi a partir da fonte.
+ *
+ * Extraída de dentro da rota (Auditoria 21/09, DES-02) para poder rodar FORA
+ * de um pedido — quando a resposta já saiu da cópia guardada e a montagem vai
+ * para segundo plano. O conteúdo é o mesmo de antes, linha por linha.
+ *
+ * É a montagem mais cara do site: ~4s a frio, porque pagina cerca de 2.000
+ * eventos para ranquear por volume (a API do Kalshi não aceita ordenação).
+ */
+async function montarCatalogoKalshi(): Promise<KalshiMarket[]> {
       // ⚠️ PAGINAR E RANQUEAR, não pegar os primeiros. A API do Kalshi devolve os
       // eventos em ordem própria (nem volume, nem data) e NÃO aceita ordenação.
       // Pedir `?limit=40` direto trazia literalmente a borra do catálogo: em
@@ -370,12 +374,46 @@ router.get("/markets", async (req, res) => {
       // caminhos de montagem não enxergam (cada um só vê os irmãos da sua busca).
       // Aqui a lista final existe inteira, que é onde o invariante pode ser
       // realmente garantido.
-      return desambiguarTitulosIguais(
+      const catalogo = desambiguarTitulosIguais(
         porPai,
         { titulo: (m) => m.title, rotulo: (m) => m.rotuloDesfecho },
         (m, titulo) => ({ ...m, title: titulo }),
       );
-    });
+
+      // Guarda a versão boa para o próximo arranque frio (DES-02). `void`: se o
+      // banco estiver fora, a rota não pode atrasar nem falhar por isso.
+      void salvarCatalogo("kalshi", catalogo);
+      return catalogo;
+}
+
+router.get("/markets", async (req, res) => {
+  // Teto 300 (era 100) e padrão 150 (era 40). O catálogo vivo do Kalshi comporta:
+  // dos ~2.000 eventos varridos, 379 têm volume em 24h. Com 40 o site mostrava uma
+  // fração mínima do que existe.
+  const limit = limitePedido(req.query.limit, 150, TETO_KALSHI);
+  try {
+    /**
+     * ARRANQUE FRIO (Auditoria 21/09, DES-02) — ver o gêmeo em polymarket.ts.
+     * Aqui dói mais: a montagem do Kalshi leva ~4s a frio porque pagina cerca de
+     * 2.000 eventos para ranquear por volume. Com a memória vazia, servimos a
+     * última versão boa e mandamos a montagem para segundo plano, dizendo na
+     * resposta que é cópia e de quando ela é.
+     */
+    if (!getCache<KalshiMarket[]>("kalshi:markets")) {
+      const copia = await lerCatalogo<KalshiMarket>("kalshi");
+      if (copia) {
+        res.json({
+          markets: copia.itens.slice(0, limit),
+          total: copia.itens.length,
+          source: "arquivo",
+          atualizadoEm: copia.atualizadoEm,
+        });
+        void swr<KalshiMarket[]>("kalshi:markets", 120, montarCatalogoKalshi).catch(() => {});
+        return;
+      }
+    }
+    // SWR: serve cache fresco na hora; se venceu, devolve o velho e atualiza em bg.
+    const markets = await swr<KalshiMarket[]>("kalshi:markets", 120, montarCatalogoKalshi);
     // Corta DEPOIS do cache, não dentro dele. A chave (`kalshi:markets`) não inclui
     // o limit, então guardar a lista já cortada fazia o primeiro chamador definir o
     // tamanho para todos: quem pedisse 60 congelava 60 para quem pedisse 200 — e o
