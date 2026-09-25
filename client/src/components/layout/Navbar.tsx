@@ -41,7 +41,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useMarketAlerts } from "@/hooks/useMarketAlerts";
 import { useDispensar, ATALHO_BUSCA, ehMac } from "@/hooks/useDispensar";
 import { prefetchRoute } from "@/lib/prefetch";
-import { EVENTO_IA_USADA } from "@/lib/api";
+import { EVENTO_IA_USADA, buscarJson } from "@/lib/api";
 import { COTA_GRATIS_MENSAL } from "@shared/planos";
 import { rotuloDoNivel, nivelPorNumero } from "@shared/niveis";
 import { lembrarOndeEstou } from "@/lib/retornoLogin";
@@ -154,7 +154,7 @@ function ThemeToggle() {
 interface AiCredits { used: number; limit: number | null; plan: string }
 
 function UserMenu({ compacto = false }: { compacto?: boolean }) {
-  const { user, session } = useAuth();
+  const { user } = useAuth();
   const [, navigate] = useLocation();
   const [points, setPoints] = useState(() => loadProgress().totalPoints);
   const [credits, setCredits] = useState<AiCredits | null>(null);
@@ -169,25 +169,43 @@ function UserMenu({ compacto = false }: { compacto?: boolean }) {
     return () => window.removeEventListener("jlb:points", onPoints);
   }, []);
 
-  // Busca créditos de IA quando usuário está logado — e DE NOVO a cada análise.
-  // Sem a releitura, a pessoa gastava uma análise e seguia lendo "4 restantes"
-  // até recarregar a página: o débito ia para o banco, a tela não contava.
+  /**
+   * Busca créditos de IA quando o usuário está logado — e DE NOVO a cada
+   * análise. Sem a releitura, a pessoa gastava uma análise e seguia lendo "4
+   * restantes" até recarregar: o débito ia para o banco, a tela não contava.
+   *
+   * 🔴 ERAM SEIS CHAMADAS POR CARGA DE PÁGINA (Auditoria 21/09, DES-01),
+   * medidas em 24/09 numa visita a /mercados. Duas causas somadas:
+   *
+   *  · a dependência era o OBJETO `user` e o token inteiro. O supabase-js cria
+   *    objeto novo a cada evento de autenticação (inclusive a renovação
+   *    silenciosa de token), então o efeito reexecutava sem nada ter mudado.
+   *    Agora depende de `user?.id`, que é uma string estável;
+   *  · este componente é montado DUAS vezes na barra — a versão de desktop e a
+   *    compacta do celular. `buscarJson` colapsa as duas na mesma requisição.
+   *
+   * E `buscarJson` em vez de `fetch` cru com cabeçalho montado à mão: a regra
+   * da casa existe porque `fetch` cru sai sem `Authorization` e o sintoma é um
+   * pedido de login que não acaba nunca. Aqui o cabeçalho estava certo, mas
+   * duplicava o trabalho de `apiFetch` — e foi assim que a dedup se perdeu.
+   */
   useEffect(() => {
-    if (!user || !session?.access_token) return;
+    if (!user?.id) return;
     let vivo = true;
-    const ler = () => {
-      fetch("/api/ai/credits", { headers: { Authorization: `Bearer ${session.access_token}` } })
-        .then((r) => r.ok ? r.json() as Promise<AiCredits> : null)
+    // `ttl` zero na releitura: depois de gastar uma análise, cache é o que a
+    // pessoa NÃO pode receber.
+    const ler = (fresco = false) => {
+      void buscarJson<AiCredits>("/api/ai/credits", fresco ? 0 : undefined)
         .then((data) => { if (data && vivo) setCredits(data); })
         .catch(() => {});
     };
     ler();
     // O débito é diferido no servidor (ver lib/api.ts): perguntar na hora exata
     // pegaria o número anterior.
-    const aoUsarIA = () => setTimeout(ler, 1500);
+    const aoUsarIA = () => setTimeout(() => ler(true), 1500);
     window.addEventListener(EVENTO_IA_USADA, aoUsarIA);
     return () => { vivo = false; window.removeEventListener(EVENTO_IA_USADA, aoUsarIA); };
-  }, [user, session?.access_token]);
+  }, [user?.id]);
 
   if (!user) {
     return (

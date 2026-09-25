@@ -332,6 +332,44 @@ async function startServer() {
     next();
   });
 
+  /**
+   * CACHE DE BORDA PARA O QUE É PÚBLICO (Auditoria 21/09, DES-01).
+   *
+   * Nenhum GET do site mandava `Cache-Control` — medido em 24/09 em
+   * /api/polymarket/markets, /api/kalshi/markets, /api/ai/divergences e
+   * /api/health/data. Sem o cabeçalho, cada visita e cada F5 atravessa até o
+   * Node, e o catálogo sozinho são 237 KB de JSON. No plano do Render, com 0,1
+   * CPU, isso é tempo de CPU gasto para devolver exatamente a mesma resposta.
+   *
+   * `stale-while-revalidate` é o ponto: 30s de frescor e mais 120s em que o
+   * dado velho é entregue NA HORA enquanto a atualização corre atrás. Preço de
+   * mercado que anda alguns segundos atrasado continua sendo o preço; tela que
+   * demora 8 segundos para aparecer não é tela.
+   *
+   * ⚠️ LISTA EXPLÍCITA, e é a parte que importa. `public` autoriza QUALQUER
+   * cache no caminho — navegador, CDN, proxy — a guardar e reentregar a
+   * resposta a outra pessoa. Numa rota que varia por usuário isso é vazamento
+   * de dado entre contas. Por isso aqui não entra nada que dependa de quem
+   * pergunta: sem cota de IA, sem conta, sem duelos, sem liquidação, sem
+   * qualquer rota que leia o `Authorization`. Só dado que é igual para o mundo.
+   */
+  const GET_PUBLICO = [
+    /^\/api\/(polymarket|kalshi|manifold)\/markets\b/,
+    /^\/api\/(polymarket|kalshi)\/(market|regra)\//,
+    /^\/api\/polymarket\/clob-history\b/,
+    /^\/api\/snapshots\/history\//,
+    /^\/api\/mercados\/destaques\b/,
+    /^\/api\/ai\/divergences\b/,
+    /^\/api\/health\/data\b/,
+    /^\/api\/feed\/editorial\b/,
+  ];
+  app.use((req, res, next) => {
+    if (req.method === "GET" && GET_PUBLICO.some((r) => r.test(req.path))) {
+      res.setHeader("Cache-Control", "public, max-age=30, stale-while-revalidate=120");
+    }
+    next();
+  });
+
   // ── Routes ─────────────────────────────────────────────────────────────────
   app.use("/api",             marketRouter);
   app.use("/api/polymarket",  polymarketRouter);
