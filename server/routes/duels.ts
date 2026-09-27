@@ -44,6 +44,59 @@ function ready(res: import("express").Response): boolean {
   return true;
 }
 
+/**
+ * Responde a um erro dizendo DE QUEM é a culpa — e em português.
+ *
+ * 🔴 O QUE A VARREDURA PEGOU (27/09/2026). /duelos e /leaderboard devolviam
+ * `500 {"error":"internal"}` de forma intermitente: numa rodada falhavam, na
+ * seguinte passavam, e oito chamadas seguidas de curl davam 200. Não era
+ * defeito de código — era o Supabase demorando mais que o timeout de 8s.
+ *
+ * Os dois problemas de chamar isso de 500 "internal":
+ *
+ *  · para quem opera, 500 quer dizer "tem bug no servidor" e manda procurar um
+ *    defeito que não existe. Uma falha de fonte externa é esperada e
+ *    temporária, e o código de status dela é 503;
+ *  · para quem lê a tela, "internal" não é uma frase. O site fica sem dizer o
+ *    que houve, no mesmo padrão de tela-que-não-conta-quando-algo-falha que já
+ *    custou sete correções em setembro.
+ *
+ * A régua é a mesma do briefing: timeout, rede e resposta ruim do Supabase são
+ * 503 com texto honesto; o que sobra é 500 de verdade, e aí o alarme vale.
+ */
+/**
+ * O erro veio da fonte (e não do nosso código)?
+ *
+ * Exportada para ser TESTADA com os erros reais que estas rotas lançam. Uma
+ * checagem de "a regex existe no arquivo" não diria nada sobre o que ela
+ * classifica — e o que importa aqui é exatamente a linha divisória.
+ *
+ * `AbortError`/`TimeoutError` vêm do `AbortSignal.timeout`; `fetch failed` e
+ * `ECONNRESET` vêm da rede; `supabase 5xx` e `supabase 429` são o `throw` que
+ * estas rotas fazem quando o PostgREST responde mal. Um `supabase 400` NÃO
+ * entra: 400 é query errada, e query errada é defeito nosso.
+ */
+export function ehFalhaDeFonte(err: unknown): boolean {
+  const texto = err instanceof Error ? `${err.name}: ${err.message}` : String(err ?? "");
+  return /abort|timeout|fetch failed|ECONNRESET|ENOTFOUND|network|supabase 5\d\d|supabase 429/i.test(texto);
+}
+
+function respostaDeErro(res: import("express").Response, onde: string, err: unknown): void {
+  const fonteFora = ehFalhaDeFonte(err);
+  log.error(`[duels/${onde}] ${fonteFora ? "fonte indisponível" : "erro"}:`, err);
+  if (fonteFora) {
+    res.status(503).json({
+      error: "fonte_indisponivel",
+      message: "O banco não respondeu a tempo. Recarregue em alguns segundos.",
+    });
+    return;
+  }
+  res.status(500).json({
+    error: "internal",
+    message: "Algo deu errado do nosso lado. Já estamos sabendo.",
+  });
+}
+
 /** O que cada um pode ver: previsões do oponente só depois de resolvido. */
 function sanitize(d: DuelRow, viewerId: string | null) {
   const isCreator = viewerId === d.creator_id;
@@ -106,8 +159,7 @@ router.get("/ia-markets", async (_req, res) => {
       .map((m) => ({ marketId: m.marketId, source: m.source, title: m.title, probAtCreate: m.marketProb }));
     res.json({ markets });
   } catch (err) {
-    log.error("[duels/ia-markets] error:", err);
-    res.status(500).json({ error: "internal" });
+    respostaDeErro(res, "ia-markets", err);
   }
 });
 
@@ -154,8 +206,7 @@ router.get("/ranking", async (_req, res) => {
     setCache("duels-ranking", result, 300);
     res.json(result);
   } catch (err) {
-    log.error("[duels/ranking] error:", err);
-    res.status(500).json({ error: "internal" });
+    respostaDeErro(res, "ranking", err);
   }
 });
 
@@ -176,8 +227,7 @@ router.get("/open", async (_req, res) => {
       })),
     });
   } catch (err) {
-    log.error("[duels/open] error:", err);
-    res.status(500).json({ error: "internal" });
+    respostaDeErro(res, "open", err);
   }
 });
 
@@ -195,8 +245,7 @@ router.get("/mine", async (req, res) => {
     const rows = await r.json() as DuelRow[];
     res.json({ duels: rows.map((d) => sanitize(d, userId)) });
   } catch (err) {
-    log.error("[duels/mine] error:", err);
-    res.status(500).json({ error: "internal" });
+    respostaDeErro(res, "mine", err);
   }
 });
 
@@ -258,8 +307,7 @@ router.post("/", async (req, res) => {
     const [row] = await r.json() as DuelRow[];
     res.json({ duel: sanitize(row, userId) });
   } catch (err) {
-    log.error("[duels/create] error:", err);
-    res.status(500).json({ error: "internal" });
+    respostaDeErro(res, "create", err);
   }
 });
 
@@ -298,8 +346,7 @@ router.post("/:id/join", async (req, res) => {
     if (rows.length === 0) return res.status(409).json({ error: "not_open", message: "Alguém entrou primeiro." });
     res.json({ duel: sanitize(rows[0], userId) });
   } catch (err) {
-    log.error("[duels/join] error:", err);
-    res.status(500).json({ error: "internal" });
+    respostaDeErro(res, "join", err);
   }
 });
 
@@ -321,8 +368,7 @@ router.post("/:id/cancel", async (req, res) => {
     if (rows.length === 0) return res.status(409).json({ error: "cannot_cancel" });
     res.json({ ok: true });
   } catch (err) {
-    log.error("[duels/cancel] error:", err);
-    res.status(500).json({ error: "internal" });
+    respostaDeErro(res, "cancel", err);
   }
 });
 
@@ -449,8 +495,7 @@ router.post("/:id/resolve", async (req, res) => {
     const done = await finalizeDuel(duel, outcomes);
     res.json({ duel: sanitize(done ?? duel, userId) });
   } catch (err) {
-    log.error("[duels/resolve] error:", err);
-    res.status(500).json({ error: "internal" });
+    respostaDeErro(res, "resolve", err);
   }
 });
 

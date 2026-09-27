@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { num } from "@shared/formato";
 import { lembrarOndeEstou } from "@/lib/retornoLogin";
+import { apiFetch, buscarJson } from "@/lib/api";
 
 // ── Tipos ──────────────────────────────────────────────────────────────────
 
@@ -102,6 +103,8 @@ export default function Duelos() {
   const [open, setOpen] = useState<OpenDuel[]>([]);
   const [mine, setMine] = useState<MyDuel[]>([]);
   const [loading, setLoading] = useState(false);
+  /** A fonte do lobby não respondeu — distinto de lobby vazio. */
+  const [lobbyFora, setLobbyFora] = useState(false);
 
   // criação
   const [creating, setCreating] = useState(false);
@@ -125,14 +128,21 @@ export default function Duelos() {
 
   const loadAll = useCallback(async () => {
     setLoading(true);
+    setLobbyFora(false);
     try {
       const [o, m] = await Promise.allSettled([
-        fetch("/api/duels/open").then((r) => r.json() as Promise<{ duels: OpenDuel[] }>),
+        // `buscarJson` LANÇA quando a resposta é ruim — é o que separa "não há
+        // duelo aberto" de "o banco não respondeu". Com `fetch(...).then(r =>
+        // r.json())`, um 503 virava um objeto sem `duels`, o `?? []` o
+        // transformava em lista vazia e a tela anunciava "Nenhum duelo aberto
+        // agora" com toda a confiança. Foi o que a varredura de 27/09 pegou.
+        buscarJson<{ duels: OpenDuel[] }>("/api/duels/open"),
         token
-          ? fetch("/api/duels/mine", { headers: { Authorization: `Bearer ${token}` } }).then((r) => r.ok ? r.json() as Promise<{ duels: MyDuel[] }> : { duels: [] })
+          ? apiFetch("/api/duels/mine").then((r) => r.ok ? r.json() as Promise<{ duels: MyDuel[] }> : { duels: [] })
           : Promise.resolve({ duels: [] as MyDuel[] }),
       ]);
       if (o.status === "fulfilled") setOpen(o.value.duels ?? []);
+      else setLobbyFora(true);
       if (m.status === "fulfilled") setMine(m.value.duels ?? []);
     } finally { setLoading(false); }
   }, [token]);
@@ -146,8 +156,11 @@ export default function Duelos() {
 
     if (mode === "ia" && pickIA.length === 0) {
       try {
-        const r = await fetch("/api/duels/ia-markets");
-        const data = await r.json() as { markets?: DuelMarket[] };
+        // Mesmo motivo do lobby: com `fetch(...).then(r => r.json())`, um 503
+        // virava um objeto sem `markets` e a tela afirmava "a IA ainda não tem
+        // previsões recentes suficientes" — um fato sobre o nosso track record
+        // que ninguém verificou. `buscarJson` lança, e aí o toast diz a verdade.
+        const data = await buscarJson<{ markets?: DuelMarket[] }>("/api/duels/ia-markets");
         setPickIA(data.markets ?? []);
         if ((data.markets ?? []).length < 2) toast("A IA ainda não tem previsões recentes suficientes — tente o modo lobby.");
       } catch { toast.error("Não foi possível carregar os mercados da IA agora."); }
@@ -442,7 +455,23 @@ export default function Duelos() {
         {/* ── Lobby ── */}
         {tab === "lobby" && !joining && (
           <AnimatedSection>
-            {open.length === 0 ? (
+            {lobbyFora ? (
+              /* A tela precisa CONTAR quando não conseguiu carregar. Anunciar
+                 "nenhum duelo aberto" depois de uma falha é afirmar um fato que
+                 não foi verificado — e manda a pessoa criar um duelo para
+                 preencher um lobby que pode estar cheio. */
+              <div className="text-center py-14 glass-card rounded-xl px-6">
+                <Swords className="w-10 h-10 mx-auto text-muted-foreground mb-3" aria-hidden="true" />
+                <p className="text-sm font-medium text-foreground/80 mb-1">Não deu para carregar o lobby</p>
+                <p className="text-xs text-muted-foreground mb-5 max-w-prose mx-auto">
+                  O banco não respondeu a tempo — não sabemos se há duelos abertos agora.
+                </p>
+                <button onClick={() => void loadAll()}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-xs font-semibold hover:opacity-90 transition-opacity">
+                  Tentar de novo
+                </button>
+              </div>
+            ) : open.length === 0 ? (
               <div className="text-center py-14 glass-card rounded-xl px-6">
                 <Swords className="w-10 h-10 mx-auto text-muted-foreground mb-3" aria-hidden="true" />
                 <p className="text-sm font-medium text-foreground/80 mb-1">Nenhum duelo aberto agora</p>

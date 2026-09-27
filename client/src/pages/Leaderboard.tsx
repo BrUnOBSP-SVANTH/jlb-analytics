@@ -73,17 +73,51 @@ interface DuelRank {
   duels: number; avgBrier: number; winRate: number; isIA: boolean;
 }
 
-/** Ranking de duelistas — só aparece quando há duelos resolvidos. */
+/**
+ * Ranking de duelistas — só aparece quando há duelos resolvidos.
+ *
+ * 🔴 OU QUANDO A FONTE NÃO RESPONDE, E ERA O MESMO NADA (27/09/2026). O
+ * `.catch(() => {})` engolia a falha e o `rows.length === 0` escondia a seção:
+ * "ninguém duelou ainda" e "o banco não respondeu" produziam exatamente a mesma
+ * tela — um vazio sem explicação. É a família de defeito cujo sintoma é a
+ * AUSÊNCIA de algo, a que já custou sete correções em setembro.
+ *
+ * A varredura de hoje pegou o caso real: /leaderboard e /duelos deram 500
+ * intermitente porque o Supabase passou dos 8s de timeout. Nenhuma das duas
+ * telas contou nada.
+ *
+ * Agora são três estados distintos, e o vazio de verdade continua sumindo — o
+ * que está certo: seção sem conteúdo não vira "não há nada aqui" numa tela que
+ * já tem outro ranking acima.
+ */
 function DuelRanking() {
   const [rows, setRows] = useState<DuelRank[]>([]);
+  const [fonteFora, setFonteFora] = useState(false);
 
   useEffect(() => {
-    fetch("/api/duels/ranking")
-      .then((r) => r.ok ? r.json() as Promise<{ ranking: DuelRank[] }> : null)
-      .then((d) => { if (d) setRows(d.ranking ?? []); })
-      .catch(() => {});
+    // `buscarJson` e não `fetch` cru: é a única porta para /api (lib/api.ts),
+    // com dedup de requisição em voo e cache curto. E ela LANÇA em resposta
+    // ruim, que é o que permite distinguir falha de lista vazia.
+    buscarJson<{ ranking: DuelRank[] }>("/api/duels/ranking")
+      .then((d) => setRows(d.ranking ?? []))
+      .catch(() => setFonteFora(true));
   }, []);
 
+  if (fonteFora) {
+    return (
+      <AnimatedSection>
+        <div className="glass-card rounded-xl px-3 sm:px-5 py-4">
+          <p className="text-xs font-semibold text-foreground flex items-center gap-2 mb-1">
+            <Swords className="w-3.5 h-3.5 text-gold" aria-hidden="true" /> Ranking de duelistas
+          </p>
+          <p className="text-[11px] text-muted-foreground max-w-prose">
+            Não conseguimos carregar o ranking agora — o banco não respondeu a tempo.
+            Recarregue a página em alguns segundos.
+          </p>
+        </div>
+      </AnimatedSection>
+    );
+  }
   if (rows.length === 0) return null;
 
   return (

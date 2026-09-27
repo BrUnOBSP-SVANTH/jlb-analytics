@@ -228,8 +228,10 @@ async function montarCatalogoPoly(closed: boolean): Promise<PolyMarket[]> {
       .sort((a, b) => b._score - a._score)
       .map(({ _vol24h, _endMs, _score, ...rest }) => ({
         ...rest,
-        // URL canônica (marketNormalize): só /pt/event/{eventSlug} retorna 200; market.slug
-        // e id numérico dão 404 (o "mercado falso"). Sem eventSlug → descartado abaixo.
+        // URL canônica (shared/linksDeMercado.ts): /event/{eventSlug}. O market.slug
+        // e o id numérico dão 404 (o "mercado falso"), e o prefixo de idioma que
+        // este comentário mandava usar até 26/09 também passou a dar — o
+        // Polymarket removeu as rotas /pt/. Sem eventSlug → descartado abaixo.
         externalUrl: polyEventUrl(rest.eventSlug),
       }))
       // Corretor de mercados falsos: sem eventSlug não há página válida no Polymarket —
