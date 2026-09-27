@@ -102,7 +102,18 @@ function checkTypeScript() {
 function checkOrphanPages() {
   section("Telas órfãs (páginas fora das rotas)");
   const app = read(APP_TSX);
-  const pageFiles = walk(PAGES).map((f) => basename(f, ".tsx"));
+  // 🔴 Só `.tsx`, e nenhum teste (27/09/2026). O `walk` devolve `.ts` também, e
+  // `basename("Previsao.test.ts", ".tsx")` não corta nada — então o doctor
+  // anunciava, em vermelho e como CRÍTICO, duas "páginas órfãs" chamadas
+  // `Previsao.test.ts.tsx` e `niveis.test.ts.tsx`, que são testes ao lado do
+  // arquivo (o padrão da casa) e nunca deveriam estar em rota nenhuma.
+  //
+  // Alarme falso é pior que alarme nenhum: ensina a pessoa a passar o olho pela
+  // lista de prioridades sem ler. Numa rodada em que o doctor acusava 4
+  // críticos, DOIS eram isto.
+  const pageFiles = walk(PAGES, [".tsx"])
+    .map((f) => basename(f, ".tsx"))
+    .filter((p) => !/\.(test|spec)$/.test(p));
   const orphans = pageFiles.filter((p) => !app.includes(`pages/${p}`) && !app.includes(`./${p}`));
   if (orphans.length === 0) { line("✅", "Toda página está referenciada no App.tsx"); add("ok", "Telas", "Sem páginas órfãs"); }
   else for (const o of orphans) { line("🔴", `Página órfã: ${paint(o + ".tsx", c.red)}`, "não está em nenhuma rota → código morto"); add("crit", "Telas", `Página órfã: ${o}.tsx`, "deletar ou rotear"); }
@@ -718,6 +729,24 @@ async function checkLinksExternos(env) {
       continue;
     }
     if (urls.length === 0) { line("⚠️", paint(`${fonte}: nenhum link para conferir`, c.yellow)); continue; }
+
+    // 🔴 O SERVIDOR AUDITADO PODE ESTAR RODANDO CÓDIGO VELHO, e este alarme já
+    // disparou em falso DUAS vezes por isso — as duas acusando "12/12 links
+    // quebrados" que já estavam corrigidos, porque a instância aberta na porta
+    // era anterior ao conserto. A primeira vez custou uma investigação inteira.
+    //
+    // A checagem é barata: o formato que o servidor devolve tem de ser o mesmo
+    // que `shared/linksDeMercado.ts` produz hoje. Se divergir, o problema não é
+    // o link — é a instância, e dizer isso poupa a caçada.
+    const formatoAtual = { polymarket: "https://polymarket.com/event/", kalshi: "https://kalshi.com/markets/" }[fonte];
+    const forasDoFormato = urls.filter((u) => !u.startsWith(formatoAtual));
+    if (forasDoFormato.length === urls.length) {
+      line("⚠️", paint(`${fonte}: o servidor devolve um formato que o código atual não gera`, c.yellow));
+      line("  ", paint(`recebido  ${forasDoFormato[0].slice(0, 62)}`, c.dim));
+      line("  ", paint(`esperado  ${formatoAtual}…`, c.dim));
+      add("warn", "Links", `${fonte}: ${base} está rodando código anterior — reinicie antes de confiar neste item`);
+      continue;
+    }
 
     let ok = 0; const quebrados = []; let bloqueados = 0;
     for (const u of urls) {

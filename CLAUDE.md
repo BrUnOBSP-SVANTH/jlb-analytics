@@ -19,7 +19,7 @@ Anthropic → Gemini → Groq.
 | `pnpm dev:all` | Vite (:3000) + Express (:3001) juntos. `/api` e `/ws` são proxy para o :3001 |
 | `pnpm check` | TypeScript (`tsc --noEmit`) |
 | `pnpm lint` / `pnpm format` | ESLint / Prettier |
-| `pnpm test` | Vitest (client, server, shared, supabase) |
+| `pnpm test` | Vitest (client, server, shared, supabase, scripts) |
 | `pnpm test:e2e` | Playwright |
 | `pnpm doctor` | Auditoria de saúde: telas órfãs, mocks, env faltando, dados no Supabase. Sai com lista de prioridades. `--quick` pula o tsc |
 | `pnpm varredura` | Abre TODAS as rotas num navegador real e registra o que quebra. Acha o que o doctor não acha (erro de runtime em tela esquecida). Precisa do servidor local de pé |
