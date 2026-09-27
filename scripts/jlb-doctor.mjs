@@ -512,18 +512,39 @@ async function checkSupabase(env) {
 // Este bloco existe para essa regressão nunca mais passar despercebida. Precisa
 // do servidor no ar, porque o que importa não é a API de fora e sim o que a
 // NOSSA rota entrega depois de filtrar e ranquear.
+/**
+ * Qual servidor auditar.
+ *
+ * ⚠️ `process.env.PORT` VEM PRIMEIRO (26/09/2026). O doctor lia a porta só do
+ * arquivo `.env`, e numa máquina com mais de um servidor de pé ele auditava
+ * sempre o mesmo — foi assim que uma rodada acusou 12 links quebrados que já
+ * estavam consertados: ela mediu uma instância antiga, ainda rodando o código
+ * de oito dias atrás. Auditoria que não diz QUAL instância olhou é pior que
+ * nenhuma, porque parece resposta.
+ *
+ * A busca era copiada em duas checagens; agora é uma função.
+ */
+async function baseDoServidor(env) {
+  const candidatas = [
+    process.env.PORT ? `http://localhost:${process.env.PORT}` : null,
+    env.PORT ? `http://localhost:${env.PORT}` : null,
+    "http://localhost:3001",
+    env.APP_URL,
+  ].filter(Boolean);
+  for (const b of candidatas) {
+    try {
+      const r = await fetch(`${b}/api/kalshi/markets?limit=1`, { signal: AbortSignal.timeout(8_000) });
+      if (r.ok) return b;
+    } catch { /* tenta a próxima */ }
+  }
+  return null;
+}
+
 async function checkMarketFidelity(env) {
   section("Fidelidade do catálogo (Polymarket · Kalshi)");
   if (NO_LIVE) { line("⏭️", paint("Pulado (--no-live)", c.dim)); return; }
 
-  const bases = [env.PORT ? `http://localhost:${env.PORT}` : null, "http://localhost:3001", env.APP_URL].filter(Boolean);
-  let base = null;
-  for (const b of bases) {
-    try {
-      const r = await fetch(`${b}/api/kalshi/markets?limit=1`, { signal: AbortSignal.timeout(8_000) });
-      if (r.ok) { base = b; break; }
-    } catch { /* tenta o próximo */ }
-  }
+  const base = await baseDoServidor(env);
   if (!base) {
     line("ℹ️", paint("servidor fora do ar — suba com `pnpm dev:server` para auditar o catálogo", c.dim));
     return;
@@ -648,6 +669,81 @@ async function checkMarketFidelity(env) {
 // ── 8b. Segurança (self-monitoring, grátis) ──────────────────────────────────
 // O que mata segurança é REGRESSÃO: um CVE novo, uma tabela nova sem RLS, ou um
 // segredo commitado por engano. Este bloco pega os três sozinho a cada `pnpm doctor`.
+/**
+ * 🔴 OS LINKS DE SAÍDA ABREM MESMO? (26/09/2026)
+ *
+ * Esta checagem existe porque o mesmo defeito voltou duas vezes. Em agosto, o
+ * link para abrir o mercado na plataforma dava "página não encontrada"; o
+ * conserto centralizou a montagem e foi verificado 8 de 8 ao vivo. Um mês
+ * depois o Polymarket removeu as rotas de idioma — `/pt/event/…` virou 404 — e
+ * TODO link do site quebrou de novo, com os testes de unidade verdes o tempo
+ * inteiro.
+ *
+ * Teste de unidade prende o formato que NÓS escrevemos; ele não tem como
+ * perceber que a plataforma do outro lado mudou. Formato de URL de terceiro é
+ * dado externo, e dado externo se confere abrindo.
+ *
+ * E é um defeito que não chega por reclamação: quem clica SAI do site. Ninguém
+ * volta para avisar que o link estava quebrado.
+ *
+ * ⚠️ O kalshi.com responde 429 a requisição automatizada, mesmo com User-Agent
+ * de navegador. O que não dá para conferir é dito como não conferido — nunca
+ * contado como aprovado.
+ */
+async function checkLinksExternos(env) {
+  section("Links de saída (o clique leva a uma página real?)");
+  if (NO_LIVE) { line("⏭️", paint("Pulado (--no-live)", c.dim)); return; }
+
+  const base = await baseDoServidor(env);
+  if (!base) {
+    line("ℹ️", paint("servidor fora do ar — suba com `pnpm dev:server` para conferir os links", c.dim));
+    return;
+  }
+  line("ℹ️", paint(`auditando ${base}`, c.dim));
+
+  // Amostra, não o catálogo inteiro: o que se procura aqui é uma mudança de
+  // FORMATO, que quebra todos de uma vez. Doze por fonte acham isso de sobra e
+  // não viram uma varredura de dez minutos.
+  const AMOSTRA = 12;
+  const NAVEGADOR = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
+
+  for (const fonte of ["polymarket", "kalshi"]) {
+    let urls = [];
+    try {
+      const r = await fetch(`${base}/api/${fonte}/markets?limit=60`, { signal: AbortSignal.timeout(30_000) });
+      const mercados = r.ok ? ((await r.json()).markets ?? []) : [];
+      urls = [...new Set(mercados.map((m) => m.externalUrl).filter(Boolean))].slice(0, AMOSTRA);
+    } catch (e) {
+      line("⚠️", paint(`${fonte}: ${String(e.message).slice(0, 50)}`, c.yellow));
+      continue;
+    }
+    if (urls.length === 0) { line("⚠️", paint(`${fonte}: nenhum link para conferir`, c.yellow)); continue; }
+
+    let ok = 0; const quebrados = []; let bloqueados = 0;
+    for (const u of urls) {
+      try {
+        const r = await fetch(u, { headers: { "User-Agent": NAVEGADOR }, redirect: "follow", signal: AbortSignal.timeout(20_000) });
+        if (r.status === 429 || r.status === 403) bloqueados++;
+        else if (r.ok) ok++;
+        else quebrados.push(`HTTP ${r.status} ${u.slice(0, 64)}`);
+      } catch { bloqueados++; }
+    }
+
+    if (quebrados.length > 0) {
+      line("🔴", paint(`${fonte}: ${quebrados.length} de ${urls.length} links NÃO ABREM`, c.red));
+      for (const q of quebrados.slice(0, 3)) line("  ", paint(q, c.dim));
+      add("crit", "Links", `${fonte}: ${quebrados.length}/${urls.length} links de saída dão erro`, quebrados[0]);
+    } else if (ok > 0) {
+      line("✅", `${fonte}: ${ok} de ${urls.length} links abrem` + (bloqueados ? paint(` (${bloqueados} não deram para conferir)`, c.dim) : ""));
+      add("ok", "Links", `${fonte}: amostra de ${ok} links abre`);
+    } else {
+      // Tudo bloqueado é o caso do Kalshi: não é aprovação nem reprovação.
+      line("ℹ️", paint(`${fonte}: ${bloqueados} links não deram para conferir daqui (429/403) — verificar no navegador`, c.dim));
+      add("info", "Links", `${fonte}: não verificável por HTTP (${bloqueados} bloqueados)`);
+    }
+  }
+}
+
 async function checkSecurity(env = {}) {
   section("Segurança");
 
@@ -818,6 +914,7 @@ function report() {
   try { await checkAnthropic(env); } catch (e) { add("warn", "Doctor", "checkAnthropic falhou: " + e.message); }
   try { await checkSupabase(env); } catch (e) { add("warn", "Doctor", "checkSupabase falhou: " + e.message); }
   try { await checkMarketFidelity(env); } catch (e) { add("warn", "Doctor", "checkMarketFidelity falhou: " + e.message); }
+  try { await checkLinksExternos(env); } catch (e) { add("warn", "Doctor", "checkLinksExternos falhou: " + e.message); }
   try { await checkSecurity(env); } catch (e) { add("warn", "Doctor", "checkSecurity falhou: " + e.message); }
   try { checkInventory(); } catch (e) { add("warn", "Doctor", "checkInventory falhou: " + e.message); }
   const code = report();

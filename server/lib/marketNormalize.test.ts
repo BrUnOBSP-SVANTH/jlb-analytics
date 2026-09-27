@@ -14,8 +14,20 @@ describe("parseYesPrice — preço do 'Yes' (índice 0) do Polymarket", () => {
 });
 
 describe("polyEventUrl — corretor de link do Polymarket", () => {
-  it("monta /pt/event/{eventSlug}", () => {
-    expect(polyEventUrl("fed-decision-in-september")).toBe("https://polymarket.com/pt/event/fed-decision-in-september");
+  /**
+   * 🔴 ESTE TESTE PRENDIA O FORMATO ERRADO (26/09/2026).
+   *
+   * Ele nasceu em agosto junto com o conserto dos "mercados falsos" e fixava
+   * `/pt/event/{slug}` — que era verdade naquele dia, verificado 8 de 8 ao vivo.
+   * Um mês depois o Polymarket removeu as rotas de idioma e TODO link do site
+   * passou a dar "página não encontrada", com este teste verde o tempo inteiro.
+   *
+   * A lição não é o endereço: é que formato de URL de terceiro é DADO EXTERNO,
+   * e teste de unidade não consegue perceber que o mundo mudou. Quem percebe é
+   * o `pnpm doctor`, que agora ABRE uma amostra dos links de verdade.
+   */
+  it("monta /event/{eventSlug} — sem prefixo de idioma", () => {
+    expect(polyEventUrl("fed-decision-in-september")).toBe("https://polymarket.com/event/fed-decision-in-september");
   });
   it("sem eventSlug → undefined (não expõe página 404)", () => {
     expect(polyEventUrl(undefined)).toBeUndefined();

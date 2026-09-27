@@ -24,6 +24,7 @@ import { termosDistintivos, filtrarRelacionados } from "@/lib/relevancia";
 import { historicoDoToken } from "@/lib/historicoPreco";
 import { serieDiaria } from "@/lib/serieDiaria";
 import { nomeDaSerie } from "@/components/marketDetail/utils";
+import { HOME_KALSHI, HOME_POLYMARKET, urlDoEventoPoly } from "@shared/linksDeMercado";
 
 export function useMarketDetail(marketId: string) {
   const source = marketId.startsWith("kalshi-") ? "kalshi"
@@ -101,7 +102,7 @@ export function useMarketDetail(marketId: string) {
               volume: found.volume,
               volume24h: found.volume24h,
               liquidity: found.openInterest,
-              externalUrl: found.externalUrl ?? "https://kalshi.com",
+              externalUrl: found.externalUrl ?? HOME_KALSHI,
               source: "kalshi",
               category: found.category,
               status: found.status,
@@ -120,7 +121,7 @@ export function useMarketDetail(marketId: string) {
               setMarket({
                 id: fb.ticker, title: fb.title, yesProb: fb.yesProb / 100,
                 volume: fb.volume, volume24h: fb.volume24h, liquidity: fb.openInterest,
-                externalUrl: "https://kalshi.com", source: "kalshi",
+                externalUrl: HOME_KALSHI, source: "kalshi",
                 category: fb.category, status: fb.status, resolvedOutcome: fb.resolvedOutcome,
               });
             }
@@ -191,7 +192,7 @@ export function useMarketDetail(marketId: string) {
               volume24h: found.volume24h !== undefined ? Number(found.volume24h) : undefined,
               liquidity: found.liquidity !== undefined ? Number(found.liquidity) : undefined,
               weekPriceChange: found.weekPriceChange !== undefined ? Number(found.weekPriceChange) : undefined,
-              externalUrl: found.externalUrl ?? (found.eventSlug ? `https://polymarket.com/pt/event/${found.eventSlug}` : "https://polymarket.com/pt"),
+              externalUrl: found.externalUrl ?? urlDoEventoPoly(found.eventSlug) ?? HOME_POLYMARKET,
               source: "polymarket",
               category: found.category,
               endDate: found.endDate,
@@ -210,7 +211,7 @@ export function useMarketDetail(marketId: string) {
                 id: fb.id, title: fb.question ?? "Mercado", yesProb: yp,
                 volume: fb.volume, volume24h: fb.volume24h, liquidity: fb.liquidity,
                 weekPriceChange: fb.weekPriceChange,
-                externalUrl: "https://polymarket.com/pt", source: "polymarket",
+                externalUrl: HOME_POLYMARKET, source: "polymarket",
                 category: fb.category, endDate: fb.endDate, closed: fb.closed, active: fb.active,
                 resolvedOutcome: fb.resolvedOutcome,
               });

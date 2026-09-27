@@ -16,6 +16,7 @@ import type { PolyBet, KalshiMarket } from "./trending";
 import { SALDO_INICIAL, type Aposta, type Lado } from "@shared/banca";
 import { descreverPolymarket } from "@shared/descreverMercado";
 import { mercadoQueLiquida } from "@shared/liquidacao";
+import { HOME_KALSHI, HOME_POLYMARKET, urlDoEventoKalshi, urlDoEventoPoly } from "@shared/linksDeMercado";
 
 /** Uma aposta da banca, como a tela precisa dela. */
 export interface ApostaBanca extends Aposta {
@@ -208,7 +209,7 @@ export async function carregarMercados(): Promise<MercadoBanca[]> {
         titulo: descricao.titulo || (m.question ?? ""),
         desfecho: ehSimNao ? undefined : descricao.lider?.rotulo,
         probSim: ehSimNao ? p : (descricao.lider?.prob ?? p),
-        urlExterna: m.externalUrl ?? (m.eventSlug ? `https://polymarket.com/pt/event/${m.eventSlug}` : "https://polymarket.com/pt"),
+        urlExterna: m.externalUrl ?? urlDoEventoPoly(m.eventSlug) ?? HOME_POLYMARKET,
         fechaEm: m.endDate ?? m.closeTime ?? null,
         fonte: "polymarket" as const,
         volume: numero(m.volume),
@@ -223,7 +224,7 @@ export async function carregarMercados(): Promise<MercadoBanca[]> {
       id: `kalshi-${m.ticker}`,
       titulo: m.title ?? "",
       probSim: m.yesProb,
-      urlExterna: m.externalUrl ?? `https://kalshi.com/markets/${(m.seriesTicker ?? "").toLowerCase()}/${(m.eventTicker ?? "").toLowerCase()}`,
+      urlExterna: m.externalUrl ?? urlDoEventoKalshi(m.seriesTicker, m.eventTicker) ?? HOME_KALSHI,
       fechaEm: m.closeTime ?? null,
       fonte: "kalshi" as const,
       volume: numero(m.volume),

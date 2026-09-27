@@ -10,6 +10,7 @@ import { descreverMercado, type TipoDeMercado } from "@shared/descreverMercado";
 import { dolar, pct, pp } from "@shared/formato";
 import { nomeDaPlataforma, volumeNaMoeda } from "@shared/plataforma";
 import { getMarkets } from "@/lib/marketsCache";
+import { HOME_KALSHI, urlDoEventoKalshi, urlDoEventoPoly } from "@shared/linksDeMercado";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -575,7 +576,7 @@ export function buildPolyItem(bet: PolyBet): TrendingItem | null {
   const weekChg = bet.weekPriceChange !== undefined ? toNum(bet.weekPriceChange) : undefined;
   // Link canônico: prefere o do servidor; senão SÓ /event/{eventSlug} (market.slug e
   // id numérico dão 404 no Polymarket — era a origem dos "mercados falsos").
-  const externalUrl = bet.externalUrl ?? (bet.eventSlug ? `https://polymarket.com/pt/event/${bet.eventSlug}` : "");
+  const externalUrl = bet.externalUrl ?? urlDoEventoPoly(bet.eventSlug) ?? "";
 
   const badge: DynamicBadge | undefined =
     isClosingSoon(bet.closeTime ?? bet.endDate) ? "encerrando" :
@@ -647,7 +648,7 @@ export function buildKalshiItem(m: KalshiMarket): TrendingItem | null {
     yesProb: yesDecimal,
     prevYesProb: prevDecimal,
     parsedOutcomes: m.outcomes,
-    externalUrl: m.externalUrl ?? `https://kalshi.com/markets/${m.seriesTicker.toLowerCase()}/${m.eventTicker.toLowerCase()}`,
+    externalUrl: m.externalUrl ?? urlDoEventoKalshi(m.seriesTicker, m.eventTicker) ?? HOME_KALSHI,
     whyTrending: whyTrendingMarket({
       volume: m.volume, volume24h: m.volume24h, liquidity: m.liquidity, yesProb: yesDecimal,
       prevYesProb: prevDecimal, source: "kalshi", multiDesfecho: !!m.outcomes,

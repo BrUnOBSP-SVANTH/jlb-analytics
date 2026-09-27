@@ -20,6 +20,7 @@ import { ArticleDetailModal } from "@/components/noticias/AnalysisModals";
 import { loadPredictions, type StoredPrediction } from "@/lib/predictions";
 import { useSEO } from "@/hooks/useSEO";
 import { num } from "@shared/formato";
+import { HOME_KALSHI, HOME_POLYMARKET } from "@shared/linksDeMercado";
 
 // ── Articles ───────────────────────────────────────────────────────────────
 
@@ -328,7 +329,7 @@ export default function Noticias() {
             </div>
             <p className="text-xs text-muted-foreground text-center mt-6">
               Dados:{" "}
-              <a href="https://polymarket.com/pt" target="_blank" rel="noopener noreferrer" className="text-gold underline underline-offset-2 decoration-gold/40 hover:decoration-gold">Polymarket</a>
+              <a href={HOME_POLYMARKET} target="_blank" rel="noopener noreferrer" className="text-gold underline underline-offset-2 decoration-gold/40 hover:decoration-gold">Polymarket</a>
               {" "}via Gamma API · Probabilidades implícitas do mercado de previsão.
             </p>
           </AnimatedSection>
@@ -344,7 +345,7 @@ export default function Noticias() {
             </div>
             <p className="text-xs text-muted-foreground text-center mt-6">
               Dados:{" "}
-              <a href="https://kalshi.com" target="_blank" rel="noopener noreferrer" className="text-gold hover:underline">Kalshi</a>
+              <a href={HOME_KALSHI} target="_blank" rel="noopener noreferrer" className="text-gold hover:underline">Kalshi</a>
               {" "}via Trading API · Mercados preditivos regulamentados nos EUA.
             </p>
           </AnimatedSection>

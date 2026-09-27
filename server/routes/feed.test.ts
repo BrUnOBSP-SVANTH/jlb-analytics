@@ -4,7 +4,7 @@ import { readOf, assembleFeed, computeDeltas, type PolyMarket, type KalshiMarket
 // Fábricas de mercado com defaults sãos — cada teste sobrescreve só o que importa.
 const poly = (over: Partial<PolyMarket> = {}): PolyMarket => ({
   id: "p1", question: "Vai chover?", outcomePrices: JSON.stringify(["0.60", "0.40"]),
-  category: "politics", volume: 1000, externalUrl: "https://polymarket.com/pt/event/x", ...over,
+  category: "politics", volume: 1000, externalUrl: "https://polymarket.com/event/x", ...over,
 });
 const kalshi = (over: Partial<KalshiMarket> = {}): KalshiMarket => ({
   ticker: "K1", title: "Fed sobe juros?", yesProb: 55,

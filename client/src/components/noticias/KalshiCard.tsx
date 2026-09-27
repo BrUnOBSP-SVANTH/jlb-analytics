@@ -12,6 +12,7 @@ import { registrarPrevisao } from "@/lib/predictionsSync";
 import { awardPoints } from "@/lib/userProgress";
 import { track } from "@/lib/analytics";
 import { num, prazoEmPalavras } from "@shared/formato";
+import { HOME_KALSHI, urlDoEventoKalshi } from "@shared/linksDeMercado";
 
 export function KalshiCard({ market }: { market: KalshiMarket }) {
   const [translation, setTranslation] = useState<string | null>(null);
@@ -164,7 +165,7 @@ export function KalshiCard({ market }: { market: KalshiMarket }) {
           )}
         </div>
         <a
-          href={`https://kalshi.com/markets/${market.seriesTicker.toLowerCase()}/${market.eventTicker.toLowerCase()}`}
+          href={urlDoEventoKalshi(market.seriesTicker, market.eventTicker) ?? HOME_KALSHI}
           target="_blank"
           rel="noopener noreferrer"
           className="p-1 text-muted-foreground hover:text-gold transition-colors"

@@ -17,6 +17,7 @@ import { awardPoints } from "@/lib/userProgress";
 import { track } from "@/lib/analytics";
 import { traduzir, pareceEmPortugues } from "@/lib/traducao";
 import { num, prazoEmPalavras } from "@shared/formato";
+import { HOME_POLYMARKET, urlDoEventoPoly } from "@shared/linksDeMercado";
 
 interface TrackFormProps {
   market: PolyMarket;
@@ -258,7 +259,7 @@ export function MarketCard({ market, savedIds, onSaved, highlight = false, indic
             </button>
           )}
           <a
-            href={market.eventSlug ? `https://polymarket.com/pt/event/${market.eventSlug}` : "https://polymarket.com/pt"}
+            href={urlDoEventoPoly(market.eventSlug) ?? HOME_POLYMARKET}
             target="_blank"
             rel="noopener noreferrer"
             className="p-1 text-muted-foreground hover:text-gold transition-colors"

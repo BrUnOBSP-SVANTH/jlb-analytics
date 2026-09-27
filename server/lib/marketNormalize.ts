@@ -4,6 +4,7 @@
  * nosso formato, e um erro silencioso aqui gera "mercado falso" (link 404) ou uma
  * probabilidade errada — exatamente as regressões que já corrigimos.
  */
+import { urlDoEventoPoly, urlDoEventoKalshi, HOME_KALSHI } from "../../shared/linksDeMercado.ts";
 
 /** Preço do "Yes" (índice 0) de um outcomePrices JSON do Polymarket. É a base da
  *  probabilidade de cada desfecho num evento negRisk. Nunca lança: inválido → 0. */
@@ -17,20 +18,20 @@ export function parseYesPrice(outcomePrices?: string): number {
 }
 
 /**
- * URL canônica do Polymarket. SÓ existe `/pt/event/{eventSlug}` — market.slug e o id
- * numérico dão 404 (o "mercado falso" que o usuário via ao clicar). Sem eventSlug não
- * há página válida → undefined, e o chamador descarta o mercado em vez de expor o 404.
+ * ⚠️ A MONTAGEM DAS URLs MUDOU DE CASA (26/09/2026). Ela mora em
+ * `shared/linksDeMercado.ts`, porque o mesmo defeito voltou: o endereço estava
+ * escrito à mão em seis arquivos, o Polymarket removeu as rotas de idioma
+ * (`/pt/event/…` virou 404) e as cópias do cliente ficaram para trás.
+ *
+ * Estes dois nomes continuam exportados porque meia dúzia de lugares no
+ * servidor já os importava — o que eles fazem agora é encaminhar.
  */
 export function polyEventUrl(eventSlug?: string): string | undefined {
-  return eventSlug ? `https://polymarket.com/pt/event/${eventSlug}` : undefined;
+  return urlDoEventoPoly(eventSlug);
 }
 
-/**
- * URL canônica do Kalshi: `/markets/{série}/{evento}` em MINÚSCULAS. Maiúsculo dá 404
- * (a causa dos "mercados falsos" da Kalshi); o slug do meio (título da série) é opcional.
- */
 export function kalshiMarketUrl(seriesTicker: string, eventTicker: string): string {
-  return `https://kalshi.com/markets/${seriesTicker.toLowerCase()}/${eventTicker.toLowerCase()}`;
+  return urlDoEventoKalshi(seriesTicker, eventTicker) ?? HOME_KALSHI;
 }
 
 export interface Outcome<T> { label: string; prob: number; ref: T }

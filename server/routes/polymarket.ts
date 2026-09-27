@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { swr, getCache, setCache } from "../lib/cache.ts";
 import { lerCatalogo, salvarCatalogo } from "../lib/catalogoPersistido.ts";
+import { urlDoEventoPoly } from "../../shared/linksDeMercado.ts";
 import { fetchWithRetry, fetchJSON } from "../lib/fetcher.ts";
 import { parseYesPrice, polyEventUrl, rankOutcomes } from "../lib/marketNormalize.ts";
 import type { PolyEvent, PolyMarket } from "../lib/types.ts";
@@ -279,7 +280,21 @@ router.get("/markets", async (req, res) => {
       if (copia) {
         const limiteDaCopia = limitePedido(req.query.limit, 300, 400);
         res.json({
-          markets: copia.itens.slice(0, limiteDaCopia).map(paraLista),
+          /**
+           * 🔴 O LINK É RECALCULADO, NÃO LIDO DA CÓPIA (26/09/2026).
+           *
+           * A cópia guarda o `externalUrl` que valia quando ela foi feita. No
+           * dia em que o Polymarket removeu as rotas de idioma, o conserto
+           * entrou no código e a cópia continuou servindo o endereço velho —
+           * por até seis horas, com o defeito já corrigido.
+           *
+           * Vale para qualquer valor DERIVADO guardado em cache: o dado bruto
+           * envelhece devagar, a regra que o transforma muda de uma vez. Então
+           * o que se guarda é o dado; a apresentação se refaz na leitura.
+           */
+          markets: copia.itens
+            .map((m) => ({ ...m, externalUrl: urlDoEventoPoly(m.eventSlug) ?? m.externalUrl }))
+            .slice(0, limiteDaCopia).map(paraLista),
           total: copia.itens.length,
           source: "arquivo",
           atualizadoEm: copia.atualizadoEm,
