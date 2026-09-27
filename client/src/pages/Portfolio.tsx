@@ -101,7 +101,6 @@ export default function Portfolio() {
       compacto
           title="Banca Simulada"
           subtitle="Teste suas estimativas com dinheiro fictício em mercados reais e veja quanto teria ganhado — ou perdido."
-          badge="Simulação"
         />
         <div className="container py-16">
           <div className="max-w-md mx-auto text-center glass-card rounded-2xl p-8">
@@ -130,7 +129,6 @@ export default function Portfolio() {
       <PageHeader
         title="Banca Simulada"
         subtitle="Teste suas estimativas com dinheiro fictício em mercados reais do Polymarket e Kalshi. O resultado vem da liquidação oficial — não de chute nosso."
-        badge="Simulação"
       />
 
       <div className="container py-10 space-y-8">

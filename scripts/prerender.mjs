@@ -14,6 +14,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium } from "@playwright/test";
+import { ORIGEM_PUBLICA } from "../shared/rotas.ts";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const OUT = path.join(ROOT, "prerendered");
@@ -87,7 +88,16 @@ try {
     if (og && !og.startsWith(titulo.slice(0, 20))) {
       console.warn(`  ⚠ og:title não acompanhou a rota ${route}: "${og.slice(0, 60)}"`);
     }
-    const html = await page.content();
+    // O `useSEO` monta canonical e og:url a partir de `window.location.origin` —
+    // que aqui é o servidor descartável que este script sobe. Sem a troca, o
+    // snapshot sai com `<link rel="canonical" href="http://localhost:3312/...">`,
+    // e era isso que o Googlebot recebia em produção (medido em 27/09/2026): um
+    // canonical para um endereço que só existe nesta máquina. O Google honra o
+    // canonical, não consegue buscá-lo, e a página não entra no índice — o
+    // sitemap podia estar perfeito que as 17 rotas com snapshot continuariam
+    // invisíveis. Escrever o endereço público ainda junta o domínio e o host do
+    // Render numa página só, em vez de duas concorrendo entre si.
+    const html = (await page.content()).replaceAll(BASE, ORIGEM_PUBLICA);
     fs.writeFileSync(path.join(OUT, slug(route)), "<!doctype html>\n" + html.replace(/^<!doctype html>\s*/i, ""), "utf-8");
     console.log(`ok: ${route} → ${slug(route)} (${Math.round(html.length / 1024)}KB) — "${titulo.slice(0, 60)}"`);
   }

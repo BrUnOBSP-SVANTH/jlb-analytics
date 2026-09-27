@@ -98,8 +98,22 @@ export function rotaExiste(caminho: string): boolean {
   return ROTAS_PUBLICAS.some((r) => r.caminho === p) || ROTAS_PRIVADAS.includes(p) || DETALHE_MERCADO.test(p);
 }
 
-/** Endereço público do site — o mesmo que robots.txt anuncia. */
-export const ORIGEM_PUBLICA = "https://jlb-analytics.onrender.com";
+/**
+ * Endereço público do site — o mesmo que o robots.txt anuncia e que o sitemap usa.
+ *
+ * Era `jlb-analytics.onrender.com`, o endereço de graça que a plataforma dá. Em
+ * 27/09/2026 o domínio próprio entrou no ar e a propriedade cadastrada no Google
+ * Search Console passou a ser `jlbanalytics.com`.
+ *
+ * Isso não é cosmético: o Search Console recusa sitemap cujo `<loc>` aponte para
+ * fora da propriedade. Com o endereço do Render aqui, o envio voltaria erro e
+ * NENHUMA das 22 páginas seria descoberta — o sitemap existiria sem servir para
+ * nada, que é o pior dos casos (parece feito).
+ *
+ * O endereço do Render continua respondendo; quem junta os dois num só é o
+ * canonical, que aponta para cá.
+ */
+export const ORIGEM_PUBLICA = "https://jlbanalytics.com";
 
 /** O sitemap.xml inteiro, gerado da tabela (`pnpm sitemap` grava em client/public). */
 export function sitemapXml(origem = ORIGEM_PUBLICA): string {

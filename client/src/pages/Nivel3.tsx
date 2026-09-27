@@ -334,7 +334,7 @@ export default function Nivel3() {
   return (
     <div>
       <PageHeader
-        badge="Nível 3"
+        nota="Nível 3 da trilha."
         title="Modelos Básicos"
         subtitle="Os modelos que o sistema usa por baixo dos panos — agora acessíveis para você calcular, questionar e entender o que cada variável significa."
       />

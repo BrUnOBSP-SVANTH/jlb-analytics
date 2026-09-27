@@ -242,7 +242,6 @@ export default function Leaderboard() {
       compacto
         title="Leaderboard"
         subtitle="Ranking público de calibração — os forecasters mais precisos da plataforma, por Brier Score."
-        badge="Comunidade"
       />
 
       <div className="container py-10 space-y-8 max-w-4xl mx-auto">

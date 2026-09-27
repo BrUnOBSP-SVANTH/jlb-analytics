@@ -2,7 +2,8 @@ import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { ROTAS_PUBLICAS, ROTAS_PRIVADAS, APELIDOS, destinoDoApelido, rotaExiste, sitemapXml } from "./rotas.ts";
+import { readdirSync } from "node:fs";
+import { ROTAS_PUBLICAS, ROTAS_PRIVADAS, APELIDOS, destinoDoApelido, rotaExiste, sitemapXml, ORIGEM_PUBLICA } from "./rotas.ts";
 
 const RAIZ = join(dirname(fileURLToPath(import.meta.url)), "..");
 const ler = (p: string) => readFileSync(join(RAIZ, p), "utf-8");
@@ -66,6 +67,53 @@ describe("roteador, sitemap e manifest leem a mesma tabela", () => {
     for (const s of manifest.shortcuts ?? []) {
       expect(destinoDoApelido(s.url), `${s.url} é apelido`).toBeNull();
       expect(rotaExiste(s.url), `${s.url} não existe`).toBe(true);
+    }
+  });
+});
+
+/**
+ * O endereço público tem que ser UM só, em todo lugar que o buscador lê.
+ *
+ * O QUE ACONTECIA (medido em 27/09/2026, contra o site no ar). O domínio próprio
+ * entrou no ar e nada no repositório soube: o sitemap e o robots.txt anunciavam
+ * `jlb-analytics.onrender.com` — endereço fora da propriedade do Search Console,
+ * que faz o envio do sitemap voltar erro.
+ *
+ * Pior que isso, e invisível: os snapshots de `prerendered/` são tirados contra
+ * o servidor descartável do prerender, em `localhost:3312`, e o `useSEO` monta o
+ * canonical a partir de `window.location.origin`. Resultado em PRODUÇÃO — o
+ * Googlebot pedia /calculadoras e recebia
+ * `<link rel="canonical" href="http://localhost:3312/calculadoras">`. Canonical
+ * é ordem, não sugestão: o Google ia procurar a página num endereço que só
+ * existe na máquina de quem rodou o build, e desistia. As 17 rotas com snapshot
+ * — /educacao, os cinco níveis, /track-record, /planos — ficavam fora do índice
+ * com o sitemap impecável.
+ *
+ * É a família de defeito cujo sintoma é a AUSÊNCIA de algo: ninguém vê canonical
+ * errado olhando o site, porque o navegador de gente não recebe o snapshot.
+ */
+describe("o endereço público é um só", () => {
+  const ehNossa = (url: string) => url.startsWith(ORIGEM_PUBLICA);
+
+  it("o robots.txt anuncia o sitemap no mesmo endereço da tabela", () => {
+    expect(ler("client/public/robots.txt")).toContain(`Sitemap: ${ORIGEM_PUBLICA}/sitemap.xml`);
+  });
+
+  it("o index.html não fixa outro endereço em og:image, JSON-LD ou afins", () => {
+    for (const url of ler("client/index.html").match(/https?:\/\/[^"'\s<)]+/g) ?? []) {
+      if (url.includes("schema.org")) continue; // vocabulário do JSON-LD, não é nosso endereço
+      expect(ehNossa(url), `${url} no index.html não é ${ORIGEM_PUBLICA}`).toBe(true);
+    }
+  });
+
+  it("nenhum snapshot manda o buscador para localhost ou para outro host", () => {
+    const arquivos = readdirSync(join(RAIZ, "prerendered")).filter((f) => f.endsWith(".html"));
+    expect(arquivos.length, "prerendered/ vazio — rode `pnpm build && pnpm prerender`").toBeGreaterThan(0);
+    for (const f of arquivos) {
+      const html = ler(join("prerendered", f));
+      for (const m of html.matchAll(/(?:rel="canonical" href|property="og:url" content|name="twitter:url" content)="([^"]*)"/g)) {
+        expect(ehNossa(m[1]), `${f}: ${m[1]}`).toBe(true);
+      }
     }
   });
 });

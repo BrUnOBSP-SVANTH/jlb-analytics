@@ -3,7 +3,7 @@
  * Briefing diário gerado por IA: análise macro + top mercados + dica de calibração
  */
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Link } from "wouter";
 import {
   RefreshCw, TrendingUp, AlertTriangle,
@@ -281,6 +281,33 @@ export default function Briefing() {
 
   useEffect(() => { if (!briefing) void fetchBriefing(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  /**
+   * O número que a régua do cabeçalho mostra.
+   *
+   * A MEDIANA dos mercados que entraram no briefing, e não o maior deles, por
+   * uma razão de edição: o mercado individual já aparece logo abaixo, em
+   * destaque, com a pergunta inteira. Repeti-lo no topo não acrescenta nada.
+   * A mediana diz o que a página não diz em lugar nenhum — onde o dia inteiro
+   * está na escala.
+   *
+   * Sem mercados carregados não há régua: `undefined`, e o cabeçalho fica só
+   * com título e subtítulo. Nunca um valor de reserva — régua com número
+   * inventado é exatamente o que ela era antes.
+   */
+  const medidaDoDia = useMemo(() => {
+    const probs = (briefing?.topMarkets ?? [])
+      .map((m) => m.prob)
+      .filter((p): p is number => Number.isFinite(p))
+      .sort((a, b) => a - b);
+    if (probs.length === 0) return undefined;
+    const meio = Math.floor(probs.length / 2);
+    const mediana = probs.length % 2 ? probs[meio] : (probs[meio - 1] + probs[meio]) / 2;
+    return {
+      valor: Math.round(mediana),
+      rotulo: `Mediana dos ${probs.length} mercados mais movimentados de hoje.`,
+    };
+  }, [briefing?.topMarkets]);
+
   const generatedDate = briefing?.generatedAt
     ? new Date(briefing.generatedAt).toLocaleString("pt-BR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })
     : null;
@@ -289,9 +316,10 @@ export default function Briefing() {
     <div>
     <AnaliseTabs />
     <PageHeader
-      badge={briefing?.topTheme ?? "IA + Macro"}
       title="Briefing Diário"
-      subtitle={`Análise gerada por IA com dados de mercados preditivos e macro${generatedDate ? ` · ${generatedDate}` : ""}`}
+      subtitle="Análise gerada por IA com dados de mercados preditivos e macro."
+      nota={[briefing?.topTheme, generatedDate && `Gerado em ${generatedDate}`].filter(Boolean).join(". ")}
+      medida={medidaDoDia}
     />
     <div className="max-w-4xl mx-auto px-4 py-8 space-y-8">
       <div className="flex justify-end">

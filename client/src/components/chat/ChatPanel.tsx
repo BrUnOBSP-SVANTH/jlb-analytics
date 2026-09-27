@@ -275,7 +275,7 @@ export default function ChatPanel({ open, onClose, onReady }: { open: boolean; o
       // A altura era FIXA em 520px: com 88px de base, numa janela de 631px o
       // painel subia por cima do header e cobria o botão "Entrar". Agora 520px é
       // o desejado, não o imposto — o teto desconta header e base.
-      className="fixed z-40 inset-x-3 bottom-20 sm:inset-x-auto sm:right-6 sm:bottom-[5.5rem] sm:w-[380px] h-[70vh] sm:h-[520px] max-h-[calc(100dvh-10rem)] glass-card rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-200"
+      className="fixed z-40 inset-x-3 bottom-20 sm:inset-x-auto sm:right-6 sm:bottom-[5.5rem] sm:w-[380px] h-[70vh] sm:h-[520px] max-h-[calc(100dvh-10rem)] glass-card sobreposto rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-200"
     >
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-border/40 shrink-0">

@@ -106,7 +106,7 @@ export default function Imprensa() {
   return (
     <div>
       <PageHeader
-        badge="Para redações e portais"
+        nota="Para redações e portais."
         title="Probabilidades como conteúdo editorial"
         subtitle="A mesma probabilidade que move os mercados, pronta para a sua matéria: número ao vivo, movimento da semana e leitura em português — com histórico auditável por trás."
       />

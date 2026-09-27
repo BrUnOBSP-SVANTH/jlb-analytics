@@ -76,7 +76,6 @@ export default function Sobre() {
       <PageHeader
         title="Sobre a JLB Analytics"
         subtitle="A plataforma de educação quantitativa para o mercado preditivo brasileiro."
-        badge="Sobre"
       />
 
       <div className="container py-12 space-y-16 max-w-5xl mx-auto">

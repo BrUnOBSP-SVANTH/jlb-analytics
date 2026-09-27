@@ -221,7 +221,6 @@ export default function Perfil() {
       compacto
         title="Meu Perfil"
         subtitle="Seu progresso, histórico de previsões e conquistas na plataforma."
-        badge="Perfil"
       />
 
       <div className="container py-10 space-y-8">

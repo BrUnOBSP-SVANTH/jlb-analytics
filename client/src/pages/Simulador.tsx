@@ -547,7 +547,6 @@ export default function Simulador() {
       <PageHeader
         title="Simulador de Longo Prazo"
         subtitle="Visualize a Lei dos Grandes Números, o impacto do Kelly e a convergência do Brier Score."
-        badge="Simulador"
       />
 
       <div className="container py-10">

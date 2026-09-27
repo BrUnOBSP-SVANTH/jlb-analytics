@@ -93,7 +93,6 @@ export default function Educacao() {
   return (
     <div>
       <PageHeader
-        badge="Guia de aprendizado"
         title="Do Fundamento à Análise Integrada"
         subtitle="Cada nível constrói sobre o anterior. Você não precisa de matemática avançada para começar — precisa de disposição para questionar o que acreditava saber sobre probabilidade."
       />

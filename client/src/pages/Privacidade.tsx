@@ -29,7 +29,7 @@ export default function Privacidade() {
 
   return (
     <div>
-      <PageHeader title="Política de Privacidade" subtitle="Como tratamos seus dados — em conformidade com a LGPD (Lei 13.709/2018)." badge="Legal" />
+      <PageHeader title="Política de Privacidade" subtitle="Como tratamos seus dados — em conformidade com a LGPD (Lei 13.709/2018)." />
       <div className="container py-12 max-w-3xl mx-auto">
         <AnimatedSection>
           <p className="text-xs text-muted-foreground mb-8">Versão {VERSAO} · última atualização em {UPDATED}</p>

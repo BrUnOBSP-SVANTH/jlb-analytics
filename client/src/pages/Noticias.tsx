@@ -196,7 +196,6 @@ export default function Noticias() {
       <PageHeader
         title="Análise de Mercados"
         subtitle="O contexto por trás do preço: os mesmos mercados, cruzados com notícias, discussões e os artigos do Cérebro. Para ver só a lista de preços ao vivo, vá em Mercados Ao Vivo."
-        badge="Contexto"
       />
 
       <div className="container py-10 space-y-8">

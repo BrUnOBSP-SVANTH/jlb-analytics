@@ -284,7 +284,7 @@ export default function Nivel2() {
   return (
     <div>
       <PageHeader
-        badge="Nível 2 · Grátis"
+        nota="Nível 2 da trilha, grátis."
         title="Leitura de Dados"
         subtitle="Dados sem contexto estatístico são ruído com aparência de sinal. Este nível te ensina a ler o que os números realmente dizem — e o que não dizem."
       />

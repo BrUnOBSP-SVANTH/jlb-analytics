@@ -85,7 +85,6 @@ export default function Previsao() {
       <PageHeader
         title="Previsão Guiada por IA"
         subtitle="Descreva o que quer prever. A IA seleciona o modelo econométrico mais adequado, mostra a fórmula e traduz em linguagem que qualquer pessoa entende."
-        badge="IA + Econometria"
       />
 
       <div className="container py-10 space-y-8 max-w-4xl">

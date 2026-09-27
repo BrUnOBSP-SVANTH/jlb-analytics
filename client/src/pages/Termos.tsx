@@ -42,7 +42,7 @@ export default function Termos() {
 
   return (
     <div>
-      <PageHeader title="Termos de Uso" subtitle="As regras para uso da plataforma JLB Analytics." badge="Legal" />
+      <PageHeader title="Termos de Uso" subtitle="As regras para uso da plataforma JLB Analytics." />
       <div className="container py-12 max-w-3xl mx-auto">
         <AnimatedSection>
           <p className="text-xs text-muted-foreground mb-8">Versão {VERSAO} · última atualização em {UPDATED}</p>

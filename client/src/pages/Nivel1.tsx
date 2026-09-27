@@ -449,7 +449,7 @@ export default function Nivel1() {
   return (
     <div>
       <PageHeader
-        badge="Nível 1 · Grátis"
+        nota="Nível 1 da trilha, grátis."
         title="Fundamentos"
         subtitle="A maioria das pessoas perde dinheiro em mercados preditivos não por falta de intuição, mas por nunca ter calculado o Valor Esperado da sua posição. Este nível corrige isso."
       />

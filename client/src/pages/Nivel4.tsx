@@ -315,7 +315,7 @@ export default function Nivel4() {
   return (
     <div>
       <PageHeader
-        badge="Nível 4 · Avançado"
+        nota="Nível 4 da trilha, avançado."
         title="Vieses e Psicologia"
         subtitle="Dados corretos com decisões erradas produzem perdas. Este nível te ensina a identificar os padrões de comportamento que destroem retorno — mesmo quando você tem as informações certas."
       />

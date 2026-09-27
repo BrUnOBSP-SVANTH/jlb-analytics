@@ -626,19 +626,45 @@
     }
   }
 
-  /* Glass card — theme-aware, com sombra em camadas e realce sutil no topo */
+  /* Superfície de conteúdo — theme-aware, com sombra em camadas.
+     Ver `.sobreposto` logo abaixo para o caso em que ela flutua. */
   .glass-card {
     background: var(--glass-bg);
-    /* ⚠️ Prefixada ANTES da padrão. Na ordem inversa o minificador (Lightning
-       CSS) tratava as duas como a mesma propriedade e ficava só com a última —
-       a -webkit-, que o Chrome atual não aplica. Auditoria de 14/09, item 3:
-       backdrop-filter computado "none" em todo .glass-card, o painel do chat e
-       o menu de alertas viravam vidro sem desfoque, com o hero legível através. */
-    -webkit-backdrop-filter: blur(16px) saturate(1.1);
-    backdrop-filter: blur(16px) saturate(1.1);
     border: 1px solid var(--glass-border);
     box-shadow: var(--shadow-card);
     transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+  }
+
+  /**
+   * 🔴 O DESFOQUE SAIU DAQUI (27/09/2026), e a medição é a razão.
+   *
+   * `.glass-card` tem 181 usos. Contando no navegador, em 8 rotas: 97 camadas
+   * com `backdrop-filter` ativo, e 74 delas com NADA atrás para desfocar. Em
+   * /imprensa eram 25 de 27; em /noticias, 23 de 27.
+   *
+   * Desfoque de fundo não é barato: força uma camada de composição e refaz o
+   * borrão da região a cada quadro. Vinte e cinco delas numa tela, num plano de
+   * 0,1 CPU e em celular, para não mudar um pixel — porque sobre o fundo liso
+   * da página o resultado é idêntico a uma cor translúcida.
+   *
+   * De 181 usos, EXATAMENTE UM precisa do desfoque: o painel do chat, que
+   * flutua sobre a página viva. Os dois modais parecem candidatos e não são —
+   * a sobreposição deles (`fixed inset-0`) já tem `backdrop-blur-sm` e escurece
+   * o fundo, então o painel de cima desfocaria uma superfície já lisa. Os
+   * cartões do modal de análise ficam sobre `bg-card`, que é sólido.
+   *
+   * O desfoque virou `.sobreposto` e é aplicado nesse um lugar. Agora o efeito
+   * significa o que o nome diz: isto flutua acima do conteúdo.
+   *
+   * ⚠️ A ordem das duas linhas importa e não é estilo. Com a padrão ANTES da
+   * prefixada, o Lightning CSS trata as duas como a mesma propriedade e fica só
+   * com a última — a `-webkit-`, que o Chrome atual ignora. Foi o item 3 da
+   * auditoria de 14/09: `backdrop-filter` computado "none" em tudo, e o painel
+   * do chat virava vidro sem desfoque com o conteúdo legível através.
+   */
+  .sobreposto {
+    -webkit-backdrop-filter: blur(16px) saturate(1.1);
+    backdrop-filter: blur(16px) saturate(1.1);
   }
 
   .glass-card:hover {

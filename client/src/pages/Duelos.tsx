@@ -276,7 +276,7 @@ export default function Duelos() {
   if (!user) {
     return (
       <div>
-        <PageHeader title="Duelos de Previsão" subtitle="Desafie outros forecasters: mesmo baralho de mercados, previsões seladas, menor Brier vence. Beta por pontos — sem dinheiro real." badge="Beta" />
+        <PageHeader title="Duelos de Previsão" subtitle="Desafie outros forecasters: mesmo baralho de mercados, previsões seladas, menor Brier vence. Beta por pontos — sem dinheiro real." />
         <div className="container py-16 max-w-md mx-auto text-center">
           <div className="w-14 h-14 rounded-full bg-gold/10 border border-gold/25 flex items-center justify-center mx-auto mb-5">
             <Swords className="w-6 h-6 text-gold" aria-hidden="true" />
@@ -305,7 +305,7 @@ export default function Duelos() {
 
   return (
     <div>
-      <PageHeader title="Duelos de Previsão" subtitle="Mesmo baralho de mercados, previsões seladas, menor Brier vence. Beta por pontos — sem dinheiro real." badge="Beta" />
+      <PageHeader title="Duelos de Previsão" subtitle="Mesmo baralho de mercados, previsões seladas, menor Brier vence. Beta por pontos — sem dinheiro real." />
       <div className="container py-10 space-y-8 max-w-5xl">
 
         <AnimatedSection>

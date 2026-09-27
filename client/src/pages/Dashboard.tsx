@@ -536,7 +536,7 @@ export default function Dashboard() {
     <ContaTabs />
     <PageHeader
       compacto
-      badge={`${userPoints} pts`}
+      nota={`${userPoints} pontos acumulados`}
       title="Dashboard"
       subtitle="Suas previsões, calibração vs. mercado e evolução como forecaster."
     />

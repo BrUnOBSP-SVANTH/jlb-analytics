@@ -279,7 +279,7 @@ export default function Nivel5() {
   return (
     <div>
       <PageHeader
-        badge="Nível 5 · Avançado"
+        nota="Nível 5 da trilha, avançado."
         title="Análise Integrada"
         subtitle="O sistema nunca diz o que fazer. Mostra onde os modelos divergem do mercado, por que divergem, e o que essa divergência significa — para que você decida com informação real."
       />

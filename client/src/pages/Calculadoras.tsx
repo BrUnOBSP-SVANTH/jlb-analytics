@@ -99,7 +99,6 @@ export default function Calculadoras() {
       <PageHeader
         title="Calculadoras Quantitativas"
         subtitle="Ferramentas para Valor Esperado, Overround, Brier Score e Kelly — com guia completo de uso em mercados preditivos."
-        badge="Ferramentas"
       />
 
       <div className="container py-10">
