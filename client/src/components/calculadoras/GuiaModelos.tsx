@@ -103,7 +103,7 @@ const MODELS: ModelGuide[] = [
     ],
     howItWorks: "Para cada previsão, calcula (sua_prob − resultado)². Médio ao longo de muitas previsões. Um forecaster que diz 70% em algo que acontece 70% das vezes tem BS próximo de 0.21 — melhor que quem diz 90% e erra frequentemente.",
     accuracy: `Benchmark: superforecasters do GJP ficam em torno de ${num(BRIER_SUPERFORECASTER, 2)}`,
-    accuracyColor: "text-neon-blue border-neon-blue/30 bg-neon-blue/10",
+    accuracyColor: "text-dado border-dado/30 bg-dado/10",
     limitacao: "Requer muitas previsões para ser estatisticamente significativo (mínimo 30). Com poucas previsões, o BS pode variar por sorte.",
     polymarketUso: "O Polymarket publica o preço histórico de cada mercado antes do resultado. Você pode comparar: se o mercado tinha 70% e você tinha 80% em um evento que aconteceu, quem teve menor BS estava mais calibrado.",
     steps: [
@@ -165,7 +165,7 @@ const MODELS: ModelGuide[] = [
     ],
     howItWorks: "Mede, de −1 a +1, o quanto duas séries andam juntas. +1 = sobem e descem exatamente juntas; 0 = uma não diz nada sobre a outra; −1 = quando uma sobe, a outra desce. Duas posições com correlação alta são, na prática, a MESMA aposta com dois nomes — e o risco soma em vez de se diluir.",
     accuracy: "Fórmula fechada, sem estimativa: o valor é o que os dados dizem",
-    accuracyColor: "text-neon-blue border-neon-blue/30 bg-neon-blue/10",
+    accuracyColor: "text-dado border-dado/30 bg-dado/10",
     limitacao: "Correlação não é causa, e só enxerga relação LINEAR: duas séries podem estar fortemente ligadas de forma curva e dar correlação perto de zero. Também muda com o tempo — a de crise não é a de calmaria.",
     polymarketUso: "Dois mercados sobre a mesma eleição, ou sobre o mesmo time, tendem a resolver juntos. Se você abriu posição nos dois achando que diversificou, dobrou a exposição ao mesmo evento.",
     steps: [

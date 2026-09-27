@@ -44,14 +44,14 @@ const STEPS = [
   },
   {
     icon: Brain,
-    iconColor: "text-purple-400",
+    iconColor: "text-dado",
     title: "Previsão Guiada por IA",
     description: "A IA detecta seu nível e escolhe o modelo econométrico certo.",
     detail: `Taylor Rule, Poisson, GARCH, Elo, Prospect Theory — ${MODEL_COUNT} modelos reais.`,
   },
   {
     icon: BookOpen,
-    iconColor: "text-neon-blue",
+    iconColor: "text-dado",
     title: "5 Níveis de Educação",
     description: "Do Valor Esperado à Divergência Modelo vs. Mercado — no seu ritmo.",
     detail: "Os cinco níveis são gratuitos. Cada um tem calculadoras interativas com dados reais.",

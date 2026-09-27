@@ -24,7 +24,7 @@ import { estadoDoNivel } from "@/lib/userProgress";
  */
 // Título de shared/niveis.ts; ícone e cor continuam sendo escolha desta tela.
 const ICONES = [GraduationCap, BarChart3, TrendingUp, Brain, GitMerge];
-const CORES = ["text-positive", "text-primary", "text-level3", "text-level4", "text-neon-blue"];
+const CORES = ["text-positive", "text-primary", "text-level3", "text-level4", "text-dado"];
 const LEVELS = NIVEIS.map((nv, i) => ({
   n: nv.n, title: nv.titulo, href: nv.href, icon: ICONES[i], color: CORES[i],
 }));
@@ -301,8 +301,8 @@ export function QuickActions({ feitos }: { feitos: number[] }) {
           </div>
         </Link>
         <Link href="/previsao">
-          <div className="flex items-center gap-3 p-3 rounded-lg border border-neon-blue/20 bg-neon-blue/5 hover:bg-neon-blue/10 transition-colors cursor-pointer">
-            <Sparkles className="w-4 h-4 text-neon-blue" />
+          <div className="flex items-center gap-3 p-3 rounded-lg border border-dado/20 bg-dado/5 hover:bg-dado/10 transition-colors cursor-pointer">
+            <Sparkles className="w-4 h-4 text-dado" />
             <div className="flex-1">
               <p className="text-sm text-foreground">Previsão Guiada por IA</p>
               <p className="text-xs text-muted-foreground">{MODEL_COUNT} modelos econométricos automáticos</p>

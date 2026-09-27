@@ -266,8 +266,8 @@ export function ArticleDetailModal({ article, onClose }: ArticleDetailModalProps
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className={`text-[11px] font-bold px-1.5 py-0.5 rounded border uppercase tracking-wide ${
                       m.source === "Polymarket"
-                        ? "text-blue-400 bg-blue-400/10 border-blue-400/20"
-                        : "text-purple-400 bg-purple-400/10 border-purple-400/20"
+                        ? "text-dado bg-dado/10 border-dado/20"
+                        : "text-dado bg-dado/10 border-dado/20"
                     }`}>
                       {m.source}
                     </span>

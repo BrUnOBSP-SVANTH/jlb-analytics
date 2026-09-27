@@ -352,7 +352,7 @@ function AlertBell() {
                     <span className={`text-[11px] font-bold px-1.5 py-0.5 rounded-full border shrink-0 ${
                       alert.source === "kalshi"
                         ? "border-green-500/30 bg-green-500/10 text-green-500"
-                        : "border-neon-blue/30 bg-neon-blue/10 text-neon-blue"
+                        : "border-dado/30 bg-dado/10 text-dado"
                     }`}>{alert.source === "kalshi" ? "Kalshi" : "Poly"}</span>
                     <div className="flex-1 min-w-0">
                       <p className="text-[11px] text-foreground/80 truncate">{alert.title}</p>
@@ -394,7 +394,7 @@ function MegaMenu({ group, onClose }: { group: NavGroup; onClose: () => void }) 
             <Link key={item.href} href={item.href} role="menuitem" onClick={onClose} onMouseEnter={() => prefetchRoute(item.href)}>
               <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-secondary/40 transition-colors group cursor-pointer">
                 <div className="w-8 h-8 rounded-lg bg-secondary/30 group-hover:bg-primary/10 flex items-center justify-center shrink-0 transition-colors">
-                  <Icon className="w-4 h-4 text-neon-blue group-hover:text-primary transition-colors" aria-hidden="true" />
+                  <Icon className="w-4 h-4 text-dado group-hover:text-primary transition-colors" aria-hidden="true" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">

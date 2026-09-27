@@ -63,7 +63,7 @@ function PageLoader() {
   return (
     <div className="flex items-center justify-center min-h-[60vh]">
       <div className="flex flex-col items-center gap-4">
-        <div className="w-10 h-10 border-2 border-neon-blue border-t-transparent rounded-full animate-spin" aria-hidden="true" />
+        <div className="w-10 h-10 border-2 border-dado border-t-transparent rounded-full animate-spin" aria-hidden="true" />
         <p className="text-muted-foreground text-sm">Carregando...</p>
       </div>
     </div>

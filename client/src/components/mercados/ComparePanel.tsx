@@ -9,6 +9,7 @@ import { type TrendingItem, CATEGORY_LABELS } from "@/lib/trending";
 import { volumeNaMoeda } from "@shared/plataforma";
 import { SourceBadge } from "@/components/mercados/cards";
 import { num } from "@shared/formato";
+import { COR_DA_PROBABILIDADE } from "@/lib/corDeProbabilidade";
 
 export function ComparePanel({ items, onClear }: { items: TrendingItem[]; onClear: () => void }) {
   const painel = useRef<HTMLDivElement>(null);
@@ -44,7 +45,7 @@ export function ComparePanel({ items, onClear }: { items: TrendingItem[]; onClea
       <div className="container py-4">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
-            <Scale className="w-4 h-4 text-neon-blue" aria-hidden="true" />
+            <Scale className="w-4 h-4 text-dado" aria-hidden="true" />
             <span className="text-sm font-semibold text-foreground">Comparação de Mercados</span>
             {items.length < 2 && (
               <span className="text-xs text-muted-foreground">— selecione um segundo mercado</span>
@@ -71,10 +72,10 @@ export function ComparePanel({ items, onClear }: { items: TrendingItem[]; onClea
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {items.map((item, idx) => {
             const pct = item.yesProb !== undefined ? parseFloat((item.yesProb * 100).toFixed(1)) : null;
-            const pctColor = pct === null ? "text-muted-foreground" : pct >= 70 ? "text-positive" : pct <= 30 ? "text-negative" : "text-gold";
+            const pctColor = pct === null ? "text-muted-foreground" : COR_DA_PROBABILIDADE;
             return (
               <div key={item.id} className="flex items-center gap-3 p-3 rounded-xl border border-border/30 bg-secondary/10">
-                <div className="w-6 h-6 rounded-full bg-neon-blue/15 flex items-center justify-center shrink-0 text-xs font-bold text-neon-blue">
+                <div className="w-6 h-6 rounded-full bg-dado/15 flex items-center justify-center shrink-0 text-xs font-bold text-dado">
                   {idx + 1}
                 </div>
                 <div className="flex-1 min-w-0">
@@ -105,9 +106,9 @@ export function ComparePanel({ items, onClear }: { items: TrendingItem[]; onClea
         </div>
 
         {items.length === 2 && (
-          <div className="mt-3 px-3 py-2 rounded-lg bg-neon-blue/5 border border-neon-blue/15">
+          <div className="mt-3 px-3 py-2 rounded-lg bg-dado/5 border border-dado/15">
             <p className="text-[11px] text-muted-foreground leading-relaxed">
-              <span className="text-neon-blue font-semibold">Análise: </span>{insight()}
+              <span className="text-dado font-semibold">Análise: </span>{insight()}
             </p>
           </div>
         )}

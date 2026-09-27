@@ -99,7 +99,7 @@ export function PredictionRow({
             title="Compartilhar previsão (copia link)"
             aria-label="Compartilhar previsão"
             className={`p-1 rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border ${
-              copied ? "text-positive" : "text-muted-foreground hover:text-neon-blue hover:bg-neon-blue/10"
+              copied ? "text-positive" : "text-muted-foreground hover:text-dado hover:bg-dado/10"
             }`}
           >
             {copied ? <Copy className="w-3.5 h-3.5" aria-hidden="true" /> : <Share2 className="w-3.5 h-3.5" aria-hidden="true" />}

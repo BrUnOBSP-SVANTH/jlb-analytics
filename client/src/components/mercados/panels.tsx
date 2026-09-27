@@ -83,9 +83,9 @@ function EdgeCalculator({ marketProb }: { marketProb: number }) {
             </p>
             <p className="text-[11px] text-muted-foreground mt-0.5">por real na posição</p>
           </div>
-          <div className={`p-2.5 rounded-lg border ${!neutro && v.edgePp > 0 ? "border-neon-blue/20 bg-neon-blue/5" : "border-border/20 bg-secondary/10"}`}>
+          <div className={`p-2.5 rounded-lg border ${!neutro && v.edgePp > 0 ? "border-dado/20 bg-dado/5" : "border-border/20 bg-secondary/10"}`}>
             <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-1">Edge vs Mercado</p>
-            <p className={`text-base font-mono font-bold tabular-nums ${!neutro && v.edgePp > 0 ? "text-neon-blue" : "text-muted-foreground"}`}>
+            <p className={`text-base font-mono font-bold tabular-nums ${!neutro && v.edgePp > 0 ? "text-dado" : "text-muted-foreground"}`}>
               {neutro ? "0,0 pp" : pp(v.edgePp)}
             </p>
             <p className="text-[11px] text-muted-foreground mt-0.5">Mercado {pct(marketProb * 100, 1)} · você {pct(estimativaPp, 1)}</p>
@@ -168,7 +168,7 @@ export function MarketAnalysis({ item }: { item: TrendingItem }) {
             <p className="text-[11px] text-muted-foreground mb-0.5 flex items-center justify-center gap-1">
               Volume 24h <VolumeTrend volume={item.volume} volume24h={item.volume24h} />
             </p>
-            <p className="text-xs font-mono font-bold text-neon-blue">{volumeNaMoeda(item.volume24h, item.source)}</p>
+            <p className="text-xs font-mono font-bold text-dado">{volumeNaMoeda(item.volume24h, item.source)}</p>
           </div>
         )}
         {(item.liquidity ?? item.openInterest) !== undefined && (
@@ -385,8 +385,8 @@ export function NewsAnalysisPanel({ item }: { item: TrendingItem }) {
       {result && isRedditResult(result) && (
         <div className="mt-2 space-y-3">
           {/* Why trending — contextual */}
-          <div className="p-3 rounded-lg bg-neon-blue/5 border border-neon-blue/15">
-            <p className="text-[11px] font-semibold text-neon-blue/80 uppercase tracking-wider mb-1.5 flex items-center gap-1">
+          <div className="p-3 rounded-lg bg-dado/5 border border-dado/15">
+            <p className="text-[11px] font-semibold text-dado/80 uppercase tracking-wider mb-1.5 flex items-center gap-1">
               <Flame className="w-3 h-3" />Por que está viral — análise contextual
               {result.cached && <span className="ml-1 opacity-60" title="Esta análise já tinha sido gerada hoje">de hoje</span>}
             </p>
@@ -410,7 +410,7 @@ export function NewsAnalysisPanel({ item }: { item: TrendingItem }) {
               <ul className="space-y-1">
                 {result.keyFacts.map((f, i) => (
                   <li key={i} className="flex items-start gap-2 text-xs text-muted-foreground">
-                    <span className="text-neon-blue shrink-0 mt-0.5">▸</span>{f}
+                    <span className="text-dado shrink-0 mt-0.5">▸</span>{f}
                   </li>
                 ))}
               </ul>
@@ -456,8 +456,8 @@ export function NewsAnalysisPanel({ item }: { item: TrendingItem }) {
           )}
 
           {/* AI analysis */}
-          <div className="p-3 rounded-lg bg-neon-blue/5 border border-neon-blue/15">
-            <p className="text-[11px] font-semibold text-neon-blue/80 uppercase tracking-wider mb-1.5 flex items-center gap-1">
+          <div className="p-3 rounded-lg bg-dado/5 border border-dado/15">
+            <p className="text-[11px] font-semibold text-dado/80 uppercase tracking-wider mb-1.5 flex items-center gap-1">
               <Sparkles className="w-3 h-3" />Análise de IA
               {result.cached && <span className="ml-1 opacity-60" title="Esta análise já tinha sido gerada hoje">de hoje</span>}
             </p>
@@ -473,7 +473,7 @@ export function NewsAnalysisPanel({ item }: { item: TrendingItem }) {
               <ul className="space-y-1">
                 {result.keyFactors.map((f, i) => (
                   <li key={i} className="flex items-start gap-2 text-xs text-muted-foreground">
-                    <span className="text-neon-blue shrink-0 mt-0.5">▸</span>{f}
+                    <span className="text-dado shrink-0 mt-0.5">▸</span>{f}
                   </li>
                 ))}
               </ul>

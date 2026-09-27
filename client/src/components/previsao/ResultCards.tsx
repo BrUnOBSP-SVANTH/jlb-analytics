@@ -76,7 +76,7 @@ export function ModelCard({ result }: { result: PredictResult }) {
         {result.analogyExplanation && (
           <div className={`px-6 py-4 border-b border-border/20 ${level === "leigo" ? "bg-gold/5" : "bg-secondary/5"}`}>
             <div className="flex items-start gap-2">
-              <Lightbulb className={`w-4 h-4 shrink-0 mt-0.5 ${level === "leigo" ? "text-gold" : "text-neon-blue"}`} />
+              <Lightbulb className={`w-4 h-4 shrink-0 mt-0.5 ${level === "leigo" ? "text-gold" : "text-dado"}`} />
               <div>
                 <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-1 font-medium">
                   {level === "avancado" ? "Paralelo histórico" : level === "leigo" ? "Em outras palavras" : "Contexto"}
@@ -133,7 +133,7 @@ export function ModelCard({ result }: { result: PredictResult }) {
             className="w-full flex items-center justify-between px-6 py-3.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
             <span className="flex items-center gap-2 font-medium">
-              <Info className="w-4 h-4 text-neon-blue" />
+              <Info className="w-4 h-4 text-dado" />
               {level === "leigo" ? "O que o modelo assume" : "Premissas e limitações"}
             </span>
             {assumptionsOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
@@ -143,7 +143,7 @@ export function ModelCard({ result }: { result: PredictResult }) {
               <div className="space-y-1.5">
                 {result.keyAssumptions.map((a, i) => (
                   <div key={i} className="flex items-start gap-2 text-xs text-muted-foreground">
-                    <CheckCircle className="w-3.5 h-3.5 text-neon-blue shrink-0 mt-0.5" />
+                    <CheckCircle className="w-3.5 h-3.5 text-dado shrink-0 mt-0.5" />
                     {a}
                   </div>
                 ))}
@@ -168,8 +168,8 @@ export function ModelCard({ result }: { result: PredictResult }) {
           <ConfidenceBar value={result.confidenceMedium} label="Médio prazo"  />
           <ConfidenceBar value={result.confidenceLong}   label="Longo prazo"  />
           {result.historicalParallel && level !== "leigo" && (
-            <div className="flex items-start gap-2 pt-1 p-3 rounded-lg bg-neon-blue/5 border border-neon-blue/15">
-              <TrendingUp className="w-3.5 h-3.5 text-neon-blue shrink-0 mt-0.5" />
+            <div className="flex items-start gap-2 pt-1 p-3 rounded-lg bg-dado/5 border border-dado/15">
+              <TrendingUp className="w-3.5 h-3.5 text-dado shrink-0 mt-0.5" />
               <p className="text-xs text-muted-foreground">{result.historicalParallel}</p>
             </div>
           )}
@@ -200,14 +200,14 @@ export function SuperforecasterCard({ result }: { result: PredictResult }) {
 
   return (
     <AnimatedSection>
-      <div className="glass-card rounded-xl border border-neon-blue/20 overflow-hidden">
+      <div className="glass-card rounded-xl border border-dado/20 overflow-hidden">
         {/* Header toggle */}
         <button
           onClick={() => setOpen((v) => !v)}
           className="w-full flex items-center gap-3 px-5 py-4 hover:bg-secondary/10 transition-colors text-left"
         >
-          <div className="w-8 h-8 rounded-lg bg-neon-blue/10 flex items-center justify-center shrink-0">
-            <ArrowUpDown className="w-4 h-4 text-neon-blue" />
+          <div className="w-8 h-8 rounded-lg bg-dado/10 flex items-center justify-center shrink-0">
+            <ArrowUpDown className="w-4 h-4 text-dado" />
           </div>
           <div className="flex-1">
             <p className="text-sm font-semibold text-foreground">Protocolo Superforecaster</p>
@@ -226,20 +226,20 @@ export function SuperforecasterCard({ result }: { result: PredictResult }) {
             {/* Etapa 1 — Classe de Referência */}
             {result.referenceClass && (
               <div className="space-y-2">
-                <p className="text-[11px] font-bold text-neon-blue/70 uppercase tracking-wider mt-4">
+                <p className="text-[11px] font-bold text-dado/70 uppercase tracking-wider mt-4">
                   Etapa 1 — Visão Externa (Base Rate)
                 </p>
-                <div className="p-3 rounded-lg bg-neon-blue/5 border border-neon-blue/15">
+                <div className="p-3 rounded-lg bg-dado/5 border border-dado/15">
                   <p className="text-xs text-muted-foreground leading-relaxed">{result.referenceClass}</p>
                   {baseRate !== null && (
                     <div className="flex items-center gap-3 mt-3">
                       <div className="flex-1">
                         <p className="text-[11px] text-muted-foreground mb-1">Frequência base histórica</p>
                         <div className="h-2 bg-secondary/40 rounded-full overflow-hidden">
-                          <div className="h-full bg-neon-blue/50 rounded-full" style={{ width: `${baseRate}%` }} />
+                          <div className="h-full bg-dado/50 rounded-full" style={{ width: `${baseRate}%` }} />
                         </div>
                       </div>
-                      <span className="text-lg font-mono font-bold text-neon-blue shrink-0">{baseRate}%</span>
+                      <span className="text-lg font-mono font-bold text-dado shrink-0">{baseRate}%</span>
                     </div>
                   )}
                   {result.baseRateSource && (
@@ -382,8 +382,8 @@ export function PredictionTimeline({ result }: { result: PredictResult }) {
       horizon: "Longo Prazo", desc: "6 meses a 5 anos",
       prediction: result.longTermPrediction,
       confidence: result.confidenceLong,
-      color: result.confidenceLong >= 55 ? "border-neon-blue/30 bg-neon-blue/5" : "border-border/30 bg-secondary/10",
-      iconColor: result.confidenceLong >= 55 ? "text-neon-blue" : "text-muted-foreground",
+      color: result.confidenceLong >= 55 ? "border-dado/30 bg-dado/5" : "border-border/30 bg-secondary/10",
+      iconColor: result.confidenceLong >= 55 ? "text-dado" : "text-muted-foreground",
     },
   ];
 
@@ -438,8 +438,8 @@ export function PlainLanguageCard({ result }: { result: PredictResult }) {
 
         {/* Paralelo histórico para leigos (vem do campo historicalParallel) */}
         {result.historicalParallel && level === "leigo" && (
-          <div className="flex items-start gap-3 p-4 rounded-xl bg-neon-blue/5 border border-neon-blue/15">
-            <Clock className="w-4 h-4 text-neon-blue shrink-0 mt-0.5" />
+          <div className="flex items-start gap-3 p-4 rounded-xl bg-dado/5 border border-dado/15">
+            <Clock className="w-4 h-4 text-dado shrink-0 mt-0.5" />
             <div>
               <p className="text-xs font-medium text-foreground mb-1">Já aconteceu antes?</p>
               <p className="text-sm text-muted-foreground leading-relaxed">{result.historicalParallel}</p>
@@ -455,8 +455,8 @@ export function PlainLanguageCard({ result }: { result: PredictResult }) {
 
         {/* Bankroll */}
         {result.bankrollImpact && (
-          <div className="flex items-start gap-3 p-4 rounded-xl bg-neon-blue/5 border border-neon-blue/20">
-            <DollarSign className="w-4 h-4 text-neon-blue shrink-0 mt-0.5" />
+          <div className="flex items-start gap-3 p-4 rounded-xl bg-dado/5 border border-dado/20">
+            <DollarSign className="w-4 h-4 text-dado shrink-0 mt-0.5" />
             <div>
               <p className="text-xs font-medium text-foreground mb-1">Impacto no seu patrimônio</p>
               <p className="text-sm text-muted-foreground leading-relaxed">{result.bankrollImpact}</p>
@@ -482,9 +482,9 @@ export const SF_STEPS = [
   {
     step: "01",
     title: "Visão Externa — Base Rate",
-    color: "text-neon-blue",
-    bg: "bg-neon-blue/5",
-    border: "border-neon-blue/20",
+    color: "text-dado",
+    bg: "bg-dado/5",
+    border: "border-dado/20",
     desc: "Antes de qualquer análise específica: em situações SIMILARES, com que frequência isso acontece?",
     example: "\"Partidos de oposição vencem incumbentes em 42% das eleições presidenciais em democracias consolidadas\" — esta é sua âncora.",
     icon: "📊",
@@ -512,9 +512,9 @@ export const SF_STEPS = [
   {
     step: "04",
     title: "Calibração Final",
-    color: "text-purple-400",
-    bg: "bg-purple-400/5",
-    border: "border-purple-400/20",
+    color: "text-dado",
+    bg: "bg-dado/5",
+    border: "border-dado/20",
     desc: "Estou sendo influenciado por vieses? Disponibilidade, ancoragem, excesso de confiança?",
     example: "Superforecasters perguntam: \"O que precisaria ser verdadeiro para eu estar errado?\" Se não consegue responder, está enviesado.",
     icon: "🧠",

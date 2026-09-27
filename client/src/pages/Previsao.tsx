@@ -20,14 +20,13 @@ import {
   CheckCircle, Loader2, Lightbulb, FlaskConical, Trophy,
   Flame, ExternalLink,
 } from "lucide-react";
-import { MODEL_COUNT } from "@/lib/brand";
 import { awardPoints } from "@/lib/userProgress";
 import { track } from "@/lib/analytics";
 import { addPrediction } from "@/lib/predictions";
 import { syncOne } from "@/lib/predictionsSync";
 import { Link } from "wouter";
 
-import type { Domain, Horizon, PredictResult } from "@/components/previsao/types";
+import type { Domain, Horizon } from "@/components/previsao/types";
 import {
   ModelCard, SuperforecasterCard,
   PredictionTimeline, PlainLanguageCard,
@@ -404,7 +403,7 @@ export default function Previsao() {
                   // inventadas. Um site que ensina a desconfiar de número sem
                   // fonte não pode ser a primeira coisa a publicar um.
                   { icon: FlaskConical, color: "text-primary",   title: "Um modelo de referência como roteiro", desc: "A IA escolhe uma família de modelo conhecida (Poisson, Elo, Taylor Rule, log-log…) para organizar o raciocínio e explica por que ela cabe na sua pergunta. É um roteiro de análise — não um modelo ajustado aos seus dados." },
-                  { icon: BookOpen,     color: "text-neon-blue",  title: "A lógica à mostra, com as fontes que ela leu", desc: "Você vê a fórmula da família escolhida e o caminho do raciocínio. A fórmula é ILUSTRATIVA e os números são estimativa da IA, não um ajuste estatístico; as citações vêm das notícias e do acervo entregues a ela." },
+                  { icon: BookOpen,     color: "text-dado",  title: "A lógica à mostra, com as fontes que ela leu", desc: "Você vê a fórmula da família escolhida e o caminho do raciocínio. A fórmula é ILUSTRATIVA e os números são estimativa da IA, não um ajuste estatístico; as citações vêm das notícias e do acervo entregues a ela." },
                   { icon: Clock,        color: "text-gold",       title: "3 horizontes temporais", desc: "Previsão separada para curto, médio e longo prazo, cada uma com grau de confiança calibrado pelo modelo escolhido." },
                   { icon: Lightbulb,    color: "text-positive",   title: "Tradução em linguagem simples", desc: "Toda análise é traduzida para linguagem cotidiana — sem jargão — e inclui impacto no patrimônio se informado." },
                 ].map(({ icon: Icon, color, title, desc }) => (
@@ -533,7 +532,7 @@ export default function Previsao() {
                   <p className="text-[11px] text-muted-foreground mt-0.5">Chance estimada</p>
                 </div>
                 <div className="glass-card rounded-xl p-4 text-center">
-                  <BarChart2 className="w-4 h-4 text-neon-blue mx-auto mb-1.5" />
+                  <BarChart2 className="w-4 h-4 text-dado mx-auto mb-1.5" />
                   <p className="text-xs font-bold text-foreground">{result.modelFamily}</p>
                   <p className="text-[11px] text-muted-foreground mt-0.5">Família</p>
                 </div>

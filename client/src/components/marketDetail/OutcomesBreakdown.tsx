@@ -58,7 +58,7 @@ export function OutcomesBreakdown({
     <AnimatedSection delay={0.09}>
       <div className="glass-card rounded-xl p-5 space-y-3">
         <div className="flex items-center gap-2">
-          <BarChart2 className="w-4 h-4 text-neon-blue" />
+          <BarChart2 className="w-4 h-4 text-dado" />
           <h2 className="text-sm font-semibold text-[var(--titulo)]">Desfechos possíveis</h2>
           <span className="ml-auto text-[11px] text-muted-foreground">{outcomes.length} opções · fonte: {market.source}</span>
         </div>
@@ -92,7 +92,7 @@ export function OutcomesBreakdown({
         <div className={clicavel ? "-mx-2" : "space-y-2"}>
           {outcomes.map((o, idx) => {
             const valor = porLinha[idx];
-            const barColor = valor >= 40 ? "bg-positive" : valor >= 15 ? "bg-gold" : "bg-neon-blue/60";
+            const barColor = valor >= 40 ? "bg-positive" : valor >= 15 ? "bg-gold" : "bg-dado/60";
             const txtColor = valor >= 40 ? "text-positive" : valor >= 15 ? "text-gold" : "text-muted-foreground";
             const selecionado = clicavel && o.id === desfechoSelecionado;
 

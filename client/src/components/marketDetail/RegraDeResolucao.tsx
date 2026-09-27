@@ -57,7 +57,7 @@ export function RegraDeResolucao({ source, rawId, externalUrl }: {
     <div className="glass-card rounded-xl p-6 space-y-3">
       <div className="flex items-center justify-between gap-3">
         <h2 className="text-sm font-semibold text-[var(--titulo)] flex items-center gap-2">
-          <ScrollText className="w-4 h-4 text-neon-blue" />
+          <ScrollText className="w-4 h-4 text-dado" />
           Como este mercado resolve
         </h2>
         {externalUrl && (

@@ -91,7 +91,7 @@ function ResultStat({ label, value, tone = "neutral", hint, big }: {
   label: string; value: string; tone?: "positive" | "negative" | "gold" | "blue" | "neutral"; hint?: string; big?: boolean;
 }) {
   const color = tone === "positive" ? "text-positive" : tone === "negative" ? "text-negative"
-    : tone === "gold" ? "text-gold" : tone === "blue" ? "text-neon-blue" : "text-foreground";
+    : tone === "gold" ? "text-gold" : tone === "blue" ? "text-dado" : "text-foreground";
   return (
     <div className="glass-card rounded-xl p-4">
       <p className="text-[11px] uppercase tracking-wider text-muted-foreground mb-1">{label}</p>
@@ -174,7 +174,7 @@ function EVSimulator() {
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
           <div className="lg:col-span-2 glass-card rounded-xl p-6 space-y-4">
             <h2 className="font-display font-semibold text-foreground flex items-center gap-2">
-              <TrendingUp className="w-5 h-5 text-neon-blue" aria-hidden="true" />
+              <TrendingUp className="w-5 h-5 text-dado" aria-hidden="true" />
               Parâmetros
             </h2>
 
@@ -294,7 +294,7 @@ function KellySimulator() {
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
           <div className="lg:col-span-2 glass-card rounded-xl p-6 space-y-4">
             <h2 className="font-display font-semibold text-foreground flex items-center gap-2">
-              <Activity className="w-5 h-5 text-neon-blue" aria-hidden="true" />
+              <Activity className="w-5 h-5 text-dado" aria-hidden="true" />
               Parâmetros
             </h2>
 
@@ -322,8 +322,8 @@ function KellySimulator() {
 
           <div className="lg:col-span-3 space-y-4">
             {/* Recomendação + banca final em DESTAQUE */}
-            <div className="rounded-xl p-4 border border-neon-blue/25 bg-neon-blue/[0.04]">
-              <p className="text-sm font-bold text-neon-blue mb-3">
+            <div className="rounded-xl p-4 border border-dado/25 bg-dado/[0.04]">
+              <p className="text-sm font-bold text-dado mb-3">
                 {kelly > 0
                   ? `A matemática diz: aplique ${pct(halfKelly * 100, 1)} da banca por vez (½ Kelly — o equilíbrio entre crescer e não quebrar).`
                   : "Sem vantagem aqui (Kelly = 0) — a matemática manda ficar de fora."}
@@ -459,7 +459,7 @@ function CalibracaoSimulator() {
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
           <div className="lg:col-span-2 glass-card rounded-xl p-6 space-y-4">
             <h2 className="font-display font-semibold text-foreground flex items-center gap-2">
-              <Target className="w-5 h-5 text-neon-blue" aria-hidden="true" />
+              <Target className="w-5 h-5 text-dado" aria-hidden="true" />
               Parâmetros
             </h2>
 

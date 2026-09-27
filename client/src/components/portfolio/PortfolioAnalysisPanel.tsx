@@ -61,13 +61,13 @@ export function PortfolioAnalysisPanel({ apostas }: { apostas: ApostaBanca[] }) 
     <div className="glass-card rounded-xl p-5">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
-          <Sparkles className="w-4 h-4 text-purple-400" />
+          <Sparkles className="w-4 h-4 text-dado" />
           <h3 className="text-sm font-semibold text-foreground">A IA olha sua carteira</h3>
         </div>
         <button
           onClick={handleAnalyze}
           disabled={loading}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-purple-500/15 border border-purple-500/30 text-purple-300 hover:bg-purple-500/25 transition-colors disabled:opacity-40"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-dado/15 border border-dado/30 text-dado hover:bg-dado/25 transition-colors disabled:opacity-40"
         >
           {loading
             ? <><RefreshCw className="w-3 h-3 animate-spin" /> Analisando...</>
@@ -86,7 +86,7 @@ export function PortfolioAnalysisPanel({ apostas }: { apostas: ApostaBanca[] }) 
 
       {result && (
         <div className="space-y-4">
-          <div className="p-3 rounded-lg bg-purple-500/5 border border-purple-500/15">
+          <div className="p-3 rounded-lg bg-dado/5 border border-dado/15">
             <p className="text-xs text-muted-foreground leading-relaxed">{result.analysis}</p>
             {result.cached && <span className="text-xs text-muted-foreground" title="Esta análise já tinha sido gerada hoje">de hoje</span>}
           </div>

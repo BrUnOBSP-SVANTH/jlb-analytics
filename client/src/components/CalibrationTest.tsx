@@ -90,7 +90,7 @@ export default function CalibrationTest() {
         ? { label: "Superconfiante", tone: "text-negative", ring: "border-negative/30",
             line: "Como quase todo mundo. Você disse ter mais certeza do que os acertos justificam — é exatamente o viés que faz gente perder dinheiro “tendo certeza”." }
         : gap < -12
-        ? { label: "Cauteloso demais", tone: "text-neon-blue", ring: "border-neon-blue/30",
+        ? { label: "Cauteloso demais", tone: "text-dado", ring: "border-dado/30",
             line: "Você sabe mais do que admite. Dá pra confiar mais nas suas leituras fortes — está deixando valor na mesa." }
         : { label: "Bem calibrado", tone: "text-positive", ring: "border-positive/30",
             line: "Raro. Sua confiança bate com seus acertos — é assim que se decide com método, não com achismo." };
@@ -98,7 +98,7 @@ export default function CalibrationTest() {
     return (
       <div className={`glass-card rounded-2xl p-6 sm:p-7 border ${verdict.ring} max-w-2xl mx-auto`}>
         <div className="flex items-center gap-2 mb-4">
-          <Gauge className="w-5 h-5 text-neon-blue" />
+          <Gauge className="w-5 h-5 text-dado" />
           <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Seu resultado</p>
         </div>
         <div className="grid grid-cols-2 gap-4 mb-5">
@@ -151,7 +151,7 @@ export default function CalibrationTest() {
         </div>
         <div className="flex gap-1" aria-label={`Pergunta ${step + 1} de ${QUESTIONS.length}`}>
           {QUESTIONS.map((_, i) => (
-            <span key={i} className={`w-5 h-1.5 rounded-full ${i < step ? "bg-neon-blue" : i === step ? "bg-neon-blue/50" : "bg-border"}`} />
+            <span key={i} className={`w-5 h-1.5 rounded-full ${i < step ? "bg-dado" : i === step ? "bg-dado/50" : "bg-border"}`} />
           ))}
         </div>
       </div>
@@ -172,7 +172,7 @@ export default function CalibrationTest() {
           <p className="text-xs text-muted-foreground mb-2">Você respondeu <strong className="text-foreground">{pick ? "Verdadeiro" : "Falso"}</strong>. Quão certo você está?</p>
           <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
             {CONF.map((c) => (
-              <button key={c} onClick={() => commit(c)} className="py-2.5 rounded-lg border border-border/50 text-sm font-semibold text-foreground hover:border-neon-blue/60 hover:bg-neon-blue/5 transition-colors tabular-nums">
+              <button key={c} onClick={() => commit(c)} className="py-2.5 rounded-lg border border-border/50 text-sm font-semibold text-foreground hover:border-dado/60 hover:bg-dado/5 transition-colors tabular-nums">
                 {c}%
               </button>
             ))}

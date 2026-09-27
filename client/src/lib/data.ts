@@ -4,13 +4,25 @@
  */
 
 // ============ CHART THEME CONSTANTS ============
+/**
+ * ⚠️ SEM AZUL, E SEM COR FIXA (27/09/2026).
+ *
+ * `secondary` e `quaternary` eram dois azuis (hue 250 e 240) — a maior parte do
+ * azul que sobrava na tela vinha daqui, porque traço de gráfico ocupa muito
+ * pixel. Agora saem dos TOKENS, que mudam com o tema: o mesmo defeito do
+ * balão preto sobre o creme, documentado logo abaixo, valia para as linhas.
+ *
+ * A ordem também é uma decisão: a série principal é dourada (a nossa leitura), a
+ * segunda é o tom de dado, e a terceira só então usa cor semântica. Assim um
+ * gráfico de duas séries nunca precisa de uma cor nova para ser lido.
+ */
 export const CHART_COLORS = {
-  primary: "oklch(0.78 0.12 85)",
-  secondary: "oklch(0.62 0.2 250)",
-  tertiary: "oklch(0.72 0.19 155)",
-  quaternary: "oklch(0.72 0.18 240)",
-  negative: "oklch(0.65 0.2 25)",
-  muted: "oklch(0.6 0.02 260)",
+  primary: "var(--gold)",
+  secondary: "var(--dado)",
+  tertiary: "var(--positive)",
+  quaternary: "var(--dado-suave)",
+  negative: "var(--negative)",
+  muted: "var(--muted-foreground)",
   // ⚠️ Estas três eram cores ESCURAS FIXAS, e por isso o balão do gráfico
   // aparecia como uma caixa preta com texto claro flutuando sobre o creme do
   // tema claro — em todas as 5 telas que têm gráfico. Agora saem dos tokens do

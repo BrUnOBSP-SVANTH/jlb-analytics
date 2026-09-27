@@ -68,11 +68,11 @@ export function CorrelacaoTab() {
         <div className="glass-card rounded-xl p-6">
           <div className="flex items-center justify-between gap-2 mb-5 flex-wrap">
             <div className="flex items-center gap-2">
-              <GitCompare className="w-5 h-5 text-neon-blue" aria-hidden="true" />
+              <GitCompare className="w-5 h-5 text-dado" aria-hidden="true" />
               <h2 className="font-display font-semibold text-foreground">Correlação de Pearson — dados reais Yahoo Finance</h2>
             </div>
             <div className="flex items-center gap-2">
-              {loading && <span className="w-3 h-3 rounded-full border-2 border-neon-blue border-t-transparent animate-spin" />}
+              {loading && <span className="w-3 h-3 rounded-full border-2 border-dado border-t-transparent animate-spin" />}
               {updatedAt && !loading && (
                 <span className="text-[11px] text-positive/70 border border-positive/20 rounded-full px-2 py-0.5">
                   ● Ao vivo · {updatedAt}
@@ -117,7 +117,7 @@ export function CorrelacaoTab() {
 
       {loading ? (
         <div className="flex items-center justify-center py-16 gap-3 text-muted-foreground text-sm">
-          <span className="w-4 h-4 rounded-full border-2 border-neon-blue border-t-transparent animate-spin" />
+          <span className="w-4 h-4 rounded-full border-2 border-dado border-t-transparent animate-spin" />
           Buscando dados reais do Yahoo Finance…
         </div>
       ) : result.n >= 4 ? (
@@ -172,7 +172,7 @@ export function CorrelacaoTab() {
       <AnimatedSection>
         <div className="glass-card rounded-xl p-8">
           <div className="flex items-start gap-4">
-            <Info className="w-5 h-5 text-neon-blue shrink-0 mt-1" aria-hidden="true" />
+            <Info className="w-5 h-5 text-dado shrink-0 mt-1" aria-hidden="true" />
             <div className="space-y-4">
               <h2 className="font-display font-semibold text-foreground">Fórmulas Utilizadas</h2>
               <div>

@@ -21,7 +21,7 @@ export function OverroundCalc() {
   const fairOdds = impliedProbs.map((p) => totalImplied > 0 && p > 0 ? 1 / (p / totalImplied) : 0);
 
   const marginLabel = overround < 2 ? { text: "Excelente (< 2%)", color: "text-positive" }
-    : overround < 4 ? { text: "Bom (2–4%)", color: "text-neon-blue" }
+    : overround < 4 ? { text: "Bom (2–4%)", color: "text-dado" }
     : overround < 6 ? { text: "Aceitável (4–6%)", color: "text-warning" }
     : { text: "Alto (> 6%) — evite", color: "text-negative" };
 
@@ -78,7 +78,7 @@ export function OverroundCalc() {
             color={margin > 5 ? "text-negative" : margin > 2 ? "text-warning" : "text-positive"}
             hint="a fatia do total movimentado que vira lucro garantido da casa" />
 
-          <div className={`p-3 rounded-xl border flex items-center gap-2 ${marginLabel.color.includes("positive") ? "bg-positive/10 border-positive/30" : marginLabel.color.includes("neon") ? "bg-neon-blue/10 border-neon-blue/30" : marginLabel.color.includes("yellow") ? "bg-warning/10 border-warning/30" : "bg-negative/10 border-negative/30"}`}>
+          <div className={`p-3 rounded-xl border flex items-center gap-2 ${marginLabel.color.includes("positive") ? "bg-positive/10 border-positive/30" : marginLabel.color.includes("neon") ? "bg-dado/10 border-dado/30" : marginLabel.color.includes("yellow") ? "bg-warning/10 border-warning/30" : "bg-negative/10 border-negative/30"}`}>
             <span className={`text-sm font-semibold ${marginLabel.color}`}>{marginLabel.text}</span>
           </div>
 
@@ -87,7 +87,7 @@ export function OverroundCalc() {
             {fairOdds.map((fo, i) => (
               <div key={i} className="flex justify-between text-xs">
                 <span className="text-muted-foreground">Odd {i + 1} (original: {num(parsed[i], 2)})</span>
-                <span className="font-mono text-neon-blue">{fo > 0 ? num(fo, 3) : "—"}</span>
+                <span className="font-mono text-dado">{fo > 0 ? num(fo, 3) : "—"}</span>
               </div>
             ))}
           </div>

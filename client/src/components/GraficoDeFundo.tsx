@@ -104,11 +104,23 @@ export default function GraficoDeFundo({ className = "" }: { className?: string 
       // Sobre preto, dourado a 15% salta; sobre o creme do tema claro ele quase
       // some, porque o contraste contra fundo claro é muito menor. Cada tema tem
       // seu tom — mesma discrição, presença igual.
+      //
+      // 🔴 A CURVA DO NÃO ERA AZUL (matiz 240), e a grade também (260). Este
+      // desenho é a primeira coisa que alguém vê ao abrir o site, e era o único
+      // azul que sobreviveu à revisão de paleta de 27/09/2026 — porque é
+      // pintado em <canvas>, por JavaScript. Nenhuma varredura de CSS
+      // computado o enxerga: não existe elemento, não existe `style`, não
+      // existe token. Só o olho pega.
+      //
+      // Agora o NÃO usa o mesmo branco-quente do `--dado`, que é exatamente o
+      // papel dele aqui: o dourado é o lado que vence (a marca), o NÃO é o
+      // outro dado. Duas cores de mesma família e pesos diferentes leem como UM
+      // gráfico; dourado contra azul lia como duas coisas brigando.
       const claro = document.documentElement.getAttribute("data-theme") === "light"
         || document.documentElement.classList.contains("light");
-      const ouro  = (op: number) => claro ? `oklch(0.55 0.13 78 / ${op}%)`  : `oklch(0.80 0.13 85 / ${op}%)`;
-      const azul  = (op: number) => claro ? `oklch(0.50 0.10 240 / ${op}%)` : `oklch(0.70 0.09 240 / ${op}%)`;
-      const cinza = (op: number) => claro ? `oklch(0.45 0.02 260 / ${op}%)` : `oklch(0.75 0.02 260 / ${op}%)`;
+      const ouro   = (op: number) => claro ? `oklch(0.55 0.13 78 / ${op}%)`   : `oklch(0.80 0.13 85 / ${op}%)`;
+      const neutro = (op: number) => claro ? `oklch(0.48 0.028 78 / ${op}%)`  : `oklch(0.80 0.030 80 / ${op}%)`;
+      const cinza  = (op: number) => claro ? `oklch(0.45 0.015 80 / ${op}%)`  : `oklch(0.75 0.015 80 / ${op}%)`;
 
       // NO CELULAR O GRÁFICO PRECISA SER OUTRO. Medido em 390px: com a mesma
       // faixa de 0–100% numa tela estreita e alta, as duas curvas ficam quase
@@ -164,7 +176,7 @@ export default function GraficoDeFundo({ className = "" }: { className?: string 
 
       // ── NÃO primeiro (fica atrás), SIM por cima: a hierarquia segue quem vence.
       ctx.lineWidth = estreito ? 1.6 : 2;
-      ctx.strokeStyle = azul((claro ? 34 : 30) - (estreito ? 10 : 0));
+      ctx.strokeStyle = neutro((claro ? 40 : 34) - (estreito ? 10 : 0));
       caminho(nao);
       ctx.stroke();
 
@@ -187,7 +199,7 @@ export default function GraficoDeFundo({ className = "" }: { className?: string 
       // ── As pontas, quando a curva termina: é a RESOLUÇÃO — um lado passa a
       // valer tudo, o outro nada. É o momento que o site inteiro celebra.
       if (ate >= PASSOS) {
-        for (const [pts, cor] of [[sim, ouro(70)], [nao, azul(50)]] as const) {
+        for (const [pts, cor] of [[sim, ouro(70)], [nao, neutro(58)]] as const) {
           ctx.fillStyle = cor;
           ctx.beginPath();
           ctx.arc(emX(pts[PASSOS].x) - 2, emY(pts[PASSOS].y), 3.2, 0, Math.PI * 2);

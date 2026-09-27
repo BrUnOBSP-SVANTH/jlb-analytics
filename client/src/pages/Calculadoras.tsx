@@ -82,7 +82,7 @@ export default function Calculadoras() {
         tagline="Meça se suas previsões são boas de verdade — não só se você acertou."
         description="Taxa de acerto engana. O Brier Score mede calibração: se você diz 70%, isso acontece 70% das vezes? Superforecasters do Good Judgment Project têm BS < 0.10. Compare sua calibração com o mercado usando o histórico de probabilidades do Polymarket."
         example="Polymarket tinha 60% em evento que aconteceu (erro² = 0.16). Você tinha 80% (erro² = 0.04). Você estava melhor calibrado."
-        accuracy={{ label: "Benchmark GJP", value: "BS < 0.10", color: "text-neon-blue border-neon-blue/30 bg-neon-blue/10" }} />
+        accuracy={{ label: "Benchmark GJP", value: "BS < 0.10", color: "text-dado border-dado/30 bg-dado/10" }} />
     ),
     kelly: (
       <ToolIntro icon={TrendingUp}

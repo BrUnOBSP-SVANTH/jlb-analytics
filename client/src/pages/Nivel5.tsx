@@ -161,8 +161,8 @@ function DivergenceCalculator() {
           )}
 
           {data.behavioral_note && (
-            <div className="flex items-start gap-2 p-3 rounded-lg bg-purple-500/5 border border-purple-500/20">
-              <Info className="w-4 h-4 text-purple-400 shrink-0 mt-0.5" />
+            <div className="flex items-start gap-2 p-3 rounded-lg bg-dado/5 border border-dado/20">
+              <Info className="w-4 h-4 text-dado shrink-0 mt-0.5" />
               <p className="text-xs text-muted-foreground">{data.behavioral_note}</p>
             </div>
           )}

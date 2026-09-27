@@ -20,17 +20,33 @@ import { normalizeCategory, CATEGORY_LABELS, type CategoryFilter, type Source } 
  * `normalizeCategory` já traduzia isso para as nove categorias do site (é ela
  * que alimenta os filtros de /mercados); o selo é que não usava.
  */
+/**
+ * 🔴 O SELO DE CATEGORIA PERDEU A COR (27/09/2026).
+ *
+ * Eram nove categorias com sete cores cruas do Tailwind — esmeralda, azul,
+ * céu, verde, laranja, roxo, rosa. Três problemas de uma vez:
+ *
+ *  · a cor não distinguia nada. Duas categorias já dividiam o mesmo esmeralda,
+ *    e ninguém decora "roxo = tecnologia". Quem informa é a PALAVRA escrita no
+ *    selo, que está logo ali;
+ *  · eram cores fixas calibradas para o fundo quase-preto. No tema claro, um
+ *    `-400` sobre papel creme fica ilegível — o mesmo defeito que já custou 14
+ *    correções de contraste em setembro;
+ *  · um arco-íris de sete tons briga com a paleta da casa, que é dourado sobre
+ *    obsidiana quente. Cor que aparece em tudo deixa de significar qualquer
+ *    coisa — e aí sobra menos atenção para o que é importante: o preço, o
+ *    movimento, a divergência.
+ *
+ * Agora o selo é quieto e igual para todas. A cor do site volta a ser reservada
+ * para o que tem significado: subiu, caiu, é a marca.
+ */
+const SELO_QUIETO = "text-muted-foreground bg-secondary/50 border-border/30";
+
 const CORES_DA_CATEGORIA: Record<CategoryFilter, string> = {
-  all:         "text-muted-foreground bg-secondary/50 border-border/30",
-  macro:       "text-emerald-400 bg-emerald-400/10 border-emerald-400/20",
-  elections:   "text-blue-400 bg-blue-400/10 border-blue-400/20",
-  geopolitics: "text-sky-400 bg-sky-400/10 border-sky-400/20",
-  sports:      "text-green-400 bg-green-400/10 border-green-400/20",
-  crypto:      "text-orange-400 bg-orange-400/10 border-orange-400/20",
-  tech:        "text-purple-400 bg-purple-400/10 border-purple-400/20",
-  business:    "text-emerald-400 bg-emerald-400/10 border-emerald-400/20",
-  culture:     "text-pink-400 bg-pink-400/10 border-pink-400/20",
-  other:       "text-muted-foreground bg-secondary/50 border-border/30",
+  all: SELO_QUIETO, macro: SELO_QUIETO, elections: SELO_QUIETO,
+  geopolitics: SELO_QUIETO, sports: SELO_QUIETO, crypto: SELO_QUIETO,
+  tech: SELO_QUIETO, business: SELO_QUIETO, culture: SELO_QUIETO,
+  other: SELO_QUIETO,
 };
 
 export function CategoryBadge({ category, source }: { category?: string; source?: Source }) {
@@ -97,7 +113,7 @@ export function PostCard({ post }: { post: RedditPost }) {
 
 export function ArticleCard({ article, onCardClick }: { article: Article; onCardClick: (a: Article) => void }) {
   const langLabel = article.lang === "pt" ? "PT" : "EN";
-  const langColor = article.lang === "pt" ? "text-positive bg-positive/10 border-positive/20" : "text-neon-blue bg-neon-blue/10 border-neon-blue/20";
+  const langColor = article.lang === "pt" ? "text-positive bg-positive/10 border-positive/20" : "text-dado bg-dado/10 border-dado/20";
 
   return (
     <div

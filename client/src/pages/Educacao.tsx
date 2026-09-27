@@ -65,9 +65,9 @@ const LEVELS = [
     sugestao: "Rende mais depois dos Níveis 1–4",
     href: "/nivel/5",
     icon: GitMerge,
-    color: "text-neon-blue",
-    bg: "bg-neon-blue/10",
-    border: "border-neon-blue/30",
+    color: "text-dado",
+    bg: "bg-dado/10",
+    border: "border-dado/30",
     // ⚠️ ERA LISTA DE FUNCIONALIDADE, NÃO DE MATÉRIA (Auditoria 21/09, APR-03).
     // Dois dos quatro tópicos descreviam o que o SISTEMA faz — "nota
     // educacional obrigatória em todo output", "filtro de output por nível de

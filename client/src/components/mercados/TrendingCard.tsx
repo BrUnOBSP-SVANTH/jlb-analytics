@@ -21,6 +21,7 @@ import {
 } from "@/components/mercados/cards";
 import { NewsAnalysisPanel } from "@/components/mercados/panels";
 import { useEdge } from "@/components/mercados/edgeStore";
+import { BARRA_DA_PROBABILIDADE } from "@/lib/corDeProbabilidade";
 
 function formatAge(hours: number) {
   if (hours < 1) return `${Math.round(hours * 60)}min atrás`;
@@ -119,17 +120,21 @@ function TrendingCardBase({ item, onCompare, inCompare, indice = 0 }: {
         {item.yesProb !== undefined && (
           <span
             aria-hidden="true"
-            className={`absolute top-0 left-0 h-[2px] transition-[width] duration-700 ease-out ${
-              livePct >= 70 ? "bg-positive/70" : livePct <= 30 ? "bg-negative/70" : "bg-primary/70"
-            }`}
+            className={`absolute top-0 left-0 h-[2px] transition-[width] duration-700 ease-out ${BARRA_DA_PROBABILIDADE}/70`}
             style={{ width: `${Math.max(4, Math.min(100, livePct))}%` }}
           />
         )}
         {/* ── Cabeçalho: pergunta + probabilidade protagonista ── */}
         <div className="flex items-start justify-between gap-3 mb-2.5">
           <div className="flex items-start gap-2 min-w-0 flex-1">
+            {/* O pontinho de "quão em alta". Eram três FAMÍLIAS de cor para um
+                ponto de 8px — verde, dourado e um dourado mais fraco —, e a
+                troca de verde para dourado no meio da escada não dizia nada:
+                quem olha não sabe que 69 vira dourado e 70 vira verde. Uma
+                intensidade só, em três degraus, lê como intensidade. E devolve
+                mais um verde para o que verde significa aqui: subiu. */}
             <div className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${
-              item.score >= 70 ? "bg-positive animate-pulse" : item.score >= 40 ? "bg-gold" : "bg-primary/50"
+              item.score >= 70 ? "bg-gold animate-pulse" : item.score >= 40 ? "bg-gold/60" : "bg-gold/25"
             }`} />
             {/* TRV-06: o mesmo bloco de título e tradução das outras duas
                 telas — antes cada uma tinha o seu, com número de linhas e tom
@@ -304,8 +309,8 @@ function TrendingCardBase({ item, onCompare, inCompare, indice = 0 }: {
                 title={inCompare ? "Remover da comparação" : "Adicionar à comparação"}
                 className={`flex items-center gap-1 text-[11px] transition-colors px-2 py-1 rounded-md border ${
                   inCompare
-                    ? "border-neon-blue/40 bg-neon-blue/10 text-neon-blue"
-                    : "border-border/30 text-muted-foreground hover:text-neon-blue hover:border-neon-blue/30"
+                    ? "border-dado/40 bg-dado/10 text-dado"
+                    : "border-border/30 text-muted-foreground hover:text-dado hover:border-dado/30"
                 }`}
               >
                 <Scale className="w-3 h-3" />

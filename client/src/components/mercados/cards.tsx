@@ -10,6 +10,7 @@ import { Languages } from "lucide-react";
 import type { DynamicBadge, Source } from "@/lib/trending";
 import { historicoDoToken, type PontoPreco } from "@/lib/historicoPreco";
 import { num, tempoRestante } from "@shared/formato";
+import { corDoMovimento, COR_DA_PROBABILIDADE, BARRA_DA_PROBABILIDADE } from "@/lib/corDeProbabilidade";
 
 // ─── Sparkline ───────────────────────────────────────────────────────────────
 
@@ -156,7 +157,7 @@ export function ProbSparkline({ tokenIds, marketId, source }: {
 
 export const BADGE_CONFIG: Record<DynamicBadge, { label: string; cls: string }> = {
   viral:      { label: "🔥 Viral",      cls: "border-orange-500/40 bg-orange-500/10 text-orange-400" },
-  nova:       { label: "✨ Nova",        cls: "border-neon-blue/40 bg-neon-blue/10 text-neon-blue"   },
+  nova:       { label: "✨ Nova",        cls: "border-dado/40 bg-dado/10 text-dado"   },
   "em-alta":  { label: "📈 Em Alta",    cls: "border-positive/40 bg-positive/10 text-positive"      },
   encerrando: { label: "⏳ Encerrando", cls: "border-yellow-500/40 bg-yellow-500/10 text-yellow-400" },
 };
@@ -227,13 +228,13 @@ export function SourceBadge({ source, subreddit }: { source: Source; subreddit?:
     // centavo, aqui não. Quem lê de relance precisa ver a diferença.
     return (
       <span
-        className="text-[11px] font-medium px-2 py-0.5 rounded-full border border-purple-500/30 bg-purple-500/10 text-purple-400"
+        className="text-[11px] font-medium px-2 py-0.5 rounded-full border border-dado/30 bg-dado/10 text-dado"
         title="A Manifold usa dinheiro fictício (mana). O preço reflete opinião, não dinheiro em risco — diferente de Polymarket e Kalshi."
       >
         Manifold · fictício
       </span>
     );
-  return <span className="text-[11px] font-medium px-2 py-0.5 rounded-full border border-neon-blue/30 bg-neon-blue/10 text-neon-blue">Polymarket</span>;
+  return <span className="text-[11px] font-medium px-2 py-0.5 rounded-full border border-dado/30 bg-dado/10 text-dado">Polymarket</span>;
 }
 
 
@@ -278,10 +279,10 @@ function useContagem(alvo: number, ativo = true): number {
 export function ProbHero({ prob, flash }: { prob: number; flash?: "up" | "down" | null }) {
   const alvoPct = Math.round(prob * 100);
   const pct = Math.round(useContagem(alvoPct));
-  // Mid (31-69%) usa text-primary (adapta claro/escuro) em vez de text-gold fixo,
-  // que ficava ~1.75:1 no card branco. positive/negative escurecem no .light.
-  const base = pct >= 70 ? "text-positive" : pct <= 30 ? "text-negative" : "text-primary";
-  const color = flash === "up" ? "text-positive" : flash === "down" ? "text-negative" : base;
+  // A cor do nível NÃO julga o nível — ver lib/corDeProbabilidade.ts. O flash
+  // é a exceção, e é a única: ali verde e vermelho descrevem um movimento que
+  // acabou de acontecer, não um número ser alto ou baixo.
+  const color = corDoMovimento(flash);
   return (
     <div className={`text-right shrink-0 transition-transform duration-300 ${flash ? "scale-105" : "scale-100"}`}>
       <p className={`font-mono font-bold leading-none tabular-nums ${color} transition-colors duration-300`} style={{ fontSize: "2.75rem" }}>
@@ -301,7 +302,7 @@ export function ProbHero({ prob, flash }: { prob: number; flash?: "up" | "down" 
 export function ProbBar({ prob }: { prob: number }) {
   const pct = Math.round(prob * 100);
   const largura = useContagem(pct);
-  const color = pct >= 70 ? "bg-positive" : pct <= 30 ? "bg-negative" : "bg-primary";
+  const color = BARRA_DA_PROBABILIDADE;
   return (
     <div>
       <div className="h-2 rounded-full bg-secondary/40 overflow-hidden">
@@ -335,7 +336,7 @@ export function MultiOutcomePills({ outcomes }: { outcomes: { label: string; pro
           que continua protagonista pelo TAMANHO, não pela posição. */}
       <div className="flex items-center gap-3">
         <span className="text-sm text-foreground leading-snug min-w-0 flex-1 truncate" title={leader.label}>{leader.label}</span>
-        <span className={`font-mono font-bold leading-none tabular-nums shrink-0 ${leaderPct >= 50 ? "text-positive" : "text-primary"}`} style={{ fontSize: "2.25rem" }}>
+        <span className={`font-mono font-bold leading-none tabular-nums shrink-0 ${COR_DA_PROBABILIDADE}`} style={{ fontSize: "2.25rem" }}>
           {leaderPct}<span className="text-sm align-top leading-none">%</span>
         </span>
       </div>

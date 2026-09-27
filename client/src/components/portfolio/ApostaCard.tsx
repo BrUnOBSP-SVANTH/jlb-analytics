@@ -46,7 +46,7 @@ export function ApostaCard({ a, onCancelar }: { a: ApostaBanca; onCancelar: (id:
             <p className="text-sm font-medium text-foreground leading-snug line-clamp-2 mb-1">{a.pergunta}</p>
             <div className="flex items-center gap-2 text-[11px] text-muted-foreground flex-wrap">
               <span className={`px-1.5 py-0.5 rounded-full border ${
-                a.fonte === "polymarket" ? "border-neon-blue/30 text-neon-blue" : "border-green-500/30 text-green-400"
+                a.fonte === "polymarket" ? "border-dado/30 text-dado" : "border-green-500/30 text-green-400"
               }`}>{a.fonte === "polymarket" ? "Polymarket" : "Kalshi"}</span>
               <span>{new Date(a.criadaEm).toLocaleDateString("pt-BR")}</span>
               <span className="font-mono">{reais(a.valor)} a {reais(precoEntrada)} por cota</span>

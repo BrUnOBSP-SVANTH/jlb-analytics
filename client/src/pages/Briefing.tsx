@@ -18,6 +18,7 @@ import AnaliseTabs from "@/components/AnaliseTabs";
 import PageHeader from "@/components/PageHeader";
 import { useSEO } from "@/hooks/useSEO";
 import { num } from "@shared/formato";
+import { COR_DA_PROBABILIDADE, BARRA_DA_PROBABILIDADE } from "@/lib/corDeProbabilidade";
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 
@@ -49,11 +50,8 @@ function isPredictionExpiringSoon(p: StoredPrediction): boolean {
   return age > 20 * 24 * 60 * 60 * 1000 && !p.resolved;
 }
 
-function probColor(prob: number): string {
-  if (prob >= 70) return "text-positive";
-  if (prob >= 40) return "text-warning";
-  return "text-negative";
-}
+// Nível de probabilidade não tem cor de julgamento — ver lib/corDeProbabilidade.ts.
+const probColor = (_prob: number): string => COR_DA_PROBABILIDADE;
 
 // ─── Skeleton ───────────────────────────────────────────────────────────────
 
@@ -171,7 +169,7 @@ function HighlightCard({ m }: { m: MarketHighlight }) {
         <>
           <div className="w-full h-1 bg-secondary/40 rounded-full overflow-hidden">
             <div
-              className={`h-full rounded-full transition-all ${m.prob! >= 70 ? "bg-positive" : m.prob! >= 40 ? "bg-warning" : "bg-negative"}`}
+              className={`h-full rounded-full transition-all ${BARRA_DA_PROBABILIDADE}`}
               style={{ width: `${m.prob}%` }}
             />
           </div>
@@ -311,7 +309,7 @@ export default function Briefing() {
       {loading && (
         <div className="glass-card rounded-xl p-6">
           <div className="flex items-center gap-3 mb-6">
-            <Loader2 className="w-5 h-5 text-neon-blue animate-spin" />
+            <Loader2 className="w-5 h-5 text-dado animate-spin" />
             <p className="text-sm text-muted-foreground">Gerando briefing com dados de mercado em tempo real...</p>
           </div>
           <BriefingSkeleton />
@@ -350,10 +348,10 @@ export default function Briefing() {
       {!loading && briefing && !error && (
         <>
           {/* Headline Card */}
-          <div className="glass-card rounded-xl p-6 space-y-4 border-l-2 border-neon-blue">
+          <div className="glass-card rounded-xl p-6 space-y-4 border-l-2 border-dado">
             <div className="flex items-start gap-3">
-              <div className="w-10 h-10 rounded-xl bg-neon-blue/10 flex items-center justify-center shrink-0">
-                <Zap className="w-5 h-5 text-neon-blue" />
+              <div className="w-10 h-10 rounded-xl bg-dado/10 flex items-center justify-center shrink-0">
+                <Zap className="w-5 h-5 text-dado" />
               </div>
               <div className="flex-1">
                 <h2 className="text-lg font-bold text-[var(--titulo)] leading-snug">{briefing.headline}</h2>
@@ -401,7 +399,7 @@ export default function Briefing() {
           {briefing.marketHighlights?.length > 0 && (
             <div className="space-y-4">
               <h3 className="font-semibold text-foreground flex items-center gap-2">
-                <BarChart2 className="w-4 h-4 text-neon-blue" />
+                <BarChart2 className="w-4 h-4 text-dado" />
                 Destaques dos Mercados Preditivos
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -425,7 +423,7 @@ export default function Briefing() {
                     <div className="flex items-center gap-3 py-1.5">
                       <span className="text-[11px] font-mono text-muted-foreground w-4 shrink-0">{i + 1}</span>
                       <span className={`text-[11px] px-1.5 py-0.5 rounded font-medium shrink-0 ${
-                        m.source === "Polymarket" ? "bg-neon-blue/10 text-neon-blue" : "bg-purple-400/10 text-purple-400"
+                        m.source === "Polymarket" ? "bg-dado/10 text-dado" : "bg-dado/10 text-dado"
                       }`}>{m.source}</span>
                       <p className="text-xs text-foreground flex-1 line-clamp-1">{m.title}</p>
                       <span className={`text-sm font-bold font-mono shrink-0 ${probColor(m.prob)}`}>{m.prob}%</span>

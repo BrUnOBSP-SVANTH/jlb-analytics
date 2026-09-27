@@ -35,8 +35,8 @@ const BADGE_DEFS: BadgeDef[] = [
     name: "Primeira Previsão",
     desc: "Registrou sua primeira previsão",
     icon: Target,
-    color: "text-neon-blue",
-    bg: "bg-neon-blue/10",
+    color: "text-dado",
+    bg: "bg-dado/10",
     check: ({ predictions }) => ({ earned: predictions.length >= 1, earnedAt: predictions[0]?.savedAt }),
     progress: ({ predictions }) => ({ current: Math.min(1, predictions.length), target: 1 }),
   },
@@ -82,8 +82,8 @@ const BADGE_DEFS: BadgeDef[] = [
     name: "Especialista",
     desc: "Skill Score acima de 0,3 — mede o quanto você supera a baseline",
     icon: Award,
-    color: "text-purple-400",
-    bg: "bg-purple-400/10",
+    color: "text-dado",
+    bg: "bg-dado/10",
     check: ({ ss }) => ({ earned: ss !== null && ss > 0.3 }),
   },
   {
@@ -102,8 +102,8 @@ const BADGE_DEFS: BadgeDef[] = [
     name: "3 seguidas",
     desc: "3 previsões seguidas com Brier abaixo de 0,15",
     icon: Zap,
-    color: "text-neon-blue",
-    bg: "bg-neon-blue/10",
+    color: "text-dado",
+    bg: "bg-dado/10",
     check: ({ resolved }) => {
       const sorted = [...resolved]
         .filter((p) => p.brierScore !== null)
@@ -202,8 +202,8 @@ const BADGE_DEFS: BadgeDef[] = [
     name: "Analista",
     desc: "Analisou 5+ mercados com IA",
     icon: Brain,
-    color: "text-purple-400",
-    bg: "bg-purple-400/10",
+    color: "text-dado",
+    bg: "bg-dado/10",
     check: ({ progress }) => ({
       earned: progress.activities.filter((a) => a.type === "market_analyzed").length >= 5,
     }),
@@ -213,8 +213,8 @@ const BADGE_DEFS: BadgeDef[] = [
     name: "Calculadora Pro",
     desc: "Usou calculadoras 10+ vezes",
     icon: Calculator,
-    color: "text-neon-blue",
-    bg: "bg-neon-blue/10",
+    color: "text-dado",
+    bg: "bg-dado/10",
     check: ({ progress }) => ({
       earned: progress.activities.filter((a) => a.type === "calculator_used").length >= 10,
     }),

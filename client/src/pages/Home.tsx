@@ -167,8 +167,8 @@ const LEVELS = NIVEIS.map((nv, i) => ({
 const HOW_IT_WORKS = [
   {
     icon: Target,
-    color: "text-neon-blue",
-    bg: "bg-neon-blue/10",
+    color: "text-dado",
+    bg: "bg-dado/10",
     step: "01",
     title: "Veja o Mercado",
     desc: "Acompanhe ao vivo os mercados mais movimentados do mundo no Polymarket e Kalshi — probabilidades atualizadas em tempo real, sem precisar criar conta.",
@@ -340,8 +340,8 @@ export default function Home() {
 
         <div className="max-w-5xl mx-auto relative">
           <div className="text-center mb-10">
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-neon-blue/10 border border-neon-blue/20 text-xs text-neon-blue font-medium mb-6">
-              <span className="w-1.5 h-1.5 rounded-full bg-neon-blue animate-pulse" aria-hidden="true" />
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-dado/10 border border-dado/20 text-xs text-dado font-medium mb-6">
+              <span className="w-1.5 h-1.5 rounded-full bg-dado animate-pulse" aria-hidden="true" />
               {FONTES_AO_VIVO.join(" · ")} — ao vivo
             </div>
             <h1 // EXCEÇÃO AO DOURADO DOS TÍTULOS, e proposital. Este título tem DOIS tons de
@@ -538,8 +538,8 @@ export default function Home() {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {briefing.watchToday && (
-                    <div className="p-3 rounded-lg bg-neon-blue/5 border border-neon-blue/15">
-                      <p className="text-[0.8125rem] text-neon-blue  mb-1">Fique de olho</p>
+                    <div className="p-3 rounded-lg bg-dado/5 border border-dado/15">
+                      <p className="text-[0.8125rem] text-dado  mb-1">Fique de olho</p>
                       <p className="text-xs text-foreground">{briefing.watchToday}</p>
                     </div>
                   )}
@@ -636,15 +636,15 @@ export default function Home() {
       {/* ── AI Prediction Feature ── */}
       <section className="py-16 px-4">
         <div className="max-w-5xl mx-auto">
-          <div className="relative overflow-hidden rounded-2xl border border-neon-blue/30 bg-gradient-to-br from-neon-blue/5 via-primary/5 to-transparent p-8 md:p-10">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-neon-blue/5 rounded-full -translate-y-1/2 translate-x-1/2 pointer-events-none" aria-hidden="true" />
+          <div className="relative overflow-hidden rounded-2xl border border-dado/30 bg-gradient-to-br from-dado/5 via-primary/5 to-transparent p-8 md:p-10">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-dado/5 rounded-full -translate-y-1/2 translate-x-1/2 pointer-events-none" aria-hidden="true" />
             <div className="relative flex flex-col md:flex-row items-start md:items-center gap-6">
-              <div className="w-14 h-14 rounded-2xl bg-neon-blue/10 border border-neon-blue/20 flex items-center justify-center shrink-0">
-                <Zap className="w-7 h-7 text-neon-blue" aria-hidden="true" />
+              <div className="w-14 h-14 rounded-2xl bg-dado/10 border border-dado/20 flex items-center justify-center shrink-0">
+                <Zap className="w-7 h-7 text-dado" aria-hidden="true" />
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-2">
-                  <span className="text-sm text-neon-blue">Método dos Superforecasters</span>
+                  <span className="text-sm text-dado">Método dos Superforecasters</span>
                 </div>
                 <h2 className="text-xl md:text-2xl font-bold text-[var(--titulo)] mb-2">Previsão Guiada por IA</h2>
                 <p className="text-sm text-muted-foreground leading-relaxed max-w-xl">
@@ -673,7 +673,7 @@ export default function Home() {
                 </p>
               </div>
               <Link href="/previsao" className="shrink-0">
-                <span className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-neon-blue/10 border border-neon-blue/30 text-neon-blue text-sm font-medium hover:bg-neon-blue/20 transition-colors whitespace-nowrap">
+                <span className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-dado/10 border border-dado/30 text-dado text-sm font-medium hover:bg-dado/20 transition-colors whitespace-nowrap">
                   Experimentar <ArrowRight className="w-4 h-4" aria-hidden="true" />
                 </span>
               </Link>
@@ -743,7 +743,7 @@ export default function Home() {
                   // quando 600 era exatamente o teto. Agora `totais` traz o
                   // catálogo real, que é um número certo: não precisa de "+".
                   value: <>{stats.markets.toLocaleString("pt-BR")}</>,
-                  dot: "bg-neon-blue", label: "mercados monitorados", sub: "Polymarket + Kalshi",
+                  dot: "bg-dado", label: "mercados monitorados", sub: "Polymarket + Kalshi",
                 },
                 stats.predictions > 0 && {
                   value: <>{stats.predictions.toLocaleString("pt-BR")}</>,

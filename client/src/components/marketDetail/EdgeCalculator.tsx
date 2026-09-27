@@ -280,9 +280,9 @@ export function EdgeCalculator({
             </p>
             <p className="text-[11px] text-muted-foreground mt-0.5">por real na posição</p>
           </div>
-          <div className={`p-3 rounded-lg border ${!neutro && v.edgePp > 0 ? "border-neon-blue/20 bg-neon-blue/5" : "border-border/20 bg-secondary/10"}`}>
+          <div className={`p-3 rounded-lg border ${!neutro && v.edgePp > 0 ? "border-dado/20 bg-dado/5" : "border-border/20 bg-secondary/10"}`}>
             <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-1">Edge vs Mercado</p>
-            <p className={`text-xl font-mono font-bold tabular-nums ${!neutro && v.edgePp > 0 ? "text-neon-blue" : "text-muted-foreground"}`}>
+            <p className={`text-xl font-mono font-bold tabular-nums ${!neutro && v.edgePp > 0 ? "text-dado" : "text-muted-foreground"}`}>
               {neutro ? "0,0 pp" : pp(v.edgePp)}
             </p>
             {/* DET-02: os três números com a MESMA precisão. Antes o mercado
@@ -327,7 +327,7 @@ export function EdgeCalculator({
       {mexeu && calculavel && Math.abs(v.edgePp) >= 2 && (
         <div className="space-y-2">
           <button onClick={handleExplain} disabled={loadingExplain}
-            className="w-full flex items-center justify-center gap-2 py-2 rounded-lg bg-neon-blue/10 border border-neon-blue/20 text-xs font-medium text-neon-blue hover:bg-neon-blue/20 transition-colors disabled:opacity-50">
+            className="w-full flex items-center justify-center gap-2 py-2 rounded-lg bg-dado/10 border border-dado/20 text-xs font-medium text-dado hover:bg-dado/20 transition-colors disabled:opacity-50">
             {loadingExplain
               ? <><RefreshCw className="w-3.5 h-3.5 animate-spin" />Analisando sua vantagem...</>
               : explain
@@ -336,7 +336,7 @@ export function EdgeCalculator({
           </button>
           {explainError && <p className="text-xs text-negative/80 px-1">{explainError}</p>}
           {explain && (
-            <div className="space-y-2 p-3 rounded-lg bg-neon-blue/5 border border-neon-blue/15 text-xs leading-relaxed">
+            <div className="space-y-2 p-3 rounded-lg bg-dado/5 border border-dado/15 text-xs leading-relaxed">
               <p className="text-muted-foreground">{explain.explanation}</p>
               <div><span className="font-semibold text-foreground/80">Por que o mercado pode errar: </span><span className="text-muted-foreground">{explain.whyMarketMightBeMistaken}</span></div>
               <div><span className="font-semibold text-gold/80">💡 Insight: </span><span className="text-muted-foreground">{explain.keyInsight}</span></div>

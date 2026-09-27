@@ -58,7 +58,7 @@ export function CalcCard({ title, icon: Icon, children }: { title: string; icon:
     <AnimatedSection>
       <div className="glass-card rounded-xl p-6">
         <div className="flex items-center gap-2 mb-5">
-          <Icon className="w-5 h-5 text-neon-blue" aria-hidden="true" />
+          <Icon className="w-5 h-5 text-dado" aria-hidden="true" />
           <h2 className="font-display font-semibold text-foreground">{title}</h2>
         </div>
         {children}

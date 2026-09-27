@@ -38,7 +38,7 @@ const W = 720, H = 220, PAD_ESQ = 4, PAD_DIR = 128, PAD_V = 12;
 /** Cores das linhas. Ordem = ranking, então a primeira é sempre a do líder. */
 const CORES = [
   "var(--color-primary)",
-  "var(--color-neon-blue)",
+  "var(--color-dado)",
   "var(--color-positive)",
   "var(--color-warning)",
   "var(--color-negative)",

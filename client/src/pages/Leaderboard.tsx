@@ -105,7 +105,7 @@ function DuelRanking() {
             <span className="text-xs font-mono text-muted-foreground text-center">{i + 1}</span>
             <div className="flex items-center gap-2 min-w-0">
               <p className="text-sm font-medium text-foreground truncate">{r.name}</p>
-              {r.isIA && <span className="text-[11px] font-semibold px-1.5 py-0.5 rounded bg-neon-blue/10 text-neon-blue border border-neon-blue/20 shrink-0">IA</span>}
+              {r.isIA && <span className="text-[11px] font-semibold px-1.5 py-0.5 rounded bg-dado/10 text-dado border border-dado/20 shrink-0">IA</span>}
             </div>
             <span className={`text-xs font-mono font-bold text-right ${r.avgBrier < 0.18 ? "text-positive" : r.avgBrier < 0.25 ? "text-gold" : "text-muted-foreground"}`}>
               {num(r.avgBrier, 3)}

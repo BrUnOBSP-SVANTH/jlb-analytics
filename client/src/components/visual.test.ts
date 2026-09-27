@@ -220,7 +220,15 @@ describe("as duas telas de card não podem divergir", () => {
 
     it(`${nome}: a probabilidade desenha a borda do card`, () => {
       expect(src).toMatch(/absolute top-0 left-0 h-\[2px\]/);
-      expect(src).toMatch(/bg-positive\/70|bg-negative\/70|bg-primary\/70/);
+      // Cobra a LARGURA, que é o que carrega a informação — a barra tem o
+      // tamanho da probabilidade. A linha de baixo prendia as três classes de
+      // cor do verde/dourado/vermelho, e em 27/09/2026 foi ela que reprovou a
+      // correção: a cor da probabilidade passou a ser uma só, neutra, porque
+      // nível não é bom nem ruim (lib/corDeProbabilidade.ts). Teste que fixa a
+      // cor errada impede o conserto dela — é a mesma armadilha do teste de
+      // atribuição, 200 linhas acima.
+      expect(src).toMatch(/BARRA_DA_PROBABILIDADE/);
+      expect(src).toMatch(/style=\{\{ width: `\$\{[^}]*\}%` \}\}|width: `\$\{/);
     });
 
     it(`${nome}: a entrada é escalonada pela posição na lista`, () => {

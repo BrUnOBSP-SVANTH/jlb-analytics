@@ -312,7 +312,7 @@ export function MercadoLinha({ item, onCompare, inCompare, onWatch, watched }: {
         {onCompare && (
           <button
             onClick={() => onCompare(item)}
-            className={`alvo-minimo justify-center rounded-md transition-colors ${inCompare ? "text-neon-blue" : "text-muted-foreground hover:text-foreground"}`}
+            className={`alvo-minimo justify-center rounded-md transition-colors ${inCompare ? "text-dado" : "text-muted-foreground hover:text-foreground"}`}
             title={inCompare ? "Remover da comparação" : "Comparar"}
           >
             <Scale className="w-4 h-4" aria-hidden="true" />

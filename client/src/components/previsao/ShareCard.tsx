@@ -6,7 +6,31 @@
  * nativo (WhatsApp/X/Insta), ou (b) baixar como PNG (rasteriza o SVG em <canvas>).
  * Tudo client-side, sem dependência nova. SVG usa fontes de sistema para rasterizar
  * de forma confiável (web fonts nem sempre chegam ao contexto do canvas).
+ *
+ * ⚠️ AQUI A COR É HEX FIXO, E TEM DE SER: o SVG vira PNG num <canvas>, fora do
+ * documento — `var(--gold)` não existe nesse contexto e sairia preto. A regra
+ * da casa ("cor só por token") continua valendo para tudo que é tela.
+ *
+ * 🔴 Por isso mesmo ele ficou para trás (27/09/2026). Esta é a única imagem da
+ * marca que sai do site — vai para WhatsApp, X, Instagram — e estava numa
+ * ARDÓSIA AZUL (#0c111b, borda #1c2838, texto #93a1b3) que nunca foi a paleta
+ * da casa. Quem recebia o cartão via uma marca; quem abria o link via outra.
+ * Os hex abaixo são conversões diretas dos tokens do tema escuro, anotadas com
+ * o token de origem para que a próxima mudança de paleta chegue até aqui.
  */
+/** Tokens do tema escuro convertidos para hex — ver o aviso acima. */
+const TINTA = {
+  fundo: "#0f0c07",        // --background
+  fundoBaixo: "#0a0804",   // --obsidian
+  borda: "#2f2b24",        // --border
+  texto: "#edebe7",        // --foreground
+  dado: "#e1ceb0",         // --dado
+  dadoSuave: "#b5a996",    // --dado-suave
+  quieto: "#9d978f",       // --muted-foreground
+  douradoClaro: "#ecc980", // --gold-light
+  dourado: "#dbb155",      // --gold
+  positivo: "#00c66d",     // --positive
+} as const;
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Share2, Download } from "lucide-react";
@@ -39,26 +63,26 @@ function buildSvg(d: TrackRecordData): string {
   const mktB = d.marketBrier != null ? num(d.marketBrier, 2) : "—";
   const beats = hit != null && mkt != null && hit >= mkt;
 
-  const heroColor = beats ? "#4ade80" : "#e8b74a";
+  const heroColor = beats ? TINTA.positivo : TINTA.dourado;
   const compare = `de acerto, contra ${mkt != null ? pct(mkt) : "—"} do mercado  ·  Brier ${aiB} vs ${mktB}  ·  skill ${skillStr}`;
   const honest = `${d.resolvedCount} previsões resolvidas — medidas contra o resultado REAL da plataforma, sem cherry-picking.`;
 
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" font-family="system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif">
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#0c111b"/><stop offset="1" stop-color="#080b12"/>
+      <stop offset="0" stop-color="${TINTA.fundo}"/><stop offset="1" stop-color="${TINTA.fundoBaixo}"/>
     </linearGradient>
     <linearGradient id="gold" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0" stop-color="#f5cf6a"/><stop offset="1" stop-color="#e0a92e"/>
+      <stop offset="0" stop-color="${TINTA.douradoClaro}"/><stop offset="1" stop-color="${TINTA.dourado}"/>
     </linearGradient>
   </defs>
   <rect width="${W}" height="${H}" fill="url(#bg)"/>
-  <rect x="20" y="20" width="${W - 40}" height="${H - 40}" rx="26" fill="none" stroke="#1c2838" stroke-width="2"/>
+  <rect x="20" y="20" width="${W - 40}" height="${H - 40}" rx="26" fill="none" stroke="${TINTA.borda}" stroke-width="2"/>
   <rect x="20" y="20" width="8" height="${H - 40}" rx="4" fill="url(#gold)"/>
 
-  <text x="72" y="108" fill="#eef2f8" font-size="34" font-weight="700">JLB <tspan fill="url(#gold)">Analytics</tspan></text>
-  <rect x="792" y="76" width="336" height="44" rx="22" fill="#0f2418" stroke="#2f6b45" stroke-width="1.5"/>
-  <text x="960" y="105" fill="#4ade80" font-size="21" font-weight="700" text-anchor="middle" letter-spacing="1">✓ TRACK RECORD VERIFICADO</text>
+  <text x="72" y="108" fill="${TINTA.texto}" font-size="34" font-weight="700">JLB <tspan fill="url(#gold)">Analytics</tspan></text>
+  <rect x="792" y="76" width="336" height="44" rx="22" fill="#0d2218" stroke="#2c6244" stroke-width="1.5"/>
+  <text x="960" y="105" fill="${TINTA.positivo}" font-size="21" font-weight="700" text-anchor="middle" letter-spacing="1">✓ TRACK RECORD VERIFICADO</text>
 
   <!-- TRK-08: o número-herói era a taxa de acerto direcional — que a PRÓPRIA
        página chama de "a parte fácil: quase nenhum mercado é 50/50, então saber
@@ -67,31 +91,31 @@ function buildSvg(d: TrackRecordData): string {
        desmonta três parágrafos depois.
        O que ninguém mais faz é publicar o número medido contra o resultado real
        da plataforma, incluindo quando ele é ruim. É esse o cartaz. -->
-  <text x="70" y="268" fill="#eef2f8" font-size="76" font-weight="800" letter-spacing="-2">Publicamos até</text>
+  <text x="70" y="268" fill="${TINTA.texto}" font-size="76" font-weight="800" letter-spacing="-2">Publicamos até</text>
   <text x="70" y="352" fill="url(#gold)" font-size="76" font-weight="800" letter-spacing="-2">quando erramos.</text>
 
-  <line x1="72" y1="404" x2="${W - 72}" y2="404" stroke="#1c2838" stroke-width="1.5"/>
+  <line x1="72" y1="404" x2="${W - 72}" y2="404" stroke="${TINTA.borda}" stroke-width="1.5"/>
   <text x="72" y="462" fill="${heroColor}" font-size="46" font-weight="800">${hit != null ? pct(hit) : "—"}</text>
-  <text x="160" y="462" fill="#dfe6ef" font-size="27" font-weight="600">${esc(compare)}</text>
-  <text x="72" y="512" fill="#93a1b3" font-size="24">${esc(honest)}</text>
+  <text x="160" y="462" fill="${TINTA.dado}" font-size="27" font-weight="600">${esc(compare)}</text>
+  <text x="72" y="512" fill="${TINTA.dadoSuave}" font-size="24">${esc(honest)}</text>
 
-  <text x="72" y="576" fill="#8b98a8" font-size="23">Faça sua previsão calibrada</text>
+  <text x="72" y="576" fill="${TINTA.quieto}" font-size="23">Faça sua previsão calibrada</text>
   <text x="${W - 72}" y="576" fill="url(#gold)" font-size="23" font-weight="700" text-anchor="end">jlb · /track-record</text>
 </svg>`;
 }
 
 function buildGenericSvg(): string {
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" font-family="system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif">
-  <defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0c111b"/><stop offset="1" stop-color="#080b12"/></linearGradient>
-  <linearGradient id="gold" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#f5cf6a"/><stop offset="1" stop-color="#e0a92e"/></linearGradient></defs>
+  <defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${TINTA.fundo}"/><stop offset="1" stop-color="${TINTA.fundoBaixo}"/></linearGradient>
+  <linearGradient id="gold" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="${TINTA.douradoClaro}"/><stop offset="1" stop-color="${TINTA.dourado}"/></linearGradient></defs>
   <rect width="${W}" height="${H}" fill="url(#bg)"/>
-  <rect x="20" y="20" width="${W - 40}" height="${H - 40}" rx="26" fill="none" stroke="#1c2838" stroke-width="2"/>
+  <rect x="20" y="20" width="${W - 40}" height="${H - 40}" rx="26" fill="none" stroke="${TINTA.borda}" stroke-width="2"/>
   <rect x="20" y="20" width="8" height="${H - 40}" rx="4" fill="url(#gold)"/>
-  <text x="72" y="108" fill="#eef2f8" font-size="34" font-weight="700">JLB <tspan fill="url(#gold)">Analytics</tspan></text>
-  <text x="72" y="300" fill="#eef2f8" font-size="72" font-weight="800">Track record</text>
+  <text x="72" y="108" fill="${TINTA.texto}" font-size="34" font-weight="700">JLB <tspan fill="url(#gold)">Analytics</tspan></text>
+  <text x="72" y="300" fill="${TINTA.texto}" font-size="72" font-weight="800">Track record</text>
   <text x="72" y="378" fill="url(#gold)" font-size="72" font-weight="800">verificado.</text>
-  <text x="72" y="452" fill="#93a1b3" font-size="30">Cada previsão da IA confrontada com o resultado REAL</text>
-  <text x="72" y="494" fill="#93a1b3" font-size="30">da plataforma — auditável, sem cherry-picking.</text>
+  <text x="72" y="452" fill="${TINTA.dadoSuave}" font-size="30">Cada previsão da IA confrontada com o resultado REAL</text>
+  <text x="72" y="494" fill="${TINTA.dadoSuave}" font-size="30">da plataforma — auditável, sem cherry-picking.</text>
   <text x="${W - 72}" y="576" fill="url(#gold)" font-size="23" font-weight="700" text-anchor="end">jlb · /track-record</text>
 </svg>`;
 }

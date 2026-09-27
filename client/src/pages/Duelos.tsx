@@ -340,7 +340,7 @@ export default function Duelos() {
                   <button key={m} role="radio" aria-checked={duelMode === m}
                     onClick={() => void openCreate(m)}
                     className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
-                      duelMode === m ? "bg-neon-blue/15 border border-neon-blue/40 text-neon-blue" : "bg-secondary/30 border border-transparent text-muted-foreground hover:text-foreground"
+                      duelMode === m ? "bg-dado/15 border border-dado/40 text-dado" : "bg-secondary/30 border border-transparent text-muted-foreground hover:text-foreground"
                     }`}>
                     {label}
                   </button>
@@ -368,7 +368,7 @@ export default function Duelos() {
                           className={`text-left p-2.5 rounded-lg border text-xs leading-snug transition-colors ${
                             on ? "border-gold/40 bg-gold/10 text-foreground" : "border-border/20 bg-secondary/10 text-muted-foreground hover:border-border/40"
                           }`}>
-                          <span className="font-mono text-[11px] text-neon-blue mr-1.5">{m.probAtCreate}%</span>
+                          <span className="font-mono text-[11px] text-dado mr-1.5">{m.probAtCreate}%</span>
                           {m.title}
                           {(() => { const d = daysToEnd(m.endDate); return d !== null && d <= 30 ? (
                             <span className={`ml-1.5 text-[11px] font-semibold ${d <= 7 ? "text-gold" : "text-muted-foreground"}`}>
@@ -414,7 +414,7 @@ export default function Duelos() {
         {/* ── Aceitar duelo ── */}
         {joining && (
           <AnimatedSection>
-            <div className="glass-card rounded-xl p-6 space-y-5 border border-neon-blue/20">
+            <div className="glass-card rounded-xl p-6 space-y-5 border border-dado/20">
               <div className="flex items-center justify-between">
                 <h3 className="font-display font-semibold text-foreground">
                   Aceitar duelo de <span className="text-gold">{joining.creatorName}</span> · {joining.stakePts} pts
@@ -453,7 +453,7 @@ export default function Duelos() {
                     <Plus className="w-3.5 h-3.5" aria-hidden="true" /> Criar duelo
                   </button>
                   <button onClick={() => void openCreate("ia")}
-                    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-neon-blue/15 border border-neon-blue/30 text-neon-blue text-xs font-semibold hover:bg-neon-blue/25 transition-colors">
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-dado/15 border border-dado/30 text-dado text-xs font-semibold hover:bg-dado/25 transition-colors">
                     <Swords className="w-3.5 h-3.5" aria-hidden="true" /> Duelar contra a IA
                   </button>
                 </div>
@@ -485,7 +485,7 @@ export default function Duelos() {
                           setCreating(false);
                           window.scrollTo({ top: 0, behavior: "smooth" });
                         }}
-                        className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-neon-blue/15 border border-neon-blue/30 text-neon-blue text-xs font-semibold hover:bg-neon-blue/25 transition-colors">
+                        className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-dado/15 border border-dado/30 text-dado text-xs font-semibold hover:bg-dado/25 transition-colors">
                         <Swords className="w-3.5 h-3.5" aria-hidden="true" /> Aceitar
                       </button>
                     </div>
@@ -576,7 +576,7 @@ export default function Duelos() {
           <AnimatedSection>
             <div className="glass-card rounded-xl p-6 space-y-4 max-w-2xl">
               <h3 className="font-display font-semibold text-foreground flex items-center gap-2">
-                <Info className="w-4 h-4 text-neon-blue" aria-hidden="true" /> Como funciona o duelo
+                <Info className="w-4 h-4 text-dado" aria-hidden="true" /> Como funciona o duelo
               </h3>
               <ol className="space-y-3 text-sm text-muted-foreground leading-relaxed list-decimal pl-5">
                 <li><strong className="text-foreground">Mesmo baralho:</strong> o desafiante escolhe de 2 a 5 mercados reais (Polymarket) e registra a probabilidade que acredita para cada um.</li>

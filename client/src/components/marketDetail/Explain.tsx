@@ -10,8 +10,8 @@ import { Info } from "lucide-react";
 // a plataforma é de educação, então explicar cada número é parte do produto.
 export function Explain({ children }: { children: ReactNode }) {
   return (
-    <div className="flex items-start gap-2 rounded-lg bg-neon-blue/[0.04] border border-neon-blue/15 px-3 py-2">
-      <Info className="w-3.5 h-3.5 shrink-0 mt-0.5 text-neon-blue/70" aria-hidden="true" />
+    <div className="flex items-start gap-2 rounded-lg bg-dado/[0.04] border border-dado/15 px-3 py-2">
+      <Info className="w-3.5 h-3.5 shrink-0 mt-0.5 text-dado/70" aria-hidden="true" />
       <p className="text-xs text-muted-foreground leading-relaxed">{children}</p>
     </div>
   );

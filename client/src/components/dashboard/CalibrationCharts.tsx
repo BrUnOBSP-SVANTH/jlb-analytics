@@ -45,7 +45,7 @@ export function CalibrationChart({ predictions }: { predictions: StoredPredictio
           Calibração perfeita
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="w-2 h-2 rounded-full bg-neon-blue inline-block" />
+          <span className="w-2 h-2 rounded-full bg-dado inline-block" />
           Suas previsões
         </span>
       </div>
@@ -106,7 +106,7 @@ export function CalibrationTrend({ history }: { history: CalibrationSnapshot[] }
     <div className="glass-card rounded-xl p-6 space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="font-semibold text-foreground flex items-center gap-2">
-          <TrendingUp className="w-4 h-4 text-neon-blue" />
+          <TrendingUp className="w-4 h-4 text-dado" />
           Evolução da Calibração
         </h3>
         {brierDelta !== null && (
@@ -120,7 +120,7 @@ export function CalibrationTrend({ history }: { history: CalibrationSnapshot[] }
 
       <div className="flex items-center gap-4 text-xs text-muted-foreground">
         <span className="flex items-center gap-1.5">
-          <span className="w-4 h-0.5 bg-neon-blue inline-block rounded" />
+          <span className="w-4 h-0.5 bg-dado inline-block rounded" />
           Brier Score (menor = melhor)
         </span>
         <span className="flex items-center gap-1.5">

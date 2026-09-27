@@ -264,7 +264,7 @@ export default function Imprensa() {
           </div>
         </section>
 
-        <section className="glass-card rounded-2xl p-6 border border-neon-blue/20">
+        <section className="glass-card rounded-2xl p-6 border border-dado/20">
           <h2 className="text-lg font-bold text-[var(--titulo)] mb-2">API e licenciamento (B2B)</h2>
           <p className="text-sm text-muted-foreground max-w-2xl">
             Acesso programático aos modelos econométricos e ao feed de probabilidades, para redações,

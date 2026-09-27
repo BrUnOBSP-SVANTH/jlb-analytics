@@ -89,7 +89,7 @@ export default function ResetPassword() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background px-4">
         <div className="flex flex-col items-center gap-4 text-center">
-          <div className="w-10 h-10 border-2 border-neon-blue border-t-transparent rounded-full animate-spin" />
+          <div className="w-10 h-10 border-2 border-dado border-t-transparent rounded-full animate-spin" />
           <p className="text-muted-foreground text-sm">Verificando link de recuperação...</p>
         </div>
       </div>
@@ -127,7 +127,7 @@ export default function ResetPassword() {
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="flex flex-col items-center mb-8">
-          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-neon-blue to-primary flex items-center justify-center mb-3">
+          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-dado to-primary flex items-center justify-center mb-3">
             <TrendingUp className="w-6 h-6 text-white" aria-hidden="true" />
           </div>
           <h1 className="text-xl font-display font-bold text-[var(--titulo)]">JLB Analytics</h1>

@@ -239,7 +239,7 @@ export default function MarketDetail() {
                 {market.volume24h !== undefined && (
                   <div className="glass-card rounded-xl p-4 text-center">
                     <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-1"><Termo nome="volume">Volume 24h</Termo></p>
-                    <p className="text-2xl font-mono font-bold text-neon-blue">{formatVolume(market.volume24h, source)}</p>
+                    <p className="text-2xl font-mono font-bold text-dado">{formatVolume(market.volume24h, source)}</p>
                     <p className="text-[11px] text-muted-foreground mt-1">nas últimas 24 horas</p>
                   </div>
                 )}
@@ -296,7 +296,7 @@ export default function MarketDetail() {
                 <div className="flex items-center justify-between">
                   <div>
                     <h2 className="text-sm font-semibold text-[var(--titulo)] flex items-center gap-2">
-                      <BarChart2 className="w-4 h-4 text-neon-blue" />
+                      <BarChart2 className="w-4 h-4 text-dado" />
                       Histórico de Probabilidade (90 dias)
                     </h2>
                     {snapshotRows.length >= 4 && (
@@ -383,7 +383,7 @@ export default function MarketDetail() {
             <AnimatedSection delay={0.2}>
               <div className="glass-card rounded-xl p-6 space-y-4">
                 <div className="flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-purple-400" />
+                  <Sparkles className="w-4 h-4 text-dado" />
                   <h2 className="text-sm font-semibold text-[var(--titulo)]">Análise por IA</h2>
                 </div>
 
@@ -485,11 +485,11 @@ export default function MarketDetail() {
                     )}
 
                     {/* Main analysis */}
-                    <div className="p-4 rounded-lg bg-neon-blue/5 border border-neon-blue/15">
-                      <p className="text-[11px] font-semibold text-neon-blue/80 uppercase tracking-wider mb-2 flex items-center gap-1 flex-wrap">
+                    <div className="p-4 rounded-lg bg-dado/5 border border-dado/15">
+                      <p className="text-[11px] font-semibold text-dado/80 uppercase tracking-wider mb-2 flex items-center gap-1 flex-wrap">
                         <Sparkles className="w-3 h-3" />Análise de IA
                         {(aiAnalysis.cerebroHits ?? 0) > 0 && (
-                          <span className="px-1.5 py-0.5 rounded bg-neon-blue/10 border border-neon-blue/30 normal-case">🧠 Cérebro ×{aiAnalysis.cerebroHits}</span>
+                          <span className="px-1.5 py-0.5 rounded bg-dado/10 border border-dado/30 normal-case">🧠 Cérebro ×{aiAnalysis.cerebroHits}</span>
                         )}
                         {aiAnalysis.hasMomentum && (
                           <span className="px-1.5 py-0.5 rounded bg-secondary/40 border border-border/30 text-muted-foreground normal-case">📈 momentum</span>
@@ -508,7 +508,7 @@ export default function MarketDetail() {
                         <ul className="space-y-1.5">
                           {aiAnalysis.keyFactors.map((f, i) => (
                             <li key={i} className="flex items-start gap-2 text-sm text-muted-foreground">
-                              <span className="text-neon-blue shrink-0 mt-0.5">▸</span>{f}
+                              <span className="text-dado shrink-0 mt-0.5">▸</span>{f}
                             </li>
                           ))}
                         </ul>

@@ -311,9 +311,9 @@ function PredictionTracker({ userId }: { userId?: string }) {
         const active = resolutions.filter((r) => !dismissedRes.has(r.prediction.id));
         if (active.length === 0) return null;
         return (
-          <div className="rounded-xl border border-neon-blue/25 bg-neon-blue/5 p-4 space-y-3">
+          <div className="rounded-xl border border-dado/25 bg-dado/5 p-4 space-y-3">
             <div className="flex items-center gap-2">
-              <Bell className="w-4 h-4 text-neon-blue" />
+              <Bell className="w-4 h-4 text-dado" />
               <p className="text-sm font-semibold text-foreground">
                 {active.length === 1 ? "1 previsão pronta para resolver" : `${active.length} previsões prontas para resolver`}
               </p>
@@ -335,7 +335,7 @@ function PredictionTracker({ userId }: { userId?: string }) {
                   <div className="flex items-center gap-1.5 shrink-0">
                     <button
                       onClick={() => { handleResolve(r.prediction.id, r.suggestedOutcome, "inferred"); setDismissedRes((s) => new Set(s).add(r.prediction.id)); }}
-                      className="px-2.5 py-1 rounded-lg bg-neon-blue/15 border border-neon-blue/30 text-[11px] font-semibold text-neon-blue hover:bg-neon-blue/25 transition-colors"
+                      className="px-2.5 py-1 rounded-lg bg-dado/15 border border-dado/30 text-[11px] font-semibold text-dado hover:bg-dado/25 transition-colors"
                     >
                       Resolver {r.suggestedOutcome ? "SIM" : "NÃO"}
                     </button>
@@ -546,8 +546,8 @@ export default function Dashboard() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <div className="glass-card rounded-xl p-4 flex flex-col gap-2">
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-neon-blue/10 flex items-center justify-center">
-              <BarChart2 className="w-3.5 h-3.5 text-neon-blue" aria-hidden="true" />
+            <div className="w-7 h-7 rounded-lg bg-dado/10 flex items-center justify-center">
+              <BarChart2 className="w-3.5 h-3.5 text-dado" aria-hidden="true" />
             </div>
             <p className="text-xs text-muted-foreground"><Termo nome="brier">Brier Score</Termo></p>
           </div>

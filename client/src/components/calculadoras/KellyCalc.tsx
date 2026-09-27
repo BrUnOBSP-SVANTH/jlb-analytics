@@ -83,7 +83,7 @@ export function KellyCalc() {
                   hint={`o máximo matemático (R$ ${num(kellyStake, 0)}) — mais volátil`} />
                 <ResultBox label="¼ Kelly (cauteloso)"
                   value={`${num((quarterKelly * 100), 1)}%`}
-                  color="text-neon-blue"
+                  color="text-dado"
                   hint="quando você não tem certeza da sua estimativa" />
               </div>
             </>

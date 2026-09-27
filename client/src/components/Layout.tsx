@@ -1,6 +1,6 @@
 /**
  * Layout — raiz visual do JLB Analytics.
- * Identity: obsidian bg, gold/neon-blue accents, glass-card.
+ * Identity: obsidian bg, gold/dado accents, glass-card.
  * A navegação (Navbar) e o rodapé (Footer) vivem em components/layout/*.
  */
 import { ReactNode, useEffect } from "react";

@@ -99,7 +99,7 @@ function EVDeMercadoPrevisao() {
   return (
     <div className="glass-card rounded-xl p-6 space-y-4">
       <div className="flex items-center gap-2">
-        <Calculator className="w-4 h-4 text-neon-blue" />
+        <Calculator className="w-4 h-4 text-dado" />
         <h2 className="font-semibold text-foreground text-sm">EV no mercado de previsão — p ÷ preço − 1</h2>
       </div>
       <p className="text-xs text-muted-foreground leading-relaxed">

@@ -15,8 +15,8 @@ const PUB = path.join(ROOT, "client", "public");
 const ICONS = path.join(PUB, "icons");
 fs.mkdirSync(ICONS, { recursive: true });
 
-const BG = "#16161f";
-const GOLD = "#d8b14a";
+const BG = "#0f0c07";
+const GOLD = "#dbb155";
 
 /** Monograma (linha ascendente + ponto) em um viewBox 32, reescalável. */
 const monogram = (scale = 1, offset = 0) => `
@@ -52,16 +52,16 @@ const ogSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630"
   <rect width="1200" height="630" fill="url(#glow)"/>
   <defs>
     <radialGradient id="glow" cx="0.85" cy="0.1" r="1">
-      <stop offset="0%" stop-color="#2a2438"/>
+      <stop offset="0%" stop-color="#2a1c0c"/>
       <stop offset="60%" stop-color="${BG}" stop-opacity="0"/>
     </radialGradient>
   </defs>
   ${monogram(7.5, 0)}
   <g transform="translate(96 0)">
     <text x="0" y="330" font-family="Segoe UI, Arial, sans-serif" font-size="86"
-      font-weight="700" fill="#f5f2ea" letter-spacing="-2">JLB Analytics</text>
+      font-weight="700" fill="#edebe7" letter-spacing="-2">JLB Analytics</text>
     <text x="0" y="398" font-family="Segoe UI, Arial, sans-serif" font-size="34"
-      fill="#a89e8c">Educação quantitativa para mercados preditivos</text>
+      fill="#b5a996">Educação quantitativa para mercados preditivos</text>
     <g transform="translate(0 448)">
       <rect width="330" height="52" rx="26" fill="${GOLD}" fill-opacity="0.12"
         stroke="${GOLD}" stroke-opacity="0.4"/>

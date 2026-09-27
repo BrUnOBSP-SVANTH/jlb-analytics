@@ -69,7 +69,11 @@ function token(nome: string, tema: "escuro" | "claro"): [number, number, number]
 /** WCAG AA para texto normal. */
 const MINIMO = 4.5;
 
-const ACENTOS = ["--gold-legivel", "--positivo-legivel", "--negativo-legivel", "--azul-legivel"];
+// `--azul-legivel` saiu da lista em 27/09/2026 porque saiu do CSS: era um token
+// de acento azul sem um único uso no produto, medido e aprovado por este teste
+// durante meses. Cor que ninguém usa não precisa passar em contraste — precisa
+// sumir, antes que alguém a encontre pronta e a use.
+const ACENTOS = ["--gold-legivel", "--positivo-legivel", "--negativo-legivel"];
 
 describe("acentos legíveis nos DOIS temas", () => {
   for (const tema of ["escuro", "claro"] as const) {
@@ -108,7 +112,20 @@ describe("acentos legíveis nos DOIS temas", () => {
  * media os tokens `-legivel` — que funcionam — e não os que `text-gold`,
  * `text-positive` e companhia de fato leem.
  */
-const DESTAQUES = ["--gold", "--positive", "--negative", "--warning", "--level3", "--level4"];
+/**
+ * 🔴 `--dado` ENTROU NESTA LISTA em 27/09/2026, e o motivo é o mesmo buraco de
+ * sempre, um degrau acima.
+ *
+ * A cor do "dado" (gráficos, ícones de seção, números) era `--color-neon-blue`
+ * com valor FIXO no `@theme` — ela não apontava para variável, então não
+ * aparecia na lista abaixo e nunca foi medida. Sobre o papel creme do tema
+ * claro ela ficava em 2,26:1, contra o mínimo de 4,5:1. Eram 227 usos de uma
+ * cor ilegível, com este arquivo verde o tempo inteiro.
+ *
+ * A lição: um token só está protegido depois que ENTRA aqui. Cor nova que não
+ * esteja nesta lista é cor não medida.
+ */
+const DESTAQUES = ["--gold", "--positive", "--negative", "--warning", "--level3", "--level4", "--dado", "--dado-suave"];
 
 describe("destaques usados por text-gold, text-positive e cia.", () => {
   for (const tema of ["escuro", "claro"] as const) {
@@ -148,6 +165,48 @@ function bloco(abertura: string): string[] {
   return linhas.slice(0, fim === -1 ? undefined : fim);
 }
 
+/**
+ * A PALETA É QUENTE — e agora isso é medido, não descrito.
+ *
+ * "Obsidian quente" está escrito no CLAUDE.md, no skill de design e no
+ * cabeçalho deste CSS desde o começo. Os NÚMEROS diziam outra coisa: até
+ * 27/09/2026 o fundo era `oklch(0.155 0.012 280)`, e a matiz 280 é
+ * roxo-azulada. Card (278), borda (276), popover (276), chrome (280) e texto
+ * (250) — o produto inteiro tinha um véu frio por baixo do dourado.
+ *
+ * Ninguém notou por anos porque o croma é baixo: cada token, isolado, parece
+ * cinza. É o conjunto que puxa para o azul, e foi isso que o irmão do fundador
+ * viu quando disse "tem detalhes em azul". Nenhum teste podia pegar: todos
+ * mediam CONTRASTE, que é luminância, e matiz não entra nessa conta.
+ *
+ * Esta guarda mede a direção da cor. Não substitui o olho — proíbe a regressão.
+ */
+describe("nenhuma cor da paleta é fria", () => {
+  // 200°–340° cobre ciano, azul, índigo, violeta e magenta. Fora disso fica o
+  // vermelho/laranja/dourado/verde, que é a família da casa.
+  const ehFria = (h: number) => h >= 200 && h <= 340;
+
+  for (const tema of ["escuro", "claro"] as const) {
+    it(`tema ${tema}: todo token oklch aponta para a família quente`, () => {
+      const abertura = tema === "escuro" ? ":root {" : ".light {";
+      const frias = bloco(abertura)
+        .map((l) => l.trim())
+        .filter((l) => l.startsWith("--") && l.includes("oklch("))
+        .map((l) => {
+          const nome = l.slice(0, l.indexOf(":"));
+          const dentro = l.slice(l.indexOf("oklch(") + 6, l.indexOf(")", l.indexOf("oklch(")));
+          const [, C, H] = dentro.trim().split(/[\s/]+/).filter(Boolean).map(Number);
+          return { nome, C, H };
+        })
+        // Croma zero é cinza puro (`oklch(1 0 0)`, `oklch(0 0 0 / 40%)`): a
+        // matiz escrita ali não pinta nada, então não há o que julgar.
+        .filter(({ C, H }) => Number.isFinite(H) && C > 0 && ehFria(H));
+
+      expect(frias.map((f) => `${f.nome} (matiz ${f.H})`), "tokens frios").toEqual([]);
+    });
+  }
+});
+
 describe("@theme inline × .light", () => {
   const tema = new Map(
     bloco("@theme inline {")
@@ -164,7 +223,7 @@ describe("@theme inline × .light", () => {
   });
 
   it("os destaques de cada tema chegam aos utilitários por var()", () => {
-    for (const nome of ["gold", "positive", "negative", "warning", "level3", "level4", "on-accent"]) {
+    for (const nome of ["gold", "positive", "negative", "warning", "level3", "level4", "on-accent", "dado", "dado-suave"]) {
       expect(tema.get(`--color-${nome}`), `--color-${nome} no @theme`).toBe(`var(--${nome});`);
     }
   });

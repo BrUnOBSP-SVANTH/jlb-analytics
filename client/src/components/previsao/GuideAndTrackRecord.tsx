@@ -14,7 +14,7 @@ export function SuperforecasterGuide() {
 
   return (
     <AnimatedSection>
-      <div className={`glass-card rounded-xl border transition-colors ${open ? "border-neon-blue/30" : "border-border/20"}`}>
+      <div className={`glass-card rounded-xl border transition-colors ${open ? "border-dado/30" : "border-border/20"}`}>
         <button
           onClick={() => setOpen((v) => !v)}
           className="w-full flex items-center gap-3 px-5 py-4 text-left hover:bg-secondary/10 transition-colors"
@@ -268,7 +268,7 @@ export function ResultComparator({ limit = 8 }: { limit?: number }) {
     <AnimatedSection>
       <div className="panel p-5">
         <div className="flex items-center gap-2 mb-1">
-          <Scale className="w-4 h-4 text-neon-blue shrink-0" />
+          <Scale className="w-4 h-4 text-dado shrink-0" />
           <p className="text-sm font-semibold text-foreground">Comparador: o que dissemos × o que aconteceu</p>
           <span className="ml-auto text-[11px] text-muted-foreground">{hits}/{sided.length} acertos recentes</span>
         </div>

@@ -8,6 +8,7 @@ import { Bookmark, Bell, ArrowRight, ExternalLink, Trash2 } from "lucide-react";
 import { loadWatchlist, removeFromWatchlist, cycleAlertThreshold, type WatchlistItem } from "@/lib/watchlist";
 import { usePushNotifications, syncPushWatchlist } from "@/hooks/usePushNotifications";
 import { num } from "@shared/formato";
+import { COR_DA_PROBABILIDADE } from "@/lib/corDeProbabilidade";
 
 export default function WatchlistSection() {
   const [items, setItems] = useState<WatchlistItem[]>(() => loadWatchlist());
@@ -27,7 +28,7 @@ export default function WatchlistSection() {
   if (items.length === 0) return null;
 
   const SOURCE_COLOR: Record<string, string> = {
-    polymarket: "text-neon-blue border-neon-blue/30 bg-neon-blue/5",
+    polymarket: "text-dado border-dado/30 bg-dado/5",
     kalshi: "text-green-400 border-green-500/30 bg-green-500/5",
     reddit: "text-orange-400 border-orange-500/30 bg-orange-500/5",
   };
@@ -71,8 +72,7 @@ export default function WatchlistSection() {
           const savedProb  = item.yesProb      !== undefined ? item.yesProb * 100      : null;
           const liveProb   = item.lastKnownProb !== undefined ? item.lastKnownProb * 100 : null;
           const displayPct = liveProb ?? savedProb;
-          const probColor  = displayPct === null ? "text-muted-foreground"
-            : displayPct >= 70 ? "text-positive" : displayPct <= 30 ? "text-negative" : "text-gold";
+          const probColor  = displayPct === null ? "text-muted-foreground" : COR_DA_PROBABILIDADE;
           const delta = (liveProb !== null && savedProb !== null) ? liveProb - savedProb : null;
           const threshold = item.alertThreshold ?? 5;
           // Polymarket/Kalshi têm tela dedicada (/apostas/:id); Reddit não — fica só título.

@@ -24,7 +24,7 @@ const VERDICT: Record<string, { label: string; tone: string; lesson: string }> =
   },
   cauteloso: {
     label: "Cauteloso demais",
-    tone: "text-neon-blue",
+    tone: "text-dado",
     lesson: "Você subestima o que sabe. Dá pra confiar mais nas suas leituras fortes — está deixando valor na mesa.",
   },
 };
@@ -37,7 +37,7 @@ export function IntuitionDiagnosis({ preds }: { preds: StoredPrediction[] }) {
     return (
       <div className="glass-card rounded-xl p-5">
         <div className="flex items-center gap-2 mb-1.5">
-          <Gauge className="w-4 h-4 text-neon-blue" />
+          <Gauge className="w-4 h-4 text-dado" />
           <p className="text-sm font-semibold text-foreground">Diagnóstico da sua intuição</p>
         </div>
         <p className="text-xs text-muted-foreground">
@@ -63,7 +63,7 @@ export function IntuitionDiagnosis({ preds }: { preds: StoredPrediction[] }) {
     <div className="glass-card rounded-xl p-5 space-y-4">
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
-          <Gauge className="w-4 h-4 text-neon-blue" />
+          <Gauge className="w-4 h-4 text-dado" />
           <p className="text-sm font-semibold text-foreground">Diagnóstico da sua intuição</p>
         </div>
         <span className="text-[11px] text-muted-foreground">{resolvedN} resolvidas</span>
@@ -106,7 +106,7 @@ export function IntuitionDiagnosis({ preds }: { preds: StoredPrediction[] }) {
       </div>
 
       {v && (
-        <p className="text-xs text-muted-foreground leading-relaxed border-l-2 border-neon-blue/40 pl-3">
+        <p className="text-xs text-muted-foreground leading-relaxed border-l-2 border-dado/40 pl-3">
           {v.lesson}
         </p>
       )}

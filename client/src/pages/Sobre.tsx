@@ -27,8 +27,8 @@ const OFFERINGS = [
 const PRINCIPLES = [
   { title: "EV antes de tudo",        desc: "Qualquer posição que não tenha Valor Esperado calculado não deveria ser tomada.", color: "text-positive",   bg: "bg-positive/10",   border: "border-positive/20" },
   { title: "Calibração, não previsão", desc: "O objetivo não é acertar mais. É ser bem calibrado: quando você diz 70%, deve acontecer 70% das vezes.", color: "text-primary",    bg: "bg-primary/10",    border: "border-primary/20" },
-  { title: "Modelos explicam",         desc: "Nenhum modelo é a realidade. Divergências entre modelo e mercado são hipóteses a investigar — não ordens.", color: "text-neon-blue",  bg: "bg-neon-blue/10",  border: "border-neon-blue/20" },
-  { title: "Educação, não dependência", desc: "Cada nível torna o usuário mais independente do sistema. Plataformas honestas aumentam capacidade — não criam vício.", color: "text-purple-400", bg: "bg-purple-400/10", border: "border-purple-400/20" },
+  { title: "Modelos explicam",         desc: "Nenhum modelo é a realidade. Divergências entre modelo e mercado são hipóteses a investigar — não ordens.", color: "text-dado",  bg: "bg-dado/10",  border: "border-dado/20" },
+  { title: "Educação, não dependência", desc: "Cada nível torna o usuário mais independente do sistema. Plataformas honestas aumentam capacidade — não criam vício.", color: "text-dado", bg: "bg-dado/10", border: "border-dado/20" },
 ];
 
 // Metrics fetched dynamically from Supabase where possible
@@ -135,7 +135,7 @@ export default function Sobre() {
               return (
                 <AnimatedSection key={item.title} delay={i * 0.06}>
                   <div className="glass-card rounded-xl p-5 h-full">
-                    <Icon className="w-5 h-5 text-neon-blue mb-3" aria-hidden="true" />
+                    <Icon className="w-5 h-5 text-dado mb-3" aria-hidden="true" />
                     <h3 className="font-display font-semibold text-foreground mb-1 text-sm">{item.title}</h3>
                     <p className="text-xs text-muted-foreground leading-relaxed">{item.desc}</p>
                   </div>

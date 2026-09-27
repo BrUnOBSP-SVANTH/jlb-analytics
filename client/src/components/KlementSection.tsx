@@ -417,7 +417,7 @@ export default function KlementSection({ onClose }: { onClose: () => void }) {
           {[
             { label: "Alinhamento histórico", value: "3/4", sub: "acertou 2014·18·22; errou 2026 (Holanda)", color: "text-gold" },
             { label: "Poder explicativo",  value: "~55%", sub: "variância na performance (Hoffmann 2002)",  color: "text-gold" },
-            { label: "Iterações MC",       value: `${N_SIMULATIONS / 1000}k`, sub: "Simulações do torneio completo",   color: "text-neon-blue" },
+            { label: "Iterações MC",       value: `${N_SIMULATIONS / 1000}k`, sub: "Simulações do torneio completo",   color: "text-dado" },
             { label: "Seleções",           value: "48",   sub: "Todas as classificadas para 2026", color: "text-foreground" },
           ].map(s => (
             <div key={s.label} className="glass-card rounded-xl p-4 text-center">
@@ -591,7 +591,7 @@ export default function KlementSection({ onClose }: { onClose: () => void }) {
         <AnimatedSection>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="glass-card rounded-xl p-4 space-y-2">
-              <div className="flex items-center gap-2 text-blue-400">
+              <div className="flex items-center gap-2 text-dado">
                 <TrendingUp className="w-4 h-4" />
                 <p className="text-xs font-semibold uppercase tracking-wide">Europa domina</p>
               </div>

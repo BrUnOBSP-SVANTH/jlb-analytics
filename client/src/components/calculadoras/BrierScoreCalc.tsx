@@ -32,7 +32,7 @@ export function BrierScoreCalc() {
   const skillScore = 1 - brierScore / BRIER_DO_CHUTE;
   const isSkilled = skillScore > 0;
 
-  const classification = brierScore < BRIER_SUPERFORECASTER ? { label: "Excepcional", color: "text-neon-blue" }
+  const classification = brierScore < BRIER_SUPERFORECASTER ? { label: "Excepcional", color: "text-dado" }
     : brierScore < 0.15 ? { label: "Muito bom", color: "text-positive" }
     : brierScore < 0.20 ? { label: "Bom", color: "text-primary" }
     : brierScore < BRIER_DO_CHUTE ? { label: "Mediano", color: "text-warning" }

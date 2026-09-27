@@ -75,11 +75,6 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
-  --color-chart-1: var(--chart-1);
-  --color-chart-2: var(--chart-2);
-  --color-chart-3: var(--chart-3);
-  --color-chart-4: var(--chart-4);
-  --color-chart-5: var(--chart-5);
   --color-sidebar: var(--sidebar);
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar-primary: var(--sidebar-primary);
@@ -104,20 +99,31 @@
   --color-gold: var(--gold);
   --color-gold-light: oklch(0.85 0.1 85);
   --color-gold-dark: oklch(0.65 0.12 85);
-  --color-neon-blue: oklch(0.72 0.18 240);
-  --color-neon-blue-light: oklch(0.82 0.14 240);
+  /* 🔴 O AZUL SAIU (27/09/2026). Ele era a cor do "dado" — gráficos, ícones de
+     seção, números em destaque — e tinha dois problemas.
+     O primeiro é de marca: azul não é da casa. A paleta é dourado (marca) sobre
+     obsidiana quente, e o azul aparecia em 227 lugares puxando o olho para um
+     tom que não conversa com o resto.
+     O segundo é medido: diferente de gold/positive/negative, este token tinha
+     valor FIXO e não se adaptava ao tema claro. Sobre o papel creme ele ficava
+     em 2,26:1 de contraste — a WCAG pede 4,5:1. Era cor ilegível, e o teste de
+     contraste não pegava porque só media os tokens que mudam por tema.
+     Agora o dado fala em branco-quase-cinza QUENTE, que é o segundo tom da
+     casa, e aponta para variável como os outros. Dourado volta a ser raro — e
+     cor que aparece pouco é cor que significa alguma coisa. */
+  --color-dado: var(--dado);
+  --color-dado-suave: var(--dado-suave);
   --color-positive: var(--positive);
   --color-negative: var(--negative);
   /* warning = status "atenção/mediano" (antes era yellow-500 cru, ilegível no claro).
      Calibrado p/ o dark aqui; reescurecido no .light (como positive/negative). */
   --color-warning: var(--warning);
   /* Identidade dos níveis 3 e 4 (antes yellow-500/purple-400 crus, fracos no
-     claro). L1/L2/L5 já usam positive/primary/neon-blue, que adaptam. */
+     claro). L1/L2/L5 já usam positive/primary/dado, que adaptam. */
   --color-level3: var(--level3);
   --color-level4: var(--level4);
   /* obsidian = superfície de chrome (adapta ao tema); on-accent = texto sobre dourado (sempre escuro) */
   --color-obsidian: var(--obsidian);
-  --color-obsidian-light: oklch(0.18 0.015 260);
   --color-surface: var(--card);
   --color-on-accent: var(--on-accent);
 
@@ -135,8 +141,26 @@
 }
 
 /* ───────────────────────────────────────────────────────────────────────────
-   Tema DARK (padrão) — "Obsidian quente": near-black com um leve calor violáceo,
-   cartões com contraste suave e bordas nítidas. Menos "preto duro de template".
+   Tema DARK (padrão) — "Obsidian quente": near-black com calor, cartões de
+   contraste suave e bordas nítidas. Menos "preto duro de template".
+
+   🔴 ATÉ 27/09/2026 ELE NÃO ERA QUENTE. O nome sempre foi esse — está no
+   CLAUDE.md e no skill de design —, mas os números diziam outra coisa: o fundo
+   era `oklch(0.155 0.012 280)` e a matiz 280 é ROXO-AZULADA. Card, borda,
+   popover, superfície do chrome e barra lateral ficavam entre 274 e 280; o
+   texto, em 250, que é azul. Ou seja: o site inteiro tinha um véu frio, e as
+   duas coisas quentes da marca — o dourado (85) e o papel do tema claro (88–90)
+   — flutuavam sobre ele sem conversar com nada.
+
+   É isso que o irmão do fundador viu quando disse "tem detalhes em azul". Ele
+   não estava olhando um componente específico; estava olhando o fundo.
+
+   Agora todo neutro está em matiz 80, ao lado do dourado (85) e do papel do
+   tema claro (88). A LUMINÂNCIA de cada token ficou intacta de propósito — é
+   ela que manda no contraste, então nenhuma das medições da auditoria de
+   setembro precisou ser refeita (contraste.test.ts confirma). O que mudou foi
+   só para que lado a cor aponta. O croma foi limitado a 0,014 porque um neutro
+   quente com croma alto deixa de ser neutro e vira sépia.
    ─────────────────────────────────────────────────────────────────────────── */
 :root {
   --radius: 0.625rem;
@@ -154,50 +178,53 @@
   --negative: oklch(0.65 0.2 25);
   --warning: oklch(0.80 0.15 80);
   --level3: oklch(0.80 0.16 90);
-  --level4: oklch(0.70 0.17 300);
-  --on-accent: oklch(0.17 0.012 280);   /* texto sobre fundo dourado */
-  --background: oklch(0.155 0.012 280);
-  --foreground: oklch(0.94 0.006 250);
-  --card: oklch(0.195 0.014 278);
-  --card-foreground: oklch(0.94 0.006 250);
-  --popover: oklch(0.215 0.016 276);
-  --popover-foreground: oklch(0.94 0.006 250);
+  /* Era roxo (hue 300) — a outra cor fria da paleta. Virou cobre: continua
+     distinguindo o Nível 4 dos vizinhos (dourado 85, level3 90) sem sair da
+     família quente. Contraste medido: 7,60:1 no fundo, 7,11:1 no card. */
+  --level4: oklch(0.72 0.12 50);
+  /* O tom do DADO: branco quase cinza, quente. Mais claro e MUITO menos
+     saturado que o dourado — por isso não compete com a marca, e ainda assim
+     separa "isto é número" de "isto é texto". Medido: 12,75:1 no fundo. */
+  --dado: oklch(0.86 0.045 80);
+  --dado-suave: oklch(0.74 0.03 80);
+  --on-accent: oklch(0.17 0.012 80);   /* texto sobre fundo dourado */
+  --background: oklch(0.155 0.012 80);
+  --foreground: oklch(0.94 0.006 80);
+  --card: oklch(0.195 0.014 80);
+  --card-foreground: oklch(0.94 0.006 80);
+  --popover: oklch(0.215 0.014 80);
+  --popover-foreground: oklch(0.94 0.006 80);
   --primary: oklch(0.78 0.125 83);
   /* Cor dos títulos. No escuro é o dourado claro da marca (contraste alto sobre
      o quase-preto); no tema claro, ver o bloco do tema claro adiante. */
   --titulo: oklch(0.82 0.12 85);
-  --primary-foreground: oklch(0.16 0.012 280);
-  --secondary: oklch(0.235 0.016 276);
-  --secondary-foreground: oklch(0.82 0.01 250);
-  --muted: oklch(0.25 0.014 278);
-  --muted-foreground: oklch(0.68 0.018 262); /* 0.65→0.68: empurra texto muted acima de 4.5:1 (axe) sem mudar a hierarquia */
+  --primary-foreground: oklch(0.16 0.012 80);
+  --secondary: oklch(0.235 0.014 80);
+  --secondary-foreground: oklch(0.82 0.01 80);
+  --muted: oklch(0.25 0.014 80);
+  --muted-foreground: oklch(0.68 0.014 80); /* 0.65→0.68: empurra texto muted acima de 4.5:1 (axe) sem mudar a hierarquia */
   --accent: oklch(0.78 0.12 85);
-  --accent-foreground: oklch(0.155 0.012 280);
+  --accent-foreground: oklch(0.155 0.012 80);
   --destructive: oklch(0.65 0.2 25);
   --destructive-foreground: oklch(0.98 0 0);
-  --border: oklch(0.29 0.015 276);
-  --input: oklch(0.25 0.016 276);
+  --border: oklch(0.29 0.014 80);
+  --input: oklch(0.25 0.014 80);
   --ring: oklch(0.78 0.125 83);
-  --chart-1: oklch(0.72 0.18 240);
-  --chart-2: oklch(0.78 0.12 85);
-  --chart-3: oklch(0.75 0.13 82);
-  --chart-4: oklch(0.72 0.19 155);
-  --chart-5: oklch(0.65 0.2 25);
-  --sidebar: oklch(0.17 0.012 280);
-  --sidebar-foreground: oklch(0.94 0.006 250);
+  --sidebar: oklch(0.17 0.012 80);
+  --sidebar-foreground: oklch(0.94 0.006 80);
   --sidebar-primary: oklch(0.78 0.125 83);
-  --sidebar-primary-foreground: oklch(0.16 0.012 280);
-  --sidebar-accent: oklch(0.235 0.016 276);
-  --sidebar-accent-foreground: oklch(0.94 0.006 250);
-  --sidebar-border: oklch(0.29 0.015 276);
+  --sidebar-primary-foreground: oklch(0.16 0.012 80);
+  --sidebar-accent: oklch(0.235 0.014 80);
+  --sidebar-accent-foreground: oklch(0.94 0.006 80);
+  --sidebar-border: oklch(0.29 0.014 80);
   --sidebar-ring: oklch(0.78 0.125 83);
 
   /* Vidro + sombras (theme-aware) */
-  --glass-bg: oklch(0.195 0.014 278 / 55%);
-  --glass-border: oklch(0.34 0.016 274 / 38%);
+  --glass-bg: oklch(0.195 0.014 80 / 55%);
+  --glass-border: oklch(0.34 0.014 80 / 38%);
   --shadow-card: 0 1px 0 oklch(1 0 0 / 4%) inset, 0 10px 30px -16px oklch(0 0 0 / 0.55);
   --shadow-soft: 0 2px 8px -4px oklch(0 0 0 / 0.4);
-  --obsidian: oklch(0.135 0.011 280);
+  --obsidian: oklch(0.135 0.011 80);
 
   /* ── ACENTOS COM CONTRASTE GARANTIDO (TRV-07) ────────────────────────────
      A auditoria mediu 14 falhas de contraste NO TEMA CLARO: o dourado da
@@ -218,11 +245,10 @@
      visível o bastante para o olho descer pela borda direita e enxergar a
      distribuição do catálogo, e discreto o bastante para o texto por cima não
      perder contraste. No escuro isso é um degrau acima da superfície do card. */
-  --extensao: oklch(0.315 0.018 278);
+  --extensao: oklch(0.315 0.014 80);
   --gold-legivel: oklch(0.82 0.12 85);
   --positivo-legivel: oklch(0.72 0.19 155);
   --negativo-legivel: oklch(0.70 0.19 25);
-  --azul-legivel: oklch(0.75 0.16 240);
 }
 
 /* Depois do :root de propósito: mesma especificidade, vence quem vem depois. */
@@ -238,20 +264,20 @@
    ─────────────────────────────────────────────────────────────────────────── */
 .light {
   --background: oklch(0.975 0.006 90);
-  --foreground: oklch(0.21 0.016 275);
+  --foreground: oklch(0.21 0.014 80);
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.21 0.016 275);
+  --card-foreground: oklch(0.21 0.014 80);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.21 0.016 275);
+  --popover-foreground: oklch(0.21 0.014 80);
   --primary: oklch(0.6 0.13 78);
   /* Tema claro: o dourado precisa ESCURECER para manter contraste sobre o creme.
      O mesmo tom do escuro sumiria no fundo — erro clássico de tema claro. */
   --titulo: oklch(0.52 0.12 76);
   --primary-foreground: oklch(0.99 0.003 90);
   --secondary: oklch(0.955 0.007 88);
-  --secondary-foreground: oklch(0.3 0.02 270);
+  --secondary-foreground: oklch(0.3 0.014 80);
   --muted: oklch(0.95 0.007 88);
-  --muted-foreground: oklch(0.48 0.02 268);
+  --muted-foreground: oklch(0.48 0.014 80);
   --accent: oklch(0.62 0.13 80);
   --accent-foreground: oklch(0.99 0.003 90);
   --destructive: oklch(0.58 0.21 27);
@@ -270,7 +296,12 @@
   --negative: oklch(0.57 0.21 27);  /* card 4,96 · fundo 4,62 */
   --warning: oklch(0.55 0.13 72);   /* card 4,97 · fundo 4,62 */
   --level3: oklch(0.54 0.14 88);    /* card 5,07 · fundo 4,72 */
-  --level4: oklch(0.55 0.18 300);   /* card 5,27 · fundo 4,90 */
+  --level4: oklch(0.52 0.14 45);    /* card 5,84 · fundo 5,43 — cobre, era roxo */
+  /* No claro o "branco quase cinza" vira cinza quente FUNDO, senão sumiria no
+     papel. Medido: card 8,50 · fundo 7,91 — acima do dourado (5,68), o que está
+     certo: o dado é o conteúdo, a marca é o enquadramento. */
+  --dado: oklch(0.42 0.035 76);
+  --dado-suave: oklch(0.52 0.025 76);
   /* Texto sobre fundo dourado vira CLARO no tema claro: sobre o dourado mais
      fundo, o texto escuro caía a 3,13:1; o claro fica em 5,93:1. Todos os 14
      usos de text-on-accent são sobre bg-gold (conferido). */
@@ -279,9 +310,9 @@
   --input: oklch(0.92 0.008 88);
   --ring: oklch(0.6 0.13 78);
   --sidebar: oklch(0.99 0.004 90);
-  --sidebar-foreground: oklch(0.21 0.016 275);
+  --sidebar-foreground: oklch(0.21 0.014 80);
   --sidebar-accent: oklch(0.955 0.007 88);
-  --sidebar-accent-foreground: oklch(0.21 0.016 275);
+  --sidebar-accent-foreground: oklch(0.21 0.014 80);
   --sidebar-border: oklch(0.9 0.008 88);
 
   --glass-bg: oklch(1 0 0 / 72%);
@@ -298,7 +329,6 @@
   --gold-legivel: oklch(0.50 0.11 76);
   --positivo-legivel: oklch(0.48 0.15 155);
   --negativo-legivel: oklch(0.50 0.19 27);
-  --azul-legivel: oklch(0.48 0.16 245);
 }
 
 @layer base {
@@ -628,34 +658,15 @@
     .card-lift:hover { transform: none; }
   }
 
-  /* Gold gradient border — fill segue o tema (var --card) */
-  .gold-border {
-    border: 1px solid transparent;
-    background-image: linear-gradient(var(--card), var(--card)),
-                      linear-gradient(135deg, var(--color-gold), var(--color-neon-blue), var(--color-gold));
-    background-origin: border-box;
-    background-clip: padding-box, border-box;
-  }
-
-  /* Glow effects */
-  .glow-blue {
-    box-shadow: 0 0 20px oklch(0.62 0.2 250 / 20%), 0 0 40px oklch(0.62 0.2 250 / 10%);
-  }
-
-  .glow-gold {
-    box-shadow: 0 0 20px color-mix(in oklch, var(--gold) 20%, transparent), 0 0 40px color-mix(in oklch, var(--gold) 10%, transparent);
-  }
-
-  /* Text gradient */
+  /* 🔴 SAÍRAM DAQUI, EM 27/09/2026: `.gold-border`, `.glow-blue`, `.glow-gold` e
+     `.text-gradient-blue`. Nenhuma tinha um único uso no site — eram quatro
+     efeitos decorativos herdados, e dois deles guardavam o azul cru que a
+     revisão de paleta acabou de tirar do resto do produto. Classe de cor sem
+     uso é como o azul volta: alguém precisa de um destaque, encontra
+     `glow-blue` pronta no CSS e aplica.
+     `.text-gradient-gold` fica porque é usada (PageHeader). */
   .text-gradient-gold {
     background: linear-gradient(135deg, var(--gold), color-mix(in oklch, var(--gold) 70%, white));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-  }
-
-  .text-gradient-blue {
-    background: linear-gradient(135deg, oklch(0.62 0.2 250), oklch(0.72 0.18 240));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;

@@ -148,10 +148,10 @@ export default function CommandPalette() {
 
   const CAT_COLORS: Record<string, string> = {
     macro: "text-emerald-400",
-    "política": "text-blue-400",
+    "política": "text-dado",
     esportes: "text-green-400",
     cripto: "text-orange-400",
-    "ciência": "text-purple-400",
+    "ciência": "text-dado",
     mercados: "text-gold",
   };
 

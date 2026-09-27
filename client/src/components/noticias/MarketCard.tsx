@@ -18,6 +18,7 @@ import { track } from "@/lib/analytics";
 import { traduzir, pareceEmPortugues } from "@/lib/traducao";
 import { num, prazoEmPalavras } from "@shared/formato";
 import { HOME_POLYMARKET, urlDoEventoPoly } from "@shared/linksDeMercado";
+import { BARRA_DA_PROBABILIDADE } from "@/lib/corDeProbabilidade";
 
 interface TrackFormProps {
   market: PolyMarket;
@@ -166,7 +167,7 @@ export function MarketCard({ market, savedIds, onSaved, highlight = false, indic
         <span
           aria-hidden="true"
           className={`absolute top-0 left-0 h-[2px] transition-[width] duration-700 ease-out ${
-            pctSim >= 70 ? "bg-positive/70" : pctSim <= 30 ? "bg-negative/70" : "bg-primary/70"
+            `${BARRA_DA_PROBABILIDADE}/70`
           }`}
           style={{ width: `${Math.max(4, Math.min(100, pctSim))}%` }}
         />

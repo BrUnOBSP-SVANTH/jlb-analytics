@@ -70,10 +70,10 @@ function fmtRelative(iso: string): string {
 }
 
 const ACTIVITY_META: Record<ActivityType, { label: string; icon: typeof Zap; color: string }> = {
-  prediction_made:     { label: "Previsão registrada",    icon: Target,      color: "text-neon-blue" },
+  prediction_made:     { label: "Previsão registrada",    icon: Target,      color: "text-dado" },
   prediction_resolved: { label: "Previsão resolvida",     icon: CheckCircle, color: "text-positive" },
   calculator_used:     { label: "Calculadora usada",      icon: Calculator,  color: "text-gold" },
-  market_analyzed:     { label: "Mercado analisado com IA", icon: Brain,     color: "text-purple-400" },
+  market_analyzed:     { label: "Mercado analisado com IA", icon: Brain,     color: "text-dado" },
   level_visited:       { label: "Nível visitado",         icon: BookOpen,    color: "text-primary" },
   exercise_done:       { label: "Exercício resolvido",     icon: CheckCircle, color: "text-positive" },
   first_login:         { label: "Primeiro acesso",        icon: Star,        color: "text-gold" },
@@ -131,7 +131,7 @@ function BarraDeProgresso({ atual, alvo, unidade }: { atual: number; alvo: numbe
       </div>
       <div className="h-2 rounded-full bg-secondary/40 overflow-hidden">
         <div
-          className="h-full rounded-full bg-gradient-to-r from-primary to-neon-blue transition-all duration-700"
+          className="h-full rounded-full bg-gradient-to-r from-primary to-dado transition-all duration-700"
           style={{ width: `${pct}%` }}
         />
       </div>
@@ -358,7 +358,7 @@ export default function Perfil() {
               <p className="text-xs text-muted-foreground mt-1">Taxa de acerto</p>
             </div>
             <div className="glass-card rounded-xl p-4 text-center">
-              <BarChart2 className="w-5 h-5 text-neon-blue mx-auto mb-2" />
+              <BarChart2 className="w-5 h-5 text-dado mx-auto mb-2" />
               <p className="text-2xl font-bold font-mono text-foreground">
                 {avgBrier ?? "—"}
               </p>
