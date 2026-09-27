@@ -27,7 +27,7 @@ function ExplanationBox({ text }: { text: string }) {
   return (
     <div className="mt-3 flex items-start gap-2 p-3 rounded-lg bg-primary/5 border border-primary/20">
       <Info className="w-4 h-4 text-primary shrink-0 mt-0.5" />
-      <p className="text-xs text-muted-foreground leading-relaxed">{text}</p>
+      <p className="text-xs text-muted-foreground leading-relaxed max-w-prose">{text}</p>
     </div>
   );
 }
@@ -36,7 +36,7 @@ function ErrorBox({ text }: { text: string }) {
   return (
     <div className="mt-3 flex items-start gap-2 p-3 rounded-lg bg-negative/10 border border-negative/30">
       <AlertCircle className="w-4 h-4 text-negative shrink-0 mt-0.5" />
-      <p className="text-xs text-negative leading-relaxed">{text}</p>
+      <p className="text-xs text-negative leading-relaxed max-w-prose">{text}</p>
     </div>
   );
 }

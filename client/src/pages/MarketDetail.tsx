@@ -462,10 +462,10 @@ export default function MarketDetail() {
                           )}
                         </div>
                         {aiAnalysis.edgeSignal && (
-                          <p className="text-xs text-muted-foreground leading-relaxed">{aiAnalysis.edgeSignal}</p>
+                          <p className="text-xs text-muted-foreground leading-relaxed max-w-prose">{aiAnalysis.edgeSignal}</p>
                         )}
                         {aiAnalysis.referenceClass && (
-                          <p className="text-[11px] text-muted-foreground leading-relaxed border-t border-border/15 pt-2">
+                          <p className="text-[11px] text-muted-foreground leading-relaxed border-t border-border/15 pt-2 max-w-prose">
                             <span className="font-semibold">Âncora:</span> {aiAnalysis.referenceClass}
                           </p>
                         )}
@@ -480,7 +480,7 @@ export default function MarketDetail() {
                         <p className="text-[11px] font-semibold text-foreground/80 uppercase tracking-wider mb-2 flex items-center gap-1">
                           <BookOpen className="w-3 h-3" />Entenda o assunto
                         </p>
-                        <p className="text-sm text-muted-foreground leading-relaxed">{aiAnalysis.contexto}</p>
+                        <p className="text-sm text-muted-foreground leading-relaxed max-w-prose">{aiAnalysis.contexto}</p>
                       </div>
                     )}
 
@@ -496,7 +496,7 @@ export default function MarketDetail() {
                         )}
                         {aiAnalysis.cached && <span className="ml-1 opacity-60" title="Esta análise já tinha sido gerada hoje">de hoje</span>}
                       </p>
-                      <p className="text-sm text-muted-foreground leading-relaxed">{aiAnalysis.analysis}</p>
+                      <p className="text-sm text-muted-foreground leading-relaxed max-w-prose">{aiAnalysis.analysis}</p>
                     </div>
 
                     {/* Key factors */}
@@ -526,11 +526,11 @@ export default function MarketDetail() {
                         <div className="grid sm:grid-cols-2 gap-3">
                           <div className="p-3 rounded-lg bg-positive/5 border border-positive/20">
                             <p className="text-[11px] font-semibold text-positive/80 uppercase tracking-wider mb-1">Para dar SIM</p>
-                            <p className="text-sm text-muted-foreground leading-relaxed">{aiAnalysis.cenarios.sim}</p>
+                            <p className="text-sm text-muted-foreground leading-relaxed max-w-prose">{aiAnalysis.cenarios.sim}</p>
                           </div>
                           <div className="p-3 rounded-lg bg-negative/5 border border-negative/20">
                             <p className="text-[11px] font-semibold text-negative/80 uppercase tracking-wider mb-1">Para dar NÃO</p>
-                            <p className="text-sm text-muted-foreground leading-relaxed">{aiAnalysis.cenarios.nao}</p>
+                            <p className="text-sm text-muted-foreground leading-relaxed max-w-prose">{aiAnalysis.cenarios.nao}</p>
                           </div>
                         </div>
                       </div>
@@ -540,7 +540,7 @@ export default function MarketDetail() {
                     {aiAnalysis.watchFor && (
                       <div className="p-3 rounded-lg bg-gold/5 border border-gold/15">
                         <p className="text-[11px] font-semibold text-gold/70 uppercase tracking-wider mb-1">O que acompanhar</p>
-                        <p className="text-sm text-muted-foreground leading-relaxed">{aiAnalysis.watchFor}</p>
+                        <p className="text-sm text-muted-foreground leading-relaxed max-w-prose">{aiAnalysis.watchFor}</p>
                       </div>
                     )}
 
@@ -548,7 +548,7 @@ export default function MarketDetail() {
                     {aiAnalysis.biasAlert && (
                       <div className="p-3 rounded-lg bg-warning/5 border border-warning/15 flex items-start gap-2">
                         <AlertTriangle className="w-4 h-4 text-warning shrink-0 mt-0.5" />
-                        <p className="text-xs text-muted-foreground leading-relaxed">{aiAnalysis.biasAlert}</p>
+                        <p className="text-xs text-muted-foreground leading-relaxed max-w-prose">{aiAnalysis.biasAlert}</p>
                       </div>
                     )}
 

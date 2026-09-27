@@ -113,7 +113,7 @@ export function InsightBox({ children }: { children: React.ReactNode }) {
     <div className="p-3 rounded-lg bg-gold/5 border border-gold/20">
       <div className="flex gap-2">
         <Info className="w-3.5 h-3.5 text-gold shrink-0 mt-0.5" />
-        <p className="text-xs text-muted-foreground leading-relaxed">{children}</p>
+        <p className="text-xs text-muted-foreground leading-relaxed max-w-prose">{children}</p>
       </div>
     </div>
   );

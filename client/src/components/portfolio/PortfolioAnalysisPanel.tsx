@@ -87,7 +87,7 @@ export function PortfolioAnalysisPanel({ apostas }: { apostas: ApostaBanca[] }) 
       {result && (
         <div className="space-y-4">
           <div className="p-3 rounded-lg bg-dado/5 border border-dado/15">
-            <p className="text-xs text-muted-foreground leading-relaxed">{result.analysis}</p>
+            <p className="text-xs text-muted-foreground leading-relaxed max-w-prose">{result.analysis}</p>
             {result.cached && <span className="text-xs text-muted-foreground" title="Esta análise já tinha sido gerada hoje">de hoje</span>}
           </div>
           {result.risks.length > 0 && (

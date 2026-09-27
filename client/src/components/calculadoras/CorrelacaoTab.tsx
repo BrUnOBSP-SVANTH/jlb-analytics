@@ -107,7 +107,7 @@ export function CorrelacaoTab() {
           {!result.lengthsMatch && result.n > 0 && (
             <div className="mt-4 flex items-start gap-3 p-3 rounded-lg bg-amber-500/10 border border-amber-500/30" role="alert">
               <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" aria-hidden="true" />
-              <p className="text-xs text-amber-300 leading-relaxed">
+              <p className="text-xs text-amber-300 leading-relaxed max-w-prose">
                 Séries de tamanhos diferentes. Cálculo com os {result.n} pontos em comum.
               </p>
             </div>
@@ -136,7 +136,7 @@ export function CorrelacaoTab() {
               </div>
               <div className="glass-card rounded-xl p-5 text-center">
                 <p className="text-xs text-muted-foreground uppercase tracking-wider">Interpretação</p>
-                <p className="text-sm text-muted-foreground mt-3 leading-relaxed">
+                <p className="text-sm text-muted-foreground mt-3 leading-relaxed max-w-prose">
                   {result.correlation > 0.5
                     ? "Movem-se juntos. Diversificação limitada entre eles."
                     : result.correlation < -0.5

@@ -145,12 +145,12 @@ export function BehavioralMetrics() {
           <Brain className="w-4 h-4 text-level4" aria-hidden="true" />
           Métricas Comportamentais
         </h3>
-        <p className="text-sm text-muted-foreground leading-relaxed">
+        <p className="text-sm text-muted-foreground leading-relaxed max-w-prose">
           Elas medem <strong className="text-foreground">como você erra</strong>, não quanto. Se você diz
           80% e a coisa acontece 60% das vezes, o problema não é sorte: é excesso de confiança, e ele
           aparece aqui antes de você perceber sozinho.
         </p>
-        <p className="text-sm text-muted-foreground leading-relaxed">
+        <p className="text-sm text-muted-foreground leading-relaxed max-w-prose">
           Para isso é preciso ter previsões que já <strong className="text-foreground">resolveram</strong> —
           registrar é rápido, esperar o mercado fechar é o que leva tempo.
           {allPreds.length > 0 && <> Você tem {plural(allPreds.length, "previsão registrada", "previsões registradas")} esperando resultado.</>}

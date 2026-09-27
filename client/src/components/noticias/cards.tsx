@@ -162,7 +162,7 @@ export function ArticleCard({ article, onCardClick }: { article: Article; onCard
 
       {/* Excerpt */}
       {article.description && (
-        <p className="text-xs text-muted-foreground leading-relaxed line-clamp-3">
+        <p className="text-xs text-muted-foreground leading-relaxed line-clamp-3 max-w-prose">
           {article.description}
         </p>
       )}

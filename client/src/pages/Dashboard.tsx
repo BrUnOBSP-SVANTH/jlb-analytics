@@ -71,7 +71,7 @@ function GuestView() {
             uma página sem h1 nenhum deixa quem usa leitor de tela sem
             referência de onde está (TRV-13). */}
       <h1 className="text-xl font-bold text-[var(--titulo)]">Entre para ver seu progresso</h1>
-        <p className="text-sm text-muted-foreground leading-relaxed">
+        <p className="text-sm text-muted-foreground leading-relaxed max-w-prose">
           Brier Score, Skill Score, calibração e histórico de previsões ficam salvos na sua conta.
         </p>
         <div className="flex flex-col gap-2.5 pt-1">
@@ -633,7 +633,7 @@ export default function Dashboard() {
       {/* Footer note */}
       <div className="flex items-start gap-2 p-4 rounded-xl border border-border/30 bg-secondary/5">
         <AlertCircle className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
-        <p className="text-xs text-muted-foreground leading-relaxed">
+        <p className="text-xs text-muted-foreground leading-relaxed max-w-prose">
           Suas previsões ficam salvas neste navegador e sincronizadas com a sua conta
           quando você está logado — acessíveis de qualquer dispositivo. O Brier Score e o
           Skill Score são recalculados automaticamente cada vez que você resolve uma previsão.

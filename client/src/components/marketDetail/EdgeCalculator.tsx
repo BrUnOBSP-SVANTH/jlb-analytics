@@ -264,7 +264,7 @@ export function EdgeCalculator({
            de 12 times produziria "EV +900%", que não significa nada. */
         <div className="flex items-start gap-2 p-3 rounded-lg bg-secondary/20 border border-border/20">
           <AlertTriangle className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
-          <p className="text-xs text-muted-foreground leading-relaxed">
+          <p className="text-xs text-muted-foreground leading-relaxed max-w-prose">
             Preço muito {preco < 0.5 ? "baixo" : "alto"} para calcular EV e Kelly com segurança. O resultado seria
             dominado por ruído de arredondamento. O edge em pontos percentuais continua valendo:{" "}
             <span className="font-mono text-foreground">{v.neutro ? "0,0 pp" : pp(v.edgePp)}</span>.
@@ -310,7 +310,7 @@ export function EdgeCalculator({
 
       <div className={`flex items-center gap-2 p-3 rounded-lg ${temVantagem ? "bg-positive/10 border border-positive/20" : "bg-secondary/20 border border-border/20"}`}>
         <Zap className={`w-4 h-4 shrink-0 ${temVantagem ? "text-positive" : "text-muted-foreground"}`} />
-        <p className="text-xs leading-relaxed">
+        <p className="text-xs leading-relaxed max-w-prose">
           {!mexeu
             ? "Sua estimativa está no preço do mercado. Mova o controle para procurar vantagem."
             : !calculavel
@@ -353,7 +353,7 @@ export function EdgeCalculator({
       {somaEstimativas !== null && somaEstimativas > 100 && (
         <div className="flex items-start gap-2 px-3 py-2 rounded-lg border-l-2 border-gold/50 bg-gold/5">
           <AlertTriangle className="w-3.5 h-3.5 text-gold shrink-0 mt-0.5" />
-          <p className="text-[11px] text-muted-foreground leading-relaxed">
+          <p className="text-[11px] text-muted-foreground leading-relaxed max-w-prose">
             Suas estimativas neste mercado somam <span className="font-mono text-foreground">{pct(somaEstimativas)}</span>.
             Como só um desfecho pode acontecer, elas não podem somar mais que 100%.
           </p>

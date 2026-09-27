@@ -71,7 +71,7 @@ export function ChecagemDeAprendizagem({ nivel, titulo }: { nivel: number; titul
             {passou ? `Nível ${nivel} concluído` : "Quase lá"}
           </h2>
         </div>
-        <p className="text-sm text-muted-foreground leading-relaxed mb-4">
+        <p className="text-sm text-muted-foreground leading-relaxed mb-4 max-w-prose">
           Você acertou <strong className="text-foreground">{acertos} de {perguntas.length}</strong>.{" "}
           {passou
             ? jaConcluido
@@ -103,7 +103,7 @@ export function ChecagemDeAprendizagem({ nivel, titulo }: { nivel: number; titul
         </span>
       </div>
 
-      <p className="text-sm text-foreground leading-relaxed">{atual.pergunta}</p>
+      <p className="text-sm text-foreground leading-relaxed max-w-prose">{atual.pergunta}</p>
 
       <div className="space-y-2">
         {atual.alternativas.map((texto, i) => {
@@ -138,7 +138,7 @@ export function ChecagemDeAprendizagem({ nivel, titulo }: { nivel: number; titul
 
       {respondeu && (
         <div className="p-3 rounded-xl bg-secondary/20 border border-border/20">
-          <p className="text-xs text-muted-foreground leading-relaxed">{atual.explicacao}</p>
+          <p className="text-xs text-muted-foreground leading-relaxed max-w-prose">{atual.explicacao}</p>
         </div>
       )}
 

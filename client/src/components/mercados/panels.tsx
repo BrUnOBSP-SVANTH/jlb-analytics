@@ -51,7 +51,7 @@ function EdgeCalculator({ marketProb }: { marketProb: number }) {
         <Calculator className="w-3.5 h-3.5 text-primary/70" />
         <p className="text-[11px] font-semibold text-foreground/80 uppercase tracking-wider">Calculadora de Edge</p>
       </div>
-      <p className="text-[11px] text-muted-foreground leading-relaxed">
+      <p className="text-[11px] text-muted-foreground leading-relaxed max-w-prose">
         Diga qual chance você acredita ser a real. A calculadora mostra o Valor Esperado e a fração de Kelly
         para essa estimativa.
       </p>
@@ -70,7 +70,7 @@ function EdgeCalculator({ marketProb }: { marketProb: number }) {
         </div>
       </div>
       {!calculavel ? (
-        <p className="text-[11px] text-muted-foreground leading-relaxed p-2.5 rounded-lg border border-border/20 bg-secondary/10">
+        <p className="text-[11px] text-muted-foreground leading-relaxed p-2.5 rounded-lg border border-border/20 bg-secondary/10 max-w-prose">
           Preço muito {marketProb < 0.5 ? "baixo" : "alto"} para calcular EV e Kelly com segurança — o resultado seria
           dominado por arredondamento.
         </p>
@@ -104,7 +104,7 @@ function EdgeCalculator({ marketProb }: { marketProb: number }) {
       )}
       <div className={`flex items-center gap-2 p-2 rounded-lg ${temVantagem ? "bg-positive/10 border border-positive/20" : "bg-secondary/20 border border-border/20"}`}>
         <Zap className={`w-3 h-3 shrink-0 ${temVantagem ? "text-positive" : "text-muted-foreground"}`} />
-        <p className="text-[11px] leading-relaxed">
+        <p className="text-[11px] leading-relaxed max-w-prose">
           {!mexeu
             ? "Sua estimativa está no preço do mercado. Mova o controle para procurar vantagem."
             : !calculavel
@@ -285,7 +285,7 @@ function NewsArticleList({ articles }: { articles: MarketAnalysisResult["article
             </div>
             <p className="text-xs text-foreground/80 leading-snug mb-0.5">{a.title}</p>
             {a.description && (
-              <p className="text-[11px] text-muted-foreground leading-relaxed line-clamp-2">{a.description}</p>
+              <p className="text-[11px] text-muted-foreground leading-relaxed line-clamp-2 max-w-prose">{a.description}</p>
             )}
             <span className="text-[11px] text-primary/50 flex items-center gap-0.5 mt-1">
               <ExternalLink className="w-2.5 h-2.5" />Ler artigo completo
@@ -390,14 +390,14 @@ export function NewsAnalysisPanel({ item }: { item: TrendingItem }) {
               <Flame className="w-3 h-3" />Por que está viral — análise contextual
               {result.cached && <span className="ml-1 opacity-60" title="Esta análise já tinha sido gerada hoje">de hoje</span>}
             </p>
-            <p className="text-xs text-muted-foreground leading-relaxed">{result.whyTrending}</p>
+            <p className="text-xs text-muted-foreground leading-relaxed max-w-prose">{result.whyTrending}</p>
           </div>
 
           {/* Background context */}
           {result.context && (
             <div className="p-2.5 rounded-lg bg-secondary/20 border border-border/20">
               <p className="text-[11px] font-semibold text-foreground/80 uppercase tracking-wider mb-1">Contexto de fundo</p>
-              <p className="text-xs text-muted-foreground leading-relaxed">{result.context}</p>
+              <p className="text-xs text-muted-foreground leading-relaxed max-w-prose">{result.context}</p>
             </div>
           )}
 
@@ -421,7 +421,7 @@ export function NewsAnalysisPanel({ item }: { item: TrendingItem }) {
           {result.bettingAngle && (
             <div className="p-2.5 rounded-lg bg-gold/5 border border-gold/15">
               <p className="text-[11px] font-semibold text-gold/70 uppercase tracking-wider mb-1">Ângulo de mercado</p>
-              <p className="text-xs text-muted-foreground leading-relaxed">{result.bettingAngle}</p>
+              <p className="text-xs text-muted-foreground leading-relaxed max-w-prose">{result.bettingAngle}</p>
             </div>
           )}
 
@@ -451,7 +451,7 @@ export function NewsAnalysisPanel({ item }: { item: TrendingItem }) {
           {result.contexto && (
             <div className="p-3 rounded-lg bg-secondary/20 border border-border/20">
               <p className="text-[11px] font-semibold text-foreground/80 uppercase tracking-wider mb-1.5">Entenda o assunto</p>
-              <p className="text-xs text-muted-foreground leading-relaxed">{result.contexto}</p>
+              <p className="text-xs text-muted-foreground leading-relaxed max-w-prose">{result.contexto}</p>
             </div>
           )}
 
@@ -461,7 +461,7 @@ export function NewsAnalysisPanel({ item }: { item: TrendingItem }) {
               <Sparkles className="w-3 h-3" />Análise de IA
               {result.cached && <span className="ml-1 opacity-60" title="Esta análise já tinha sido gerada hoje">de hoje</span>}
             </p>
-            <p className="text-xs text-muted-foreground leading-relaxed">{result.analysis}</p>
+            <p className="text-xs text-muted-foreground leading-relaxed max-w-prose">{result.analysis}</p>
           </div>
 
           {/* Key factors */}
@@ -484,11 +484,11 @@ export function NewsAnalysisPanel({ item }: { item: TrendingItem }) {
             <div className="grid grid-cols-2 gap-2">
               <div className="p-2.5 rounded-lg bg-positive/5 border border-positive/20">
                 <p className="text-[11px] font-semibold text-positive/80 uppercase tracking-wider mb-1">Para dar SIM</p>
-                <p className="text-xs text-muted-foreground leading-relaxed">{result.cenarios.sim}</p>
+                <p className="text-xs text-muted-foreground leading-relaxed max-w-prose">{result.cenarios.sim}</p>
               </div>
               <div className="p-2.5 rounded-lg bg-negative/5 border border-negative/20">
                 <p className="text-[11px] font-semibold text-negative/80 uppercase tracking-wider mb-1">Para dar NÃO</p>
-                <p className="text-xs text-muted-foreground leading-relaxed">{result.cenarios.nao}</p>
+                <p className="text-xs text-muted-foreground leading-relaxed max-w-prose">{result.cenarios.nao}</p>
               </div>
             </div>
           )}
@@ -496,14 +496,14 @@ export function NewsAnalysisPanel({ item }: { item: TrendingItem }) {
           {result.watchFor && (
             <div className="p-2.5 rounded-lg bg-gold/5 border border-gold/15">
               <p className="text-[11px] font-semibold text-gold/70 uppercase tracking-wider mb-1">O que acompanhar</p>
-              <p className="text-xs text-muted-foreground leading-relaxed">{result.watchFor}</p>
+              <p className="text-xs text-muted-foreground leading-relaxed max-w-prose">{result.watchFor}</p>
             </div>
           )}
 
           {result.biasAlert && (
             <div className="p-2 rounded-lg bg-warning/5 border border-warning/15 flex items-start gap-2">
               <AlertTriangle className="w-3 h-3 text-warning shrink-0 mt-0.5" />
-              <p className="text-[11px] text-muted-foreground leading-relaxed">{result.biasAlert}</p>
+              <p className="text-[11px] text-muted-foreground leading-relaxed max-w-prose">{result.biasAlert}</p>
             </div>
           )}
 

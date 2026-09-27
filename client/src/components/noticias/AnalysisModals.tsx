@@ -182,7 +182,7 @@ export function ArticleDetailModal({ article, onClose }: ArticleDetailModalProps
         {/* Description */}
         {article.description && (
           <div className="px-4 py-3 border-b border-border/20 bg-secondary/10">
-            <p className="text-xs text-muted-foreground leading-relaxed line-clamp-3">{article.description}</p>
+            <p className="text-xs text-muted-foreground leading-relaxed line-clamp-3 max-w-prose">{article.description}</p>
           </div>
         )}
 
@@ -243,7 +243,7 @@ export function ArticleDetailModal({ article, onClose }: ArticleDetailModalProps
               {result.overallContext && (
                 <div className="flex items-start gap-2.5 p-3 rounded-xl border border-gold/15 bg-gold/5">
                   <Brain className="w-4 h-4 text-gold shrink-0 mt-0.5" />
-                  <p className="text-xs text-foreground/80 leading-relaxed">{result.overallContext}</p>
+                  <p className="text-xs text-foreground/80 leading-relaxed max-w-prose">{result.overallContext}</p>
                 </div>
               )}
 
@@ -284,7 +284,7 @@ export function ArticleDetailModal({ article, onClose }: ArticleDetailModalProps
                   <ProbCompare marketProb={m.marketProb} jlbProb={m.jlbProb} />
 
                   {/* Reasoning */}
-                  <p className="text-xs text-muted-foreground leading-relaxed border-t border-border/20 pt-2">
+                  <p className="text-xs text-muted-foreground leading-relaxed border-t border-border/20 pt-2 max-w-prose">
                     {m.reasoning}
                   </p>
                 </div>

@@ -239,7 +239,7 @@ function TrendingCardBase({ item, onCompare, inCompare, indice = 0 }: {
             hoje, a linha some. A versão anterior repetia a mesma frase em 12 dos
             20 cards — e frase repetida ensina a pular a leitura. */}
         {item.whyTrending && (
-          <p className="text-[11px] text-muted-foreground leading-relaxed line-clamp-1 mb-3">
+          <p className="text-[11px] text-muted-foreground leading-relaxed line-clamp-1 mb-3 max-w-prose">
             <Flame className="w-3 h-3 text-primary/50 inline mr-1 align-[-2px]" aria-hidden="true" />{item.whyTrending}
           </p>
         )}
@@ -284,7 +284,7 @@ function TrendingCardBase({ item, onCompare, inCompare, indice = 0 }: {
                 </button>
                 {expanded && item.bestBetNote && (
                   <div className="mt-1 p-3 rounded-lg bg-obsidian/50 border border-border/20">
-                    <p className="text-xs text-muted-foreground leading-relaxed">{item.bestBetNote}</p>
+                    <p className="text-xs text-muted-foreground leading-relaxed max-w-prose">{item.bestBetNote}</p>
                   </div>
                 )}
 

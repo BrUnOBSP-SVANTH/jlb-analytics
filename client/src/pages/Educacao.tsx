@@ -242,7 +242,7 @@ export default function Educacao() {
                         {/* Outcome */}
                         <div className="flex items-start gap-2 p-2.5 rounded-lg bg-background/40 border border-border/20">
                           <CheckCircle className="w-3.5 h-3.5 text-positive shrink-0 mt-0.5" />
-                          <p className="text-xs text-muted-foreground leading-relaxed">
+                          <p className="text-xs text-muted-foreground leading-relaxed max-w-prose">
                             <strong className="text-foreground">Ao concluir:</strong> {level.outcome}
                           </p>
                         </div>
@@ -269,17 +269,17 @@ export default function Educacao() {
           O que são Mercados Preditivos
         </h2>
         <div className="p-5 rounded-xl border border-border/30 bg-secondary/10 space-y-3">
-          <p className="text-sm text-muted-foreground leading-relaxed">
+          <p className="text-sm text-muted-foreground leading-relaxed max-w-prose">
             Mercados preditivos são plataformas onde participantes compram e vendem contratos
             baseados em probabilidade de eventos futuros. Uma posição de "Sim" a R$0,65 implica
             probabilidade implícita de 65% para o evento ocorrer.
           </p>
-          <p className="text-sm text-muted-foreground leading-relaxed">
+          <p className="text-sm text-muted-foreground leading-relaxed max-w-prose">
             Diferente de apostas esportivas tradicionais, os preços são determinados pela
             negociação entre participantes — não pela casa. Isso cria ineficiências reais
             que modelos quantitativos podem detectar.
           </p>
-          <p className="text-sm text-muted-foreground leading-relaxed">
+          <p className="text-sm text-muted-foreground leading-relaxed max-w-prose">
             <strong className="text-foreground">No Brasil (2026):</strong> A B3 recebeu aprovação
             da CVM para operar mercados preditivos. A XP International fez parceria com a Kalshi.
             O mercado está sendo criado agora — junto com a regulamentação.
@@ -293,7 +293,7 @@ export default function Educacao() {
                 <span className="font-semibold text-sm text-foreground">{p.name}</span>
                 <span className="px-2 py-0.5 rounded text-xs bg-primary/10 text-primary border border-primary/20">{p.tag}</span>
               </div>
-              <p className="text-xs text-muted-foreground leading-relaxed">{p.desc}</p>
+              <p className="text-xs text-muted-foreground leading-relaxed max-w-prose">{p.desc}</p>
             </div>
           ))}
         </div>
@@ -314,9 +314,9 @@ export default function Educacao() {
           {VERBETES.map((item) => (
             <div key={item.termo} className="p-4 rounded-xl border border-border/30 bg-secondary/5">
               <p className="font-semibold text-sm text-foreground mb-1">{item.termo}</p>
-              <p className="text-xs text-muted-foreground leading-relaxed">{item.simples}</p>
+              <p className="text-xs text-muted-foreground leading-relaxed max-w-prose">{item.simples}</p>
               {item.tecnico && (
-                <p className="text-[11px] text-muted-foreground leading-relaxed mt-2 pt-2 border-t border-border/30">
+                <p className="text-[11px] text-muted-foreground leading-relaxed mt-2 pt-2 border-t border-border/30 max-w-prose">
                   <span className="font-medium">Definição técnica:</span> {item.tecnico}
                 </p>
               )}

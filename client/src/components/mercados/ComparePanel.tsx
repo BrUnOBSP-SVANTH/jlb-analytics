@@ -107,7 +107,7 @@ export function ComparePanel({ items, onClear }: { items: TrendingItem[]; onClea
 
         {items.length === 2 && (
           <div className="mt-3 px-3 py-2 rounded-lg bg-dado/5 border border-dado/15">
-            <p className="text-[11px] text-muted-foreground leading-relaxed">
+            <p className="text-[11px] text-muted-foreground leading-relaxed max-w-prose">
               <span className="text-dado font-semibold">Análise: </span>{insight()}
             </p>
           </div>

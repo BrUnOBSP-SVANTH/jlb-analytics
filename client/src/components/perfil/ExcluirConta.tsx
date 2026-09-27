@@ -57,11 +57,11 @@ export function ExcluirConta() {
           <AlertTriangle className="w-4 h-4 text-negative shrink-0 mt-0.5" aria-hidden="true" />
           <div className="min-w-0 flex-1">
             <h2 className="font-semibold text-[var(--titulo)] text-sm">Excluir minha conta</h2>
-            <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+            <p className="text-xs text-muted-foreground mt-1 leading-relaxed max-w-prose">
               Apaga sua conta, suas previsões, o progresso na trilha, a banca simulada e os alertas.
               Não tem volta.
             </p>
-            <p className="text-[11px] text-muted-foreground mt-2 leading-relaxed">
+            <p className="text-[11px] text-muted-foreground mt-2 leading-relaxed max-w-prose">
               As previsões que já foram <strong className="text-foreground">resolvidas</strong> saem do seu nome,
               mas continuam contando no total público do track record — sem dono. Apagar o resultado depois de
               saber o desfecho é justamente o que a plataforma existe para não fazer.

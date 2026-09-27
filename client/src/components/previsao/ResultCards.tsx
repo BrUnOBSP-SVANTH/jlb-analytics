@@ -67,7 +67,7 @@ export function ModelCard({ result }: { result: PredictResult }) {
                 <ExpertiseTag level={level} />
               </div>
               <h3 className="text-lg font-bold text-foreground">{result.modelChosen}</h3>
-              <p className="text-sm text-muted-foreground mt-1 leading-relaxed">{result.whyThisModel}</p>
+              <p className="text-sm text-muted-foreground mt-1 leading-relaxed max-w-prose">{result.whyThisModel}</p>
             </div>
           </div>
         </div>
@@ -81,7 +81,7 @@ export function ModelCard({ result }: { result: PredictResult }) {
                 <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-1 font-medium">
                   {level === "avancado" ? "Paralelo histórico" : level === "leigo" ? "Em outras palavras" : "Contexto"}
                 </p>
-                <p className="text-sm text-foreground leading-relaxed">{result.analogyExplanation}</p>
+                <p className="text-sm text-foreground leading-relaxed max-w-prose">{result.analogyExplanation}</p>
               </div>
             </div>
           </div>
@@ -117,9 +117,9 @@ export function ModelCard({ result }: { result: PredictResult }) {
             <div className="px-6 pb-5 space-y-3">
               <div className="p-4 rounded-xl bg-obsidian/60 border border-border/30">
                 <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-2">Fórmula</p>
-                <p className="font-mono text-sm text-gold leading-relaxed whitespace-pre-wrap">{result.formula}</p>
+                <p className="font-mono text-sm text-gold leading-relaxed whitespace-pre-wrap max-w-prose">{result.formula}</p>
               </div>
-              <p className="text-xs text-muted-foreground leading-relaxed">
+              <p className="text-xs text-muted-foreground leading-relaxed max-w-prose">
                 <span className="font-medium text-foreground">Base de pesquisa:</span> {result.researchBasis}
               </p>
             </div>
@@ -230,7 +230,7 @@ export function SuperforecasterCard({ result }: { result: PredictResult }) {
                   Etapa 1 — Visão Externa (Base Rate)
                 </p>
                 <div className="p-3 rounded-lg bg-dado/5 border border-dado/15">
-                  <p className="text-xs text-muted-foreground leading-relaxed">{result.referenceClass}</p>
+                  <p className="text-xs text-muted-foreground leading-relaxed max-w-prose">{result.referenceClass}</p>
                   {baseRate !== null && (
                     <div className="flex items-center gap-3 mt-3">
                       <div className="flex-1">
@@ -403,7 +403,7 @@ export function PredictionTimeline({ result }: { result: PredictResult }) {
                 </div>
                 <span className={`text-xs font-bold font-mono ${c.iconColor}`}>{c.confidence}%</span>
               </div>
-              <p className="text-sm text-muted-foreground leading-relaxed">{c.prediction}</p>
+              <p className="text-sm text-muted-foreground leading-relaxed max-w-prose">{c.prediction}</p>
             </div>
           ))}
         </div>
@@ -433,7 +433,7 @@ export function PlainLanguageCard({ result }: { result: PredictResult }) {
 
         {/* Bloco principal — tom adapta ao nível */}
         <div className={`p-4 rounded-xl border ${level === "leigo" ? "bg-gold/5 border-gold/20" : "bg-primary/5 border-primary/10"}`}>
-          <p className="text-sm text-foreground leading-relaxed">{result.plainLanguage}</p>
+          <p className="text-sm text-foreground leading-relaxed max-w-prose">{result.plainLanguage}</p>
         </div>
 
         {/* Paralelo histórico para leigos (vem do campo historicalParallel) */}
@@ -442,7 +442,7 @@ export function PlainLanguageCard({ result }: { result: PredictResult }) {
             <Clock className="w-4 h-4 text-dado shrink-0 mt-0.5" />
             <div>
               <p className="text-xs font-medium text-foreground mb-1">Já aconteceu antes?</p>
-              <p className="text-sm text-muted-foreground leading-relaxed">{result.historicalParallel}</p>
+              <p className="text-sm text-muted-foreground leading-relaxed max-w-prose">{result.historicalParallel}</p>
             </div>
           </div>
         )}
@@ -450,7 +450,7 @@ export function PlainLanguageCard({ result }: { result: PredictResult }) {
         {/* Ação */}
         <div className="p-4 rounded-xl bg-secondary/10 border border-border/20">
           <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2 font-medium">{t.action}</p>
-          <p className="text-sm text-muted-foreground leading-relaxed">{result.actionableInsight}</p>
+          <p className="text-sm text-muted-foreground leading-relaxed max-w-prose">{result.actionableInsight}</p>
         </div>
 
         {/* Bankroll */}
@@ -459,7 +459,7 @@ export function PlainLanguageCard({ result }: { result: PredictResult }) {
             <DollarSign className="w-4 h-4 text-dado shrink-0 mt-0.5" />
             <div>
               <p className="text-xs font-medium text-foreground mb-1">Impacto no seu patrimônio</p>
-              <p className="text-sm text-muted-foreground leading-relaxed">{result.bankrollImpact}</p>
+              <p className="text-sm text-muted-foreground leading-relaxed max-w-prose">{result.bankrollImpact}</p>
             </div>
           </div>
         )}

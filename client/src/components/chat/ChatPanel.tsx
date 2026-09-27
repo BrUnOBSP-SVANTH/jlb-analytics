@@ -336,7 +336,7 @@ export default function ChatPanel({ open, onClose, onReady }: { open: boolean; o
         {exhausted && (
           <div className="rounded-xl border border-gold/30 bg-gold/8 px-3.5 py-3 space-y-2">
             <p className="text-xs font-semibold text-foreground">Você usou suas 4 análises grátis do mês 🎉</p>
-            <p className="text-[11px] text-muted-foreground leading-relaxed">
+            <p className="text-[11px] text-muted-foreground leading-relaxed max-w-prose">
               Isso é sinal de que o método está sendo usado de verdade. No Premium as análises de IA são ilimitadas — e você apoia a plataforma.
             </p>
             <a

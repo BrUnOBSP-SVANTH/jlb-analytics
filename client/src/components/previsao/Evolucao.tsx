@@ -60,7 +60,7 @@ export function Evolucao() {
   return (
     <section>
       <h2 className="text-lg font-display font-semibold text-[var(--titulo)] mb-1">Estamos melhorando com o tempo?</h2>
-      <p className="text-xs text-muted-foreground leading-relaxed mb-4">
+      <p className="text-xs text-muted-foreground leading-relaxed mb-4 max-w-prose">
         {VEREDITO[d.tendencia ?? "sem-dados"]}
       </p>
 
@@ -89,7 +89,7 @@ export function Evolucao() {
         ))}
       </div>
 
-      <p className="text-[11px] text-muted-foreground leading-relaxed mt-3">
+      <p className="text-[11px] text-muted-foreground leading-relaxed mt-3 max-w-prose">
         A faixa clara é a margem de erro do mês; o traço é a taxa de acerto. Quando as faixas de dois
         meses se sobrepõem, a diferença entre eles pode ser só sorte da amostra. Meses com menos de{" "}
         {d.minAmostra} casos ficam de fora — a mesma régua do resto da página.

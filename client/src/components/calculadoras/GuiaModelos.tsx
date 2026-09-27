@@ -210,7 +210,7 @@ function ModelCard({ model }: { model: ModelGuide }) {
             </span>
           </div>
 
-          <p className="text-xs text-muted-foreground leading-relaxed mb-3">{model.howItWorks}</p>
+          <p className="text-xs text-muted-foreground leading-relaxed mb-3 max-w-prose">{model.howItWorks}</p>
 
           <div className="mb-3">
             <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-1.5">Quando usar</p>
@@ -226,7 +226,7 @@ function ModelCard({ model }: { model: ModelGuide }) {
 
           <div className="p-3 rounded-lg bg-gold/5 border border-gold/20 mb-3">
             <p className="text-[11px] font-semibold text-gold uppercase tracking-wider mb-1">Uso em Mercados Preditivos</p>
-            <p className="text-xs text-muted-foreground leading-relaxed">{model.polymarketUso}</p>
+            <p className="text-xs text-muted-foreground leading-relaxed max-w-prose">{model.polymarketUso}</p>
           </div>
 
           <button
@@ -281,7 +281,7 @@ export function GuiaModelos() {
             <BookOpen className="w-5 h-5 text-gold shrink-0 mt-0.5" />
             <div>
               <p className="text-sm font-semibold text-foreground mb-1">Como usar este guia</p>
-              <p className="text-sm text-muted-foreground leading-relaxed">
+              <p className="text-sm text-muted-foreground leading-relaxed max-w-prose">
                 Cada modelo resolve um problema específico. A sequência correta é:{" "}
                 <strong className="text-foreground"><Termo nome="overround">Overround</Termo></strong> (qual o custo do mercado?) →{" "}
                 <strong className="text-foreground"><Termo nome="ev">EV</Termo></strong> (vale a pena entrar?) →{" "}

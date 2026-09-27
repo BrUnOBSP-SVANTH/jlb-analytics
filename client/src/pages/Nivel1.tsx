@@ -54,7 +54,7 @@ function ExplanationBox({ text }: { text: string }) {
   return (
     <div className="mt-3 flex items-start gap-2 p-3 rounded-lg bg-primary/5 border border-primary/20">
       <Info className="w-4 h-4 text-primary shrink-0 mt-0.5" />
-      <p className="text-xs text-muted-foreground leading-relaxed">{text}</p>
+      <p className="text-xs text-muted-foreground leading-relaxed max-w-prose">{text}</p>
     </div>
   );
 }
@@ -63,7 +63,7 @@ function ErrorBox({ text }: { text: string }) {
   return (
     <div className="mt-3 flex items-start gap-2 p-3 rounded-lg bg-negative/10 border border-negative/30">
       <AlertCircle className="w-4 h-4 text-negative shrink-0 mt-0.5" />
-      <p className="text-xs text-negative leading-relaxed">{text}</p>
+      <p className="text-xs text-negative leading-relaxed max-w-prose">{text}</p>
     </div>
   );
 }
@@ -102,7 +102,7 @@ function EVDeMercadoPrevisao() {
         <Calculator className="w-4 h-4 text-dado" />
         <h2 className="font-semibold text-foreground text-sm">EV no mercado de previsão — p ÷ preço − 1</h2>
       </div>
-      <p className="text-xs text-muted-foreground leading-relaxed">
+      <p className="text-xs text-muted-foreground leading-relaxed max-w-prose">
         No mercado de previsão o contrato paga <strong className="text-foreground">R$ 1</strong> se o evento
         acontecer, e o preço já é a probabilidade que o mercado cobra. Não há odd nem cenário de perda para
         montar: basta comparar a sua probabilidade com o preço.
@@ -140,7 +140,7 @@ function EVDeMercadoPrevisao() {
             ? "—"
             : `${v.ev! > 0 ? "+" : ""}${num(v.ev! * 100, 1)}%`}
         </p>
-        <p className="text-[11px] text-muted-foreground leading-relaxed">
+        <p className="text-[11px] text-muted-foreground leading-relaxed max-w-prose">
           {!calculavel
             ? "Fora da faixa em que a conta significa alguma coisa (o preço precisa estar entre 1% e 99%)."
             : v.neutro

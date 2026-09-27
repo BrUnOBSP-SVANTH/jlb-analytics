@@ -39,7 +39,7 @@ export function AmostraHonesta() {
   return (
     <section>
       <h2 className="text-lg font-display font-semibold text-[var(--titulo)] mb-1">Mostramos só as que acertamos?</h2>
-      <p className="text-xs text-muted-foreground leading-relaxed mb-4">
+      <p className="text-xs text-muted-foreground leading-relaxed mb-4 max-w-prose">
         Não — e aqui está como conferir. Registramos a previsão <strong className="text-foreground">antes</strong>{" "}
         de o mercado resolver e nunca reescrevemos o passado. As que ainda não resolveram vão entrar
         no placar quando resolverem, ajudando ou atrapalhando.
@@ -59,7 +59,7 @@ export function AmostraHonesta() {
 
       {d.perfilComparavel !== null && (
         <div className="rounded-lg border border-border/30 bg-secondary/10 p-3">
-          <p className="text-[11px] text-muted-foreground leading-relaxed">
+          <p className="text-[11px] text-muted-foreground leading-relaxed max-w-prose">
             <strong className="text-foreground/90">As que faltam são igualmente difíceis?</strong>{" "}
             {d.perfilComparavel ? (
               <>

@@ -35,7 +35,7 @@ function EducationalNote({ text }: { text: string }) {
   return (
     <div className="flex items-start gap-2 p-4 rounded-xl bg-primary/5 border border-primary/20">
       <Info className="w-4 h-4 text-primary shrink-0 mt-0.5" />
-      <p className="text-xs text-muted-foreground leading-relaxed">{text}</p>
+      <p className="text-xs text-muted-foreground leading-relaxed max-w-prose">{text}</p>
     </div>
   );
 }

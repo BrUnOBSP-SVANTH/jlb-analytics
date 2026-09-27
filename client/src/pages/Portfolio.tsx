@@ -138,7 +138,7 @@ export default function Portfolio() {
         <AnimatedSection>
           <div className="flex items-start gap-3 p-4 rounded-xl border border-border/20 bg-secondary/5">
             <Info className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
-            <p className="text-xs text-muted-foreground leading-relaxed">
+            <p className="text-xs text-muted-foreground leading-relaxed max-w-prose">
               <strong className="text-foreground">Nenhum centavo é real.</strong> Toda banca começa com{" "}
               {reais(SALDO_INICIAL)} fictícios. Você aposta pelo preço que o mercado está pagando de
               verdade agora — cada cota vale R$ 1 se você acertar e R$ 0 se errar. Quando o evento
@@ -207,7 +207,7 @@ export default function Portfolio() {
         {/* A lição que os dois números juntos contam */}
         {resumo.resolvidas >= 3 && resumo.taxaAcerto !== null && (
           <AnimatedSection>
-            <p className="text-xs text-muted-foreground leading-relaxed px-1">
+            <p className="text-xs text-muted-foreground leading-relaxed px-1 max-w-prose">
               {resumo.taxaAcerto >= 0.5 && resumo.lucroRealizado < 0 ? (
                 <>Repare: você acertou <strong className="text-foreground">{Math.round(resumo.taxaAcerto * 100)}%</strong> das
                 apostas e mesmo assim está no prejuízo. É o efeito de apostar em favoritos — acerta

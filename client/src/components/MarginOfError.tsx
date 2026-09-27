@@ -79,7 +79,7 @@ export default function MarginOfError() {
     <div className="flex items-start gap-3 rounded-xl border border-gold/20 bg-gold/[0.04] px-4 py-3">
       <Scale className="w-4 h-4 text-gold shrink-0 mt-0.5" />
       <div className="flex-1 min-w-0">
-        <p className="text-xs sm:text-[13px] text-muted-foreground leading-relaxed">
+        <p className="text-xs sm:text-[13px] text-muted-foreground leading-relaxed max-w-prose">
           <strong className="text-foreground">Não somos perfeitos — e mostramos isso.</strong>{" "}
           Nossa IA acerta a direção <strong className="text-foreground">~{pct(hit)}</strong> das vezes (logo,{" "}
           <strong className="text-negative">erra ~{pct(err)}</strong>), em{" "}
@@ -108,7 +108,7 @@ export default function MarginOfError() {
             82,1%)" contradizia o próprio número ao lado — 80 ± 2,5 daria 77,5 a
             82,5. Mostramos o intervalo de verdade e dizemos de onde ele vem. */}
         {margem && (
-          <p className="text-xs text-muted-foreground leading-relaxed mt-1.5">
+          <p className="text-xs text-muted-foreground leading-relaxed mt-1.5 max-w-prose">
             <strong className="text-foreground/90">Margem de erro:</strong> o valor real está entre{" "}
             {pct(margem.baixo, 1)} e {pct(margem.alto, 1)}, com 95% de confiança (intervalo de Wilson).
             Quanto mais previsões acumulamos, mais estreito ele fica.
@@ -117,7 +117,7 @@ export default function MarginOfError() {
 
         {/* Empate é uma AFIRMAÇÃO, não uma desculpa: quando a diferença é menor que
             a margem, dizer "perdemos por 0,4%" seria ler ruído como resultado. */}
-        <p className="text-xs text-muted-foreground leading-relaxed mt-1">
+        <p className="text-xs text-muted-foreground leading-relaxed mt-1 max-w-prose">
           {comparacao ? comparacao.explicacao : <>Na calibração fina, {vsMarket}.</>}
         </p>
         <Link href="/track-record">

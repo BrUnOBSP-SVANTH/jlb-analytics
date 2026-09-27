@@ -411,13 +411,13 @@ export default function Previsao() {
                     <Icon className={`w-4 h-4 ${color} shrink-0 mt-0.5`} />
                     <div>
                       <p className="text-xs font-semibold text-foreground mb-1">{title}</p>
-                      <p className="text-xs text-muted-foreground leading-relaxed">{desc}</p>
+                      <p className="text-xs text-muted-foreground leading-relaxed max-w-prose">{desc}</p>
                     </div>
                   </div>
                 ))}
               </div>
               <div className="p-3 rounded-lg bg-primary/5 border border-primary/10">
-                <p className="text-xs text-muted-foreground leading-relaxed text-center">
+                <p className="text-xs text-muted-foreground leading-relaxed text-center max-w-prose">
                   <strong className="text-foreground">Importante:</strong> Esta ferramenta é educacional.
                   Os modelos têm premissas e limitações documentadas. Nunca recomendamos posição, aposta ou investimento.
                 </p>
@@ -459,7 +459,7 @@ export default function Previsao() {
                         <p className="text-sm font-mono font-bold">{result.confidenceMedium - anchorMarket.prob > 0 ? "+" : ""}{result.confidenceMedium - anchorMarket.prob}pp</p>
                       </div>
                     )}
-                    <p className="text-[11px] text-muted-foreground flex-1 min-w-[180px] leading-relaxed">
+                    <p className="text-[11px] text-muted-foreground flex-1 min-w-[180px] leading-relaxed max-w-prose">
                       A IA foi ancorada neste mercado. Divergência não é ordem de compra — é onde investigar se você (ou o mercado) tem uma informação que o outro não tem.
                     </p>
                   </div>

@@ -508,7 +508,7 @@ export default function Home() {
 
             {briefingExpanded && (
               <div className="mt-4 space-y-4">
-                <p className="text-sm text-muted-foreground leading-relaxed">{briefing.summary}</p>
+                <p className="text-sm text-muted-foreground leading-relaxed max-w-prose">{briefing.summary}</p>
 
                 {briefing.macroNote && (
                   <div className="px-3 py-2 rounded-lg bg-secondary/20 border border-border/20">
@@ -588,7 +588,7 @@ export default function Home() {
                     <Icon className="w-4 h-4 text-primary shrink-0" aria-hidden="true" />
                   </div>
                   <h3 className="text-base font-semibold text-foreground mb-2">{item.title}</h3>
-                  <p className="text-sm text-muted-foreground leading-relaxed">{item.desc}</p>
+                  <p className="text-sm text-muted-foreground leading-relaxed max-w-prose">{item.desc}</p>
                 </div>
               );
             })}
@@ -778,7 +778,7 @@ export default function Home() {
           <h2 className="text-2xl md:text-3xl font-bold text-[var(--titulo)] mb-4">
             Faça sua primeira previsão hoje
           </h2>
-          <p className="text-muted-foreground text-sm mb-8 leading-relaxed">
+          <p className="text-muted-foreground text-sm mb-8 leading-relaxed max-w-prose">
             O Nível 1 é gratuito e leva menos de 10 minutos.
             Você começa a aprender se está acertando ou errando com a primeira previsão registrada.
           </p>

@@ -67,7 +67,7 @@ export function CotaDeAnalises() {
       >
         <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${(usadas / limite) * 100}%` }} />
       </div>
-      <p className="text-xs text-muted-foreground leading-relaxed">
+      <p className="text-xs text-muted-foreground leading-relaxed max-w-prose">
         A cota vale por pessoa, não por conta: contas no mesmo e-mail dividem as mesmas análises.
         Repetir a análise de um mercado nas horas seguintes não gasta outra — a resposta já está pronta.
       </p>

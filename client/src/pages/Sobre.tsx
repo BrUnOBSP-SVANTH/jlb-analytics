@@ -137,7 +137,7 @@ export default function Sobre() {
                   <div className="glass-card rounded-xl p-5 h-full">
                     <Icon className="w-5 h-5 text-dado mb-3" aria-hidden="true" />
                     <h3 className="font-display font-semibold text-foreground mb-1 text-sm">{item.title}</h3>
-                    <p className="text-xs text-muted-foreground leading-relaxed">{item.desc}</p>
+                    <p className="text-xs text-muted-foreground leading-relaxed max-w-prose">{item.desc}</p>
                   </div>
                 </AnimatedSection>
               );
@@ -156,7 +156,7 @@ export default function Sobre() {
                 </div>
                 <span className="text-sm font-semibold text-foreground">Freemium</span>
               </div>
-              <p className="text-xs text-muted-foreground leading-relaxed">
+              <p className="text-xs text-muted-foreground leading-relaxed max-w-prose">
                 Os cinco níveis da trilha, calculadoras, simuladores, Banca Simulada e Track Record —
                 grátis. Sem cadastro para explorar.
               </p>
@@ -168,7 +168,7 @@ export default function Sobre() {
                 </div>
                 <span className="text-sm font-semibold text-foreground">Premium</span>
               </div>
-              <p className="text-xs text-muted-foreground leading-relaxed">
+              <p className="text-xs text-muted-foreground leading-relaxed max-w-prose">
                 Tira o limite mensal de análises de IA, e só isso. A IA, o Track Record e os erros
                 publicados são os mesmos para quem paga e para quem não paga.
               </p>
@@ -183,7 +183,7 @@ export default function Sobre() {
             {PRINCIPLES.map((p) => (
               <div key={p.title} className={`p-5 rounded-xl border ${p.border} ${p.bg}`}>
                 <p className={`font-semibold text-sm mb-2 ${p.color}`}>{p.title}</p>
-                <p className="text-xs text-muted-foreground leading-relaxed">{p.desc}</p>
+                <p className="text-xs text-muted-foreground leading-relaxed max-w-prose">{p.desc}</p>
               </div>
             ))}
           </div>
@@ -215,7 +215,7 @@ export default function Sobre() {
         <AnimatedSection>
           <div className="glass-card rounded-xl p-5 border-border/20">
             <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Aviso Legal</h3>
-            <p className="text-xs text-muted-foreground leading-relaxed">
+            <p className="text-xs text-muted-foreground leading-relaxed max-w-prose">
               Plataforma exclusivamente educacional. Dados, modelos e análises não constituem recomendação de investimento,
               consultoria financeira ou incentivo a apostas. Dados via APIs públicas — podem apresentar atraso.
               Modelos são simplificações e falham sob condições que violam suas premissas.

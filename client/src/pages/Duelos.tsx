@@ -269,7 +269,7 @@ export default function Duelos() {
             <Swords className="w-6 h-6 text-gold" aria-hidden="true" />
           </div>
           <h2 className="text-xl font-display font-bold text-[var(--titulo)] mb-2">Entre para duelar</h2>
-          <p className="text-sm text-muted-foreground mb-6 leading-relaxed">
+          <p className="text-sm text-muted-foreground mb-6 leading-relaxed max-w-prose">
             Seus duelos, previsões seladas e vitórias ficam na sua conta.
             Crie uma conta gratuita para desafiar outros forecasters.
           </p>
@@ -347,7 +347,7 @@ export default function Duelos() {
                 ))}
               </div>
               {duelMode === "ia" && (
-                <p className="text-[11px] text-muted-foreground leading-relaxed -mt-2">
+                <p className="text-[11px] text-muted-foreground leading-relaxed -mt-2 max-w-prose">
                   Você duela contra o fair value que a nossa IA já selou no track record público —
                   o duelo começa na hora, sem esperar oponente.
                 </p>
@@ -424,7 +424,7 @@ export default function Duelos() {
                   <X className="w-4 h-4" aria-hidden="true" />
                 </button>
               </div>
-              <p className="text-xs text-muted-foreground leading-relaxed">
+              <p className="text-xs text-muted-foreground leading-relaxed max-w-prose">
                 As previsões do desafiante estão seladas — você não as vê, e ele não vê as suas.
                 Registre a sua probabilidade para cada mercado do baralho.
               </p>
@@ -586,7 +586,7 @@ export default function Duelos() {
                 <li><strong className="text-foreground">Pontos:</strong> nesta fase beta, o vencedor ganha <span className="font-mono text-gold">+25 pts</span> no perfil. Os "pontos em jogo" são o placar do desafio — nenhum dinheiro real circula.</li>
                 <li><strong className="text-foreground">Contra a IA:</strong> você também pode duelar contra o fair value da nossa IA — as previsões dela já estão seladas no track record público (transparência total: elas são auditáveis, e vencer copiando dá no máximo empate).</li>
               </ol>
-              <p className="text-xs text-muted-foreground/80 leading-relaxed pt-2 border-t border-border/15">
+              <p className="text-xs text-muted-foreground/80 leading-relaxed pt-2 border-t border-border/15 max-w-prose">
                 Caráter educacional: o duelo mede calibração, não sorte. Dica: mercados que fecham em breve resolvem mais rápido.
               </p>
             </div>

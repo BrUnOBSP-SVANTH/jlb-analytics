@@ -64,7 +64,7 @@ export function ProviderBreakdown() {
   return (
     <section>
       <h2 className="text-lg font-display font-semibold text-[var(--titulo)] mb-1">De qual modelo veio cada número</h2>
-      <p className="text-xs text-muted-foreground leading-relaxed mb-4">
+      <p className="text-xs text-muted-foreground leading-relaxed mb-4 max-w-prose">
         Nossa IA usa uma cadeia de provedores: quando um falha (crédito, cota, instabilidade), o
         seguinte responde. Como os modelos têm qualidades diferentes, mostramos a fatia de cada um
         em vez de esconder tudo numa média.
@@ -118,7 +118,7 @@ export function ProviderBreakdown() {
           aparecem piores que o mercado nesta tabela, a manchete não pode dizer
           "empatamos ou superamos" sem explicar que são medidas diferentes. */}
       {rows.every((r) => r.skillVsMarket !== null && r.skillVsMarket <= 0) && (
-        <p className="text-xs text-muted-foreground leading-relaxed mt-3 rounded-lg border border-border/25 bg-secondary/15 p-2.5">
+        <p className="text-xs text-muted-foreground leading-relaxed mt-3 rounded-lg border border-border/25 bg-secondary/15 p-2.5 max-w-prose">
           Repare que aqui <strong className="text-foreground/80">nenhum modelo bate o mercado na
           calibração</strong> — e a manchete da página fala em empate. Não é contradição: a manchete
           mede se acertamos o <em>lado</em>, e esta tabela mede o quanto a probabilidade chegou perto
@@ -127,7 +127,7 @@ export function ProviderBreakdown() {
         </p>
       )}
 
-      <p className="text-xs text-muted-foreground mt-3 leading-relaxed">
+      <p className="text-xs text-muted-foreground mt-3 leading-relaxed max-w-prose">
         <strong className="text-foreground/80">vs mercado</strong> = quanto o Brier do provedor é melhor
         (+) ou pior (−) que o do próprio mercado no mesmo conjunto. Abaixo de {minimo} resolvidas
         tratamos como ruído, não evidência. As fatias saem da mesma leitura da manchete

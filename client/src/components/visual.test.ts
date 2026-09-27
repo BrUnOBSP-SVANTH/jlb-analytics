@@ -400,3 +400,29 @@ describe("medida de linha no desktop largo", () => {
     expect(varredura).toMatch(/LINHA LONGA DEMAIS/);
   });
 });
+
+/**
+ * JSX QUE PASSA EM TUDO E APARECE NA TELA.
+ *
+ * Em 27/09/2026, ao aplicar `max-w-prose` a 130 parágrafos de uma vez, o script
+ * que fez a substituição fechou a tag duas vezes:
+ *
+ *     <p className="text-xs ... max-w-prose">>
+ *
+ * O segundo `>` não é sintaxe: é TEXTO. O JSX é válido, então `tsc`, `eslint`,
+ * `vitest` e `vite build` passaram todos, e o defeito seria um ">" solto no
+ * começo de 130 parágrafos do site.
+ *
+ * É a mesma família da tela branca do service worker: erro que nenhuma
+ * ferramenta de tipo enxerga porque, para elas, o código está certo. A diferença
+ * é que este custa uma linha de teste.
+ */
+describe("tag fechada duas vezes", () => {
+  it("nenhum componente tem `>>` logo depois de um atributo", () => {
+    const culpados = arquivos(SRC)
+      .map((f) => [f, readFileSync(f, "utf-8")] as const)
+      .filter(([, fonte]) => /"\s*>>/.test(fonte))
+      .map(([f]) => relative(SRC, f));
+    expect(culpados, `arquivos com tag duplicada: ${culpados.join(", ")}`).toEqual([]);
+  });
+});

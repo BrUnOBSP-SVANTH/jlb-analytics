@@ -164,7 +164,7 @@ function HighlightCard({ m }: { m: MarketHighlight }) {
           <span className={`text-xl font-bold font-mono shrink-0 ${probColor(m.prob!)}`}>{m.prob}%</span>
         )}
       </div>
-      <p className="text-xs text-muted-foreground leading-relaxed">{m.insight}</p>
+      <p className="text-xs text-muted-foreground leading-relaxed max-w-prose">{m.insight}</p>
       {hasProb && (
         <>
           <div className="w-full h-1 bg-secondary/40 rounded-full overflow-hidden">
@@ -362,7 +362,7 @@ export default function Briefing() {
                 )}
               </div>
             </div>
-            <p className="text-sm text-muted-foreground leading-relaxed">{briefing.summary}</p>
+            <p className="text-sm text-muted-foreground leading-relaxed max-w-prose">{briefing.summary}</p>
 
             {/* Risk Alert */}
             {briefing.riskAlert && (
@@ -379,19 +379,19 @@ export default function Briefing() {
               <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                 <TrendingUp className="w-3.5 h-3.5 text-primary" /> Macro
               </div>
-              <p className="text-sm text-foreground leading-relaxed">{briefing.macroNote}</p>
+              <p className="text-sm text-foreground leading-relaxed max-w-prose">{briefing.macroNote}</p>
             </div>
             <div className="glass-card rounded-xl p-4 space-y-2">
               <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                 <Eye className="w-3.5 h-3.5 text-gold" /> Fique de Olho
               </div>
-              <p className="text-sm text-foreground leading-relaxed">{briefing.watchToday}</p>
+              <p className="text-sm text-foreground leading-relaxed max-w-prose">{briefing.watchToday}</p>
             </div>
             <div className="glass-card rounded-xl p-4 space-y-2">
               <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                 <Trophy className="w-3.5 h-3.5 text-positive" /> Dica do Dia
               </div>
-              <p className="text-sm text-foreground leading-relaxed">{briefing.calibrationTip}</p>
+              <p className="text-sm text-foreground leading-relaxed max-w-prose">{briefing.calibrationTip}</p>
             </div>
           </div>
 

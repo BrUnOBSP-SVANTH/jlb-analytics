@@ -63,7 +63,7 @@ export function Footer() {
               </div>
               <span className="text-sm font-display font-bold text-foreground">JLB Analytics</span>
             </div>
-            <p className="text-xs text-muted-foreground leading-relaxed">
+            <p className="text-xs text-muted-foreground leading-relaxed max-w-prose">
               Educação quantitativa para mercados preditivos.
             </p>
           </div>
@@ -145,7 +145,7 @@ export function Footer() {
         </div>
 
         <div className="border-t border-border/30 pt-6 space-y-2">
-          <p className="text-xs text-muted-foreground text-center leading-relaxed">
+          <p className="text-xs text-muted-foreground text-center leading-relaxed max-w-prose">
             Caráter educacional — não constitui recomendação de investimento ou aposta.
             Dados de mercado via APIs públicas e podem apresentar atraso.
           </p>

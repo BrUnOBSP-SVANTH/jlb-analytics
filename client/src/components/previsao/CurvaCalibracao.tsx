@@ -43,7 +43,7 @@ export function CurvaCalibracao() {
   return (
     <section>
       <h2 className="text-lg font-display font-semibold text-[var(--titulo)] mb-1">Quando dizemos 70%, acontece quanto?</h2>
-      <p className="text-xs text-muted-foreground leading-relaxed mb-4">
+      <p className="text-xs text-muted-foreground leading-relaxed mb-4 max-w-prose">
         Esta é a nossa <Termo nome="calibracao">calibração</Termo>: se prometemos 70% e a coisa acontece
         perto de 70% das vezes, acertamos o tom. Cada faixa tem a própria margem, porque faixa com
         poucos casos merece menos confiança que faixa com muitos.{" "}
@@ -82,7 +82,7 @@ export function CurvaCalibracao() {
         </table>
       </div>
 
-      <p className="text-[11px] text-muted-foreground leading-relaxed mt-3">
+      <p className="text-[11px] text-muted-foreground leading-relaxed mt-3 max-w-prose">
         “No alvo” quer dizer que o que prometemos cabe dentro da margem do que aconteceu.
         As faixas fora do alvo ficam aqui à vista — mostrar onde erramos é o que dá valor ao resto.
       </p>

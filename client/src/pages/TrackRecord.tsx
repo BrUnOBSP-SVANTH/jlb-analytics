@@ -158,7 +158,7 @@ export default function TrackRecord() {
                       <m.icon className="w-4 h-4 text-primary shrink-0" aria-hidden="true" />
                       <h3 className="text-sm font-semibold text-foreground">{m.title}</h3>
                     </div>
-                    <p className="text-sm text-muted-foreground leading-relaxed">{m.desc}</p>
+                    <p className="text-sm text-muted-foreground leading-relaxed max-w-prose">{m.desc}</p>
                   </div>
                 ))}
               </div>

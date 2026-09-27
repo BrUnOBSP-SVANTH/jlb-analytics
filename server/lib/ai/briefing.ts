@@ -12,6 +12,7 @@ import { hojeEmBrasilia, segundosAteVirarODia } from "../../../shared/dataBrasil
 import { lerBriefingDoDia, gravarBriefingDoDia } from "./briefingGuardado.ts";
 import { tituloLimpo } from "../marketCatalog.ts";
 import { macroParaPrompt } from "./macroParaPrompt.ts";
+import { virgulaDecimalNoObjeto } from "../../../shared/numerosEmTexto.ts";
 import { log } from "../log.ts";
 import type { NewsApiResponse, PolyEvent, KalshiEventsResponse } from "../types.ts";
 
@@ -58,8 +59,12 @@ export async function dailyBriefingHandler(req: Request, res: Response) {
     // deploy, e o briefing do dia continua guardado no banco.
     const guardado = await lerBriefingDoDia(today);
     if (guardado) {
-      setCache(cacheKey, guardado, segundosAteVirarODia());
-      return res.json({ ...guardado, cached: true });
+      // Tambem na LEITURA, e nao so na gravacao: o briefing de hoje pode ter
+      // sido gerado antes deste conserto e ficaria com "13.75%" na tela ate
+      // virar o dia. Regerar custaria uma chamada de IA para arrumar pontuacao.
+      const limpo = virgulaDecimalNoObjeto(guardado);
+      setCache(cacheKey, limpo, segundosAteVirarODia());
+      return res.json({ ...limpo, cached: true });
     }
   }
 
@@ -140,7 +145,12 @@ JSON exato (sem markdown). Em marketHighlights, "prob" é a probabilidade SIM do
         const n = Number(h.prob);
         return { ...h, prob: Number.isFinite(n) ? Math.min(100, Math.max(0, Math.round(n))) : null };
       });
-    const result = { ...parsed, marketHighlights, topMarkets, generatedAt: new Date().toISOString(), cached: false };
+    // O modelo recebe a macro já em pt-BR (`macroParaPrompt`) e mesmo assim
+    // escreve "13.75%" — é o formato em que ele aprendeu a escrever número, e
+    // pedir de novo no prompt não muda isso. A correção fica aqui, onde é
+    // determinística, e antes de gravar: o texto errado não entra no banco.
+    const emPtBr = virgulaDecimalNoObjeto({ ...parsed, marketHighlights });
+    const result = { ...emPtBr, topMarkets, generatedAt: new Date().toISOString(), cached: false };
     // Guarda no banco ANTES de responder: se o processo cair em seguida (deploy,
     // plano grátis dormindo), o briefing do dia não se perde e ninguém paga a
     // geração de novo.

@@ -65,7 +65,7 @@ export function PorTema() {
   return (
     <section>
       <h2 className="text-lg font-display font-semibold text-[var(--titulo)] mb-1">Onde acertamos mais — e onde temos pouca prova</h2>
-      <p className="text-xs text-muted-foreground leading-relaxed mb-4">
+      <p className="text-xs text-muted-foreground leading-relaxed mb-4 max-w-prose">
         Nossa taxa de acerto por assunto, ao lado da do mercado. A margem diz quanto o número pode
         variar por sorte da amostra: quanto mais previsões no tema, mais estreita ela fica.
       </p>
@@ -103,7 +103,7 @@ export function PorTema() {
       </div>
 
       {semAmostra.length > 0 && (
-        <p className="text-[11px] text-muted-foreground leading-relaxed mt-3">
+        <p className="text-[11px] text-muted-foreground leading-relaxed mt-3 max-w-prose">
           Ainda sem prova suficiente (menos de {d.minAmostra} casos):{" "}
           {semAmostra.map((t) => `${NOMES[t.tema] ?? t.tema} (${t.n})`).join(", ")}. Preferimos dizer
           que não sabemos a publicar porcentagem que a amostra não sustenta.

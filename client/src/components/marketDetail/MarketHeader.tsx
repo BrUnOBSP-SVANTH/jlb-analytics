@@ -31,7 +31,7 @@ export function MarketHeader({ market }: { market: MarketBasic }) {
           </a>
         </div>
         <h1 className="text-2xl font-bold text-[var(--titulo)] leading-snug">{market.title}</h1>
-        <p className="text-xs text-muted-foreground leading-relaxed">
+        <p className="text-xs text-muted-foreground leading-relaxed max-w-prose">
           Esta tela reúne tudo sobre este mercado — o preço atual, o histórico, o consenso das fontes e as ferramentas
           para você decidir com lógica, não no achismo. Abaixo, cada seção explica o que mostra e como usar.
         </p>

@@ -246,7 +246,7 @@ export default function Login() {
             {errorMsg && (
               <div className="flex items-start gap-2 p-3 rounded-lg bg-negative/10 border border-negative/30" role="alert">
                 <AlertCircle className="w-4 h-4 text-negative shrink-0 mt-0.5" aria-hidden="true" />
-                <p className="text-xs text-negative leading-relaxed">{errorMsg}</p>
+                <p className="text-xs text-negative leading-relaxed max-w-prose">{errorMsg}</p>
               </div>
             )}
 
@@ -254,7 +254,7 @@ export default function Login() {
             {successMsg && (
               <div className="flex items-start gap-2 p-3 rounded-lg bg-positive/10 border border-positive/30" role="status">
                 <CheckCircle className="w-4 h-4 text-positive shrink-0 mt-0.5" aria-hidden="true" />
-                <p className="text-xs text-positive leading-relaxed">{successMsg}</p>
+                <p className="text-xs text-positive leading-relaxed max-w-prose">{successMsg}</p>
               </div>
             )}
 

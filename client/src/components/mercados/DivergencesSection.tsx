@@ -55,7 +55,7 @@ export function DivergencesSection() {
         </button>
         {!collapsed && (
           <div className="px-4 pb-4 space-y-2">
-            <p className="text-[11px] text-muted-foreground mb-1">
+            <p className="text-[11px] text-muted-foreground mb-1 max-w-prose">
               Mercados onde nosso fair value de IA mais difere do preço atual. Edge = nossa estimativa − preço de mercado.
               {" "}O preço é <strong>ao vivo</strong> e a estimativa é da data indicada: parte da diferença pode ser
               o mercado tendo se movido depois, não discordância nossa.

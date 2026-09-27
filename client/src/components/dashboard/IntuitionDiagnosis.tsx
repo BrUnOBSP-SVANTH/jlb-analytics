@@ -106,7 +106,7 @@ export function IntuitionDiagnosis({ preds }: { preds: StoredPrediction[] }) {
       </div>
 
       {v && (
-        <p className="text-xs text-muted-foreground leading-relaxed border-l-2 border-dado/40 pl-3">
+        <p className="text-xs text-muted-foreground leading-relaxed border-l-2 border-dado/40 pl-3 max-w-prose">
           {v.lesson}
         </p>
       )}

@@ -112,10 +112,10 @@ export default function CalibrationTest() {
           </div>
         </div>
         <p className={`text-lg font-bold mb-1.5 ${verdict.tone}`}>{verdict.label}</p>
-        <p className="text-sm text-muted-foreground leading-relaxed mb-5">{verdict.line}</p>
+        <p className="text-sm text-muted-foreground leading-relaxed mb-5 max-w-prose">{verdict.line}</p>
 
         <div className="rounded-xl bg-secondary/20 border border-border/20 p-4 mb-5">
-          <p className="text-xs text-muted-foreground leading-relaxed">
+          <p className="text-xs text-muted-foreground leading-relaxed max-w-prose">
             <strong className="text-foreground">É por isso que apostar no “achismo” perde:</strong> a confiança quase nunca bate com o acerto.
             O método (calibração, valor esperado, disciplina) é o que separa quem investe de quem só torce.
           </p>

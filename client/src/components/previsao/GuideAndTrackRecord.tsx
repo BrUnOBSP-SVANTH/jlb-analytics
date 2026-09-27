@@ -52,9 +52,9 @@ export function SuperforecasterGuide() {
                     <span className={`text-[11px] font-mono font-bold ${s.color}`}>ETAPA {s.step}</span>
                   </div>
                   <p className={`text-xs font-semibold ${s.color}`}>{s.title}</p>
-                  <p className="text-[11px] text-muted-foreground leading-relaxed">{s.desc}</p>
+                  <p className="text-[11px] text-muted-foreground leading-relaxed max-w-prose">{s.desc}</p>
                   <div className="p-2 rounded-lg bg-secondary/30 mt-1">
-                    <p className="text-[11px] text-muted-foreground italic leading-relaxed">{s.example}</p>
+                    <p className="text-[11px] text-muted-foreground italic leading-relaxed max-w-prose">{s.example}</p>
                   </div>
                 </div>
               ))}
@@ -135,7 +135,7 @@ export function AiTrackRecord() {
               <p className="numeric-hero text-5xl text-foreground leading-none">{data.totalCount}</p>
               <p className="text-[11px] text-muted-foreground mt-1.5">previsões<br />sendo acompanhadas</p>
             </div>
-            <p className="text-xs text-muted-foreground leading-relaxed flex-1">
+            <p className="text-xs text-muted-foreground leading-relaxed flex-1 max-w-prose">
               Cada previsão da IA é registrada com data e <span className="text-foreground">fair value</span>, e
               comparada ao mercado <span className="text-foreground">quando ele resolve</span> — sem cherry-picking.
               O <span className="text-foreground">Brier Score</span> (calibração real, IA vs. mercado) aparece aqui
@@ -167,7 +167,7 @@ export function AiTrackRecord() {
               <p className="numeric-hero text-5xl text-positive leading-none">{data.hitRate}%</p>
               <p className="text-[11px] text-muted-foreground mt-1.5">taxa de acerto<br />da nossa IA</p>
             </div>
-            <p className="flex-1 text-xs text-muted-foreground leading-relaxed">
+            <p className="flex-1 text-xs text-muted-foreground leading-relaxed max-w-prose">
               Em {data.directionalCount} previsões com lado definido, a IA acertou a direção
               (SIM/NÃO) <span className="text-foreground font-semibold">{data.hitRate}%</span> das vezes.
               {data.marketHitRate !== null && (
@@ -212,7 +212,7 @@ export function AiTrackRecord() {
         {/* A divisão COMPLETA contra o preço. Sem ela, "melhor em 14%" deixa o
             leitor preencher os 86% com "pior" — e a maior parte é empate. */}
         {data.comparableCount != null && data.tiedMarketCount != null && data.lostMarketCount != null && (
-          <p className="text-xs text-muted-foreground mt-3 text-center leading-relaxed">
+          <p className="text-xs text-muted-foreground mt-3 text-center leading-relaxed max-w-prose mx-auto">
             Nos {num(data.comparableCount)} mercados comparáveis: ficamos{" "}
             <strong className="text-foreground">melhor em {pct(fatia(data.beatMarketCount, data.comparableCount))}</strong>,{" "}
             <strong className="text-foreground">empatamos em {pct(fatia(data.tiedMarketCount, data.comparableCount))}</strong> e{" "}
@@ -221,7 +221,7 @@ export function AiTrackRecord() {
             porque ela parte dele.
           </p>
         )}
-        <p className="text-xs text-muted-foreground mt-3 text-center leading-relaxed">
+        <p className="text-xs text-muted-foreground mt-3 text-center leading-relaxed max-w-prose">
           Taxa de acerto = direção certa (SIM/NÃO), sobre as {num(data.directionalCount)} previsões com lado.
           Brier = calibração fina (menor é melhor), sobre as {num(data.resolvedCount)} resoluções.
           {/* ⚠️ Aqui se afirmava "todos os números desta página dividem pelas

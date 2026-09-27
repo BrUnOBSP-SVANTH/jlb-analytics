@@ -255,7 +255,7 @@ function MethodologyPanel() {
           <div>
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Fórmula</p>
             <div className="p-3 rounded-lg bg-obsidian/50 border border-border/20">
-              <p className="font-mono text-xs text-gold leading-relaxed">
+              <p className="font-mono text-xs text-gold leading-relaxed max-w-prose">
                 score = −1.175 + 0.221·ln(PIBpc) + 0.184·ln(pop)<br />
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;+ 0.046·T − 0.0016·T² + 0.50·FIFA_norm + home
               </p>
@@ -401,7 +401,7 @@ export default function KlementSection({ onClose }: { onClose: () => void }) {
       {/* Retrospectiva — a Copa 2026 já terminou; abaixo é o retrato PRÉ-torneio do modelo */}
       <div className="flex items-start gap-3 p-4 rounded-xl border border-negative/25 bg-negative/5">
         <Info className="w-4 h-4 text-negative shrink-0 mt-0.5" />
-        <p className="text-xs text-muted-foreground leading-relaxed">
+        <p className="text-xs text-muted-foreground leading-relaxed max-w-prose">
           <strong className="text-foreground">Retrospectiva — a Copa de 2026 já terminou.</strong>{" "}
           Esta seção mostra como o modelo via o torneio <strong className="text-foreground">antes</strong> de ele começar.
           O campeão real foi a <strong className="text-foreground">🇪🇸 Espanha</strong>. O palpite publicado do próprio Klement para 2026 foi a{" "}
@@ -595,7 +595,7 @@ export default function KlementSection({ onClose }: { onClose: () => void }) {
                 <TrendingUp className="w-4 h-4" />
                 <p className="text-xs font-semibold uppercase tracking-wide">Europa domina</p>
               </div>
-              <p className="text-xs text-muted-foreground leading-relaxed">
+              <p className="text-xs text-muted-foreground leading-relaxed max-w-prose">
                 Europa combina alto PIB, temperatura próxima ao ótimo de 14°C e ranking FIFA sólido.
               </p>
             </div>
@@ -604,7 +604,7 @@ export default function KlementSection({ onClose }: { onClose: () => void }) {
                 <Trophy className="w-4 h-4" />
                 <p className="text-xs font-semibold uppercase tracking-wide">Anfitriões 2026</p>
               </div>
-              <p className="text-xs text-muted-foreground leading-relaxed">
+              <p className="text-xs text-muted-foreground leading-relaxed max-w-prose">
                 USA + México + Canadá dividem o bônus (0.383 ÷ 3 = 0.128 cada). Impacto menor que em Copas com host único.
               </p>
             </div>
@@ -613,7 +613,7 @@ export default function KlementSection({ onClose }: { onClose: () => void }) {
                 <Thermometer className="w-4 h-4" />
                 <p className="text-xs font-semibold uppercase tracking-wide">Paradoxo climático</p>
               </div>
-              <p className="text-xs text-muted-foreground leading-relaxed">
+              <p className="text-xs text-muted-foreground leading-relaxed max-w-prose">
                 Países tropicais (África, Brasil) e subarctivos (Canadá) são penalizados pelo modelo.
               </p>
             </div>
@@ -625,7 +625,7 @@ export default function KlementSection({ onClose }: { onClose: () => void }) {
       <AnimatedSection>
         <div className="flex items-start gap-3 p-4 rounded-xl border border-border/20 bg-secondary/10">
           <Info className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
-          <p className="text-xs text-muted-foreground leading-relaxed">
+          <p className="text-xs text-muted-foreground leading-relaxed max-w-prose">
             <strong className="text-foreground">Análise educacional:</strong> Modelo explica ~55% da variância histórica.
             {" "}<em>"If you bet money on the World Cup because of this model, nobody can help you."</em> — Klement.{" "}
             <a href="https://klementoninvesting.substack.com" target="_blank" rel="noopener noreferrer" className="text-gold hover:underline">Klement on Investing</a>
