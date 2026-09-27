@@ -41,8 +41,29 @@
  *                  ponto seguinte — inclusive o ponto final. Resultado: os dois
  *                  primeiros números da frase eram corrigidos e o terceiro,
  *                  o último da oração, ficava para trás.
+ *
+ * 🔴 E a quarta guarda, `(?<!:)`, existe porque esta função QUEBROU A TELA em
+ * produção no dia em que nasceu (27/09/2026).
+ *
+ * O briefing publicava "Gerado em Invalid Date". O `generatedAt` vinha como
+ * `2026-09-27T12:09:04,937Z` — vírgula antes dos milissegundos. Era esta
+ * função: em `12:09:04.937`, o "04" não tem dígito nem ponto antes (tem dois
+ * pontos), e o "937" é seguido de "Z". Passou nas três guardas, virou
+ * `04,937`, e `new Date()` rejeita o formato.
+ *
+ * A guarda de ano não pegava porque só olha grupos de 4 dígitos.
  */
-const DECIMAL_SOLTO = /(?<![\d.])(\d+)\.(\d+)(?!\d)(?!\.\d)/g;
+const DECIMAL_SOLTO = /(?<![\d.:])(\d+)\.(\d+)(?!\d)(?!\.\d)/g;
+
+/**
+ * Carimbo de tempo ISO-8601 — o campo que NÃO é prosa.
+ *
+ * A guarda do `:` acima já salva o horário dentro de uma frase. Esta é a
+ * segunda camada, e existe porque o defeito real não foi a regex: foi aplicar
+ * um corretor de TEXTO a todo campo de string de um objeto, inclusive os que a
+ * máquina escreveu para a máquina ler.
+ */
+const CARIMBO_ISO = /^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}/;
 
 /**
  * Troca o ponto decimal pela vírgula em todo número solto do texto.
@@ -51,6 +72,8 @@ const DECIMAL_SOLTO = /(?<![\d.])(\d+)\.(\d+)(?!\d)(?!\.\d)/g;
  * terceiro é inventar precisão que ele não afirmou.
  */
 export function virgulaDecimal(texto: string): string {
+  // Carimbo de tempo não é prosa e não se conserta: sai inteiro.
+  if (CARIMBO_ISO.test(texto)) return texto;
   return texto.replace(DECIMAL_SOLTO, (inteiro, antes: string, depois: string) => {
     // Ano seguido de mês ("2024.01") e qualquer inteiro de 4 dígitos que possa
     // ser ano ficam de fora: não é decimal, é data escrita de forma esquisita.
