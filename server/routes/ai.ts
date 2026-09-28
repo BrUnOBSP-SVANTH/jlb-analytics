@@ -20,6 +20,7 @@ import { log } from "../lib/log.ts";
 import { buildDigest, sendWeeklyDigests } from "../lib/ai/digest.ts";
 import { runChat, chatGuards, type ChatRequest } from "../lib/ai/chat.ts";
 import { runMarketAnalysis, ANALYZE_CACHE_KEY, exigirProbabilidade, type AnalyzeParams } from "../lib/ai/marketAnalysis.ts";
+import { lerAnalise } from "../lib/ai/analiseGuardada.ts";
 import { serieDoUsuario } from "../lib/calibracaoUsuario.ts";
 import { runModelPredict, PREDICT_CACHE_KEY, type PredictParams } from "../lib/ai/modelPredict.ts";
 import { dailyBriefingHandler } from "../lib/ai/briefing.ts";
@@ -300,6 +301,23 @@ router.post("/analyze", validarEntradaAnalise, aiCreditsMiddleware, async (req, 
     const cached = getCache<object>(cacheKey);
     if (cached) { res.locals.aiCacheHit = true; return res.json({ ...cached, cached: true }); }
 
+    // A MEMÓRIA VAZIA NÃO QUER DIZER "NUNCA ANALISADO".
+    //
+    // O `Map()` acima nasce junto com o processo, e o plano grátis do Render
+    // dorme com 15 minutos sem tráfego. Com ~53 visitantes por mês, quase todo
+    // visitante encontra o processo recém-acordado — e a análise era refeita do
+    // zero, gastando da cota gratuita (~69 análises por dia, medido) para
+    // reproduzir algo que já existia.
+    //
+    // Mesma lição do briefing (migração 043) e do catálogo (049): a última
+    // versão boa mora no banco, que sobrevive a soneca e a deploy.
+    const doBanco = await lerAnalise(cacheKey);
+    if (doBanco) {
+      res.locals.aiCacheHit = true;
+      setCache(cacheKey, doBanco.resultado, 10800);
+      return res.json({ ...doBanco.resultado, cached: true });
+    }
+
     const result = await runMarketAnalysis(body);
     // 3h, e não 30min: quem invalida agora é o PREÇO (ver ANALYZE_CACHE_KEY),
     // então o prazo só existe para a análise não envelhecer num mercado que
@@ -342,6 +360,18 @@ router.post("/analyze/stream", validarEntradaAnalise, aiCreditsMiddleware, async
   }
 
   try {
+    // Mesma leitura do banco da rota JSON, e é ESTA que a tela usa. Sem ela, o
+    // caminho por onde a análise realmente chega ao usuário continuaria pagando
+    // de novo por tudo que a soneca do Render apagou da memória.
+    const doBanco = await lerAnalise(cacheKey);
+    if (doBanco) {
+      res.locals.aiCacheHit = true;
+      setCache(cacheKey, doBanco.resultado, 10800);
+      send("result", { ...doBanco.resultado, cached: true });
+      send("done", {});
+      return res.end();
+    }
+
     const result = await runMarketAnalysis(body, (step, data) => send("phase", { step, ...data }));
     // 3h, e não 30min: quem invalida agora é o PREÇO (ver ANALYZE_CACHE_KEY),
     // então o prazo só existe para a análise não envelhecer num mercado que

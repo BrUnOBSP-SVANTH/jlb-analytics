@@ -154,10 +154,14 @@ function ThemeToggle() {
 interface AiCredits { used: number; limit: number | null; plan: string }
 
 function UserMenu({ compacto = false }: { compacto?: boolean }) {
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const [, navigate] = useLocation();
   const [points, setPoints] = useState(() => loadProgress().totalPoints);
   const [credits, setCredits] = useState<AiCredits | null>(null);
+  const [menuAberto, setMenuAberto] = useState(false);
+  const [confirmarSaida, setConfirmarSaida] = useState(false);
+  const fecharMenu = () => { setMenuAberto(false); setConfirmarSaida(false); };
+  const { ref: refConta, props: propsConta } = useDispensar<HTMLDivElement>(menuAberto, fecharMenu);
 
   useEffect(() => {
     function onPoints(e: Event) {
@@ -254,10 +258,83 @@ function UserMenu({ compacto = false }: { compacto?: boolean }) {
         <Star className="w-3 h-3" aria-hidden="true" />
         {points}
       </Link>
-      <Link href="/perfil" aria-label="Abrir meu perfil"
-        className="alvo-toque w-9 h-9 rounded-full bg-primary/15 border border-primary/20 flex items-center justify-center hover:bg-primary/25 transition-colors">
-        <User className="w-3.5 h-3.5 text-primary" aria-hidden="true" />
-      </Link>
+      {/*
+        🔴 O AVATAR ERA UM LINK PARA /perfil, E NÃO EXISTIA COMO SAIR DA CONTA.
+        Reportado pelo fundador em 27/09/2026, e confirmado no código: a única
+        chamada a `signOut` da barra vivia dentro do bloco `mobileOpen &&` —
+        NAV-04 tinha movido o botão do header do CELULAR para dentro do menu
+        do CELULAR, e o desktop, que nunca teve um, ficou sem nenhum.
+
+        Em tela larga (de `lg` para cima) não há hambúrguer: aquele menu nunca
+        abre. Quem entrasse numa conta no computador não tinha caminho de volta
+        a não ser EXCLUIR a conta — que é a porta vizinha, em /perfil, e é
+        irreversível. Trocar de perfil era impossível.
+
+        Agora o avatar abre um menu de conta de verdade. O e-mail vem primeiro
+        de propósito: quando não dá para sair, também não dá para saber em qual
+        conta você está — e as duas perguntas são a mesma.
+      */}
+      <div className="relative" ref={refConta}>
+        <button
+          onClick={() => { const abrindo = !menuAberto; setMenuAberto(abrindo); if (!abrindo) setConfirmarSaida(false); }}
+          {...propsConta}
+          aria-expanded={menuAberto}
+          aria-haspopup="menu"
+          aria-label="Abrir menu da conta"
+          className="alvo-toque w-9 h-9 rounded-full bg-primary/15 border border-primary/20 flex items-center justify-center hover:bg-primary/25 transition-colors"
+        >
+          <User className="w-3.5 h-3.5 text-primary" aria-hidden="true" />
+        </button>
+
+        {menuAberto && (
+          <div role="menu"
+            className="absolute right-0 top-full mt-2 w-60 rounded-xl border border-border/40 bg-popover shadow-xl p-1.5 z-50">
+            <p className="px-3 pt-2 pb-2.5 border-b border-border/20">
+              <span className="block text-[11px] text-muted-foreground">Conectado como</span>
+              {/* `break-all`: e-mail longo não pode empurrar a largura do painel. */}
+              <span className="block text-xs font-medium text-foreground break-all">{user.email}</span>
+            </p>
+
+            <Link href="/perfil" onClick={fecharMenu} role="menuitem"
+              className="alvo-toque flex items-center gap-2.5 px-3 py-2.5 mt-1 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-secondary/40 transition-colors">
+              <User className="w-4 h-4 shrink-0" aria-hidden="true" />
+              Perfil
+            </Link>
+            <Link href="/dashboard" onClick={fecharMenu} role="menuitem"
+              className="alvo-toque flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-secondary/40 transition-colors">
+              <LayoutDashboard className="w-4 h-4 shrink-0" aria-hidden="true" />
+              Dashboard
+            </Link>
+
+            <div className="border-t border-border/20 mt-1 pt-1">
+              {confirmarSaida ? (
+                // A confirmação é a mesma regra do menu do celular (NAV-04):
+                // encerrar sessão num clique só, ao lado de links de navegação,
+                // é acidente esperando.
+                <div className="px-1.5 py-1.5">
+                  <p className="text-[11px] text-muted-foreground px-1.5 pb-2">Encerrar a sessão neste dispositivo?</p>
+                  <div className="flex items-center gap-1.5">
+                    <button onClick={() => setConfirmarSaida(false)}
+                      className="alvo-toque flex-1 px-3 py-2 rounded-lg text-xs font-semibold border border-border/40 text-muted-foreground hover:text-foreground transition-colors">
+                      Cancelar
+                    </button>
+                    <button onClick={() => { fecharMenu(); void signOut(); }} role="menuitem"
+                      className="alvo-toque flex-1 px-3 py-2 rounded-lg text-xs font-semibold border border-negative/40 bg-negative/10 text-negative hover:bg-negative/20 transition-colors">
+                      Confirmar saída
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button onClick={() => setConfirmarSaida(true)} role="menuitem"
+                  className="alvo-toque w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm text-muted-foreground hover:text-negative hover:bg-negative/10 transition-colors">
+                  <LogOut className="w-4 h-4 shrink-0" aria-hidden="true" />
+                  Sair da conta
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

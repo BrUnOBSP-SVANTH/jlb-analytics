@@ -265,13 +265,58 @@ export async function montarFicha(d: DadosFicha): Promise<string> {
         : `o favorito venceu MENOS do que o preço dizia (${num(Math.abs(diferenca))}pp abaixo), ou seja, nesta amostra pagava-se caro pelo favorito`;
     linhas.push(
       `NOSSO HISTÓRICO EM ${hist.categoria.toUpperCase()}: acompanhamos ${hist.resolvidos} mercados desta área até a liquidação oficial. `
-      + `O favorito venceu ${hist.favoritoVenceuPct}% das vezes, com preço médio de ${hist.precoMedioFavorito}% — ${leitura}. `
-      + `O SIM aconteceu em ${hist.simAconteceuPct}% deles. `
+      + `O favorito venceu ${num(hist.favoritoVenceuPct, 1)}% das vezes, com preço médio de ${num(hist.precoMedioFavorito)}% — ${leitura}. `
+      + `O SIM aconteceu em ${num(hist.simAconteceuPct, 1)}% deles. `
       + `(Amostra nossa, não projeção: descreve o passado desta categoria, não este mercado.)`,
     );
   }
 
   return linhas.join("\n");
+}
+
+/**
+ * Os mesmos fatos da ficha, em números — para quem precisa RACIOCINAR sobre
+ * eles, e não só imprimi-los.
+ *
+ * A ficha devolve texto porque o destino principal dela é o prompt. Mas quando
+ * nenhum provedor de IA responde, alguém aqui precisa fazer a conta que o
+ * modelo faria: comparar o preço com a nossa taxa medida, cruzar a trajetória
+ * com o relógio, dizer se a liquidez sustenta o preço como consenso.
+ *
+ * Fazer isso extraindo número do texto que nós mesmos acabamos de escrever
+ * seria frágil e quebraria na primeira vez que uma frase mudasse. Os fatos vêm
+ * da mesma fonte, em paralelo.
+ */
+export interface FatosDaFicha {
+  simPct: number;
+  diasAteFechar: number | null;
+  volume: number | null;
+  volumeAlto: boolean;
+  /** Variação do preço no período medido, em pp. Negativo = caindo. */
+  trajetoriaPp: number | null;
+  historico: { categoria: string; resolvidos: number; simAconteceuPct: number } | null;
+}
+
+export async function fatosDaFicha(d: DadosFicha): Promise<FatosDaFicha> {
+  const tabela = await historicoPorCategoria();
+  const chaveExata = (d.categoria ?? "").toLowerCase().trim();
+  const familia = familiaDaCategoria(chaveExata);
+  const hist = tabela.get(chaveExata) ?? (familia ? tabela.get(familia) : undefined);
+
+  // A trajetória chega pronta em texto (fetchMarketMomentum). O único número
+  // que interessa aqui é o salto total, que ela escreve como "(-5pp)".
+  const m = d.trajetoria ? /\(([+-]?\d+(?:[.,]\d+)?)\s*pp\)/.exec(d.trajetoria) : null;
+
+  return {
+    simPct: Math.round(d.precoPct),
+    diasAteFechar: diasAte(d.fechaEm),
+    volume: typeof d.volume === "number" && d.volume > 0 ? d.volume : null,
+    volumeAlto: typeof d.volume === "number" && d.volume >= 100_000,
+    trajetoriaPp: m ? Number(m[1].replace(",", ".")) : null,
+    historico: hist
+      ? { categoria: hist.categoria, resolvidos: hist.resolvidos, simAconteceuPct: hist.simAconteceuPct }
+      : null,
+  };
 }
 
 /**
@@ -290,12 +335,69 @@ export function analiseDeEmergencia(
   ficha: string,
   probPct: number,
   plataforma: string,
+  fatos?: FatosDaFicha,
 ): { analysis: string; keyFactors: string[] } {
   const linhas = ficha.split("\n").map((l) => l.trim()).filter(Boolean);
   const primeira = linhas[0] ?? `O mercado está em ${probPct}% no ${plataforma}.`;
+
+  // 🔴 A LEITURA QUE NÃO PRECISA DE MODELO (27/09/2026).
+  //
+  // O fundador mandou a captura de uma análise e perguntou por que ela estava
+  // tão rasa. Estava: era esta primeira linha e mais nada, com os fatos
+  // empilhados como marcadores logo abaixo. Reimprimir dado não é análise.
+  //
+  // E a parte incômoda é que boa parte do que o modelo faria com esses números
+  // é CONTA, não julgamento: comparar o preço com a taxa que medimos na
+  // categoria, cruzar a direção da trajetória com o tempo que resta, dizer se a
+  // liquidez sustenta o preço como consenso. Isso dá para escrever aqui, com os
+  // nossos números, sem depender de provedor nenhum — que é exatamente o que se
+  // quer no dia em que todos estão fora.
+  //
+  // ⚠️ Cada frase abaixo só existe se o dado dela existir. Nenhuma preenche
+  // lacuna com suposição: sem histórico da categoria, a frase do histórico não
+  // aparece — em vez de aparecer vaga.
+  const leitura: string[] = [];
+
+  if (fatos?.historico) {
+    const h = fatos.historico;
+    const dist = fatos.simPct - h.simAconteceuPct;
+    leitura.push(
+      `Na nossa amostra de ${h.resolvidos} mercados de ${h.categoria} liquidados oficialmente, o SIM aconteceu em ${num(h.simAconteceuPct, 1)}% das vezes; `
+      + (Math.abs(dist) < 8
+        ? `este mercado está em ${fatos.simPct}%, perto dessa média.`
+        : `este está em ${fatos.simPct}%, ${num(Math.abs(dist))}pp ${dist > 0 ? "acima" : "abaixo"} dela.`)
+      + ` (É o passado da categoria, não uma projeção deste mercado.)`,
+    );
+  }
+
+  if (fatos?.trajetoriaPp !== null && fatos?.trajetoriaPp !== undefined && fatos.diasAteFechar !== null) {
+    const cai = fatos.trajetoriaPp < 0;
+    const parado = Math.abs(fatos.trajetoriaPp) < 2;
+    const prazoCurto = fatos.diasAteFechar < 7;
+    leitura.push(
+      parado
+        ? `O preço praticamente não se mexeu no período medido, e faltam ${Math.round(fatos.diasAteFechar)} dias: o mercado já se decidiu e não está esperando novidade.`
+        : `O preço vem ${cai ? "caindo" : "subindo"} (${num(fatos.trajetoriaPp)}pp no período medido) com ${Math.round(fatos.diasAteFechar)} dias para fechar — `
+          + (prazoCurto
+            ? `janela curta para uma virada, e a tendência trabalha ${cai ? "contra o" : "a favor do"} SIM.`
+            : `ainda há tempo para a tendência mudar de direção.`),
+    );
+  }
+
+  if (fatos?.volume) {
+    leitura.push(
+      fatos.volumeAlto
+        ? `O volume negociado é alto, então o preço carrega mais informação — discordar dele exige um argumento que o mercado ainda não viu.`
+        : `O volume negociado é baixo, então este preço vale menos como consenso: poucos participantes o formaram.`,
+    );
+  }
+
+  const aviso = leitura.length > 0
+    ? `Esta leitura é dos nossos dados e não passou por IA — os provedores não responderam agora. Uma análise nova sai assim que algum voltar.`
+    : `A leitura da IA não pôde ser gerada agora — os dados abaixo são do nosso banco e não dependem dela. Tente de novo em alguns minutos.`;
+
   return {
-    analysis: `${primeira} A leitura da IA não pôde ser gerada agora — os dados abaixo `
-      + `são do nosso banco e não dependem dela. Tente de novo em alguns minutos.`,
+    analysis: [primeira, ...leitura, aviso].join(" "),
     keyFactors: linhas.slice(1),
   };
 }

@@ -260,6 +260,62 @@ function checkEnv() {
 // Chave PRESENTE não significa chave FUNCIONANDO: com créditos esgotados a API
 // devolve 400 e todo endpoint de IA cai no fallback ("análise IA temporariamente
 // indisponível") — sem nenhum alarme. Este probe custa ~5 tokens.
+/**
+ * Os provedores de reserva respondem MESMO? Uma chamada real em cada.
+ *
+ * Só roda quando a Anthropic está fora — aí eles deixam de ser reserva e viram
+ * o site. Custa ~5 tokens por provedor, o que é barato perto de descobrir pela
+ * captura de tela de um usuário.
+ */
+async function checarFallbacks(env) {
+  const provedores = [
+    ["Gemini", !!env.GEMINI_API_KEY, async () => {
+      const modelo = env.GEMINI_MODEL || "gemini-flash-lite-latest";
+      const r = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${modelo}:generateContent?key=${encodeURIComponent(env.GEMINI_API_KEY)}`,
+        {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: "ok" }] }], generationConfig: { maxOutputTokens: 5 } }),
+          signal: AbortSignal.timeout(15_000),
+        },
+      );
+      const b = await r.json().catch(() => ({}));
+      return { ok: r.ok, motivo: b?.error?.message ?? `HTTP ${r.status}` };
+    }],
+    ["Groq", !!env.GROQ_API_KEY, async () => {
+      const r = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+        method: "POST",
+        headers: { authorization: `Bearer ${env.GROQ_API_KEY}`, "content-type": "application/json" },
+        body: JSON.stringify({ model: env.GROQ_MODEL || "openai/gpt-oss-120b", max_tokens: 5, messages: [{ role: "user", content: "ok" }] }),
+        signal: AbortSignal.timeout(15_000),
+      });
+      const b = await r.json().catch(() => ({}));
+      return { ok: r.ok, motivo: b?.error?.message ?? `HTTP ${r.status}` };
+    }],
+  ];
+
+  let dePe = 0, configurados = 0;
+  for (const [nome, temChave, chamar] of provedores) {
+    if (!temChave) { line("ℹ️", paint(`${nome}: sem chave configurada`, c.dim)); continue; }
+    configurados++;
+    try {
+      const { ok, motivo } = await chamar();
+      if (ok) { dePe++; line("✅", `${nome} respondendo — ${paint("o site está de pé por ele", c.green)}`); }
+      else line("🔴", paint(`${nome} FORA: ${String(motivo).slice(0, 70)}`, c.red));
+    } catch (e) {
+      line("🔴", paint(`${nome} FORA: ${String(e.message).slice(0, 70)}`, c.red));
+    }
+  }
+
+  if (configurados > 0 && dePe === 0) {
+    line("🔴", paint("NENHUM provedor de IA responde — análise, chat e briefing caem no modo sem IA", c.red));
+    add("crit", "IA", "Todos os provedores de IA fora: as telas mostram a leitura dos nossos dados, sem análise nova");
+  } else if (dePe > 0) {
+    add("ok", "IA", `${dePe} provedor(es) de reserva respondendo`);
+  }
+}
+
 async function checkAnthropic(env) {
   section("Acesso à IA (Anthropic)");
   if (NO_LIVE) { line("⏭️", paint("Pulado (--no-live)", c.dim)); return; }
@@ -280,6 +336,17 @@ async function checkAnthropic(env) {
         : paint("sem fallback: GEMINI_API_KEY não configurada", c.dim));
       return;
     }
+    // 🔴 COM A ANTHROPIC FORA, O FALLBACK VIRA O SITE — e até 27/09/2026 esta
+    // função dizia "→ site respondendo pelo fallback Gemini" sem nunca ter
+    // perguntado ao Gemini. Naquele dia o fundador mandou a captura de uma
+    // análise vazia; medindo na hora, o Groq estava em 429 e a chave gratuita do
+    // Gemini no teto do dia. O doctor tinha acabado de garantir que estava tudo
+    // bem, porque só mediu quem já se sabia estar fora.
+    //
+    // Afirmar a saúde de uma rede de segurança sem testá-la é a mesma família de
+    // defeito que a checagem de senha vazada e o spawn do Python: a regra existe,
+    // parece de pé, e ninguém confere.
+    await checarFallbacks(env);
     const body = await r.json().catch(() => ({}));
     const msg = body?.error?.message ?? `HTTP ${r.status}`;
     const isCredit = /credit balance/i.test(msg);

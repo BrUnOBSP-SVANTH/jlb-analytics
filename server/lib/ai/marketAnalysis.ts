@@ -3,7 +3,8 @@ import { getNewsForMarket } from "../news.ts";
 import { fetchCerebroContext, fetchMarketMomentum } from "../cerebro.ts";
 import { fetchBcbSerie } from "../bcb.ts";
 import { CATEGORY_BASE_RATES } from "../categoryRates.ts";
-import { montarFicha, analiseDeEmergencia } from "./fichaMercado.ts";
+import { montarFicha, fatosDaFicha, analiseDeEmergencia } from "./fichaMercado.ts";
+import { lerUltimaAnaliseDoMercado, gravarAnalise, idadeEmPalavras } from "./analiseGuardada.ts";
 import { callClaude } from "../anthropic.ts";
 import { extractJson } from "../extractJson.ts";
 import { clampFairValue, semHistoricoInventado } from "./guardrails.ts";
@@ -97,10 +98,13 @@ export async function runMarketAnalysis(p: AnalyzeParams, onPhase: PhaseEmit = (
     // A FICHA é o piso da análise: sai de dado que sempre existe (preço, relógio,
     // liquidez, nosso histórico da categoria). É o que impede a página de sair em
     // branco quando notícia e Cerebro vêm vazios.
-    const ficha = await montarFicha({
+    const dadosDaFicha = {
       titulo: title, precoPct: probPct, categoria: category, plataforma: platformName,
       fechaEm: closeTime, volume, trajetoria: momentum || undefined,
-    });
+    };
+    // Os fatos saem da MESMA fonte da ficha, em paralelo — é o que permite a
+    // análise de emergência raciocinar sobre os números em vez de reimprimi-los.
+    const [ficha, fatos] = await Promise.all([montarFicha(dadosDaFicha), fatosDaFicha(dadosDaFicha)]);
     onPhase("sources_done", { articles: allArticles.length, cerebroHits: cerebro.hits.length, hasMomentum: momentum.length > 0 });
     onPhase("analyzing");
 
@@ -293,10 +297,36 @@ Os artigos são numerados a partir de [1]. JSON exato (sem markdown):
         // ver que existe conteúdo por trás dela.
         //
         // A ficha não depende de modelo nenhum: é dado nosso, já pronto.
-        const emergencia = analiseDeEmergencia(ficha, probPct, platformName);
-        analysis = emergencia.analysis;
-        keyFactors = emergencia.keyFactors;
-        confidence = "baixa";
+
+        // ANTES DA EMERGÊNCIA, PROCURA O QUE JÁ ESCREVEMOS (27/09/2026).
+        //
+        // Foi assim que este caminho foi encontrado: a tela de um mercado
+        // mostrava "a leitura da IA não pôde ser gerada agora" — Anthropic sem
+        // crédito, Groq em 429 e Gemini no teto do dia, os três ao mesmo tempo.
+        // E aquele mercado JÁ tinha sido analisado; a leitura estava num Map()
+        // em memória e sumiu no deploy anterior.
+        //
+        // Uma leitura de ontem, a outro preço, diz muito mais do que "tente de
+        // novo em alguns minutos" — com uma condição, que é o `if` abaixo: a
+        // tela é OBRIGADA a dizer de quando ela é e a que preço foi feita.
+        // Análise velha servida como nova seria pior do que análise nenhuma,
+        // porque o texto inteiro fala de um preço que já mudou.
+        const anterior = marketId ? await lerUltimaAnaliseDoMercado(marketId) : null;
+        const guardada = anterior?.resultado as { analysis?: string; keyFactors?: string[] } | undefined;
+        if (guardada?.analysis && anterior) {
+          const quando = idadeEmPalavras(anterior.criadaEm);
+          const mesmoPreco = anterior.precoPct === probPct;
+          analysis = `${guardada.analysis}\n\n⚠️ Esta leitura é de ${quando}`
+            + `${mesmoPreco ? ", com o mercado no mesmo preço de agora" : `, quando o mercado estava em ${anterior.precoPct}% (agora está em ${probPct}%)`}`
+            + `. Não foi possível gerar uma nova agora — os provedores de IA não responderam. Os dados abaixo são do nosso banco e estão atualizados.`;
+          keyFactors = guardada.keyFactors?.length ? guardada.keyFactors : analiseDeEmergencia(ficha, probPct, platformName, fatos).keyFactors;
+          confidence = "baixa";
+        } else {
+          const emergencia = analiseDeEmergencia(ficha, probPct, platformName, fatos);
+          analysis = emergencia.analysis;
+          keyFactors = emergencia.keyFactors;
+          confidence = "baixa";
+        }
       }
     } else {
       analysis = "Configure ANTHROPIC_API_KEY no .env para análise por IA.";
@@ -335,6 +365,21 @@ Os artigos são numerados a partir de [1]. JSON exato (sem markdown):
       void logAiForecast({
         marketId, source: source ?? "polymarket", title, category,
         marketProb: probPct, aiFairValue: fairValue, confidence, model: provider,
+      });
+    }
+
+    // GUARDA A LEITURA NO BANCO — a análise é a coisa mais cara que o site
+    // produz e vivia só na memória do processo, que nasce vazia a cada deploy e
+    // a cada vez que o plano grátis do Render acorda de 15 minutos de soneca.
+    //
+    // `fairValue !== null` é o que separa análise de verdade da de emergência:
+    // sem IA não há fair value, e guardar o texto "tente de novo em alguns
+    // minutos" faria dele a resposta servida para sempre.
+    if (fairValue !== null && marketId) {
+      void gravarAnalise({
+        chave: ANALYZE_CACHE_KEY({ title, yesProb, source, marketId }),
+        marketId, fonte: source ?? "polymarket", titulo: title,
+        precoPct: probPct, provedor: provider, resultado: result,
       });
     }
     return result;

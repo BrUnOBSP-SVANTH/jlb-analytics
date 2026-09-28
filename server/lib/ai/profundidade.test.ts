@@ -142,3 +142,86 @@ describe("com a IA fora do ar, a tela ainda tem conteúdo", () => {
     expect(r.keyFactors).toEqual([]);
   });
 });
+
+/**
+ * 🔴 "POR QUE ESTÁ DANDO ESSA ANÁLISE TÃO RASA?" — 27/09/2026.
+ *
+ * O fundador mandou a captura de um mercado e a pergunta. Estava mesmo rasa: a
+ * emergência imprimia a primeira linha da ficha, avisava que a IA não respondeu
+ * e parava. Duas frases, num dia em que os três provedores estavam fora.
+ *
+ * E o incômodo é que boa parte do que o modelo faria ali é CONTA, não
+ * julgamento: comparar o preço com a taxa que medimos na categoria, cruzar a
+ * direção da trajetória com o tempo que resta, dizer se a liquidez sustenta o
+ * preço como consenso. Isso não precisa de provedor nenhum.
+ *
+ * A regra que estes testes prendem: cada frase só existe se o DADO dela
+ * existir. Nenhuma preenche lacuna com suposição — sem histórico da categoria,
+ * a frase do histórico não aparece, em vez de aparecer vaga.
+ */
+describe("a leitura que não depende de provedor nenhum", () => {
+  // Os números exatos da captura do fundador.
+  const fichaReal = [
+    "PREÇO E O QUE ELE PAGA: o mercado dá 0% de chance ao SIM. Quem apostar R$ 100 no SIM recebe mais de R$ 20.000 se acertar; no NÃO (cotado a 100%), recebe R$ 100,00.",
+    "RELÓGIO: fecha em 3 dias — janela em que notícia recente ainda muda o preço.",
+    "LIQUIDEZ: US$ 11 mi negociados. Volume alto.",
+    "TRAJETÓRIA DO MERCADO (39d, 40 snapshots): de 6% → 0% — tendência caindo (-5pp).",
+    "NOSSO HISTÓRICO EM ECONOMIA: acompanhamos 122 mercados desta área até a liquidação oficial.",
+  ].join("\n");
+
+  const fatos = {
+    simPct: 0, diasAteFechar: 3, volume: 11_000_000, volumeAlto: true, trajetoriaPp: -5,
+    historico: { categoria: "Economia", resolvidos: 122, simAconteceuPct: 39.3 },
+  };
+
+  it("com os fatos, a análise raciocina em vez de reimprimir", () => {
+    const antes = analiseDeEmergencia(fichaReal, 0, "Polymarket").analysis;
+    const depois = analiseDeEmergencia(fichaReal, 0, "Polymarket", fatos).analysis;
+    const frases = (t: string) => t.split(/(?<=[.!?])\s+/).filter((f) => f.trim().length > 12).length;
+    // Medido em GANHO, e não num piso absoluto: a primeira linha da ficha já é
+    // composta (preço, pagamento do SIM, pagamento do NÃO), então o texto antigo
+    // não tinha 2 frases e sim 4. Foi a primeira versão deste teste que errou —
+    // e um piso escolhido de cabeça teria reprovado o conserto certo.
+    expect(frases(depois) - frases(antes)).toBeGreaterThanOrEqual(3);
+    expect(depois.length).toBeGreaterThan(antes.length * 1.7);
+  });
+
+  it("compara o preço com a nossa taxa MEDIDA, com o tamanho da amostra", () => {
+    const t = analiseDeEmergencia(fichaReal, 0, "Polymarket", fatos).analysis;
+    expect(t).toMatch(/122 mercados/);
+    expect(t).toMatch(/39,3%/);
+    expect(t).toMatch(/39pp abaixo/);
+    // E deixa claro que é passado da categoria, não projeção deste mercado —
+    // é a diferença entre estatística e adivinhação com número.
+    expect(t).toMatch(/passado da categoria, não uma projeção/i);
+  });
+
+  it("cruza a trajetória com o relógio", () => {
+    const t = analiseDeEmergencia(fichaReal, 0, "Polymarket", fatos).analysis;
+    expect(t).toMatch(/caindo/);
+    expect(t).toMatch(/3 dias para fechar/);
+    expect(t).toMatch(/trabalha contra o SIM/);
+  });
+
+  it("🔴 nenhum número sai fora do padrão pt-BR", () => {
+    // "39.3%" e "81.1%" estavam indo crus para a tela E para o prompt — dá para
+    // ver na própria captura do fundador. Ponto decimal antes de % num texto em
+    // português é justamente o erro que esta plataforma existe para corrigir.
+    const t = analiseDeEmergencia(fichaReal, 0, "Polymarket", fatos).analysis;
+    expect(t, `número com ponto decimal: ${t}`).not.toMatch(/\d+\.\d+\s*%/);
+  });
+
+  it("frase sem dado não aparece — não se preenche lacuna com suposição", () => {
+    const soPreco = { simPct: 40, diasAteFechar: null, volume: null, volumeAlto: false, trajetoriaPp: null, historico: null };
+    const t = analiseDeEmergencia("PREÇO E O QUE ELE PAGA: o mercado dá 40% ao SIM.", 40, "Kalshi", soPreco).analysis;
+    expect(t).not.toMatch(/amostra|trajetó|volume negociado/i);
+    // E aí o aviso volta a ser o seco, porque não houve leitura nenhuma.
+    expect(t).toMatch(/não pôde ser gerada/i);
+  });
+
+  it("sem os fatos, o comportamento antigo continua valendo", () => {
+    // Os dois chamadores passam `fatos`, mas o parâmetro é opcional — e um
+    // chamador futuro que esqueça não pode quebrar a tela.
+    expect(() => analiseDeEmergencia(fichaReal, 0, "Polymarket")).not.toThrow();
+  });
+});
