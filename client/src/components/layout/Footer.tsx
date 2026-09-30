@@ -5,6 +5,7 @@
 import { useState, useEffect } from "react";
 import { Link } from "wouter";
 import { NIVEIS, rotuloDoNivel } from "@shared/niveis";
+import { abrirTutorial } from "@/lib/tutorial";
 
 /** O e-mail que existe de verdade — o mesmo da Política de Privacidade. */
 const EMAIL_CONTATO = "contato.jlbanalytics@gmail.com";
@@ -71,6 +72,13 @@ export function Footer() {
           <div>
             <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Aprender</h2>
             <div className="space-y-1.5">
+              <button
+                type="button"
+                onClick={() => abrirTutorial()}
+                className="block text-sm text-gold hover:text-gold/80 transition-colors text-left font-medium"
+              >
+                Vídeo Tutorial (Tour)
+              </button>
               {[
                 { label: "Trilha Completa",         href: "/educacao" },
                 // Nome do nível vem de shared/niveis.ts: o rodapé dizia

@@ -31,6 +31,7 @@ import ProgressSync from "./components/ProgressSync";
 const OnboardingTour = lazy(() => import("./components/OnboardingTour"));
 const ChatWidget     = lazy(() => import("./components/chat/ChatWidget"));
 const UpgradeModal   = lazy(() => import("./components/UpgradeModal"));
+const TutorialModal  = lazy(() => import("./components/TutorialModal"));
 
 const Login         = lazy(() => import("./pages/Login"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
@@ -231,6 +232,7 @@ function App() {
               <OnboardingTour />
               <ChatWidget />
               <UpgradeModal />
+              <TutorialModal />
             </Suspense>
           </TooltipProvider>
         </AuthProvider>

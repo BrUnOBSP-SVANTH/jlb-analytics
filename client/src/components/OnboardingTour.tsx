@@ -25,7 +25,8 @@ import { FONTES_EM_TEXTO } from "@shared/plataforma";
 import { useLocation } from "wouter";
 import { MODEL_COUNT } from "@/lib/brand";
 import { useModalA11y } from "@/hooks/useModalA11y";
-import { TrendingUp, Flame, Brain, Target, BookOpen, Search, X } from "lucide-react";
+import { TrendingUp, Flame, Brain, Target, BookOpen, Search, X, Film } from "lucide-react";
+import { abrirTutorial } from "@/lib/tutorial";
 
 const STEPS = [
   {
@@ -172,7 +173,23 @@ function PainelDoTour({ onDismiss }: { onDismiss: () => void }) {
         <p className="text-sm text-center text-foreground/80 mb-2">{current.description}</p>
 
         {/* Detail */}
-        <p className="text-xs text-center text-muted-foreground mb-8">{current.detail}</p>
+        <p className={`text-xs text-center text-muted-foreground ${step === 0 ? "mb-4" : "mb-8"}`}>{current.detail}</p>
+
+        {step === 0 && (
+          <div className="mb-6 flex justify-center">
+            <button
+              type="button"
+              onClick={() => {
+                dismiss();
+                abrirTutorial();
+              }}
+              className="alvo-toque inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-gold/40 bg-gold/10 text-gold hover:bg-gold/20 text-xs font-semibold transition-colors"
+            >
+              <Film className="w-3.5 h-3.5" aria-hidden="true" />
+              Ver tutorial em vídeo (3 min)
+            </button>
+          </div>
+        )}
 
         {/* Step dots */}
         <div className="flex justify-center gap-2 mb-6">

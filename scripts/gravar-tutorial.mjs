@@ -29,7 +29,8 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium } from "@playwright/test";
-import { CENAS, roteiroEmMarkdown } from "./cenasDoTutorial.ts";
+import { CENAS, roteiroEmMarkdown, segundosDaCena } from "./cenasDoTutorial.ts";
+import { processarAudioTutorial, mixarVideoEAudio } from "./processar-audio-tutorial.mjs";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const SAIDA = path.join(ROOT, "tutorial-saida");
@@ -38,8 +39,8 @@ const BASE = `http://localhost:${PORT}`;
 const LARGURA = 1280;
 const ALTURA = 720;
 
-const email = process.env.TUTORIAL_EMAIL?.trim();
-const senha = process.env.TUTORIAL_SENHA?.trim();
+const email = process.env.TUTORIAL_EMAIL?.trim() || "tutorial@jlbanalytics.com.br";
+const senha = process.env.TUTORIAL_SENHA?.trim() || "TutorialJLB2026!";
 const temConta = Boolean(email && senha);
 
 /**
@@ -117,7 +118,11 @@ const ENCENACAO = `
   });
 `;
 
-const servidor = spawn("node", ["dist/index.js"], {
+const nodeArgs = fs.existsSync(path.join(ROOT, ".env"))
+  ? ["--env-file=.env", "dist/index.js"]
+  : ["dist/index.js"];
+
+const servidor = spawn("node", nodeArgs, {
   cwd: ROOT,
   env: { ...process.env, NODE_ENV: "production", PORT: String(PORT), APP_URL: BASE },
   stdio: "ignore",
@@ -258,6 +263,7 @@ try {
   for (const cena of CENAS) {
     if (cena.precisaConta && !entrou) pulados.push(cena.id);
 
+    const inicioCena = Date.now();
     await page.goto(BASE + cena.rota, { waitUntil: "domcontentloaded", timeout: 30_000 });
     await page.waitForSelector("#root h1, #root h2", { timeout: 20_000 });
     await page.evaluate((t) => window.__legenda?.(t), cena.legenda);
@@ -274,19 +280,52 @@ try {
     }
 
     await page.screenshot({ path: path.join(SAIDA, "storyboard", `${cena.id}.png`) });
+
+    // Segura a cena na tela para que o tempo visual corresponda exatamente à narração
+    const duracaoEsperadaMs = segundosDaCena(cena) * 1000;
+    const decorrido = Date.now() - inicioCena;
+    if (decorrido < duracaoEsperadaMs) {
+      await page.waitForTimeout(duracaoEsperadaMs - decorrido);
+    }
+
     await page.evaluate(() => window.__legenda?.(""));
-    await page.waitForTimeout(400);
-    console.log(`ok: ${cena.id} (${cena.rota})`);
+    await page.waitForTimeout(200);
+    const duracaoReal = ((Date.now() - inicioCena) / 1000).toFixed(1);
+    console.log(`ok: ${cena.id} (${cena.rota}) — duração: ${duracaoReal}s`);
   }
 
   const video = page.video();
   await contexto.close(); // é o fechamento que finaliza o arquivo de vídeo
   const bruto = await video?.path();
-  const destino = path.join(SAIDA, "tutorial.webm");
-  if (bruto) {
-    fs.renameSync(bruto, destino);
-    const mb = (fs.statSync(destino).size / 1024 / 1024).toFixed(1);
-    console.log(`\nvídeo: ${destino} (${mb} MB, sem áudio)`);
+  const brutoDestino = path.join(SAIDA, "tutorial_bruto.webm");
+  if (bruto && fs.existsSync(bruto)) {
+    fs.renameSync(bruto, brutoDestino);
+    const mb = (fs.statSync(brutoDestino).size / 1024 / 1024).toFixed(1);
+    console.log(`\nvídeo bruto capturado: ${brutoDestino} (${mb} MB, sem áudio)`);
+
+    // 1. Prepara dados para a síntese de voz
+    const cenasComDuracao = CENAS.map((c) => ({
+      id: c.id,
+      narracao: c.narracao,
+      duracaoSegundos: segundosDaCena(c),
+    }));
+
+    // 2. Sintetiza a narração neural e alinha os tempos de cada capítulo
+    const narracaoWav = await processarAudioTutorial(cenasComDuracao, SAIDA);
+
+    // 3. Muxa a trilha sonora com o vídeo nos dois formatos modernos
+    const destinoWebm = path.join(SAIDA, "tutorial.webm");
+    const destinoMp4 = path.join(SAIDA, "tutorial.mp4");
+    mixarVideoEAudio(brutoDestino, narracaoWav, destinoWebm, destinoMp4);
+
+    // 4. Copia os vídeos finalizados diretamente para client/public do site
+    const publicWebm = path.join(ROOT, "client", "public", "tutorial.webm");
+    const publicMp4 = path.join(ROOT, "client", "public", "tutorial.mp4");
+    fs.copyFileSync(destinoWebm, publicWebm);
+    fs.copyFileSync(destinoMp4, publicMp4);
+    console.log(`\n🎉 Sucesso! Vídeos com narração sincronizada publicados em client/public/:`);
+    console.log(`   - ${publicWebm}`);
+    console.log(`   - ${publicMp4}`);
   }
   await navegador.close();
 

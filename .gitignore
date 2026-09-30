@@ -124,3 +124,6 @@ __pycache__/
 # (`pnpm tutorial`). O que se versiona é a fonte deles — scripts/cenasDoTutorial.ts
 # e o TUTORIAL.md gerado. Vídeo commitado incha o repositório para sempre.
 tutorial-saida/
+client/public/tutorial.webm
+client/public/tutorial.mp4
+client/public/videos/

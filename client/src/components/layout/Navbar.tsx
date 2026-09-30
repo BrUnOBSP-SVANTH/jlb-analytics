@@ -31,7 +31,7 @@ import {
   LineChart, GitCompare, Sun, Moon,
   LogIn, LogOut, User, GraduationCap, Newspaper, Star, Swords, Brain,
   Zap, BookOpen, ChevronRight, Flame,
-  Bell, BellRing, Sigma, Map, Search, ShieldCheck, Wallet,
+  Bell, BellRing, Sigma, Map, Search, ShieldCheck, Wallet, Film,
 } from "lucide-react";
 import { toast } from "sonner";
 import { pp } from "@shared/formato";
@@ -45,6 +45,7 @@ import { EVENTO_IA_USADA, buscarJson } from "@/lib/api";
 import { COTA_GRATIS_MENSAL } from "@shared/planos";
 import { rotuloDoNivel, nivelPorNumero } from "@shared/niveis";
 import { lembrarOndeEstou } from "@/lib/retornoLogin";
+import { abrirTutorial } from "@/lib/tutorial";
 
 // ── Nav structure ────────────────────────────────────────────────────────────
 
@@ -78,6 +79,7 @@ const NAV_GROUPS: NavGroup[] = [
     id: "aprender",
     label: "Aprender",
     children: [
+      { label: "Vídeo Tutorial",             href: "#tutorial", icon: Film,          desc: "Tour guiado em 3 minutos", badge: "VÍDEO" },
       { label: "Trilha Completa",             href: "/educacao", icon: Map,           desc: "Os cinco níveis, em ordem" },
       // Nome e resumo vêm de shared/niveis.ts — o menu dizia "Vieses" para o
       // que o rodapé chamava de "Psicologia" e a página, de "Vieses e
@@ -125,6 +127,7 @@ const NAV_GROUPS: NavGroup[] = [
 // Atalhos do menu mobile: ali os dropdowns nascem fechados, então a fileira de
 // pílulas é o caminho curto — não uma segunda navegação como era no desktop.
 const ATALHOS_MOBILE = [
+  { label: "Tutorial",   href: "#tutorial"   },
   { label: "Mercados",   href: "/mercados"    },
   { label: "Análise",    href: "/noticias"   },
   { label: "Previsão IA",href: "/previsao"   },
@@ -467,6 +470,38 @@ function MegaMenu({ group, onClose }: { group: NavGroup; onClose: () => void }) 
       <div className={`p-2 grid gap-0.5 ${cols === 2 ? "grid-cols-2" : "grid-cols-1"}`}>
         {group.children.map((item) => {
           const Icon = item.icon;
+          if (item.href === "#tutorial") {
+            return (
+              <button
+                key={item.label}
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  onClose();
+                  abrirTutorial();
+                }}
+                className="w-full text-left"
+              >
+                <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-secondary/40 transition-colors group cursor-pointer">
+                  <div className="w-8 h-8 rounded-lg bg-gold/15 border border-gold/25 group-hover:bg-gold/25 flex items-center justify-center shrink-0 transition-colors">
+                    <Icon className="w-4 h-4 text-gold group-hover:text-gold transition-colors" aria-hidden="true" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-medium text-foreground leading-tight">{item.label}</p>
+                      {item.badge && (
+                        <span className="text-[11px] font-bold px-1.5 py-0.5 rounded-full bg-gold/15 text-gold border border-gold/20 leading-none">
+                          {item.badge}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-[11px] text-muted-foreground leading-snug mt-0.5">{item.desc}</p>
+                  </div>
+                  <ChevronRight className="w-3.5 h-3.5 text-muted-foreground group-hover:text-muted-foreground transition-colors shrink-0" aria-hidden="true" />
+                </div>
+              </button>
+            );
+          }
           return (
             <Link key={item.href} href={item.href} role="menuitem" onClick={onClose} onMouseEnter={() => prefetchRoute(item.href)}>
               <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-secondary/40 transition-colors group cursor-pointer">
@@ -635,16 +670,34 @@ export function Navbar() {
               <div className="container py-3 space-y-0.5">
                 {/* Atalhos */}
                 <div className="flex flex-wrap gap-1.5 pb-3 border-b border-border/20 mb-2">
-                  {ATALHOS_MOBILE.map((l) => (
-                    <Link key={l.href} href={l.href} onClick={() => setMobileOpen(false)}
-                      className={`alvo-toque inline-flex items-center text-xs font-medium px-3 py-2 rounded-full border transition-colors ${
-                        location === l.href
-                          ? "border-gold/40 bg-gold/10 text-gold"
-                          : "border-border/30 text-muted-foreground hover:text-foreground"
-                      }`}>
-                      {l.label}
-                    </Link>
-                  ))}
+                  {ATALHOS_MOBILE.map((l) =>
+                    l.href === "#tutorial" ? (
+                      <button
+                        key={l.href}
+                        type="button"
+                        onClick={() => {
+                          setMobileOpen(false);
+                          abrirTutorial();
+                        }}
+                        className="alvo-toque inline-flex items-center text-xs font-semibold px-3 py-2 rounded-full border border-gold/40 bg-gold/15 text-gold transition-colors"
+                      >
+                        {l.label}
+                      </button>
+                    ) : (
+                      <Link
+                        key={l.href}
+                        href={l.href}
+                        onClick={() => setMobileOpen(false)}
+                        className={`alvo-toque inline-flex items-center text-xs font-medium px-3 py-2 rounded-full border transition-colors ${
+                          location === l.href
+                            ? "border-gold/40 bg-gold/10 text-gold"
+                            : "border-border/30 text-muted-foreground hover:text-foreground"
+                        }`}
+                      >
+                        {l.label}
+                      </Link>
+                    )
+                  )}
                 </div>
 
                 {/* Nav groups
@@ -677,6 +730,27 @@ export function Navbar() {
                       }`}>
                           {group.children.map((child) => {
                             const Icon = child.icon;
+                            if (child.href === "#tutorial") {
+                              return (
+                                <button
+                                  key={child.label}
+                                  type="button"
+                                  onClick={() => {
+                                    setMobileOpen(false);
+                                    abrirTutorial();
+                                  }}
+                                  className="alvo-toque w-full flex items-center gap-3 px-3 py-3 rounded-lg text-gold hover:text-gold hover:bg-gold/10 transition-colors text-left"
+                                >
+                                  <Icon className="w-4 h-4 shrink-0 text-gold" aria-hidden="true" />
+                                  <span className="text-sm font-medium">{child.label}</span>
+                                  {child.badge && (
+                                    <span className="ml-auto text-[11px] font-bold px-1.5 py-0.5 rounded-full bg-gold/15 text-gold border border-gold/20">
+                                      {child.badge}
+                                    </span>
+                                  )}
+                                </button>
+                              );
+                            }
                             return (
                               <Link key={child.href} href={child.href} onClick={() => setMobileOpen(false)}
                                 className={`alvo-toque flex items-center gap-3 px-3 py-3 rounded-lg transition-colors ${

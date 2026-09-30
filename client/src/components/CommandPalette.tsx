@@ -5,10 +5,11 @@
  */
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useLocation } from "wouter";
-import { Search, X, FileText, LayoutDashboard, Brain, Zap, BookOpen, BarChart3, Calculator, GraduationCap, Newspaper, Wallet } from "lucide-react";
+import { Search, X, FileText, LayoutDashboard, Brain, Zap, BookOpen, BarChart3, Calculator, GraduationCap, Newspaper, Wallet, Film } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { trapTab } from "@/lib/focusTrap";
 import { rotuloDoNivel } from "@shared/niveis";
+import { abrirTutorial } from "@/lib/tutorial";
 
 interface CmdPage {
   type: "page";
@@ -29,6 +30,7 @@ interface CmdArticle {
 type CmdItem = CmdPage | CmdArticle;
 
 const PAGES: CmdPage[] = [
+  { type: "page", label: "Vídeo Tutorial (Tour)", href: "#tutorial",    icon: Film,           keywords: "tutorial video como usar ajuda tour introducao tour guiado" },
   { type: "page", label: "Mercados ao Vivo",    href: "/mercados",      icon: Zap,            keywords: "apostas mercados polymarket kalshi hype" },
   { type: "page", label: "Análise de Mercados", href: "/noticias",    icon: Newspaper,      keywords: "noticias análise mercados preditivos" },
   { type: "page", label: "Previsão Guiada IA", href: "/previsao",    icon: Brain,          keywords: "previsão ia modelo econométrico" },
@@ -136,8 +138,17 @@ export default function CommandPalette() {
       if (e.key === "Enter") {
         const item = allItems[selectedIdx];
         if (!item) return;
-        if (item.type === "page") { navigate(item.href); setOpen(false); }
-        else { navigate("/noticias"); setOpen(false); }
+        if (item.type === "page") {
+          setOpen(false);
+          if (item.href === "#tutorial") {
+            abrirTutorial();
+          } else {
+            navigate(item.href);
+          }
+        } else {
+          navigate("/noticias");
+          setOpen(false);
+        }
       }
     }
     document.addEventListener("keydown", onKey);
@@ -211,7 +222,14 @@ export default function CommandPalette() {
                       return (
                         <button
                           key={item.href}
-                          onClick={() => { navigate(item.href); setOpen(false); }}
+                          onClick={() => {
+                            setOpen(false);
+                            if (item.href === "#tutorial") {
+                              abrirTutorial();
+                            } else {
+                              navigate(item.href);
+                            }
+                          }}
                           className={`w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors ${
                             isSelected ? "bg-primary/10 text-foreground" : "text-muted-foreground hover:bg-secondary/20 hover:text-foreground"
                           }`}
