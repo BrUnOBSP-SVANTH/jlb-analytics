@@ -39,8 +39,28 @@ const BASE = `http://localhost:${PORT}`;
 const LARGURA = 1280;
 const ALTURA = 720;
 
-const email = process.env.TUTORIAL_EMAIL?.trim() || "tutorial@jlbanalytics.com.br";
-const senha = process.env.TUTORIAL_SENHA?.trim() || "TutorialJLB2026!";
+/**
+ * 🔴 A SENHA ESTAVA AQUI, EM TEXTO PURO, E FOI PARA O GITHUB PÚBLICO
+ * (commit f76ec1c, 30/09/2026).
+ *
+ * Eram estas duas linhas, com valor padrão:
+ *
+ *     const email = process.env.TUTORIAL_EMAIL?.trim() || "<o e-mail da conta>";
+ *     const senha = process.env.TUTORIAL_SENHA?.trim() || "<a senha da conta>";
+ *
+ * A conta existia, estava confirmada e tinha login recente — ou seja, não era
+ * placeholder, era credencial viva num repositório que qualquer pessoa lê.
+ *
+ * O padrão é a armadilha: ele existe para o script "funcionar sem configurar",
+ * e o preço é que a credencial precisa morar no código para o padrão existir.
+ * Sem padrão, o script diz o que falta e para — que é o comportamento certo
+ * para uma ferramenta de desenvolvimento.
+ *
+ * O `.githooks/pre-commit` passou a barrar senha em texto; ele só procurava
+ * chave de API e `.env`, e esta forma não se parecia com nenhuma das duas.
+ */
+const email = process.env.TUTORIAL_EMAIL?.trim();
+const senha = process.env.TUTORIAL_SENHA?.trim();
 const temConta = Boolean(email && senha);
 
 /**
