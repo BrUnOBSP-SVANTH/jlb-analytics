@@ -24,7 +24,22 @@
  * que não soma 1 não tem valor esperado, e dizer isso é mais útil que devolver
  * um número errado (ver o que acontecia antes — a calculadora de maturidade dava
  * um diagnóstico sobre a pessoa a partir de campos ausentes).
+ *
+ * 🔴 OS TEXTOS SAÍAM COM PONTO DECIMAL (30/09/2026). A "transcrição mecânica"
+ * do Python trouxe junto o `f"{x:.2f}"`, que virou `x.toFixed(2)` — e 44 números
+ * de 17 explicações chegavam à tela como "Margem da casa: 7.44%" e "a casa retém
+ * em média R$7.44", logo abaixo do "7,44%" que a própria calculadora já mostrava
+ * certo. Dois formatos do mesmo número na mesma tela.
+ *
+ * Quem achou foi o roteiro do vídeo tutorial, quando passou a USAR as
+ * calculadoras em vez de só abri-las. A `pnpm varredura` tem detector de número
+ * fora do pt-BR e nunca viu: o texto só existe depois do clique em "Calcular",
+ * e a varredura abre as telas sem apertar nada.
+ *
+ * Fiz eu, nesta mesma sessão, ao portar o módulo — a regra de `formato.ts` vale
+ * para todo número que chega a uma pessoa, e "é só uma explicação" não é exceção.
  */
+import { num, reaisExatos } from "./formato.ts";
 
 export type Resultado = { ok: boolean; payload: Record<string, unknown> };
 
@@ -55,9 +70,9 @@ function normalQuantile(p: number): number {
   if (p <= 0 || p >= 1) throw new Error("p deve estar em (0, 1)");
   const r = p < 0.5 ? p : 1 - p;
   const t = Math.sqrt(-2 * Math.log(r));
-  const num = 2.515517 + 0.802853 * t + 0.010328 * t * t;
+  const numerador = 2.515517 + 0.802853 * t + 0.010328 * t * t;
   const den = 1 + 1.432788 * t + 0.189269 * t * t + 0.001308 * t * t * t;
-  const x = t - num / den;
+  const x = t - numerador / den;
   return p >= 0.5 ? x : -x;
 }
 
@@ -110,7 +125,7 @@ export function ev1(corpo: unknown): Resultado {
     return { ok: false, payload: { error: "outcomes e probabilities devem ter o mesmo tamanho" } };
   const sum = probabilities.reduce((a, b) => a + b, 0);
   if (Math.abs(sum - 1) > 0.001)
-    return { ok: false, payload: { error: `Probabilidades somam ${sum.toFixed(4)}, esperado 1.0` } };
+    return { ok: false, payload: { error: `Probabilidades somam ${num(sum, 4)}, esperado 1` } };
   if (probabilities.some((p) => p < 0 || p > 1))
     return { ok: false, payload: { error: "Probabilidades devem estar em [0, 1]" } };
 
@@ -124,7 +139,7 @@ export function ev1(corpo: unknown): Resultado {
     value: Math.round(ev * 10000) / 10000,
     std: Math.round(std * 10000) / 10000,
     signal,
-    explanation: `Valor Esperado = ${ev >= 0 ? "+" : ""}${ev.toFixed(4)} (${label}). Desvio padrão = ${std.toFixed(4)}. Atenção: EV só é um bom guia com muitas repetições. Em eventos únicos, o risco (desvio padrão) é tão importante quanto a média.`,
+    explanation: `Valor Esperado = ${ev >= 0 ? "+" : ""}${num(ev, 4)} (${label}). Desvio padrão = ${num(std, 4)}. Atenção: EV só é um bom guia com muitas repetições. Em eventos únicos, o risco (desvio padrão) é tão importante quanto a média.`,
   } };
 }
 
@@ -148,7 +163,7 @@ export function houseEdge1(corpo: unknown): Resultado {
     implied_probs: implied.map((p) => Math.round(p * 10000) / 10000),
     fair_probs: fair.map((p) => Math.round(p * 10000) / 10000),
     signal,
-    explanation: `Margem da casa: ${(margin * 100).toFixed(2)}% (${label}). A cada R$100 apostados neste mercado, a casa retém em média R$${(margin * 100).toFixed(2)} antes do resultado.`,
+    explanation: `Margem da casa: ${num(margin * 100, 2)}% (${label}). A cada R$ 100 apostados neste mercado, a casa retém em média ${reaisExatos(margin * 100)} antes do resultado.`,
   } };
 }
 
@@ -173,7 +188,7 @@ export function bayes1(corpo: unknown): Resultado {
     delta: Math.round(delta * 10000) / 10000,
     bayes_factor: isFinite(bf) ? Math.round(bf * 10000) / 10000 : null,
     signal,
-    explanation: `Sua crença passou de ${(prior * 100).toFixed(1)}% para ${(posterior * 100).toFixed(1)}% (${delta >= 0 ? "+" : ""}${(delta * 100).toFixed(1)} pp). ${label.charAt(0).toUpperCase() + label.slice(1)}. Fator de Bayes = razão das likelihoods — quanto maior, mais forte a evidência.`,
+    explanation: `Sua crença passou de ${num(prior * 100, 1)}% para ${num(posterior * 100, 1)}% (${delta >= 0 ? "+" : ""}${num(delta * 100, 1)} pp). ${label.charAt(0).toUpperCase() + label.slice(1)}. Fator de Bayes = razão das likelihoods — quanto maior, mais forte a evidência.`,
   } };
 }
 
@@ -191,7 +206,7 @@ export function zscore2(corpo: unknown): Resultado {
     z: Math.round(z * 10000) / 10000,
     p_two_tail: Math.round(pTwoTail * 10000) / 10000,
     signal,
-    explanation: `Z-score = ${z.toFixed(2)} — ${label}. Há ${(pTwoTail * 100).toFixed(1)}% de chance de um valor tão extremo ocorrer por acaso numa distribuição normal.`,
+    explanation: `Z-score = ${num(z, 2)} — ${label}. Há ${num(pTwoTail * 100, 1)}% de chance de um valor tão extremo ocorrer por acaso numa distribuição normal.`,
   } };
 }
 
@@ -216,7 +231,7 @@ export function confidenceInterval2(corpo: unknown): Resultado {
     dist_used: dist,
     level_pct: level * 100,
     signal: "neutral",
-    explanation: `IC ${(level * 100).toFixed(0)}%: [${lower.toFixed(4)}, ${upper.toFixed(4)}] usando ${dist}. Atenção: este intervalo descreve a incerteza sobre a estimativa, não a probabilidade do evento.`,
+    explanation: `IC ${num(level * 100, 0)}%: [${num(lower, 4)}, ${num(upper, 4)}] usando ${dist}. Atenção: este intervalo descreve a incerteza sobre a estimativa, não a probabilidade do evento.`,
   } };
 }
 
@@ -229,13 +244,13 @@ export function correlation2(corpo: unknown): Resultado {
   const n = x.length;
   const mx = x.reduce((a, b) => a + b, 0) / n;
   const my = y.reduce((a, b) => a + b, 0) / n;
-  const num = x.reduce((acc, xi, i) => acc + (xi - mx) * (y[i] - my), 0);
+  const numerador = x.reduce((acc, xi, i) => acc + (xi - mx) * (y[i] - my), 0);
   const dx = Math.sqrt(x.reduce((acc, xi) => acc + (xi - mx) ** 2, 0));
   const dy = Math.sqrt(y.reduce((acc, yi) => acc + (yi - my) ** 2, 0));
 
   if (dx === 0 || dy === 0) return { ok: false, payload: { error: "Uma das séries tem variância zero" } };
 
-  const r = Math.max(-1, Math.min(1, num / (dx * dy)));
+  const r = Math.max(-1, Math.min(1, numerador / (dx * dy)));
   const tStat = Math.abs(r) < 1 ? r * Math.sqrt(n - 2) / Math.sqrt(1 - r * r) : Infinity;
   const pVal = isFinite(tStat) ? 2 * normalCdf(-Math.abs(tStat)) : 0;
   const absR = Math.abs(r);
@@ -249,7 +264,7 @@ export function correlation2(corpo: unknown): Resultado {
     p_value: Math.round(pVal * 10000) / 10000,
     n,
     signal,
-    explanation: `r = ${r.toFixed(3)} — correlação ${label} (R² = ${(r * r).toFixed(3)}). p-valor = ${pVal.toFixed(4)} ${pVal < 0.05 ? "(estatisticamente significante)" : "(NÃO significante)"}. Correlação mede apenas associação linear.`,
+    explanation: `r = ${num(r, 3)} — correlação ${label} (R² = ${num(r * r, 3)}). p-valor = ${num(pVal, 4)} ${pVal < 0.05 ? "(estatisticamente significante)" : "(NÃO significante)"}. Correlação mede apenas associação linear.`,
   } };
 }
 
@@ -272,7 +287,7 @@ export function taylorRule3(corpo: unknown): Resultado {
     taylor_implied: Math.round(taylorRate * 100) / 100,
     divergence_pp: Math.round(divergence * 100) / 100,
     signal,
-    explanation: `Selic observada: ${selic_observed.toFixed(2)}% a.a. | Taylor implícito: ${taylorRate.toFixed(2)}% a.a. | Desvio: ${divergence >= 0 ? "+" : ""}${divergence.toFixed(2)} pp — ${label}. Desvios persistentes acima de ±1.5 pp historicamente precedem revisão de expectativas de mercado para juros futuros.`,
+    explanation: `Selic observada: ${num(selic_observed, 2)}% a.a. | Taylor implícito: ${num(taylorRate, 2)}% a.a. | Desvio: ${divergence >= 0 ? "+" : ""}${num(divergence, 2)} pp — ${label}. Desvios persistentes acima de ±1,5 pp historicamente precedem revisão de expectativas de mercado para juros futuros.`,
     inputs: { r_star: TAYLOR.r_star, ipca_12m: Math.round(ipca_12m * 100) / 100, pi_target: TAYLOR.pi_target, output_gap: Math.round(output_gap_pct * 100) / 100 },
   } };
 }
@@ -333,7 +348,7 @@ export function poisson3(corpo: unknown): Resultado {
     top_scores: topScores,
     dixon_coles_applied: POISSON.apply_dc,
     signal: "neutral",
-    explanation: `λ_casa=${lambdaHome.toFixed(2)}, λ_fora=${lambdaAway.toFixed(2)}. Casa: ${(pHome * 100).toFixed(1)}% | Empate: ${(pDraw * 100).toFixed(1)}% | Fora: ${(pAway * 100).toFixed(1)}%. Poisson modela eventos independentes.`,
+    explanation: `λ_casa=${num(lambdaHome, 2)}, λ_fora=${num(lambdaAway, 2)}. Casa: ${num(pHome * 100, 1)}% | Empate: ${num(pDraw * 100, 1)}% | Fora: ${num(pAway * 100, 1)}%. Poisson modela eventos independentes.`,
   } };
 }
 
@@ -355,7 +370,7 @@ export function elo3(corpo: unknown): Resultado {
     p_a_wins: Math.round(pA * 10000) / 10000,
     p_b_wins: Math.round((1 - pA) * 10000) / 10000,
     signal,
-    explanation: `Elo A=${rating_a.toFixed(0)} vs B=${rating_b.toFixed(0)} (${home_advantage ? "vantagem de casa aplicada" : "neutro"}). P(A) = ${(pA * 100).toFixed(1)}% — ${label}. Elo é um sistema de ranking, não um modelo causal.`,
+    explanation: `Elo A=${num(rating_a, 0)} vs B=${num(rating_b, 0)} (${home_advantage ? "vantagem de casa aplicada" : "neutro"}). P(A) = ${num(pA * 100, 1)}% — ${label}. Elo é um sistema de ranking, não um modelo causal.`,
   } };
 }
 
@@ -378,7 +393,7 @@ export function garch3(corpo: unknown): Resultado {
     vol_annual_pct: Math.round(volAnnual * 100 * 100) / 100,
     signal,
     warning: "GARCH/EWMA modela TAMANHO da variação, não direção. Volatilidade alta não significa queda — significa que a magnitude do próximo movimento será grande.",
-    explanation: `Volatilidade estimada: ${(volDaily * 100).toFixed(2)}%/dia | ${(volAnnual * 100).toFixed(1)}%/ano — ${label}. VaR 95% implícito para 1 dia: ±${(1.645 * volDaily * 100).toFixed(2)}%.`,
+    explanation: `Volatilidade estimada: ${num(volDaily * 100, 2)}%/dia | ${num(volAnnual * 100, 1)}%/ano — ${label}. VaR 95% implícito para 1 dia: ±${num(1.645 * volDaily * 100, 2)}%.`,
   } };
 }
 
@@ -390,17 +405,17 @@ export function enso3(corpo: unknown): Resultado {
   let phase: string, signal: string, label: string, brazil_impact: string;
   if (oni_index >= 0.5) {
     phase = "El Niño"; signal = "negative";
-    label = `El Niño (ONI = ${oni_index.toFixed(2)})`;
+    label = `El Niño (ONI = ${num(oni_index, 2)})`;
     brazil_impact = oni_index >= 1.5
       ? "El Niño forte: risco elevado de seca no Norte/Nordeste e chuvas acima da média no Sul. Reservatórios do Nordeste tendem a baixar. Impacto negativo em safras de soja e milho no RS provável."
       : "El Niño moderado: chuvas irregulares no Nordeste, excesso no Sul. Hidrelétricas do SE/CO podem sofrer redução de afluência.";
   } else if (oni_index <= -0.5) {
     phase = "La Niña"; signal = "positive";
-    label = `La Niña (ONI = ${oni_index.toFixed(2)})`;
+    label = `La Niña (ONI = ${num(oni_index, 2)})`;
     brazil_impact = "La Niña: chuvas acima da média no Norte e Centro-Oeste. Reservatórios do Sudeste tendem a encher. Favorável à geração hidrelétrica e safra do Centro-Oeste.";
   } else {
     phase = "Neutro"; signal = "neutral";
-    label = `Fase neutra (ONI = ${oni_index.toFixed(2)})`;
+    label = `Fase neutra (ONI = ${num(oni_index, 2)})`;
     brazil_impact = "Fase neutra: sem teleconexão climática dominante. Precipitação segue padrão sazonal normal.";
   }
 
@@ -445,7 +460,7 @@ export function polling3(corpo: unknown): Resultado {
     diff_pp: Math.round(diff * 100) / 100,
     n_polls: polls.length,
     signal,
-    explanation: `Média ponderada (decaimento 30 dias): A = ${avgA.toFixed(1)}%, B = ${avgB.toFixed(1)}%. Diferença: ${diff >= 0 ? "+" : ""}${diff.toFixed(1)} pp. ${Math.abs(diff) < 3 ? "Dentro da margem de erro — corrida empatada." : `${diff > 0 ? "A" : "B"} lidera com margem ${Math.abs(diff) > 10 ? "expressiva" : "moderada"}.`}`,
+    explanation: `Média ponderada (decaimento 30 dias): A = ${num(avgA, 1)}%, B = ${num(avgB, 1)}%. Diferença: ${diff >= 0 ? "+" : ""}${num(diff, 1)} pp. ${Math.abs(diff) < 3 ? "Dentro da margem de erro — corrida empatada." : `${diff > 0 ? "A" : "B"} lidera com margem ${Math.abs(diff) > 10 ? "expressiva" : "moderada"}.`}`,
   } };
 }
 
@@ -492,7 +507,7 @@ export function prospect4(corpo: unknown): Resultado {
     loss_aversion_lambda: PROSPECT.lam,
     signal,
     bias_diagnosis: biasDiagnosis,
-    explanation: `Valor Esperado objetivo: ${evObjective >= 0 ? "+" : ""}${evObjective.toFixed(4)}. Valor subjetivo (Prospect Theory): ${subjValue >= 0 ? "+" : ""}${subjValue.toFixed(4)}. O cérebro avalia perdas com peso λ=${PROSPECT.lam}× maior que ganhos equivalentes.`,
+    explanation: `Valor Esperado objetivo: ${evObjective >= 0 ? "+" : ""}${num(evObjective, 4)}. Valor subjetivo (Prospect Theory): ${subjValue >= 0 ? "+" : ""}${num(subjValue, 4)}. O cérebro avalia perdas com peso λ=${num(PROSPECT.lam, 2)}× maior que ganhos equivalentes.`,
   } };
 }
 
@@ -518,7 +533,7 @@ export function brier4(corpo: unknown): Resultado {
     resolution: Math.round(resolution * 10000) / 10000,
     reliability: Math.round(reliability * 10000) / 10000,
     n, stable, signal,
-    explanation: `Brier Score: ${bs.toFixed(4)} | Skill Score: ${ss >= 0 ? "+" : ""}${ss.toFixed(4)} — ${label}. ${stable ? `n=${n} — resultado estatisticamente estável.` : `⚠️ n=${n} < ${CALIBRATION.min_n_stable}: resultado instável.`}`,
+    explanation: `Brier Score: ${num(bs, 4)} | Skill Score: ${ss >= 0 ? "+" : ""}${num(ss, 4)} — ${label}. ${stable ? `n=${n} — resultado estatisticamente estável.` : `⚠️ n=${n} < ${CALIBRATION.min_n_stable}: resultado instável.`}`,
   } };
 }
 
@@ -632,7 +647,7 @@ export function divergence5(corpo: unknown): Resultado {
   const direction = div > 0 ? "acima" : "abaixo";
   const educationalNote = tier === "negligible"
     ? "O modelo está alinhado com o mercado. Isso pode significar eficiência ou que ambos cometem o mesmo erro."
-    : `Divergência de ${(absDiv * 100).toFixed(1)} pp ${direction}. O modelo sugere que o mercado está ${div > 0 ? "subestimando" : "superestimando"} o evento.${eff !== 1 ? ` Ajuste de segmento (${context}): mercados ${eff > 1 ? "mais eficientes exigem divergência maior" : "de evento único têm mais ruído, então toleram menos"} para o sinal valer.` : ""} ATENÇÃO: divergência não é lucro garantido. Confiança do modelo: ${(model_confidence * 100).toFixed(0)}%.`;
+    : `Divergência de ${num(absDiv * 100, 1)} pp ${direction}. O modelo sugere que o mercado está ${div > 0 ? "subestimando" : "superestimando"} o evento.${eff !== 1 ? ` Ajuste de segmento (${context}): mercados ${eff > 1 ? "mais eficientes exigem divergência maior" : "de evento único têm mais ruído, então toleram menos"} para o sinal valer.` : ""} ATENÇÃO: divergência não é lucro garantido. Confiança do modelo: ${num(model_confidence * 100, 0)}%.`;
 
   return { ok: true, payload: {
     model_probability: Math.round(mp * 10000) / 10000,
@@ -687,6 +702,6 @@ export function ensemble5(corpo: unknown): Resultado {
     excluded_models: excluded,
     n_models_used: Object.keys(validModels).length,
     signal: std < 0.05 ? "positive" : std < 0.12 ? "neutral" : "negative",
-    explanation: `Ensemble de ${Object.keys(validModels).length} modelo(s) com pesos por Skill Score. ${excluded.length > 0 ? excluded.length + " modelo(s) excluído(s) por SS ≤ 0. " : ""}P_ensemble = ${(ensemble * 100).toFixed(1)}% ± ${(std * 100).toFixed(1)}%. ${std > 0.12 ? "Dispersão alta — modelos discordam." : "Consenso razoável entre os modelos."}`,
+    explanation: `Ensemble de ${Object.keys(validModels).length} modelo(s) com pesos por Skill Score. ${excluded.length > 0 ? excluded.length + " modelo(s) excluído(s) por SS ≤ 0. " : ""}P_ensemble = ${num(ensemble * 100, 1)}% ± ${num(std * 100, 1)}%. ${std > 0.12 ? "Dispersão alta — modelos discordam." : "Consenso razoável entre os modelos."}`,
   } };
 }

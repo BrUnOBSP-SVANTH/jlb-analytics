@@ -114,3 +114,49 @@ describe("uma implementação só, usada pelos dois lados", () => {
     }
   });
 });
+
+/**
+ * 🔴 O TEXTO DA EXPLICAÇÃO TAMBÉM É NÚMERO NA TELA (30/09/2026).
+ *
+ * A conta estava certa e o texto, errado: "Margem da casa: 7.44% … a casa retém
+ * em média R$7.44", logo abaixo do "7,44%" que a calculadora mostrava certo. Eram
+ * 44 `toFixed` em 17 explicações, herdados do `f"{x:.2f}"` do Python.
+ *
+ * Os testes de cima prendiam o NÚMERO (`overround ≈ 1,074405`) e por isso nunca
+ * viram: a conta estava certa. O defeito morava na frase. Quem achou foi o
+ * roteiro do vídeo, quando passou a apertar "Calcular" em vez de só abrir a tela.
+ */
+describe("as explicações falam pt-BR", () => {
+  // Ponto decimal entre dígitos: "7.44", "0.0849". Não confunde com milhar
+  // pt-BR ("1.234") porque milhar tem exatamente três dígitos depois do ponto
+  // E nenhuma vírgula — e as explicações só têm decimal.
+  const pontoDecimal = /\d\.\d{1,2}(?!\d)|\d\.\d{4,}/;
+
+  it("o caso exato da tela: margem de 2,10 · 3,50 · 3,20", () => {
+    const t = String(modelos.houseEdge1({ decimal_odds: [2.10, 3.50, 3.20] }).payload.explanation);
+    expect(t).toMatch(/Margem da casa: 7,44%/);
+    expect(t).toMatch(/R\$\s100 apostados/);
+    expect(t).toMatch(/R\$\s7,44/);
+    expect(t, t).not.toMatch(pontoDecimal);
+  });
+
+  it.each([
+    ["valor esperado", () => modelos.ev1({ outcomes: [100, -100], probabilities: [0.45, 0.55] })],
+    ["Bayes", () => modelos.bayes1({ prior: 0.3, likelihood_given_true: 0.8, likelihood_given_false: 0.2 })],
+    ["divergência", () => modelos.divergence5({ model_probability: 0.7, market_probability: 0.55 })],
+    ["Prospect Theory (λ = 2,25)", () => modelos.prospect4({ outcome_gain: 100, outcome_loss: -100, prob_gain: 0.5 })],
+  ])("%s: nenhum número com ponto decimal", (_nome, chamar) => {
+    const r = chamar();
+    if (!r.ok) return; // entrada de exemplo pode não servir a todas; a varredura abaixo cobre o resto
+    const t = String(r.payload.explanation ?? "");
+    expect(t, t).not.toMatch(pontoDecimal);
+  });
+
+  it("nenhum toFixed dentro de texto — a varredura do arquivo", () => {
+    // Âncora de que a leitura funcionou: o arquivo tem as 18 funções.
+    const fonte = readFileSync(join(AQUI, "modelosEducacionais.ts"), "utf-8")
+      .replace(/\/\*[\s\S]*?\*\//g, " ").replace(/^\s*\/\/.*$/gm, " ");
+    expect((fonte.match(/^export function/gm) ?? []).length).toBe(18);
+    expect(fonte, "use num() de shared/formato.ts").not.toMatch(/`[^`]*\$\{[^}]*\.toFixed\(/);
+  });
+});
