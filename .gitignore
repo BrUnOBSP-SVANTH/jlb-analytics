@@ -120,10 +120,14 @@ __pycache__/
 # .claude/skills/ é só um symlink para caminho absoluto desta máquina.
 .claude/skills/
 
-# Vídeo do tutorial: o .webm e o storyboard são pesados e são REGERÁVEIS
+# Vídeo do tutorial: o vídeo bruto e o storyboard são pesados e são REGERÁVEIS
 # (`pnpm tutorial`). O que se versiona é a fonte deles — scripts/cenasDoTutorial.ts
 # e o TUTORIAL.md gerado. Vídeo commitado incha o repositório para sempre.
 tutorial-saida/
-client/public/tutorial.webm
-client/public/tutorial.mp4
+# Um arquivo por filme desde 01/10/2026 (`pnpm tutorial geral trilha …`).
+# ⚠️ Por isso mesmo eles NÃO chegam a produção pelo Git: o Render constrói a
+# partir do repositório. Em 30/09 o player em produção apontava para
+# /tutorial.mp4, que só existia na máquina de quem gravou — 404 para todo
+# visitante. Onde os vídeos moram em produção é decisão pendente do fundador.
+client/public/tutorial/
 client/public/videos/

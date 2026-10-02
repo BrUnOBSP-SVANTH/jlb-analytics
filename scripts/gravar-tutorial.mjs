@@ -1,39 +1,52 @@
 /**
- * gravar-tutorial.mjs — filma o site REAL ensinando a usá-lo.
+ * gravar-tutorial.mjs — filma o site REAL usando cada função, e confere o resultado.
  *
  * POR QUE FILMAR EM VEZ DE GRAVAR A TELA NA MÃO. Um tutorial gravado à mão
  * morre na primeira mudança de layout, e o sintoma é cruel: o vídeo continua
- * no ar ensinando a clicar num botão que não existe mais. Em 27/09/2026 o
- * cabeçalho das 22 telas foi reescrito de uma vez — um vídeo da véspera já
- * estaria errado, e ninguém reassiste o próprio tutorial para descobrir.
+ * no ar ensinando a clicar num botão que não existe mais. Aqui o Chromium do
+ * Playwright dirige o site de verdade, contra dados de verdade, seguindo os
+ * filmes de `cenasDoTutorial.ts`. Mudou a tela? `pnpm tutorial` de novo.
  *
- * Aqui o Chromium do Playwright dirige o site de verdade, contra dados de
- * verdade, seguindo as cenas de `cenasDoTutorial.ts`. Mudou a tela? `pnpm
- * tutorial` de novo e o filme está correto outra vez.
+ * 🔴 E AGORA ELE TESTA (01/10/2026). Cada `verificar` do roteiro é o resultado
+ * que a tela TEM de mostrar depois da ação — "+R$ 20,00", "Margem da casa:
+ * 7,44%". Não apareceu no prazo → aquele filme não é produzido, e o relatório
+ * do fim diz qual cena e qual passo falharam. A versão anterior engolia o erro
+ * com um aviso e seguia gravando: um vídeo mostrando uma função quebrada saía
+ * igual a um que funcionava.
+ *
+ * A primeira rodada provou o ponto: ao apertar "Calcular margem" no Nível 1, a
+ * tela dizia "7,44%" e logo abaixo "7.44%" e "R$7.44". A `pnpm varredura` nunca
+ * viu, porque o texto só existe depois do clique.
  *
  * O QUE O PLAYWRIGHT NÃO FAZ, e por isso tem código aqui:
+ *   · não grava o cursor — o ponteiro e a onda do clique são desenhados na
+ *     página (`ENCENACAO`), senão os elementos reagiriam sozinhos;
+ *   · não grava áudio — a voz é sintetizada ANTES (processar-audio-tutorial.mjs),
+ *     e cada cena dura pelo menos o tempo da própria fala. É isso que mantém a
+ *     narração em cima da imagem mesmo quando uma análise de IA demora 40s.
  *
- *   · ele NÃO grava o cursor do mouse — o vídeo sairia com elementos reagindo
- *     sozinhos, sem nada apontando para eles. Por isso o ponteiro e o efeito de
- *     clique são desenhados dentro da página (`ENCENACAO`);
- *   · ele NÃO grava áudio. O vídeo sai mudo, com a legenda de cada cena na
- *     tela; a narração é gravada por cima, seguindo os tempos do TUTORIAL.md.
+ * Uso:
+ *   pnpm build && pnpm tutorial                 → todos os filmes
+ *   pnpm tutorial geral trilha                  → só esses
+ *   pnpm tutorial geral --sem-audio             → rápido: sem voz (para testar o roteiro)
  *
- * Uso: pnpm build && pnpm tutorial
- * Cenas com `precisaConta` só filmam a tela de dentro se houver
- * `TUTORIAL_EMAIL` e `TUTORIAL_SENHA` no ambiente — use uma conta de teste,
- * NUNCA a conta real do fundador: o que estiver na tela vai para o vídeo.
+ * Filmes com `precisaConta` exigem `TUTORIAL_EMAIL` e `TUTORIAL_SENHA` no
+ * ambiente (o `.env` é lido). Use uma conta de TESTE, nunca a do fundador: o que
+ * estiver na tela vai para o vídeo.
  */
 import { spawn } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium } from "@playwright/test";
-import { CENAS, roteiroEmMarkdown, segundosDaCena } from "./cenasDoTutorial.ts";
-import { processarAudioTutorial, mixarVideoEAudio } from "./processar-audio-tutorial.mjs";
+import { FILMES, roteiroEmMarkdown, segundosDaCena } from "./cenasDoTutorial.ts";
+import { sintetizarNarracoes, montarTrilha, mixarVideoEAudio, converterSemAudio, duracaoDoArquivo } from "./processar-audio-tutorial.mjs";
+import { escreverIndiceDoPlayer } from "./indiceDoTutorial.mjs";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const SAIDA = path.join(ROOT, "tutorial-saida");
+/** Onde os vídeos prontos ficam para o player do site local (fora do Git). */
+const PUBLICO = path.join(ROOT, "client", "public", "tutorial");
 const PORT = 3313; // 3312 é do prerender — dois scripts na mesma porta se atropelam
 const BASE = `http://localhost:${PORT}`;
 const LARGURA = 1280;
@@ -41,34 +54,37 @@ const ALTURA = 720;
 
 /**
  * 🔴 A SENHA ESTAVA AQUI, EM TEXTO PURO, E FOI PARA O GITHUB PÚBLICO
- * (commit f76ec1c, 30/09/2026).
- *
- * Eram estas duas linhas, com valor padrão:
- *
- *     const email = process.env.TUTORIAL_EMAIL?.trim() || "<o e-mail da conta>";
- *     const senha = process.env.TUTORIAL_SENHA?.trim() || "<a senha da conta>";
- *
- * A conta existia, estava confirmada e tinha login recente — ou seja, não era
- * placeholder, era credencial viva num repositório que qualquer pessoa lê.
- *
- * O padrão é a armadilha: ele existe para o script "funcionar sem configurar",
- * e o preço é que a credencial precisa morar no código para o padrão existir.
- * Sem padrão, o script diz o que falta e para — que é o comportamento certo
- * para uma ferramenta de desenvolvimento.
- *
- * O `.githooks/pre-commit` passou a barrar senha em texto; ele só procurava
- * chave de API e `.env`, e esta forma não se parecia com nenhuma das duas.
+ * (commit f76ec1c, 30/09/2026), como valor padrão "para funcionar sem
+ * configurar". A conta existia e estava ativa. Sem padrão o script diz o que
+ * falta e pula o filme — o comportamento certo para ferramenta de
+ * desenvolvimento. O pre-commit passou a barrar senha em texto.
  */
 const email = process.env.TUTORIAL_EMAIL?.trim();
 const senha = process.env.TUTORIAL_SENHA?.trim();
 const temConta = Boolean(email && senha);
+
+const args = process.argv.slice(2);
+const semAudio = args.includes("--sem-audio");
+const pedidos = args.filter((a) => !a.startsWith("--"));
+const desconhecidos = pedidos.filter((id) => !FILMES.some((f) => f.id === id));
+if (desconhecidos.length) {
+  console.error(`filme(s) que não existem: ${desconhecidos.join(", ")}. Existem: ${FILMES.map((f) => f.id).join(", ")}`);
+  process.exit(2);
+}
+const filmesDaVez = pedidos.length ? FILMES.filter((f) => pedidos.includes(f.id)) : FILMES;
 
 /**
  * O que é injetado em toda página antes do React subir.
  *
  * As duas primeiras linhas não são enfeite: numa aba nova o tour de onboarding
  * é um `fixed inset-0` que cobre a tela inteira, e o aviso de cookies come o
- * rodapé. Os dois apareceriam em TODAS as cenas do vídeo.
+ * rodapé. Os dois apareceriam em TODAS as cenas.
+ *
+ * ⚠️ A legenda é um CARTÃO DE CAPÍTULO que aparece no começo da cena e some. Na
+ * versão anterior ela ficava fixa no rodapé o tempo todo e cobria justamente o
+ * parágrafo que a narração estava explicando (visível no storyboard da cena da
+ * análise de IA). As cores aqui são literais de propósito: este overlay não é o
+ * site, é a moldura do vídeo, e precisa ler igual em qualquer tema.
  */
 const ENCENACAO = `
   try {
@@ -93,33 +109,38 @@ const ENCENACAO = `
         border: 2px solid rgba(255,255,255,.9);
         animation: jlb-onda .55s ease-out forwards;
       }
-      @keyframes jlb-onda {
-        to { transform: scale(4.5); opacity: 0; }
-      }
-      #jlb-legenda {
+      @keyframes jlb-onda { to { transform: scale(4.5); opacity: 0; } }
+      #jlb-capitulo {
         position: fixed; z-index: 2147483645; pointer-events: none;
-        left: 50%; bottom: 28px; transform: translateX(-50%);
-        max-width: 78vw; padding: 10px 20px; border-radius: 10px;
-        background: rgba(12,10,9,.86); color: #fff;
-        font: 500 17px/1.35 system-ui, -apple-system, "Segoe UI", sans-serif;
-        text-align: center; opacity: 0; transition: opacity .35s ease;
-        backdrop-filter: blur(6px);
+        left: 32px; bottom: 32px; max-width: 46vw;
+        padding: 12px 18px 13px; border-radius: 10px;
+        background: rgba(15,12,7,.9); color: #f4efe6;
+        border-left: 3px solid #dbb155;
+        font: 600 18px/1.3 system-ui, -apple-system, "Segoe UI", sans-serif;
+        opacity: 0; transform: translateY(8px);
+        transition: opacity .35s ease, transform .35s ease;
       }
-      #jlb-legenda.vendo { opacity: 1; }
+      #jlb-capitulo.vendo { opacity: 1; transform: none; }
+      .jlb-conferido {
+        position: fixed; z-index: 2147483644; pointer-events: none;
+        border: 3px solid #4ade80; border-radius: 8px;
+        box-shadow: 0 0 0 4px rgba(74,222,128,.22);
+        animation: jlb-conferido 1.8s ease forwards;
+      }
+      @keyframes jlb-conferido { 0% { opacity: 0 } 15% { opacity: 1 } 75% { opacity: 1 } 100% { opacity: 0 } }
     \`;
     document.head.appendChild(estilo);
 
     const ponteiro = document.createElement("div");
     ponteiro.id = "jlb-ponteiro";
-    const legenda = document.createElement("div");
-    legenda.id = "jlb-legenda";
-    document.body.append(ponteiro, legenda);
+    const capitulo = document.createElement("div");
+    capitulo.id = "jlb-capitulo";
+    document.body.append(ponteiro, capitulo);
 
     document.addEventListener("mousemove", (e) => {
       ponteiro.style.left = e.clientX + "px";
       ponteiro.style.top = e.clientY + "px";
     }, true);
-
     document.addEventListener("mousedown", (e) => {
       ponteiro.classList.add("clicando");
       const onda = document.createElement("div");
@@ -131,46 +152,76 @@ const ENCENACAO = `
     }, true);
     document.addEventListener("mouseup", () => ponteiro.classList.remove("clicando"), true);
 
-    window.__legenda = (texto) => {
-      legenda.textContent = texto;
-      legenda.classList.toggle("vendo", Boolean(texto));
+    window.__capitulo = (texto) => {
+      capitulo.textContent = texto;
+      capitulo.classList.add("vendo");
+      clearTimeout(window.__capituloTimer);
+      window.__capituloTimer = setTimeout(() => capitulo.classList.remove("vendo"), 2800);
+    };
+    /** Desenha a moldura verde em volta do que foi conferido. */
+    window.__conferido = (x, y, w, h) => {
+      const m = document.createElement("div");
+      m.className = "jlb-conferido";
+      Object.assign(m.style, { left: (x - 6) + "px", top: (y - 6) + "px", width: (w + 12) + "px", height: (h + 12) + "px" });
+      document.body.appendChild(m);
+      setTimeout(() => m.remove(), 1900);
     };
   });
 `;
 
-const nodeArgs = fs.existsSync(path.join(ROOT, ".env"))
-  ? ["--env-file=.env", "dist/index.js"]
-  : ["dist/index.js"];
+/** Um passo que falhou: carrega a cena e o passo para o relatório. */
+class PassoFalhou extends Error {
+  constructor(cena, passo, causa) {
+    super(`${cena.id} → ${descreverPasso(passo)}: ${String(causa?.message ?? causa).split("\n")[0].slice(0, 160)}`);
+    this.name = "PassoFalhou";
+  }
+}
 
-const servidor = spawn("node", nodeArgs, {
+function descreverPasso(p) {
+  switch (p.acao) {
+    case "clicar": return `clicar ${p.papel} "${p.nome}"`;
+    case "digitar": return `digitar "${p.texto}" em "${p.campo}"${p.indice ? ` [${p.indice}]` : ""}`;
+    case "arrastar": return `arrastar "${p.campo}"`;
+    case "verificar": return `verificar /${p.texto}/`;
+    case "rolarAte": return `rolar até "${p.texto}"`;
+    default: return p.acao;
+  }
+}
+
+// ── servidor ─────────────────────────────────────────────────────────────────
+// `--env-file=.env`: sem ele o servidor sobe sem Supabase nem IA, e a gravação
+// mostra telas vazias e "fonte não respondeu" no lugar dos dados.
+const servidor = spawn("node", [...(fs.existsSync(path.join(ROOT, ".env")) ? ["--env-file=.env"] : []), "dist/index.js"], {
   cwd: ROOT,
-  env: { ...process.env, NODE_ENV: "production", PORT: String(PORT), APP_URL: BASE },
+  // Sem JLB_TAREFAS: o servidor da gravação NÃO roda os crons. Um servidor local
+  // rodando tarefas com as chaves de produção já esgotou a cota de IA do site.
+  env: { ...process.env, NODE_ENV: "production", PORT: String(PORT), APP_URL: BASE, JLB_TAREFAS: "" },
   stdio: "ignore",
 });
 
 async function esperarServidor() {
   for (let i = 0; i < 60; i++) {
-    try {
-      const r = await fetch(`${BASE}/api/health`);
-      if (r.ok) return;
-    } catch { /* ainda subindo */ }
+    try { if ((await fetch(`${BASE}/api/health`)).ok) return; } catch { /* ainda subindo */ }
     await new Promise((r) => setTimeout(r, 500));
   }
   throw new Error("o servidor não subiu para a gravação (rodou `pnpm build` antes?)");
 }
 
+// ── ações ────────────────────────────────────────────────────────────────────
+
 /** Leva o ponteiro até o centro do elemento, devagar o bastante para se ver. */
 async function mirar(page, alvo) {
+  await alvo.scrollIntoViewIfNeeded();
   const caixa = await alvo.boundingBox();
   if (!caixa) throw new Error("elemento sem posição na tela");
   const x = caixa.x + caixa.width / 2;
   const y = caixa.y + caixa.height / 2;
   await page.mouse.move(x, y, { steps: 22 });
-  await page.waitForTimeout(280);
+  await page.waitForTimeout(260);
   return { x, y, caixa };
 }
 
-async function rolarAte(page, fracao) {
+async function rolarPara(page, fracao) {
   await page.evaluate((f) => {
     const alcance = document.body.scrollHeight - window.innerHeight;
     window.scrollTo({ top: Math.max(0, alcance * f), behavior: "smooth" });
@@ -181,179 +232,305 @@ async function rolarAte(page, fracao) {
 /** O primeiro card de mercado da lista — o nome muda toda hora, a posição não. */
 async function abrirPrimeiroMercado(page) {
   const card = page.locator('a[href^="/mercados/"]').first();
-  await card.waitFor({ state: "visible", timeout: 15_000 });
-  await card.scrollIntoViewIfNeeded();
+  // 45s: com o servidor recém-subido o catálogo é montado no primeiro pedido.
+  await card.waitFor({ state: "visible", timeout: 45_000 });
   await mirar(page, card);
   await card.click();
-  await page.waitForURL(/\/mercados\/[^/]+$/, { timeout: 15_000 });
+  await page.waitForURL(/\/mercados\/[^/]+$/, { timeout: 20_000 });
   await page.waitForTimeout(1200);
+}
+
+/** Campo por rótulo; se não houver rótulo com esse texto, por placeholder. */
+async function campo(page, rotulo, indice = 0) {
+  const porRotulo = page.getByLabel(rotulo);
+  if (await porRotulo.count() > indice) return porRotulo.nth(indice);
+  return page.getByPlaceholder(rotulo).nth(indice);
+}
+
+async function verificar(page, passo) {
+  const re = new RegExp(passo.texto, "i");
+  const alvo = page.getByText(re).first();
+  try {
+    await alvo.waitFor({ state: "visible", timeout: passo.prazoMs ?? 15_000 });
+  } catch {
+    // A mensagem diz o que a tela TINHA — é o que explica a falha sem precisar
+    // reabrir o vídeo.
+    const tela = (await page.locator("body").innerText()).replace(/\s+/g, " ");
+    throw new Error(`não apareceu na tela em ${(passo.prazoMs ?? 15_000) / 1000}s. Início da tela: "${tela.slice(0, 150)}…"`);
+  }
+  // O que foi conferido TEM de aparecer no vídeo — é a promessa de "mostrar e
+  // testar". Na primeira rodada a explicação da checagem do Nível 1 foi achada
+  // pelo teste e ficou abaixo da dobra: o teste passou e o vídeo não mostrou o
+  // que a narração estava descrevendo. Fora da tela → rola até ele.
+  let caixa = await alvo.boundingBox();
+  const naTela = (c) => c && c.y >= 60 && c.y + c.height <= ALTURA - 20;
+  if (!naTela(caixa)) {
+    await alvo.evaluate((el) => el.scrollIntoView({ behavior: "smooth", block: "center" }));
+    await page.waitForTimeout(1100);
+    caixa = await alvo.boundingBox();
+  }
+  if (caixa) {
+    await page.evaluate(({ x, y, width, height }) => window.__conferido?.(x, y, width, height), caixa);
+  }
+  await page.waitForTimeout(700);
 }
 
 async function executarPasso(page, passo) {
   switch (passo.acao) {
     case "esperar":
       return page.waitForTimeout(passo.ms);
-
     case "rolar":
-      return rolarAte(page, passo.ate);
-
+      return rolarPara(page, passo.ate);
+    case "rolarAte": {
+      const alvo = page.getByText(new RegExp(passo.texto, "i")).first();
+      await alvo.waitFor({ state: "visible", timeout: 20_000 });
+      await alvo.evaluate((el) => el.scrollIntoView({ behavior: "smooth", block: "center" }));
+      return page.waitForTimeout(1300);
+    }
     case "clicar": {
-      const alvo = passo.papel === "tab"
-        ? page.getByRole("tab", { name: passo.nome })
-        : page.getByRole(passo.papel, { name: passo.nome });
-      await alvo.first().scrollIntoViewIfNeeded();
-      await mirar(page, alvo.first());
-      await alvo.first().click();
+      const alvo = page.getByRole(passo.papel, { name: passo.nome, exact: Boolean(passo.exato) }).first();
+      await alvo.waitFor({ state: "visible", timeout: 15_000 });
+      await mirar(page, alvo);
+      await alvo.click();
       return page.waitForTimeout(700);
     }
-
     case "digitar": {
-      const campo = page.getByPlaceholder(new RegExp(passo.campo, "i")).first();
-      await mirar(page, campo);
-      await campo.click();
+      const c = await campo(page, passo.campo, passo.indice ?? 0);
+      await c.waitFor({ state: "visible", timeout: 15_000 });
+      await mirar(page, c);
+      await c.click();
+      // Seleciona o que estava escrito e digita POR CIMA — é o gesto de quem
+      // troca um número, e é o que o vídeo precisa mostrar. (Foi digitando assim
+      // que o gravador descobriu, em 01/10/2026, que a calculadora de Valor
+      // Esperado não deixava apagar o "55": a digitação virava "5560".)
+      await c.press("Control+a");
       // `delay` é o que faz parecer digitação e não colagem — num tutorial a
       // pessoa precisa ver a letra entrando para saber que o campo é digitável.
-      await campo.type(passo.texto, { delay: 90 });
+      await c.pressSequentially(passo.texto, { delay: 90 });
       return page.waitForTimeout(500);
     }
-
     case "arrastar": {
       const slider = page.getByLabel(passo.campo).first();
-      await slider.scrollIntoViewIfNeeded();
       const { caixa } = await mirar(page, slider);
-      const destinoX = caixa.x + caixa.width * passo.para;
-      const meioY = caixa.y + caixa.height / 2;
       await page.mouse.down();
-      await page.mouse.move(destinoX, meioY, { steps: 30 });
+      await page.mouse.move(caixa.x + caixa.width * passo.para, caixa.y + caixa.height / 2, { steps: 30 });
       await page.mouse.up();
       return page.waitForTimeout(600);
     }
-
     case "abrirPrimeiroMercado":
       return abrirPrimeiroMercado(page);
-
+    case "verificar":
+      return verificar(page, passo);
     default:
       throw new Error(`passo desconhecido: ${JSON.stringify(passo)}`);
   }
 }
 
-async function entrar(page) {
+/**
+ * Entra numa aba SEM gravação e devolve a sessão para os filmes reaproveitarem.
+ * Na versão anterior o login acontecia dentro do vídeo: ele abria com a tela de
+ * login, e toda a narração ficava atrasada pelos segundos que o login levou.
+ */
+async function sessaoDaConta(navegador) {
+  const ctx = await navegador.newContext({ locale: "pt-BR" });
+  await ctx.addInitScript(ENCENACAO);
+  const page = await ctx.newPage();
   await page.goto(`${BASE}/login`, { waitUntil: "domcontentloaded" });
   await page.getByLabel(/e-?mail/i).first().fill(email);
   await page.getByLabel(/senha/i).first().fill(senha);
   await page.getByRole("button", { name: /entrar/i }).first().click();
-  await page.waitForURL((u) => !u.pathname.startsWith("/login"), { timeout: 20_000 });
+  await page.waitForURL((u) => !u.pathname.startsWith("/login"), { timeout: 25_000 });
+  const estado = await ctx.storageState();
+  await ctx.close();
+  return estado;
 }
 
-try {
-  await esperarServidor();
-  fs.rmSync(SAIDA, { recursive: true, force: true });
-  fs.mkdirSync(path.join(SAIDA, "storyboard"), { recursive: true });
+/** Grava um filme. Lança `PassoFalhou` no primeiro passo que não der certo. */
+async function gravarFilme(navegador, filme, sessao, falas) {
+  const dir = path.join(SAIDA, filme.id);
+  fs.rmSync(dir, { recursive: true, force: true });
+  fs.mkdirSync(path.join(dir, "storyboard"), { recursive: true });
 
-  const navegador = await chromium.launch();
   const contexto = await navegador.newContext({
     viewport: { width: LARGURA, height: ALTURA },
-    recordVideo: { dir: SAIDA, size: { width: LARGURA, height: ALTURA } },
+    recordVideo: { dir, size: { width: LARGURA, height: ALTURA } },
     locale: "pt-BR",
     timezoneId: "America/Sao_Paulo",
-    // As seções do site entram com animação ao aparecer na viewport. Sem isto,
-    // o que estiver fora da dobra é filmado em branco — foi a mesma pegadinha
-    // dos screenshots da varredura.
+    // As seções entram com animação ao aparecer; sem isto o que está fora da
+    // dobra é filmado em branco (a mesma pegadinha dos screenshots da varredura).
     reducedMotion: "reduce",
+    ...(sessao ? { storageState: sessao } : {}),
   });
   await contexto.addInitScript(ENCENACAO);
-
   const page = await contexto.newPage();
-  page.on("pageerror", (e) => console.error("  [erro na página]", String(e).slice(0, 160)));
+  const errosJs = [];
+  page.on("pageerror", (e) => errosJs.push(String(e).slice(0, 160)));
+  const t0 = Date.now(); // o vídeo começa quando a página nasce
 
-  let entrou = false;
-  if (temConta) {
-    try {
-      await entrar(page);
-      entrou = true;
-      console.log("conta de teste: entrou");
-    } catch (e) {
-      console.warn(`⚠ não consegui entrar (${String(e).slice(0, 80)}) — seguindo como visitante`);
-    }
-  } else {
-    console.log("sem TUTORIAL_EMAIL/TUTORIAL_SENHA — as cenas de conta filmam a tela do visitante");
-  }
-
-  const pulados = [];
-  for (const cena of CENAS) {
-    if (cena.precisaConta && !entrou) pulados.push(cena.id);
-
-    const inicioCena = Date.now();
-    await page.goto(BASE + cena.rota, { waitUntil: "domcontentloaded", timeout: 30_000 });
-    await page.waitForSelector("#root h1, #root h2", { timeout: 20_000 });
-    await page.evaluate((t) => window.__legenda?.(t), cena.legenda);
-    await page.waitForTimeout(700);
-
-    for (const passo of cena.passos) {
-      try {
-        await executarPasso(page, passo);
-      } catch (e) {
-        // Uma cena que falha não pode derrubar o filme inteiro: o resto continua
-        // correto, e o aviso diz exatamente qual trecho vai sair capenga.
-        console.warn(`  ⚠ ${cena.id}: passo ${passo.acao} falhou — ${String(e).split("\n")[0].slice(0, 110)}`);
+  const tempos = [];
+  let falha = null;
+  try {
+    for (const cena of filme.cenas) {
+      const inicio = (Date.now() - t0) / 1000;
+      if (!cena.mesmaPagina) {
+        await page.goto(BASE + cena.rota, { waitUntil: "domcontentloaded", timeout: 30_000 });
+        await page.waitForSelector("#root h1, #root h2", { timeout: 25_000 });
+        await page.waitForTimeout(500);
       }
+      // A voz entra quando o cartão do capítulo aparece, não quando a navegação
+      // começa: o carregamento da página (0,5 a 3 s, conforme a tela) fica em
+      // silêncio. Antes a fala começava junto com o clique e chegava antes da tela.
+      const voz = (Date.now() - t0) / 1000;
+      await page.evaluate((t) => window.__capitulo?.(t), cena.legenda);
+      await page.waitForTimeout(600);
+      // A capa do player: o primeiro quadro com o título do capítulo na tela.
+      // Sem ela o player mostra um retângulo preto até alguém apertar o play.
+      if (cena === filme.cenas[0]) {
+        await page.screenshot({ path: path.join(dir, "capa.jpg"), type: "jpeg", quality: 82 });
+      }
+
+      for (const passo of cena.passos) {
+        try { await executarPasso(page, passo); }
+        catch (e) { throw new PassoFalhou(cena, passo, e); }
+      }
+
+      // A cena dura pelo menos o tempo da própria fala (+0,6s de respiro). Sem
+      // voz (`--sem-audio`), vale a estimativa.
+      const fala = falas?.get(cena.id) ?? segundosDaCena(cena);
+      const minimo = voz + fala + 0.6;
+      const agora = (Date.now() - t0) / 1000;
+      if (agora < minimo) await page.waitForTimeout((minimo - agora) * 1000);
+
+      await page.screenshot({ path: path.join(dir, "storyboard", `${cena.id}.png`) });
+      tempos.push({ id: cena.id, inicio, voz });
+      console.log(`  ✓ ${cena.id.padEnd(20)} ${(((Date.now() - t0) / 1000) - inicio).toFixed(1)}s`);
     }
-
-    await page.screenshot({ path: path.join(SAIDA, "storyboard", `${cena.id}.png`) });
-
-    // Segura a cena na tela para que o tempo visual corresponda exatamente à narração
-    const duracaoEsperadaMs = segundosDaCena(cena) * 1000;
-    const decorrido = Date.now() - inicioCena;
-    if (decorrido < duracaoEsperadaMs) {
-      await page.waitForTimeout(duracaoEsperadaMs - decorrido);
-    }
-
-    await page.evaluate(() => window.__legenda?.(""));
-    await page.waitForTimeout(200);
-    const duracaoReal = ((Date.now() - inicioCena) / 1000).toFixed(1);
-    console.log(`ok: ${cena.id} (${cena.rota}) — duração: ${duracaoReal}s`);
+  } catch (e) {
+    falha = e;
+    await page.screenshot({ path: path.join(dir, "FALHOU.png") }).catch(() => {});
   }
 
+  // O vídeo do Playwright só escreve quadro quando a tela muda: na espera final
+  // da última cena a página fica parada, e o arquivo saía ~3 s mais curto que
+  // o relógio. Mexer o ponteiro faz a tela repintar e os últimos quadros
+  // chegarem ao arquivo. (A mixagem ainda estica o vídeo, se faltar algo.)
+  if (!falha) {
+    for (let i = 0; i < 12; i++) {
+      await page.mouse.move(640 + (i % 2), 400);
+      await page.waitForTimeout(120);
+    }
+  }
+  // O fim é lido ANTES de fechar. Fechar o contexto é o que finaliza o arquivo
+  // de vídeo, e isso levou de 1 a 10 s conforme a máquina: medido depois, esse
+  // tempo virava silêncio com a tela congelada no fim do filme.
+  const fimTotal = (Date.now() - t0) / 1000;
   const video = page.video();
   await contexto.close(); // é o fechamento que finaliza o arquivo de vídeo
   const bruto = await video?.path();
-  const brutoDestino = path.join(SAIDA, "tutorial_bruto.webm");
-  if (bruto && fs.existsSync(bruto)) {
-    fs.renameSync(bruto, brutoDestino);
-    const mb = (fs.statSync(brutoDestino).size / 1024 / 1024).toFixed(1);
-    console.log(`\nvídeo bruto capturado: ${brutoDestino} (${mb} MB, sem áudio)`);
 
-    // 1. Prepara dados para a síntese de voz
-    const cenasComDuracao = CENAS.map((c) => ({
-      id: c.id,
-      narracao: c.narracao,
-      duracaoSegundos: segundosDaCena(c),
-    }));
+  if (falha) {
+    // Nada de vídeo de um filme que falhou: o arquivo bruto vai embora, e o
+    // FALHOU.png fica para mostrar o estado da tela no momento.
+    if (bruto) fs.rmSync(bruto, { force: true });
+    throw falha;
+  }
 
-    // 2. Sintetiza a narração neural e alinha os tempos de cada capítulo
-    const narracaoWav = await processarAudioTutorial(cenasComDuracao, SAIDA);
+  // Cada cena termina onde a próxima começa; a última, no fim do vídeo.
+  const medidas = tempos.map((t, i) => ({
+    id: t.id,
+    inicio: t.inicio,
+    voz: t.voz,
+    fim: i + 1 < tempos.length ? tempos[i + 1].inicio : fimTotal,
+  }));
+  return { bruto, medidas, errosJs, duracao: fimTotal };
+}
 
-    // 3. Muxa a trilha sonora com o vídeo nos dois formatos modernos
-    const destinoWebm = path.join(SAIDA, "tutorial.webm");
-    const destinoMp4 = path.join(SAIDA, "tutorial.mp4");
-    mixarVideoEAudio(brutoDestino, narracaoWav, destinoWebm, destinoMp4);
+// ── execução ─────────────────────────────────────────────────────────────────
 
-    // 4. Copia os vídeos finalizados diretamente para client/public do site
-    const publicWebm = path.join(ROOT, "client", "public", "tutorial.webm");
-    const publicMp4 = path.join(ROOT, "client", "public", "tutorial.mp4");
-    fs.copyFileSync(destinoWebm, publicWebm);
-    fs.copyFileSync(destinoMp4, publicMp4);
-    console.log(`\n🎉 Sucesso! Vídeos com narração sincronizada publicados em client/public/:`);
-    console.log(`   - ${publicWebm}`);
-    console.log(`   - ${publicMp4}`);
+const relatorio = [];
+try {
+  await esperarServidor();
+  fs.mkdirSync(SAIDA, { recursive: true });
+  fs.mkdirSync(PUBLICO, { recursive: true });
+  const navegador = await chromium.launch();
+
+  let sessao = null;
+  if (temConta && filmesDaVez.some((f) => f.precisaConta)) {
+    try {
+      sessao = await sessaoDaConta(navegador);
+      console.log("conta de teste: entrou");
+    } catch (e) {
+      console.warn(`⚠ não consegui entrar com TUTORIAL_EMAIL (${String(e).split("\n")[0].slice(0, 90)})`);
+    }
+  }
+
+  for (const filme of filmesDaVez) {
+    console.log(`\n━━ ${filme.id} — ${filme.titulo}`);
+    if (filme.precisaConta && !sessao) {
+      // Pulado, e dito por quê. Nunca mais filmar o convite para entrar com a
+      // narração da tela de dentro por cima.
+      const motivo = temConta ? "o login da conta de teste falhou" : "falta TUTORIAL_EMAIL e TUTORIAL_SENHA no .env";
+      console.log(`  ⏭  pulado: ${motivo}`);
+      relatorio.push({ filme: filme.id, status: "pulado", motivo });
+      continue;
+    }
+
+    const dir = path.join(SAIDA, filme.id);
+    try {
+      let falas = null;
+      if (!semAudio) {
+        console.log("  voz…");
+        falas = sintetizarNarracoes(filme.cenas, path.join(SAIDA, `${filme.id}-audios`));
+      }
+      const { bruto, medidas, errosJs, duracao } = await gravarFilme(navegador, filme, sessao, falas);
+
+      const mp4 = path.join(dir, `${filme.id}.mp4`);
+      if (semAudio) {
+        converterSemAudio(bruto, mp4);
+      } else {
+        const trilha = montarTrilha(
+          medidas.map((m) => ({ id: m.id, duracaoSegundos: m.fim - m.inicio, atrasoSegundos: m.voz - m.inicio })),
+          path.join(SAIDA, `${filme.id}-audios`),
+          path.join(dir, "narracao.wav"),
+        );
+        mixarVideoEAudio(bruto, trilha, mp4);
+      }
+      fs.rmSync(bruto, { force: true });
+      fs.copyFileSync(mp4, path.join(PUBLICO, `${filme.id}.mp4`));
+      fs.copyFileSync(path.join(dir, "capa.jpg"), path.join(PUBLICO, `${filme.id}.jpg`));
+
+      // O total do player é o do ARQUIVO, não o do relógio: são eles que
+      // divergem quando o Playwright perde quadros. A última cena termina onde o
+      // vídeo termina — senão a barra de progresso para antes do fim.
+      const duracaoFinal = duracaoDoArquivo(mp4);
+      if (Math.abs(duracaoFinal - duracao) > 1) {
+        console.log(`  relógio ${duracao.toFixed(1)}s · arquivo ${duracaoFinal.toFixed(1)}s`);
+      }
+      medidas[medidas.length - 1].fim = duracaoFinal;
+      escreverIndiceDoPlayer(filme, medidas, duracaoFinal, { comAudio: !semAudio });
+      const mb = (fs.statSync(mp4).size / 1024 / 1024).toFixed(1);
+      relatorio.push({ filme: filme.id, status: "ok", motivo: `${Math.round(duracaoFinal)}s · ${mb} MB${semAudio ? " · sem voz" : ""}` });
+      if (errosJs.length) {
+        console.warn(`  ⚠ ${errosJs.length} erro(s) de JavaScript na página durante a gravação: ${errosJs[0]}`);
+      }
+    } catch (e) {
+      relatorio.push({ filme: filme.id, status: "FALHOU", motivo: String(e.message ?? e) });
+      console.error(`  ✖ ${String(e.message ?? e)}`);
+      console.error(`    estado da tela: ${path.join(dir, "FALHOU.png")}`);
+    }
   }
   await navegador.close();
 
   fs.writeFileSync(path.join(ROOT, "TUTORIAL.md"), roteiroEmMarkdown(), "utf-8");
-  console.log(`roteiro: TUTORIAL.md · storyboard: ${path.join(SAIDA, "storyboard")}`);
-  if (pulados.length) {
-    console.log(`\n⚠ filmadas como visitante (falta conta de teste): ${pulados.join(", ")}`);
-  }
 } finally {
   servidor.kill();
 }
+
+console.log("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+for (const r of relatorio) {
+  const marca = r.status === "ok" ? "✅" : r.status === "pulado" ? "⏭ " : "🔴";
+  console.log(`${marca} ${r.filme.padEnd(10)} ${r.status.padEnd(7)} ${r.motivo}`);
+}
+console.log(`\nvídeos prontos em ${PUBLICO} · roteiro em TUTORIAL.md`);
+// Filme que falhou é teste vermelho: o código de saída avisa quem rodou.
+process.exitCode = relatorio.some((r) => r.status === "FALHOU") ? 1 : 0;
