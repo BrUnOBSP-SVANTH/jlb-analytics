@@ -1,6 +1,12 @@
 import { describe, it, expect } from "vitest";
-import { FILMES_TUTORIAL, formatarTempo, capituloPorSegundo, urlDoVideo, VIDEO_BASE } from "./tutorialCenas";
+import { existsSync, readFileSync } from "node:fs";
+import { createHash } from "node:crypto";
+import { join, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
+import { FILMES_TUTORIAL, formatarTempo, capituloPorSegundo, urlDoVideo, urlDaCapa, filmeDaPagina, VIDEO_BASE } from "./tutorialCenas";
 import { rotaExiste, destinoDoApelido } from "./rotas";
+
+const PASTA = join(dirname(fileURLToPath(import.meta.url)), "..", "client", "public", "tutorial");
 
 /**
  * O índice é GERADO na gravação (scripts/indiceDoTutorial.mjs). Até 01/10/2026
@@ -40,10 +46,36 @@ describe("o índice dos vídeos de ajuda", () => {
     }
   });
 
-  it("a URL do vídeo é a do filme", () => {
+  it("a URL do vídeo é a do filme, com a versão do arquivo", () => {
     for (const f of FILMES_TUTORIAL) {
-      expect(urlDoVideo(f, "mp4")).toBe(`${VIDEO_BASE}/${f.id}.mp4`);
+      expect(urlDoVideo(f)).toBe(`${VIDEO_BASE}/${f.id}.mp4?v=${f.versao}`);
+      expect(urlDaCapa(f)).toBe(`${VIDEO_BASE}/${f.id}.jpg?v=${f.versao}`);
     }
+  });
+
+  /**
+   * 🔴 Em 30/09 o player de produção apontava para um vídeo que só existia na
+   * máquina de quem gravou: 404 para todo visitante. Desde 02/10 os vídeos vão
+   * ao Git, e este teste prende o índice à pasta — e a versão ao arquivo, para
+   * regravação sem índice novo (capítulos nos segundos errados) também reprovar.
+   */
+  it("todo vídeo do índice está na pasta do site, e a versão é a do arquivo", () => {
+    for (const f of FILMES_TUTORIAL) {
+      const mp4 = join(PASTA, `${f.id}.mp4`);
+      expect(existsSync(mp4), `falta client/public/tutorial/${f.id}.mp4`).toBe(true);
+      expect(existsSync(join(PASTA, `${f.id}.jpg`)), `falta a capa ${f.id}.jpg`).toBe(true);
+      // Vídeo e capa, na mesma ordem do gerador (scripts/indiceDoTutorial.mjs).
+      const hash = createHash("sha1").update(readFileSync(mp4)).update(readFileSync(join(PASTA, `${f.id}.jpg`)))
+        .digest("hex").slice(0, 10);
+      expect(f.versao, `${f.id}: vídeo ou capa mudou depois do índice — rode scripts/indiceDoTutorial.mjs --atualizar`).toBe(hash);
+    }
+  });
+
+  it("cada filme gravado é achado pela página da primeira cena", () => {
+    for (const f of FILMES_TUTORIAL) {
+      expect(filmeDaPagina(f.capitulos[0].rota)?.id).toBe(f.id);
+    }
+    expect(filmeDaPagina("/rota-sem-video")).toBeUndefined();
   });
 
   it("formata minutos e segundos", () => {
@@ -56,7 +88,7 @@ describe("o índice dos vídeos de ajuda", () => {
 
   it("localiza o capítulo de um segundo do vídeo — inclusive além do fim", () => {
     const f = {
-      id: "x", titulo: "", resumo: "", precisaConta: false, duracaoSegundos: 30, comAudio: false, gravadoEm: "2026-10-01",
+      id: "x", titulo: "", resumo: "", precisaConta: false, duracaoSegundos: 30, comAudio: false, gravadoEm: "2026-10-01", versao: "0",
       capitulos: [
         { id: "a", titulo: "", rota: "/", inicioSegundos: 0, fimSegundos: 10, narracao: "" },
         { id: "b", titulo: "", rota: "/", inicioSegundos: 10, fimSegundos: 30, narracao: "" },

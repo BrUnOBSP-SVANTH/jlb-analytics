@@ -5,6 +5,7 @@
  */
 import { useState, useEffect, useCallback } from "react";
 import PageHeader from "@/components/PageHeader";
+import { BotaoVideoDaPagina } from "@/components/VideoDaPagina";
 import AnimatedSection from "@/components/AnimatedSection";
 import { useSEO } from "@/hooks/useSEO";
 import { useAuth } from "@/contexts/AuthContext";
@@ -303,6 +304,9 @@ export default function Duelos() {
           >
             <LogIn className="w-4 h-4" aria-hidden="true" /> Entrar / Criar conta
           </button>
+          <div className="mt-5">
+            <BotaoVideoDaPagina rota="/duelos" />
+          </div>
         </div>
       </div>
     );
@@ -318,6 +322,7 @@ export default function Duelos() {
     <div>
       <PageHeader title="Duelos de Previsão" subtitle="Mesmo baralho de mercados, previsões seladas, menor Brier vence. Beta por pontos — sem dinheiro real." />
       <div className="container py-10 space-y-8 max-w-5xl">
+        <BotaoVideoDaPagina rota="/duelos" />
 
         <AnimatedSection>
           <div className="flex items-center justify-between gap-3 flex-wrap">

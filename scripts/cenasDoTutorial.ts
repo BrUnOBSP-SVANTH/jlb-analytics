@@ -98,6 +98,13 @@ export interface Filme {
    * nunca mais filmado como visitante com a narração de dentro.
    */
   precisaConta: boolean;
+  /**
+   * A cena cujo FIM vira a capa do vídeo — o quadro que aparece antes do play.
+   * Era o primeiro quadro, e o filme geral, que começa na página inicial, virava
+   * uma foto da página inicial DENTRO da página inicial: parecia um embed
+   * quebrado. A capa boa é o momento em que algo foi conferido na tela.
+   */
+  capa: string;
   cenas: Cena[];
 }
 
@@ -107,6 +114,7 @@ export const FILMES: readonly Filme[] = [
     titulo: "Visão geral do JLB Analytics",
     resumo: "O percurso de quem chega agora: mercados, calculadoras, simulador e o nosso histórico.",
     precisaConta: false,
+    capa: "valor-esperado",
     cenas: [
       {
         id: "abertura",
@@ -240,6 +248,7 @@ export const FILMES: readonly Filme[] = [
     titulo: "A trilha de aprendizado",
     resumo: "Os cinco níveis, com as calculadoras do Nível 1 e a checagem de cada nível.",
     precisaConta: false,
+    capa: "nivel1-checagem",
     cenas: [
       {
         id: "educacao",
@@ -313,6 +322,7 @@ export const FILMES: readonly Filme[] = [
     titulo: "Previsão guiada por IA",
     resumo: "Você escreve o que quer prever; a IA escolhe o modelo e mostra a conta por trás.",
     precisaConta: true,
+    capa: "previsao-resultado",
     cenas: [
       {
         id: "previsao-pedido",
@@ -355,6 +365,7 @@ export const FILMES: readonly Filme[] = [
     titulo: "Análise de mercados",
     resumo: "Notícias cruzadas com os mercados, o briefing do dia e a análise por IA de um mercado.",
     precisaConta: true,
+    capa: "analise-ia",
     cenas: [
       {
         id: "noticias",
@@ -411,6 +422,7 @@ export const FILMES: readonly Filme[] = [
     titulo: "Sua conta: banca simulada e calibração",
     resumo: "Mil reais fictícios em mercados reais, e o painel que mede se você está acertando.",
     precisaConta: true,
+    capa: "dashboard",
     cenas: [
       {
         id: "banca",
@@ -452,6 +464,7 @@ export const FILMES: readonly Filme[] = [
     titulo: "Duelos de previsão",
     resumo: "Previsões seladas sobre os mesmos mercados — vence o menor Brier. Por pontos, sem dinheiro.",
     precisaConta: true,
+    capa: "duelos",
     cenas: [
       {
         id: "duelos",

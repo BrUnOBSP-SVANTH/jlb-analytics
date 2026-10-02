@@ -18,6 +18,7 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { Link } from "wouter";
 import { toast } from "sonner";
 import PageHeader from "@/components/PageHeader";
+import { BotaoVideoDaPagina } from "@/components/VideoDaPagina";
 import MercadosTabs from "@/components/MercadosTabs";
 import AnimatedSection from "@/components/AnimatedSection";
 import { Termo } from "@/components/Termo";
@@ -117,6 +118,9 @@ export default function Portfolio() {
                 <LogIn className="w-4 h-4" /> Entrar e começar a banca
               </span>
             </Link>
+            <div className="mt-5">
+              <BotaoVideoDaPagina rota="/portfolio" />
+            </div>
           </div>
         </div>
       </div>
@@ -132,6 +136,7 @@ export default function Portfolio() {
       />
 
       <div className="container py-10 space-y-8">
+        <BotaoVideoDaPagina rota="/portfolio" />
         {/* Como funciona — a explicação mora onde ela faz falta */}
         <AnimatedSection>
           <div className="flex items-start gap-3 p-4 rounded-xl border border-border/20 bg-secondary/5">

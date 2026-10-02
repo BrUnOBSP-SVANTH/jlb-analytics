@@ -9,6 +9,7 @@
  */
 
 import PageHeader from "@/components/PageHeader";
+import { BotaoVideoDaPagina } from "@/components/VideoDaPagina";
 import AnimatedSection from "@/components/AnimatedSection";
 import AnaliseTabs from "@/components/AnaliseTabs";
 import KlementSection from "@/components/KlementSection";
@@ -88,6 +89,7 @@ export default function Previsao() {
       />
 
       <div className="container py-10 space-y-8 max-w-4xl">
+        <BotaoVideoDaPagina rota="/previsao" />
 
         {/* ── Modelo Klement (inline) ── */}
         {showKlement && (

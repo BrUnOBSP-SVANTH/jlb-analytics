@@ -383,11 +383,6 @@ async function gravarFilme(navegador, filme, sessao, falas) {
       const voz = (Date.now() - t0) / 1000;
       await page.evaluate((t) => window.__capitulo?.(t), cena.legenda);
       await page.waitForTimeout(600);
-      // A capa do player: o primeiro quadro com o título do capítulo na tela.
-      // Sem ela o player mostra um retângulo preto até alguém apertar o play.
-      if (cena === filme.cenas[0]) {
-        await page.screenshot({ path: path.join(dir, "capa.jpg"), type: "jpeg", quality: 82 });
-      }
 
       for (const passo of cena.passos) {
         try { await executarPasso(page, passo); }
@@ -402,6 +397,11 @@ async function gravarFilme(navegador, filme, sessao, falas) {
       if (agora < minimo) await page.waitForTimeout((minimo - agora) * 1000);
 
       await page.screenshot({ path: path.join(dir, "storyboard", `${cena.id}.png`) });
+      // A capa do player: o FIM da cena que o roteiro escolheu, quando o
+      // resultado já foi conferido na tela (ver `capa` em cenasDoTutorial.ts).
+      if (cena.id === filme.capa) {
+        await page.screenshot({ path: path.join(dir, "capa.jpg"), type: "jpeg", quality: 82 });
+      }
       tempos.push({ id: cena.id, inicio, voz });
       console.log(`  ✓ ${cena.id.padEnd(20)} ${(((Date.now() - t0) / 1000) - inicio).toFixed(1)}s`);
     }

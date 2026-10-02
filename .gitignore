@@ -120,14 +120,13 @@ __pycache__/
 # .claude/skills/ é só um symlink para caminho absoluto desta máquina.
 .claude/skills/
 
-# Vídeo do tutorial: o vídeo bruto e o storyboard são pesados e são REGERÁVEIS
-# (`pnpm tutorial`). O que se versiona é a fonte deles — scripts/cenasDoTutorial.ts
-# e o TUTORIAL.md gerado. Vídeo commitado incha o repositório para sempre.
+# Vídeo do tutorial: o vídeo BRUTO, a voz e o storyboard são pesados e são
+# regeráveis (`pnpm tutorial`) — ficam fora.
 tutorial-saida/
-# Um arquivo por filme desde 01/10/2026 (`pnpm tutorial geral trilha …`).
-# ⚠️ Por isso mesmo eles NÃO chegam a produção pelo Git: o Render constrói a
-# partir do repositório. Em 30/09 o player em produção apontava para
-# /tutorial.mp4, que só existia na máquina de quem gravou — 404 para todo
-# visitante. Onde os vídeos moram em produção é decisão pendente do fundador.
-client/public/tutorial/
+# ⚠️ Mas o vídeo FINAL (client/public/tutorial/*.mp4 e a capa .jpg) VAI ao Git,
+# por decisão do fundador em 02/10/2026: o site serve os próprios vídeos. O
+# Render constrói a partir do repositório, então vídeo fora do Git é 404 em
+# produção — foi o que aconteceu em 30/09. O teste de shared/tutorialCenas.test.ts
+# barra índice que lista vídeo ausente. Cada regravação soma ~10 MB ao
+# histórico: regravar quando a tela mudar, não por capricho.
 client/public/videos/

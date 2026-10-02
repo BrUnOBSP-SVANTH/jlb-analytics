@@ -222,7 +222,7 @@ export default function TutorialModal() {
                   <video
                     key={filme.id}
                     ref={videoRef}
-                    src={urlDoVideo(filme, "mp4")}
+                    src={urlDoVideo(filme)}
                     poster={urlDaCapa(filme)}
                     playsInline
                     preload="metadata"

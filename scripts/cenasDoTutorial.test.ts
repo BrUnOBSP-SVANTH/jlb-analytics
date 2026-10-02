@@ -291,3 +291,49 @@ describe("o índice do player é o gerado", () => {
     }
   });
 });
+
+/**
+ * Cada vídeo mora na página da sua PRIMEIRA cena (02/10/2026, pedido do
+ * fundador: "cada vídeo dentro da sua determinada página"). A ligação é a rota
+ * escrita em `<VideoDaPagina rota="…">` / `<BotaoVideoDaPagina rota="…">` — e
+ * se a primeira cena de um filme mudar de página, o vídeo some da tela sem erro
+ * nenhum. Estes testes fazem esse sumiço reprovar.
+ */
+describe("cada vídeo aparece na página dele", () => {
+  const usadas = [...CLIENTE.matchAll(/<(?:VideoDaPagina|BotaoVideoDaPagina)\s+rota="([^"]+)"/g)].map((m) => m[1]);
+  const primeiras = FILMES.map((f) => f.cenas[0].rota);
+
+  it("a leitura achou as páginas (âncora)", () => {
+    expect(usadas).toContain("/");
+    expect(usadas).toContain("/educacao");
+  });
+
+  it("dois filmes não começam na mesma página — senão a página não sabe qual mostrar", () => {
+    expect(new Set(primeiras).size).toBe(primeiras.length);
+  });
+
+  it("todo filme tem uma página que o mostra", () => {
+    for (const f of FILMES) {
+      expect(usadas, `"${f.id}" começa em ${f.cenas[0].rota}, e essa página não mostra o vídeo`).toContain(f.cenas[0].rota);
+    }
+  });
+
+  it("toda página com vídeo aponta para a primeira cena de algum filme", () => {
+    for (const rota of usadas) {
+      expect(primeiras, `${rota} pede um vídeo, mas nenhum filme começa nela`).toContain(rota);
+    }
+  });
+});
+
+describe("a capa de cada vídeo", () => {
+  it("é uma cena do próprio filme", () => {
+    for (const f of FILMES) {
+      expect(f.cenas.map((c) => c.id), `${f.id}: capa "${f.capa}" não é cena do filme`).toContain(f.capa);
+    }
+  });
+
+  it("não é a primeira cena do filme geral — a página inicial fotografada dentro da página inicial", () => {
+    const geral = FILMES.find((f) => f.id === "geral")!;
+    expect(geral.capa).not.toBe(geral.cenas[0].id);
+  });
+});

@@ -5,6 +5,7 @@
  */
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import PageHeader from "@/components/PageHeader";
+import { BotaoVideoDaPagina } from "@/components/VideoDaPagina";
 import AnimatedSection from "@/components/AnimatedSection";
 import {
   Newspaper, TrendingUp, RefreshCw, AlertCircle, Loader2, Check,
@@ -199,6 +200,7 @@ export default function Noticias() {
       />
 
       <div className="container py-10 space-y-8">
+        <BotaoVideoDaPagina rota="/noticias" />
         {/* Tab bar + prediction counter */}
         <AnimatedSection>
           <div className="flex items-center justify-between flex-wrap gap-3">

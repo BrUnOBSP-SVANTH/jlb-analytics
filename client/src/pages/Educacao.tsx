@@ -12,6 +12,7 @@ import {
 import { VERBETES } from "@/lib/glossario";
 import { useSEO } from "@/hooks/useSEO";
 import PageHeader from "@/components/PageHeader";
+import VideoDaPagina from "@/components/VideoDaPagina";
 
 const LEVELS = [
   {
@@ -196,6 +197,10 @@ export default function Educacao() {
         <p className="-mt-3 mb-6 text-sm text-muted-foreground">
           Os cinco níveis são gratuitos e estão abertos desde o começo. A ordem é a que rende mais.
         </p>
+        {/* Um nível por dentro, antes da lista deles: calculadora e checagem. */}
+        <div className="mb-8">
+          <VideoDaPagina rota="/educacao" />
+        </div>
         <div className="space-y-4">
           {LEVELS.map((level, idx) => {
             const Icon = level.icon;

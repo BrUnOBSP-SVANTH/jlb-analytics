@@ -12,6 +12,7 @@ import { useSEO } from "@/hooks/useSEO";
 import type { Destaques } from "@shared/tiposDestaques";
 import CalibrationTest from "@/components/CalibrationTest";
 import MarginOfError from "@/components/MarginOfError";
+import VideoDaPagina from "@/components/VideoDaPagina";
 import { MODEL_COUNT } from "@/lib/brand";
 import { track } from "@/lib/analytics";
 import { Link } from "wouter";
@@ -592,6 +593,11 @@ export default function Home() {
                 </div>
               );
             })}
+          </div>
+          {/* Os três passos, e logo abaixo eles acontecendo: o vídeo usa cada
+              ferramenta de verdade e confere o resultado na tela. */}
+          <div className="mt-10">
+            <VideoDaPagina rota="/" />
           </div>
         </div>
       </section>

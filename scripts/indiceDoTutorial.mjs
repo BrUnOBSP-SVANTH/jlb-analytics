@@ -19,11 +19,34 @@
  */
 import fs from "node:fs";
 import path from "node:path";
+import { createHash } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { FILMES } from "./cenasDoTutorial.ts";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const ARQUIVO = path.join(ROOT, "shared", "tutorialCenas.ts");
+/** Onde o gravador deixa os vídeos — e de onde o site os serve (`/tutorial/…`). */
+export const PASTA_DOS_VIDEOS = path.join(ROOT, "client", "public", "tutorial");
+
+/**
+ * A versão do vídeo: o começo do hash do vídeo E da capa juntos (trocar só a
+ * capa também precisa chegar a quem já tinha a velha no cache).
+ *
+ * O nome do arquivo é fixo (geral.mp4) e o servidor manda guardar por 1 hora.
+ * Sem a versão na URL, quem já tinha assistido via o vídeo ANTIGO depois de
+ * uma regravação — com os capítulos do índice NOVO, apontando para os
+ * segundos errados. Arquivo que não existe lança: o índice não lista vídeo
+ * que não há (foi o 404 de produção de 30/09).
+ */
+export function versaoDoVideo(id) {
+  const hash = createHash("sha1");
+  for (const ext of ["mp4", "jpg"]) {
+    const arq = path.join(PASTA_DOS_VIDEOS, `${id}.${ext}`);
+    if (!fs.existsSync(arq)) throw new Error(`o índice não pode listar ${id}: falta ${path.relative(ROOT, arq)}`);
+    hash.update(fs.readFileSync(arq));
+  }
+  return hash.digest("hex").slice(0, 10);
+}
 
 /** O que já estava gravado, lido do próprio arquivo gerado (o bloco JSON dele). */
 function filmesJaGravados() {
@@ -46,6 +69,7 @@ export function escreverIndiceDoPlayer(filme, medidas, duracaoTotal, { comAudio 
     duracaoSegundos: r1(duracaoTotal),
     comAudio,
     gravadoEm: new Date().toISOString().slice(0, 10),
+    versao: versaoDoVideo(filme.id),
     capitulos: medidas.map((m) => {
       const c = porId.get(m.id);
       return { id: m.id, titulo: c.legenda, rota: c.rota, inicioSegundos: r1(m.inicio), fimSegundos: r1(m.fim), narracao: c.narracao };
@@ -65,18 +89,45 @@ export function escreverIndiceDoPlayer(filme, medidas, duracaoTotal, { comAudio 
 /**
  * Zera o índice: o player passa a dizer que os vídeos ainda não foram gravados.
  *
- * É o estado certo para o que vai ao Git enquanto os vídeos não têm onde morar
- * em produção — índice listando filme cujo arquivo dá 404 faria todo visitante
- * cair no "este vídeo não carregou". Uso: `node scripts/indiceDoTutorial.mjs --zerar`.
+ * Desde 02/10/2026 os vídeos vão ao Git junto com o índice (o site os serve de
+ * client/public/tutorial/), então isto só serve para recomeçar do zero. O teste
+ * de shared/tutorialCenas.test.ts barra índice que lista vídeo ausente da pasta.
+ * Uso: `node scripts/indiceDoTutorial.mjs --zerar`.
  */
 export function escreverIndiceVazio() {
   const base = (process.env.TUTORIAL_VIDEO_BASE ?? "/tutorial").replace(/\/$/, "");
   fs.writeFileSync(ARQUIVO, montarFonte([], base), "utf-8");
 }
 
-if (process.argv[1]?.replace(/\\/g, "/").endsWith("scripts/indiceDoTutorial.mjs") && process.argv.includes("--zerar")) {
-  escreverIndiceVazio();
-  console.log(`índice zerado: ${ARQUIVO}`);
+/**
+ * Reescreve o índice a partir do que já está nele, sem regravar nada: recalcula
+ * a versão de cada vídeo pelo arquivo e aplica o modelo atual deste gerador.
+ * Filme cujo vídeo sumiu da pasta SAI do índice, com aviso.
+ * Uso: `node --experimental-transform-types scripts/indiceDoTutorial.mjs --atualizar`.
+ */
+export function atualizarIndice() {
+  const ordem = FILMES.map((f) => f.id);
+  const filmes = [];
+  for (const f of filmesJaGravados()) {
+    if (!ordem.includes(f.id)) continue;
+    // Mesma ordem de campos da gravação, para o arquivo não mudar à toa no diff.
+    const { capitulos, versao: _velha, ...resto } = f;
+    try { filmes.push({ ...resto, versao: versaoDoVideo(f.id), capitulos }); }
+    catch (e) { console.warn(`⚠ ${e.message} — saiu do índice`); }
+  }
+  filmes.sort((a, b) => ordem.indexOf(a.id) - ordem.indexOf(b.id));
+  const base = (process.env.TUTORIAL_VIDEO_BASE ?? "/tutorial").replace(/\/$/, "");
+  fs.writeFileSync(ARQUIVO, montarFonte(filmes, base), "utf-8");
+  return filmes.map((f) => f.id);
+}
+
+if (process.argv[1]?.replace(/\\/g, "/").endsWith("scripts/indiceDoTutorial.mjs")) {
+  if (process.argv.includes("--zerar")) {
+    escreverIndiceVazio();
+    console.log(`índice zerado: ${ARQUIVO}`);
+  } else if (process.argv.includes("--atualizar")) {
+    console.log(`índice atualizado: ${atualizarIndice().join(", ") || "nenhum filme"}`);
+  }
 }
 
 function montarFonte(filmes, base) {
@@ -111,6 +162,8 @@ export interface FilmeTutorial {
   comAudio: boolean;
   /** Dia da gravação — o player mostra, para ninguém confundir vídeo velho com novo. */
   gravadoEm: string;
+  /** Começo do hash do arquivo: vai na URL para a regravação não servir vídeo velho do cache. */
+  versao: string;
   capitulos: CapituloTutorial[];
 }
 
@@ -119,13 +172,23 @@ export const VIDEO_BASE = ${JSON.stringify(base)};
 
 export const FILMES_TUTORIAL: readonly FilmeTutorial[] = /* DADOS */${JSON.stringify(filmes, null, 2)}/* FIM */;
 
-export function urlDoVideo(filme: FilmeTutorial, formato: "mp4" = "mp4"): string {
-  return \`\${VIDEO_BASE}/\${filme.id}.\${formato}\`;
+export function urlDoVideo(filme: FilmeTutorial): string {
+  return \`\${VIDEO_BASE}/\${filme.id}.mp4?v=\${filme.versao}\`;
 }
 
 /** O quadro de abertura do filme, para o player não mostrar um retângulo preto. */
 export function urlDaCapa(filme: FilmeTutorial): string {
-  return \`\${VIDEO_BASE}/\${filme.id}.jpg\`;
+  return \`\${VIDEO_BASE}/\${filme.id}.jpg?v=\${filme.versao}\`;
+}
+
+/**
+ * O vídeo que mora numa página: o filme cuja PRIMEIRA cena é nela. A regra
+ * substitui uma tabela página→vídeo escrita à mão, que envelheceria a cada
+ * mudança de roteiro. \`undefined\` quando o filme dali ainda não foi gravado —
+ * e aí a página não mostra nada.
+ */
+export function filmeDaPagina(rota: string): FilmeTutorial | undefined {
+  return FILMES_TUTORIAL.find((f) => f.capitulos[0]?.rota === rota);
 }
 
 /** Formata segundos em MM:SS. */
