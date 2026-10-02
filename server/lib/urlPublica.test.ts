@@ -2,16 +2,20 @@ import { describe, it, expect } from "vitest";
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { urlPublica, hostPublico, ehProducao, ehEnderecoLocal } from "./urlPublica.ts";
+import { urlPublica, hostPublico, ehProducao, ehEnderecoLocal, enderecoNoDominio } from "./urlPublica.ts";
+import { ORIGEM_PUBLICA } from "../../shared/rotas.ts";
 
 const RENDER = "https://jlb-analytics.onrender.com";
 
 describe("urlPublica — endereço local não vence endereço público", () => {
-  it("o caso real de 17/09: APP_URL=localhost no Render", () => {
-    // Era isto que mandava quem pagasse para o próprio computador.
+  it("o caso real do Render (APP_URL=localhost): o endereço é o DOMÍNIO", () => {
+    // 17/09: era isto que mandava quem pagasse para o próprio computador.
+    // 02/10: a correção de então caía no endereço do Render, e quem pagava em
+    // jlbanalytics.com voltava para jlb-analytics.onrender.com.
     const env = { APP_URL: "http://localhost:3000", RENDER_EXTERNAL_URL: RENDER };
-    expect(urlPublica(env)).toBe(RENDER);
-    expect(hostPublico(env)).toBe("jlb-analytics.onrender.com");
+    expect(urlPublica(env)).toBe("https://jlbanalytics.com");
+    expect(hostPublico(env)).toBe("jlbanalytics.com");
+    expect(urlPublica({ RENDER_EXTERNAL_URL: RENDER })).toBe(ORIGEM_PUBLICA);
   });
 
   it("APP_URL público manda — é a escolha de quem configurou", () => {
@@ -26,7 +30,7 @@ describe("urlPublica — endereço local não vence endereço público", () => {
 
   it("barra no fim não entra no endereço", () => {
     expect(urlPublica({ APP_URL: "https://exemplo.com/" })).toBe("https://exemplo.com");
-    expect(urlPublica({ RENDER_EXTERNAL_URL: RENDER + "/" })).toBe(RENDER);
+    expect(urlPublica({ NODE_ENV: "production" })).not.toMatch(/\/$/);
   });
 
   it("reconhece as formas de endereço local", () => {
@@ -81,5 +85,42 @@ describe("nenhuma trava do servidor pode depender de NODE_ENV", () => {
       .filter((f) => /NODE_ENV\s*[=!]==?\s*["']production["']/.test(semComentarios(readFileSync(f, "utf8"))))
       .map((f) => path.relative(raiz, f));
     expect(culpados, "use ehProducao() de lib/urlPublica.ts").toEqual([]);
+  });
+});
+
+describe("enderecoNoDominio — o endereço antigo leva ao domínio", () => {
+  const HOST = "jlb-analytics.onrender.com";
+
+  it("o caso real: a volta do login caía na raiz do Render", () => {
+    // O fragmento (#access_token) não chega ao servidor; o navegador o carrega
+    // sozinho através do redirecionamento — por isso o destino não o inclui.
+    expect(enderecoNoDominio(HOST, "GET", "/")).toBe("https://jlbanalytics.com/");
+  });
+
+  it("mantém a página e a busca (o login PKCE volta com ?code=)", () => {
+    expect(enderecoNoDominio(HOST, "GET", "/dashboard?code=abc&x=1")).toBe("https://jlbanalytics.com/dashboard?code=abc&x=1");
+    expect(enderecoNoDominio(HOST, "HEAD", "/mercados")).toBe("https://jlbanalytics.com/mercados");
+  });
+
+  it("não desvia a API: o webhook do Stripe (POST em /api/stripe) pode estar cadastrado no endereço do Render", () => {
+    expect(enderecoNoDominio(HOST, "POST", "/api/stripe/webhook")).toBeNull();
+    expect(enderecoNoDominio(HOST, "GET", "/api/markets")).toBeNull();
+    expect(enderecoNoDominio(HOST, "GET", "/api")).toBeNull();
+    expect(enderecoNoDominio(HOST, "GET", "/ws")).toBeNull();
+  });
+
+  it("página com nome parecido com api não escapa por substring", () => {
+    expect(enderecoNoDominio(HOST, "GET", "/apostas")).toBe("https://jlbanalytics.com/apostas");
+  });
+
+  it("o domínio, o www e a máquina local são servidos ali mesmo — sem laço", () => {
+    expect(enderecoNoDominio("jlbanalytics.com", "GET", "/")).toBeNull();
+    expect(enderecoNoDominio("www.jlbanalytics.com", "GET", "/")).toBeNull();
+    expect(enderecoNoDominio("localhost", "GET", "/")).toBeNull();
+    expect(enderecoNoDominio(undefined, "GET", "/")).toBeNull();
+  });
+
+  it("o próprio destino nunca é endereço do Render", () => {
+    expect(new URL(ORIGEM_PUBLICA).hostname.endsWith(".onrender.com")).toBe(false);
   });
 });

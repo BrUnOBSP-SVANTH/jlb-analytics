@@ -19,6 +19,8 @@
  * publicado. Rodar no Render é prova suficiente de produção.
  */
 
+import { ORIGEM_PUBLICA } from "../../shared/rotas.ts";
+
 type Ambiente = Record<string, string | undefined>;
 
 const LOCAL = /^https?:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0|\[::1\])(:\d+)?$/i;
@@ -31,16 +33,48 @@ export function ehEnderecoLocal(url: string | undefined): boolean {
 /**
  * O endereço público, sem barra no fim. Ordem:
  *  1. `APP_URL`, quando não é local — é a escolha explícita de quem configurou;
- *  2. `RENDER_EXTERNAL_URL` — a URL real do serviço, injetada pela plataforma;
+ *  2. em produção, o DOMÍNIO (`ORIGEM_PUBLICA`, shared/rotas.ts);
  *  3. `APP_URL` local — o caso de quem está desenvolvendo;
  *  4. `http://localhost:3000`.
+ *
+ * 🔴 O passo 2 era `RENDER_EXTERNAL_URL` (02/10/2026). Depois que o domínio
+ * próprio entrou no ar, isso fazia o servidor se apresentar como
+ * jlb-analytics.onrender.com: quem pagava no Stripe em jlbanalytics.com voltava
+ * para o endereço do Render, e os links dos e-mails também iam para lá. O
+ * endereço público já tinha UMA fonte (a do sitemap e do canonical) — agora o
+ * servidor usa a mesma.
  */
 export function urlPublica(env: Ambiente = process.env): string {
   const app = env.APP_URL?.trim().replace(/\/+$/, "") || "";
-  const render = env.RENDER_EXTERNAL_URL?.trim().replace(/\/+$/, "") || "";
   if (app && !ehEnderecoLocal(app)) return app;
-  if (render) return render;
+  if (ehProducao(env)) return ORIGEM_PUBLICA;
   return app || "http://localhost:3000";
+}
+
+/**
+ * Para onde mandar quem chegou pelo endereço antigo do Render — ou `null`
+ * quando a requisição deve ser servida aqui mesmo.
+ *
+ * POR QUE (02/10/2026): o fundador entrava com o Google em jlbanalytics.com e
+ * terminava em jlb-analytics.onrender.com. O Supabase recusa destino fora da
+ * lista dele e devolve no "Site URL", que é o endereço do Render — e o Render
+ * servia o site inteiro ali, então a pessoa ficava presa no endereço errado.
+ * Levando o endereço antigo ao domínio, o desvio se desfaz sozinho: o navegador
+ * carrega o `#access_token` junto (o fragmento atravessa o redirecionamento) e
+ * a sessão abre no domínio. Também junta links velhos e buscadores num lugar só.
+ *
+ * Só página: `/api` fica de fora porque o webhook do Stripe e quem consome a
+ * API por fora chegam por ali (e POST redirecionado vira GET em muito cliente);
+ * `/ws` não é navegação. 302, e não 301: o navegador guarda 301 para sempre,
+ * e isto tem de poder ser desfeito com um deploy.
+ */
+export function enderecoNoDominio(host: string | undefined, metodo: string, url: string): string | null {
+  if (metodo !== "GET" && metodo !== "HEAD") return null;
+  const caminho = url.split("?")[0];
+  if (caminho === "/api" || caminho.startsWith("/api/") || caminho === "/ws" || caminho.startsWith("/ws/")) return null;
+  const h = (host ?? "").toLowerCase().replace(/:\d+$/, "");
+  if (!h.endsWith(".onrender.com")) return null;
+  return ORIGEM_PUBLICA + (url.startsWith("/") ? url : `/${url}`);
 }
 
 /** Só o host, do jeito que a CSP pede (`wss://host`). */

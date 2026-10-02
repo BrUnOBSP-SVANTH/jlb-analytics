@@ -18,7 +18,7 @@ import { cache, getCache, setCache } from "./lib/cache.ts";
 import { registerSnapshotJob } from "./lib/triggers.ts";
 import { gravarSnapshotsDoCatalogo } from "./lib/snapshotsDoCatalogo.ts";
 import { destinoDoApelido, rotaExiste } from "../shared/rotas.ts";
-import { urlPublica, hostPublico, ehProducao } from "./lib/urlPublica.ts";
+import { urlPublica, hostPublico, ehProducao, enderecoNoDominio } from "./lib/urlPublica.ts";
 import { tarefasAgendadasLigadas } from "./lib/orcamentoIA.ts";
 import { rodarSeVencida, execucoesDasTarefas, estaAtrasada } from "./lib/tarefas.ts";
 import { mercadoQueLiquida } from "../shared/liquidacao.ts";
@@ -193,6 +193,16 @@ async function startServer() {
       res.setHeader("Retry-After", "900");
       return res.status(429).json({ error: "temporarily_blocked", message: "Acesso temporariamente bloqueado por atividade suspeita." });
     }
+    next();
+  });
+
+  // ── Endereço antigo → domínio ──────────────────────────────────────────────
+  // Quem chega por jlb-analytics.onrender.com vai para a mesma página em
+  // jlbanalytics.com. Era por ali que o login com Google "saía" do domínio
+  // (o porquê está em lib/urlPublica.ts, enderecoNoDominio).
+  app.use((req, res, next) => {
+    const destino = enderecoNoDominio(req.hostname, req.method, req.originalUrl);
+    if (destino) return res.redirect(302, destino);
     next();
   });
 
