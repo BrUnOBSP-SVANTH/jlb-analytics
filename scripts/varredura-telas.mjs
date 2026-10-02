@@ -220,6 +220,11 @@ for (const rota of ROTAS) {
         if ((e.textContent ?? "").trim().length < 10) return false;
         const cs = getComputedStyle(e);
         if (cs.display === "none" || cs.visibility === "hidden" || parseFloat(cs.opacity) < 0.2) return false;
+        // O texto de um <details> FECHADO tem `display: block` e caixa de layout
+        // — por cima da seção seguinte —, mas ninguém o vê: o Chrome o esconde
+        // com content-visibility. Foi o falso positivo da transcrição do vídeo
+        // na /educacao (02/10/2026). Quem sabe se está visível é o navegador.
+        if (e.checkVisibility && !e.checkVisibility()) return false;
         const b = e.getBoundingClientRect();
         return b.width > 30 && b.height > 8;
       }).map((e) => ({ el: e, b: e.getBoundingClientRect(), t: (e.textContent ?? "").trim().slice(0, 32) }));
