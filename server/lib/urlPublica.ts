@@ -65,13 +65,17 @@ export function urlPublica(env: Ambiente = process.env): string {
  *
  * Só página: `/api` fica de fora porque o webhook do Stripe e quem consome a
  * API por fora chegam por ali (e POST redirecionado vira GET em muito cliente);
- * `/ws` não é navegação. 302, e não 301: o navegador guarda 301 para sempre,
- * e isto tem de poder ser desfeito com um deploy.
+ * `/ws` não é navegação; e `/sw.js` também fica, porque o navegador RECUSA
+ * service worker que chega por redirecionamento — quem tivesse uma versão velha
+ * instalada no endereço do Render (a que servia HTML do cache) nunca mais a
+ * atualizaria, e ficaria preso nela. 302, e não 301: o navegador guarda 301
+ * para sempre, e isto tem de poder ser desfeito com um deploy.
  */
 export function enderecoNoDominio(host: string | undefined, metodo: string, url: string): string | null {
   if (metodo !== "GET" && metodo !== "HEAD") return null;
   const caminho = url.split("?")[0];
   if (caminho === "/api" || caminho.startsWith("/api/") || caminho === "/ws" || caminho.startsWith("/ws/")) return null;
+  if (caminho === "/sw.js") return null;
   const h = (host ?? "").toLowerCase().replace(/:\d+$/, "");
   if (!h.endsWith(".onrender.com")) return null;
   return ORIGEM_PUBLICA + (url.startsWith("/") ? url : `/${url}`);

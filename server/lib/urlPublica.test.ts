@@ -109,6 +109,12 @@ describe("enderecoNoDominio — o endereço antigo leva ao domínio", () => {
     expect(enderecoNoDominio(HOST, "GET", "/ws")).toBeNull();
   });
 
+  it("o service worker continua sendo servido no endereço antigo", () => {
+    // O navegador recusa sw.js redirecionado: a versão velha instalada ali
+    // nunca seria trocada.
+    expect(enderecoNoDominio(HOST, "GET", "/sw.js")).toBeNull();
+  });
+
   it("página com nome parecido com api não escapa por substring", () => {
     expect(enderecoNoDominio(HOST, "GET", "/apostas")).toBe("https://jlbanalytics.com/apostas");
   });
