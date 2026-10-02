@@ -19,6 +19,7 @@ import {
 import { num } from "@shared/formato";
 import { lembrarOndeEstou } from "@/lib/retornoLogin";
 import { apiFetch, buscarJson } from "@/lib/api";
+import { numeroDoCampo } from "@/lib/campoNumerico";
 
 // ── Tipos ──────────────────────────────────────────────────────────────────
 
@@ -113,7 +114,16 @@ export default function Duelos() {
   const [pickIA, setPickIA] = useState<DuelMarket[]>([]);
   const [picked, setPicked] = useState<DuelMarket[]>([]);
   const [preds, setPreds] = useState<Record<string, number>>({});
-  const [stake, setStake] = useState(50);
+  /**
+   * O TEXTO do campo de pontos (01/10/2026). Guardando o número, o onChange era
+   * `Math.max(10, Math.min(500, Number(texto) || 50))`: apagar para escrever 100
+   * devolvia o 50, a digitação virava "501" e o corte a deixava em 500. Quem
+   * queria apostar 100 pontos apostava o MÁXIMO, sem aviso. A faixa agora é
+   * conferida no envio, com a mensagem dizendo qual é.
+   */
+  const [stakeTexto, setStakeTexto] = useState("50");
+  const stakeN = numeroDoCampo(stakeTexto);
+  const stakeValido = stakeN !== null && Number.isInteger(stakeN) && stakeN >= 10 && stakeN <= 500;
   const [submitting, setSubmitting] = useState(false);
   const pickable = duelMode === "ia" ? pickIA : pickLobby;
 
@@ -194,12 +204,13 @@ export default function Duelos() {
 
   async function handleCreate() {
     if (picked.length < 2) { toast("Escolha pelo menos 2 mercados"); return; }
+    if (!stakeValido) { toast.error("Os pontos em jogo vão de 10 a 500, em número inteiro."); return; }
     setSubmitting(true);
     try {
       const res = await fetch("/api/duels", {
         method: "POST", headers: authHeaders,
         body: JSON.stringify({
-          stakePts: stake, displayName, vsIA: duelMode === "ia",
+          stakePts: stakeN, displayName, vsIA: duelMode === "ia",
           markets: picked,
           preds: picked.map((m) => ({ marketId: m.marketId, prob: preds[m.marketId] ?? 50 })),
         }),
@@ -410,9 +421,14 @@ export default function Duelos() {
                   <label htmlFor="duel-stake" className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-1.5">
                     3 · Pontos em jogo
                   </label>
-                  <input id="duel-stake" type="number" min={10} max={500} step={10} value={stake}
-                    onChange={(e) => setStake(Math.max(10, Math.min(500, Number(e.target.value) || 50)))}
+                  <input id="duel-stake" type="number" min={10} max={500} step={10} value={stakeTexto}
+                    onChange={(e) => setStakeTexto(e.target.value)}
+                    aria-invalid={!stakeValido}
+                    aria-describedby="duel-stake-faixa"
                     className="w-28 bg-secondary/50 border border-border/50 rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary" />
+                  <p id="duel-stake-faixa" className={`text-[11px] mt-1 ${stakeValido ? "text-muted-foreground" : "text-negative"}`}>
+                    De 10 a 500 pontos
+                  </p>
                 </div>
                 <button onClick={() => void handleCreate()} disabled={submitting || picked.length < 2}
                   className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-40">

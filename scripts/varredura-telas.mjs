@@ -481,6 +481,46 @@ for (const rota of ROTAS) {
     if (linhasLongas.length > 0) {
       achados.push(`LINHA LONGA DEMAIS EM 1280px: ${linhasLongas.join(" | ")} — use max-w-prose`);
     }
+
+    /*
+     * CAMPO NUMÉRICO QUE BRIGA COM QUEM DIGITA (01/10/2026).
+     *
+     * Faz o que uma pessoa faz para trocar um número — seleciona, apaga, digita
+     * um valor de DOIS dígitos — e lê o que ficou. Achado pelo vídeo tutorial,
+     * que passou a usar as calculadoras de verdade: em Valor Esperado "55" virava
+     * "5560"; em Kelly 60% virava 99% e a recomendação de aposta saía errada sem
+     * aviso. Eram 5 de 48 campos, todos nas duas calculadoras centrais.
+     *
+     * ⚠️ DOIS dígitos, e não um. A primeira medição digitou "3" e deu 48 de 48
+     * certos com o defeito no ar: com `|| 0`, apagar deixa "0", e "03" vale 3 por
+     * acaso. Com "37", o "0" vira "037" e o `|| 50` vira "5037" — aí aparece.
+     *
+     * Roda no fim de propósito: ele ALTERA os campos, e os detectores acima leem
+     * a tela no estado em que ela abre.
+     */
+    const camposQueBrigam = [];
+    const numericos = p.locator('main input[type="number"]');
+    const totalNumericos = await numericos.count();
+    for (let k = 0; k < totalNumericos && camposQueBrigam.length < 3; k++) {
+      const c = numericos.nth(k);
+      if (!(await c.isVisible().catch(() => false)) || await c.isDisabled().catch(() => true)) continue;
+      const antes = await c.inputValue();
+      const alvo = antes === "37" ? "42" : "37";
+      try {
+        await c.click({ timeout: 3000 });
+        await c.press("Control+a");
+        await c.press("Backspace");
+        await c.pressSequentially(alvo, { delay: 25 });
+        const depois = await c.inputValue();
+        if (Number(depois.replace(",", ".")) !== Number(alvo)) {
+          const nome = await c.evaluate((el) => el.getAttribute("aria-label") || document.querySelector(`label[for="${el.id}"]`)?.textContent || el.id || "?");
+          camposQueBrigam.push(`"${String(nome).trim().slice(0, 30)}": digitei ${alvo}, ficou ${depois}`);
+        }
+      } catch { /* campo coberto ou fora de alcance: não é este o defeito */ }
+    }
+    if (camposQueBrigam.length > 0) {
+      achados.push(`CAMPO NUMÉRICO REESCREVE O QUE SE DIGITA: ${camposQueBrigam.join(" | ")} — guarde o texto (lib/campoNumerico.ts)`);
+    }
   } catch (e) {
     achados.push(`não carregou: ${String(e.message).slice(0, 120)}`);
   }

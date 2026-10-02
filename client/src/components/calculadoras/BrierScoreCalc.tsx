@@ -4,29 +4,43 @@
 import { useState, useMemo } from "react";
 import { Target } from "lucide-react";
 import { CalcCard, FormulaBox, ResultBox, InsightBox, inputClass } from "@/components/calculadoras/CalcPrimitives";
+import { numeroDoCampo } from "@/lib/campoNumerico";
 import { BRIER_SUPERFORECASTER, BRIER_DO_CHUTE, FONTE_SUPERFORECASTER } from "@shared/referencias";
 import { plural, num } from "@shared/formato";
 
-interface Prediction { prob: number; outcome: 0 | 1 }
+/**
+ * `prob` é o TEXTO do campo (01/10/2026). Guardando o número, apagar a previsão
+ * a fazia virar 0 — a pessoa via um "0" que não digitou e o Brier mudava na hora,
+ * calculado sobre uma previsão de 0% que ninguém fez. Ver lib/campoNumerico.ts.
+ */
+interface Prediction { prob: string; outcome: 0 | 1 }
 
 export function BrierScoreCalc() {
   const [preds, setPreds] = useState<Prediction[]>([
-    { prob: 70, outcome: 1 },
-    { prob: 30, outcome: 0 },
-    { prob: 60, outcome: 1 },
-    { prob: 80, outcome: 1 },
-    { prob: 40, outcome: 0 },
+    { prob: "70", outcome: 1 },
+    { prob: "30", outcome: 0 },
+    { prob: "60", outcome: 1 },
+    { prob: "80", outcome: 1 },
+    { prob: "40", outcome: 0 },
   ]);
 
-  const updatePred = (i: number, field: keyof Prediction, v: number | 0 | 1) => {
+  const updatePred = (i: number, field: keyof Prediction, v: string | 0 | 1) => {
     setPreds((prev) => prev.map((p, idx) => idx === i ? { ...p, [field]: v } : p));
   };
-  const addPred = () => setPreds((prev) => [...prev, { prob: 50, outcome: 1 }]);
+  const addPred = () => setPreds((prev) => [...prev, { prob: "50", outcome: 1 }]);
   const removePred = (i: number) => setPreds((prev) => prev.length > 1 ? prev.filter((_, idx) => idx !== i) : prev);
 
+  // Só entra na conta a previsão que tem número entre 0 e 100. Linha vazia (no
+  // meio da troca) ou fora da faixa fica de fora e é avisada — nunca vira 0%.
+  const validas = preds
+    .map((p) => ({ prob: numeroDoCampo(p.prob), outcome: p.outcome }))
+    .filter((p): p is { prob: number; outcome: 0 | 1 } => p.prob !== null && p.prob >= 0 && p.prob <= 100);
+  const foraDaConta = preds.length - validas.length;
+
   const brierScore = useMemo(() => {
-    if (preds.length === 0) return 0;
-    return preds.reduce((s, p) => s + Math.pow(p.prob / 100 - p.outcome, 2), 0) / preds.length;
+    if (validas.length === 0) return 0;
+    return validas.reduce((s, p) => s + Math.pow(p.prob / 100 - p.outcome, 2), 0) / validas.length;
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `validas` deriva de `preds`
   }, [preds]);
 
   const skillScore = 1 - brierScore / BRIER_DO_CHUTE;
@@ -52,7 +66,7 @@ export function BrierScoreCalc() {
             {preds.map((p, i) => (
               <div key={i} className="grid grid-cols-3 gap-2 items-center">
                 <input type="number" min={0} max={100} step={1} value={p.prob}
-                  onChange={(e) => updatePred(i, "prob", Math.min(100, Math.max(0, parseFloat(e.target.value) || 0)))}
+                  onChange={(e) => updatePred(i, "prob", e.target.value)}
                   className={inputClass} aria-label={`Previsão ${i + 1}`} />
                 <select value={p.outcome}
                   onChange={(e) => updatePred(i, "outcome", parseInt(e.target.value) as 0 | 1)}
@@ -61,9 +75,18 @@ export function BrierScoreCalc() {
                   <option value={0}>Não aconteceu</option>
                 </select>
                 <div className="flex items-center gap-1">
-                  <span className={`text-xs font-mono ${Math.pow(p.prob / 100 - p.outcome, 2) < 0.1 ? "text-positive" : "text-negative"}`}>
-                    {num(Math.pow(p.prob / 100 - p.outcome, 2), 3)}
-                  </span>
+                  {(() => {
+                    const n = numeroDoCampo(p.prob);
+                    if (n === null || n < 0 || n > 100) {
+                      return <span className="text-xs text-muted-foreground" title="Entre 0 e 100">—</span>;
+                    }
+                    const erro = Math.pow(n / 100 - p.outcome, 2);
+                    return (
+                      <span className={`text-xs font-mono ${erro < 0.1 ? "text-positive" : "text-negative"}`}>
+                        {num(erro, 3)}
+                      </span>
+                    );
+                  })()}
                   <button onClick={() => removePred(i)} className="text-muted-foreground hover:text-negative text-xs px-1">×</button>
                 </div>
               </div>
@@ -87,7 +110,7 @@ export function BrierScoreCalc() {
 
           <div className={`p-4 rounded-xl border ${isSkilled ? "bg-positive/10 border-positive/30" : "bg-negative/10 border-negative/30"}`}>
             <p className={`text-sm font-semibold ${classification.color}`}>{classification.label}</p>
-            <p className="text-xs text-muted-foreground mt-1">Com {plural(preds.length, "previsão", "previsões")} · Skill Score = 1 − BS / 0,25</p>
+            <p className="text-xs text-muted-foreground mt-1">Com {plural(validas.length, "previsão", "previsões")}{foraDaConta > 0 ? ` (${foraDaConta} fora da conta: vazia ou fora de 0 a 100)` : ""} · Skill Score = 1 − BS / 0,25</p>
           </div>
 
           <div className="p-3 rounded-lg bg-obsidian/50 border border-border/20 space-y-1">

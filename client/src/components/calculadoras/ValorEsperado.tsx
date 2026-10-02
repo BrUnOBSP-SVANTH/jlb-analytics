@@ -1,52 +1,62 @@
 /**
  * ValorEsperado — calculadora de valor esperado (EV). Extraida de pages/Calculadoras.tsx.
+ *
+ * ⚠️ O ESTADO GUARDA O TEXTO DOS CAMPOS, não o número (01/10/2026). Guardando o
+ * número, apagar "55" para digitar "60" era impossível: o campo vazio não vira
+ * número, a mudança era ignorada e o 55 voltava — a digitação virava "5560".
+ * Ver lib/campoNumerico.ts. Campo vazio deixa o resultado em "—", nunca em zero.
  */
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { Calculator } from "lucide-react";
 import { CalcCard, FormulaBox, ResultBox, InsightBox, Field, inputClass, labelClass } from "@/components/calculadoras/CalcPrimitives";
-import { num } from "@shared/formato";
-import { pct } from "@shared/formato";
+import { numeroDoCampo } from "@/lib/campoNumerico";
+import { num, pct } from "@shared/formato";
 
-interface Outcome { prob: number; payout: number }
+/** O que está escrito em cada campo de um cenário. */
+interface Outcome { prob: string; payout: string }
 
 export function ValorEsperado() {
-  const [stake, setStake] = useState(100);
+  const [stakeTexto, setStakeTexto] = useState("100");
   const [outcomes, setOutcomes] = useState<Outcome[]>([
-    { prob: 55, payout: 1.8 },
-    { prob: 45, payout: 0 },
+    { prob: "55", payout: "1.8" },
+    { prob: "45", payout: "0" },
   ]);
 
-  const update = (i: number, field: keyof Outcome, raw: string) => {
-    const v = parseFloat(raw);
-    if (isNaN(v)) return;
-    setOutcomes((prev) => prev.map((o, idx) => idx === i ? { ...o, [field]: v } : o));
-  };
+  const update = (i: number, field: keyof Outcome, texto: string) =>
+    setOutcomes((prev) => prev.map((o, idx) => idx === i ? { ...o, [field]: texto } : o));
 
-  const addOutcome = () => setOutcomes((prev) => [...prev, { prob: 0, payout: 0 }]);
+  const addOutcome = () => setOutcomes((prev) => [...prev, { prob: "0", payout: "0" }]);
   const removeOutcome = (i: number) => setOutcomes((prev) => prev.filter((_, idx) => idx !== i));
 
-  const totalProb = outcomes.reduce((s, o) => s + o.prob, 0);
+  // Os números, derivados do texto. `null` = campo vazio ou ilegível.
+  const stakeN = numeroDoCampo(stakeTexto);
+  const valores = outcomes.map((o) => ({ prob: numeroDoCampo(o.prob), payout: numeroDoCampo(o.payout) }));
+  const completo = stakeN !== null && stakeN >= 0 && valores.every((v) => v.prob !== null && v.payout !== null);
 
-  const ev = useMemo(
-    () => outcomes.reduce((s, o) => s + (o.prob / 100) * (o.payout - 1), 0),
-    [outcomes],
-  );
+  const totalProb = valores.reduce((s, v) => s + (v.prob ?? 0), 0);
+  // Conta barata (um cenário por linha): sem useMemo, que teria de declarar
+  // `valores` como dependência e seria recriado a cada render de qualquer jeito.
+  const ev = valores.reduce((s, v) => s + ((v.prob ?? 0) / 100) * ((v.payout ?? 0) - 1), 0);
 
+  const stake = stakeN ?? 0;
   const evReais = ev * stake;
   const roi = ev * 100;
   const isPositive = ev > 0;
-  // EV que arredonda para zero é neutro — vermelho em "R$ 0.00" contradiz o número
+  // EV que arredonda para zero é neutro — vermelho em "R$ 0,00" contradiz o número
   const isNeutral = Math.abs(ev) < 0.00005;
-  const evColor = isNeutral ? "text-muted-foreground" : isPositive ? "text-positive" : "text-negative";
-  const probWarning = Math.abs(totalProb - 100) > 0.5;
+  const evColor = !completo ? "text-muted-foreground" : isNeutral ? "text-muted-foreground" : isPositive ? "text-positive" : "text-negative";
+  // Só reclama da soma com tudo preenchido: no meio da troca de um número a
+  // soma está incompleta por definição, e o aviso piscaria a cada tecla.
+  const probWarning = completo && Math.abs(totalProb - 100) > 0.5;
+  const traco = "—";
 
   return (
     <CalcCard title="Calculadora de Valor Esperado" icon={Calculator}>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="space-y-4">
           <Field label="Valor da Posição (R$)" htmlFor="ev-stake" hint="Quanto você vai colocar de verdade.">
-            <input id="ev-stake" type="number" min={0} step={10} value={stake}
-              onChange={(e) => setStake(Math.max(0, parseFloat(e.target.value) || 0))}
+            <input id="ev-stake" type="number" min={0} step={10} value={stakeTexto}
+              onChange={(e) => setStakeTexto(e.target.value)}
               className={inputClass} />
           </Field>
 
@@ -70,7 +80,7 @@ export function ValorEsperado() {
                     onChange={(e) => update(i, "payout", e.target.value)} className={inputClass} />
                 </div>
                 {outcomes.length > 2 && (
-                  <button onClick={() => removeOutcome(i)}
+                  <button onClick={() => removeOutcome(i)} aria-label={`Remover cenário ${i + 1}`}
                     className="mb-0.5 px-2 py-2.5 rounded-lg bg-negative/10 text-negative text-xs hover:bg-negative/20">×</button>
                 )}
               </div>
@@ -91,40 +101,42 @@ export function ValorEsperado() {
 
         <div className="space-y-4">
           <ResultBox big label="Valor Esperado por posição" termo="ev"
-            value={`${isPositive ? "+" : ""}R$ ${num(evReais, 2)}`}
+            value={completo ? `${isPositive ? "+" : ""}R$ ${num(evReais, 2)}` : traco}
             color={evColor}
             hint="Se você fizesse esta posição muitas vezes, ganharia (ou perderia) isso EM MÉDIA por vez."
-            sub={`por R$ ${stake} na posição`} />
+            sub={completo ? `por R$ ${num(stake, 2)} na posição` : "preencha todos os campos"} />
           <div className="grid grid-cols-2 gap-3">
             <ResultBox label="ROI esperado" termo="roi"
-              value={`${isPositive ? "+" : ""}${num(roi, 1)}%`}
+              value={completo ? `${isPositive ? "+" : ""}${num(roi, 1)}%` : traco}
               color={evColor}
               hint="retorno médio sobre o que você põe" />
             <ResultBox label="EV por R$ 1" termo="ev"
-              value={`${isPositive ? "+" : ""}R$ ${num(ev, 3)}`}
+              value={completo ? `${isPositive ? "+" : ""}R$ ${num(ev, 3)}` : traco}
               color={evColor}
               hint="pra comparar posições de tamanhos diferentes" />
           </div>
 
-          <div className={`p-4 rounded-xl border ${isNeutral ? "bg-secondary/20 border-border/30" : isPositive ? "bg-positive/10 border-positive/30" : "bg-negative/10 border-negative/30"}`}>
-            <p className={`text-sm font-semibold ${evColor}`}>
-              {isNeutral ? "EV zero — posição justa" : isPositive ? "EV+ — matematicamente favorável" : "EV− — matematicamente perdedor"}
-            </p>
-            <p className="text-xs text-muted-foreground mt-1">
-              {isNeutral
-                ? "Retorno esperado igual ao valor da posição. Sem margem da casa e sem vantagem sua — raro no mundo real."
-                : isPositive
-                ? "No longo prazo, esta posição tende a lucrar. Mas variância de curto prazo é inevitável."
-                : "No longo prazo, toda posição EV− resulta em perda. A frequência de acerto não muda isso."}
-            </p>
-          </div>
+          {completo && (
+            <div className={`p-4 rounded-xl border ${isNeutral ? "bg-secondary/20 border-border/30" : isPositive ? "bg-positive/10 border-positive/30" : "bg-negative/10 border-negative/30"}`}>
+              <p className={`text-sm font-semibold ${evColor}`}>
+                {isNeutral ? "EV zero — posição justa" : isPositive ? "EV+ — matematicamente favorável" : "EV− — matematicamente perdedor"}
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                {isNeutral
+                  ? "Retorno esperado igual ao valor da posição. Sem margem da casa e sem vantagem sua — raro no mundo real."
+                  : isPositive
+                  ? "No longo prazo, esta posição tende a lucrar. Mas variância de curto prazo é inevitável."
+                  : "No longo prazo, toda posição EV− resulta em perda. A frequência de acerto não muda isso."}
+              </p>
+            </div>
+          )}
 
           <div className="p-3 rounded-lg bg-obsidian/50 border border-border/20">
             <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-1">Probabilidade implícita da odd</p>
-            {outcomes.map((o, i) => (
+            {valores.map((v, i) => (
               <div key={i} className="flex justify-between text-xs mt-1">
-                <span className="text-muted-foreground">Cenário {i + 1} (odd {num(o.payout, 2)})</span>
-                <span className="font-mono text-foreground">{o.payout > 0 ? pct(100 / o.payout, 1) : "—"}</span>
+                <span className="text-muted-foreground">Cenário {i + 1} (odd {num(v.payout, 2)})</span>
+                <span className="font-mono text-foreground">{v.payout !== null && v.payout > 0 ? pct(100 / v.payout, 1) : "—"}</span>
               </div>
             ))}
           </div>

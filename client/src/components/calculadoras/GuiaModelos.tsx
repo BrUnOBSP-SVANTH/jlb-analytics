@@ -42,7 +42,7 @@ const MODELS: ModelGuide[] = [
     accuracy: "Fórmula fechada — não há erro de estimativa",
     accuracyColor: "text-positive border-positive/30 bg-positive/10",
     limitacao: "O resultado depende 100% da qualidade da sua estimativa de probabilidade. Se você subestima ou superestima, o EV calculado é enganoso.",
-    polymarketUso: "No Polymarket, o preço de mercado (ex: 0.65) é a probabilidade implícita. Se você acha que a chance real é 75%, o EV = 0.75×(1/0.65 − 1) − 0.25 > 0.",
+    polymarketUso: "No Polymarket, o preço de mercado (ex: 0,65) é a probabilidade implícita. Se você acha que a chance real é 75%, o EV = 0,75×(1/0,65 − 1) − 0,25 ≈ +0,15 por real.",
     steps: [
       "1. Identifique um evento e estime a probabilidade real (ex: 65%)",
       "2. Veja a odd ou probabilidade implícita do mercado (ex: 55%)",
@@ -78,7 +78,7 @@ const MODELS: ModelGuide[] = [
     // overround a partir dos preços que ele está vendo na tela.
     polymarketUso: "Some as probabilidades de todos os desfechos do mesmo mercado. O quanto passar de 100% é o overround daquele mercado, agora — você acabou de medir a margem embutida sem precisar acreditar em ninguém. Compare o mesmo evento em duas plataformas e a diferença aparece.",
     steps: [
-      "1. Colete as odds de todos os resultados possíveis (ex: 1.90 / 1.90)",
+      "1. Colete as odds de todos os resultados possíveis (ex: 1,90 / 1,90)",
       "2. Calcule 1/odd para cada resultado",
       "3. Some todos os valores — se > 1, o excesso é o overround",
       "4. Calcule a fair odd: divide cada prob implícita pela soma total",
@@ -101,7 +101,7 @@ const MODELS: ModelGuide[] = [
       "Para comparar sua calibração com a do mercado (Polymarket)",
       "Para identificar áreas onde você sistemicamente erra (viés de confiança)",
     ],
-    howItWorks: "Para cada previsão, calcula (sua_prob − resultado)². Médio ao longo de muitas previsões. Um forecaster que diz 70% em algo que acontece 70% das vezes tem BS próximo de 0.21 — melhor que quem diz 90% e erra frequentemente.",
+    howItWorks: "Para cada previsão, calcula (sua_prob − resultado)². Médio ao longo de muitas previsões. Um forecaster que diz 70% em algo que acontece 70% das vezes tem BS próximo de 0,21 — melhor que quem diz 90% e erra frequentemente.",
     accuracy: `Benchmark: superforecasters do GJP ficam em torno de ${num(BRIER_SUPERFORECASTER, 2)}`,
     accuracyColor: "text-dado border-dado/30 bg-dado/10",
     limitacao: "Requer muitas previsões para ser estatisticamente significativo (mínimo 30). Com poucas previsões, o BS pode variar por sorte.",
@@ -109,17 +109,17 @@ const MODELS: ModelGuide[] = [
     steps: [
       "1. Antes de cada evento, registre sua estimativa (ex: 65%)",
       "2. Após o resultado, anote se aconteceu (1) ou não (0)",
-      "3. Calcule (0.65 − 1)² = 0.1225 para esse evento",
+      "3. Calcule (0,65 − 1)² = 0,1225 para esse evento",
       "4. Acumule 20+ previsões e tire a média",
       "5. Compare seu BS com o BS do Polymarket no mesmo período",
     ],
     // A MESMA escala da calculadora de Brier — as duas listas divergiam.
     benchmarks: [
-      ["< 0.10", "No nível dos superforecasters"],
-      ["0.10–0.15", "Forecaster experiente — calibração muito boa"],
-      ["0.15–0.20", "Bom — acima da maioria das pessoas"],
-      ["0.20–0.25", "Razoável — ainda melhor que chutar"],
-      ["> 0.25", "Pior que chutar 50% sempre — revisar metodologia"],
+      ["< 0,10", "No nível dos superforecasters"],
+      ["0,10–0,15", "Forecaster experiente — calibração muito boa"],
+      ["0,15–0,20", "Bom — acima da maioria das pessoas"],
+      ["0,20–0,25", "Razoável — ainda melhor que chutar"],
+      ["> 0,25", "Pior que chutar 50% sempre — revisar metodologia"],
     ],
   },
   {
@@ -136,7 +136,7 @@ const MODELS: ModelGuide[] = [
     accuracy: "Crescimento ótimo provado matematicamente (Shannon/Kelly, 1956)",
     accuracyColor: "text-gold border-gold/30 bg-gold/10",
     limitacao: "Assume que sua estimativa de p é precisa. Na prática, há incerteza — daí usar ½ Kelly como proteção contra erros de estimativa.",
-    polymarketUso: "No Polymarket, você opera contra o mercado. Se o mercado diz 60% e você acha 75%, o edge = 15pp. Com odd implícita de 1/0.6 = 1.67, o Kelly seria: (0.67×0.75 − 0.25) / 0.67 ≈ 37% — o que seria muito. Use ½ ou ¼ Kelly.",
+    polymarketUso: "No Polymarket, você opera contra o mercado. Se o mercado diz 60% e você acha 75%, o edge = 15 pp. A odd implícita é 1/0,6 ≈ 1,67, então b = 0,67 e o Kelly seria: (0,67×0,75 − 0,25) / 0,67 ≈ 37% — o que seria muito. Use ½ ou ¼ Kelly.",
     steps: [
       "1. Calcule o EV — só prossiga se positivo",
       "2. Identifique b = odd − 1, p = sua prob, q = 1 − p",

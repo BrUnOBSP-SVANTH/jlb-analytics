@@ -396,7 +396,7 @@ export default function Briefing() {
             {briefing.riskAlert && (
               <div className="flex items-start gap-2 p-3 rounded-lg bg-warning/5 border border-warning/20">
                 <AlertTriangle className="w-3.5 h-3.5 text-warning shrink-0 mt-0.5" />
-                <p className="text-xs text-warning">{briefing.riskAlert}</p>
+                <p className="text-xs text-warning max-w-prose">{briefing.riskAlert}</p>
               </div>
             )}
           </div>
