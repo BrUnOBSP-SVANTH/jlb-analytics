@@ -43,65 +43,65 @@ export const FILMES_TUTORIAL: readonly FilmeTutorial[] = /* DADOS */[
     "titulo": "Visão geral do JLB Analytics",
     "resumo": "O percurso de quem chega agora: mercados, calculadoras, simulador e o nosso histórico.",
     "precisaConta": false,
-    "duracaoSegundos": 176.6,
+    "duracaoSegundos": 173.8,
     "comAudio": true,
-    "gravadoEm": "2026-10-02",
-    "versao": "f0ced6bb26",
+    "gravadoEm": "2026-10-03",
+    "versao": "f9a76c5603",
     "capitulos": [
       {
         "id": "abertura",
         "titulo": "O que é o JLB Analytics",
         "rota": "/",
         "inicioSegundos": 0,
-        "fimSegundos": 23.7,
+        "fimSegundos": 23.4,
         "narracao": "Este é o JLB Analytics. Ele faz três coisas: mostra ao vivo o que os maiores mercados de previsão do mundo estão dizendo, ensina você a calcular as chances por conta própria, e publica o histórico completo dos nossos acertos e dos nossos erros. Neste vídeo eu uso cada ferramenta de verdade, com números de verdade."
       },
       {
         "id": "mercados",
         "titulo": "Mercados ao vivo",
         "rota": "/mercados",
-        "inicioSegundos": 23.7,
-        "fimSegundos": 47.3,
+        "inicioSegundos": 23.4,
+        "fimSegundos": 46.9,
         "narracao": "Aqui estão os mercados ao vivo do Polymarket, do Kalshi e do Manifold. O número grande é a probabilidade que o mercado dá para o evento acontecer — não é opinião nossa, é o preço que as pessoas estão pagando agora. E a busca entende português: eu escrevo eleição, e ela encontra os mercados de eleição, mesmo os que estão escritos em inglês."
       },
       {
         "id": "mercado-detalhe",
         "titulo": "Dentro de um mercado",
         "rota": "/mercados",
-        "inicioSegundos": 47.3,
-        "fimSegundos": 70.6,
+        "inicioSegundos": 46.9,
+        "fimSegundos": 72.8,
         "narracao": "Abrindo um mercado, você vê o histórico do preço, o volume negociado e o prazo. O gráfico mostra como a opinião coletiva mudou com o tempo — uma virada brusca quase sempre tem uma notícia atrás. Mais abaixo está a regra de resolução, no texto original da plataforma: é ela que decide quem ganha, e por isso a gente não traduz."
       },
       {
         "id": "valor-esperado",
         "titulo": "Calculadora de valor esperado",
         "rota": "/calculadoras",
-        "inicioSegundos": 70.6,
-        "fimSegundos": 106,
+        "inicioSegundos": 72.8,
+        "fimSegundos": 104.3,
         "narracao": "Agora as ferramentas, começando pela mais importante do site: o valor esperado. A pergunta é: se eu repetisse esta mesma posição muitas vezes, sairia no lucro ou no prejuízo? Vou testar. Cem reais, sessenta por cento de chance de dar certo e quarenta de dar errado, com odd dois — se acertar, recebo o dobro. A conta dá vinte reais positivos por posição. Repare que as duas chances somam cem: se não somarem, a calculadora avisa em vez de dar um número errado."
       },
       {
         "id": "kelly",
         "titulo": "Kelly: quanto da banca arriscar",
         "rota": "/calculadoras",
-        "inicioSegundos": 106,
-        "fimSegundos": 126.8,
+        "inicioSegundos": 104.3,
+        "fimSegundos": 124.9,
         "narracao": "A aba do lado responde a pergunta seguinte: se vale a pena, quanto da banca eu coloco? Com cinquenta e cinco por cento de chance e odd dois, o critério de Kelly diz que o máximo matemático é dez por cento. E a própria tela recomenda usar só uma fração disso, porque a sua estimativa de chance também pode estar errada."
       },
       {
         "id": "simulador",
         "titulo": "Simulador: o que a sorte faz com o método",
         "rota": "/simulador",
-        "inicioSegundos": 126.8,
-        "fimSegundos": 149,
+        "inicioSegundos": 124.9,
+        "fimSegundos": 146.4,
         "narracao": "O simulador mostra o que a conta sozinha não mostra: a variação. Mesmo com o valor esperado positivo, a curva passa por sequências ruins — e é nelas que as pessoas abandonam o método. Cada nova amostra é um caminho diferente para a mesma conta. Ver isso acontecer antes de viver isso é metade do aprendizado."
       },
       {
         "id": "fecho",
         "titulo": "O histórico completo — inclusive os erros",
         "rota": "/track-record",
-        "inicioSegundos": 149,
-        "fimSegundos": 176.6,
+        "inicioSegundos": 146.4,
+        "fimSegundos": 173.8,
         "narracao": "E aqui o círculo fecha. Toda previsão da nossa IA é registrada antes de o mercado resolver, e medida pelo resultado oficial da plataforma — inclusive quando a gente erra, e a tela diz quanto. A análise por IA e a banca simulada ficam com uma conta grátis, e têm vídeos próprios. Para começar, o melhor caminho é a trilha de educação."
       }
     ]
@@ -111,41 +111,41 @@ export const FILMES_TUTORIAL: readonly FilmeTutorial[] = /* DADOS */[
     "titulo": "A trilha de aprendizado",
     "resumo": "Os cinco níveis, com as calculadoras do Nível 1 e a checagem de cada nível.",
     "precisaConta": false,
-    "duracaoSegundos": 76.1,
+    "duracaoSegundos": 73.5,
     "comAudio": true,
-    "gravadoEm": "2026-10-02",
-    "versao": "25dbaee14d",
+    "gravadoEm": "2026-10-03",
+    "versao": "e5e870c665",
     "capitulos": [
       {
         "id": "educacao",
         "titulo": "A trilha: cinco níveis",
         "rota": "/educacao",
         "inicioSegundos": 0,
-        "fimSegundos": 17.1,
+        "fimSegundos": 16.1,
         "narracao": "A trilha tem cinco níveis, do valor esperado até a análise que junta tudo. Os dois primeiros são grátis. Cada nível tem calculadoras de verdade — não é texto para ler, é conta para fazer — e termina com uma checagem."
       },
       {
         "id": "nivel1-margem",
         "titulo": "Nível 1: a margem da casa",
         "rota": "/nivel/1",
-        "inicioSegundos": 17.1,
-        "fimSegundos": 38.5,
+        "inicioSegundos": 16.1,
+        "fimSegundos": 37.5,
         "narracao": "No nível um, a primeira calculadora mostra o que quase ninguém vê: a margem da casa. Com odds de dois e dez, três e cinquenta e três e vinte, as chances embutidas somam mais de cem por cento. Os sete vírgula quarenta e quatro por cento que sobram são o que você paga só para participar — antes de qualquer resultado."
       },
       {
         "id": "nivel1-checagem",
         "titulo": "A checagem do nível",
         "rota": "/nivel/1",
-        "inicioSegundos": 38.5,
-        "fimSegundos": 59.5,
+        "inicioSegundos": 37.5,
+        "fimSegundos": 57.4,
         "narracao": "E cada nível termina com uma checagem. O SIM custa quarenta centavos e você acha que a chance real é cinquenta por cento: quanto vale cada real apostado? Vinte e cinco centavos — e o erro comum é responder dez, subtraindo as porcentagens. A explicação aparece na hora, com a conta escrita."
       },
       {
         "id": "nivel5",
         "titulo": "Nível 5: a análise integrada",
         "rota": "/nivel/5",
-        "inicioSegundos": 59.5,
-        "fimSegundos": 76.1,
+        "inicioSegundos": 57.4,
+        "fimSegundos": 73.5,
         "narracao": "No último nível tudo se junta: modelos, mercado e notícia na mesma leitura. O sistema nunca diz o que fazer — mostra onde os modelos divergem do mercado e por quê, e deixa a decisão com você."
       }
     ]

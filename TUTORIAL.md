@@ -12,49 +12,49 @@ daquele filme não é produzido e o relatório diz qual passo falhou.
 
 ## Visão geral do JLB Analytics
 
-`pnpm tutorial geral` · 7 cenas · ~02:53
+`pnpm tutorial geral` · 7 cenas · ~02:56
 
 > O percurso de quem chega agora: mercados, calculadoras, simulador e o nosso histórico.
 
 ### 1. O que é o JLB Analytics
 
-**00:00 – 00:22** · rota `/` · cena `abertura` · 1 verificação
+**00:00 – 00:23** · rota `/` · cena `abertura` · 1 verificação
 
 Este é o JLB Analytics. Ele faz três coisas: mostra ao vivo o que os maiores mercados de previsão do mundo estão dizendo, ensina você a calcular as chances por conta própria, e publica o histórico completo dos nossos acertos e dos nossos erros. Neste vídeo eu uso cada ferramenta de verdade, com números de verdade.
 
 ### 2. Mercados ao vivo
 
-**00:22 – 00:47** · rota `/mercados` · cena `mercados` · 1 verificação
+**00:23 – 00:48** · rota `/mercados` · cena `mercados` · 1 verificação
 
 Aqui estão os mercados ao vivo do Polymarket, do Kalshi e do Manifold. O número grande é a probabilidade que o mercado dá para o evento acontecer — não é opinião nossa, é o preço que as pessoas estão pagando agora. E a busca entende português: eu escrevo eleição, e ela encontra os mercados de eleição, mesmo os que estão escritos em inglês.
 
 ### 3. Dentro de um mercado
 
-**00:47 – 01:11** · rota `/mercados` · cena `mercado-detalhe` · 2 verificaçãoões
+**00:48 – 01:14** · rota `/mercados` · cena `mercado-detalhe` · 2 verificaçãoões
 
 Abrindo um mercado, você vê o histórico do preço, o volume negociado e o prazo. O gráfico mostra como a opinião coletiva mudou com o tempo — uma virada brusca quase sempre tem uma notícia atrás. Mais abaixo está a regra de resolução, no texto original da plataforma: é ela que decide quem ganha, e por isso a gente não traduz.
 
 ### 4. Calculadora de valor esperado
 
-**01:11 – 01:43** · rota `/calculadoras` · cena `valor-esperado` · 1 verificação
+**01:14 – 01:46** · rota `/calculadoras` · cena `valor-esperado` · 3 verificaçãoões
 
 Agora as ferramentas, começando pela mais importante do site: o valor esperado. A pergunta é: se eu repetisse esta mesma posição muitas vezes, sairia no lucro ou no prejuízo? Vou testar. Cem reais, sessenta por cento de chance de dar certo e quarenta de dar errado, com odd dois — se acertar, recebo o dobro. A conta dá vinte reais positivos por posição. Repare que as duas chances somam cem: se não somarem, a calculadora avisa em vez de dar um número errado.
 
 ### 5. Kelly: quanto da banca arriscar
 
-**01:43 – 02:07** · rota `/calculadoras` · cena `kelly` · 1 verificação
+**01:46 – 02:10** · rota `/calculadoras` · cena `kelly` · 2 verificaçãoões
 
 A aba do lado responde a pergunta seguinte: se vale a pena, quanto da banca eu coloco? Com cinquenta e cinco por cento de chance e odd dois, o critério de Kelly diz que o máximo matemático é dez por cento. E a própria tela recomenda usar só uma fração disso, porque a sua estimativa de chance também pode estar errada.
 
 ### 6. Simulador: o que a sorte faz com o método
 
-**02:07 – 02:29** · rota `/simulador` · cena `simulador` · 1 verificação
+**02:10 – 02:32** · rota `/simulador` · cena `simulador` · 1 verificação
 
 O simulador mostra o que a conta sozinha não mostra: a variação. Mesmo com o valor esperado positivo, a curva passa por sequências ruins — e é nelas que as pessoas abandonam o método. Cada nova amostra é um caminho diferente para a mesma conta. Ver isso acontecer antes de viver isso é metade do aprendizado.
 
 ### 7. O histórico completo — inclusive os erros
 
-**02:29 – 02:53** · rota `/track-record` · cena `fecho` · 1 verificação
+**02:32 – 02:56** · rota `/track-record` · cena `fecho` · 1 verificação
 
 E aqui o círculo fecha. Toda previsão da nossa IA é registrada antes de o mercado resolver, e medida pelo resultado oficial da plataforma — inclusive quando a gente erra, e a tela diz quanto. A análise por IA e a banca simulada ficam com uma conta grátis, e têm vídeos próprios. Para começar, o melhor caminho é a trilha de educação.
 
