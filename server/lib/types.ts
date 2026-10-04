@@ -24,6 +24,9 @@ export interface PolyMarketInner {
   active?: boolean; closed?: boolean; acceptingOrders?: boolean;
   endDate?: string; outcomePrices?: string; outcomes?: string; clobTokenIds?: string;
   volume24hr?: number; oneWeekPriceChange?: number; bestBid?: number; bestAsk?: number;
+  /** Posição da opção no evento, como a plataforma a mostra ("0", "1"…). A lista
+   *  de mercados do evento chega embaralhada; é isto que põe a escada em ordem. */
+  groupItemThreshold?: string | number;
 }
 export interface PolyEventTag { label?: string; slug?: string }
 export interface PolyEvent {
@@ -42,6 +45,9 @@ export interface PolyMarket {
   closed?: boolean; active?: boolean;
   endDate?: string; outcomePrices?: string; outcomes?: string; clobTokenIds?: string;
   externalUrl?: string; // URL canônica /event/{eventSlug} computada no servidor
+  /** Só no card de evento (`ev-…`): ver `TipoDeGrupo` em lib/eventoAgregado.ts. */
+  tipoDeGrupo?: "exclusivos" | "independentes";
+  opcoesOcultas?: number;
 }
 
 // ── Kalshi ────────────────────────────────────────────────────────────────────
@@ -52,6 +58,8 @@ export interface KalshiNestedMarket {
   previous_price_dollars?: string;
   volume_fp?: string; volume_24h_fp?: string; open_interest_fp?: string;
   liquidity_dollars?: string; close_time?: string; status?: string;
+  /** Patamar da faixa ("$76,600 or above" → 76600): a ordem da escada de limiar. */
+  floor_strike?: number; strike_type?: string;
 }
 export interface KalshiEvent {
   event_ticker: string; series_ticker?: string; title?: string; category?: string;
@@ -67,7 +75,13 @@ export interface KalshiMarket {
   volume: number; volume24h?: number; openInterest?: number; liquidity?: number;
   closeTime?: string; category?: string; status?: string;
   externalUrl?: string; // URL canônica /markets/{series}/{event} computada no servidor
-  outcomes?: { label: string; prob: number }[]; // multi-resultado agrupado (mutually_exclusive)
+  /** Card de evento de várias opções. `id` = ticker do mercado da opção (o que liquida). */
+  outcomes?: { id?: string; label: string; prob: number }[];
+  /** "exclusivos" (mutually_exclusive) ou "independentes" (escada de datas/faixas) —
+   *  ver `TipoDeGrupo` em lib/eventoAgregado.ts. */
+  tipoDeGrupo?: "exclusivos" | "independentes";
+  /** Opções abertas que a lista não traz. A tela diz quantas são. */
+  opcoesOcultas?: number;
   /** Rótulo do desfecho ("Greed", "Fear", "10 or more"), vindo de `yes_sub_title`.
    *  Viaja até a lista final para desambiguar dois cards de mesmo título — ver
    *  `desambiguarTitulosIguais`. Interno: a tela não o exibe sozinho. */

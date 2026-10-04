@@ -46,6 +46,10 @@ export interface PolyMarket {
   outcomePrices?: string;
   outcomes?: string;
   clobTokenIds?: string;
+  /** Card de evento: o tipo do grupo e quantas opções ficaram fora da lista
+   *  (ver shared/descreverMercado.ts). */
+  tipoDeGrupo?: "exclusivos" | "independentes";
+  opcoesOcultas?: number;
 }
 
 export interface KalshiMarket {

@@ -68,7 +68,8 @@ export function EdgeCalculator({
   onSelecionarDesfecho?: (id: string) => void;
 }) {
   const desfechos = market.parsedOutcomes;
-  const multi = Boolean(desfechos && desfechos.length > 2);
+  // Card de EVENTO (o servidor diz o grupo) tem lista mesmo com 2 opções.
+  const multi = Boolean(desfechos && (market.grupo ? desfechos.length > 0 : desfechos.length > 2));
   // Nada de estado vazio: sem seleção, o líder (maior preço — a lista já vem
   // ordenada) é quem está sob análise.
   const desfecho = multi ? desfechos!.find((o) => o.id === desfechoSelecionado) ?? desfechos![0] : null;
@@ -122,8 +123,11 @@ export function EdgeCalculator({
   // Só em mercado múltiplo. No binário a spec exige comportamento idêntico ao
   // de antes (critério 7) — e lá cada registro já era uma linha nova.
   const anterior = desfecho ? previsaoDoDesfecho(marketId, desfecho.id) : null;
-  /** Soma das suas estimativas ativas neste mercado, contando a que está na tela. */
-  const somaEstimativas = multi
+  /** Soma das suas estimativas ativas neste mercado, contando a que está na tela.
+   *  Só faz sentido quando só uma opção acontece. Numa escada de datas, 30% "até
+   *  2026" e 80% "até 2028" somam 110% e estão perfeitamente coerentes — o aviso
+   *  "não podem somar mais que 100%" ali seria ensinar errado (03/10/2026). */
+  const somaEstimativas = multi && market.grupo !== "independentes"
     ? somaDasEstimativas(marketId, { outcomeId: desfecho!.id, userProb: estimativaPp })
     : null;
 

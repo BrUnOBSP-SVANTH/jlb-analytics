@@ -209,7 +209,7 @@ function TrendingCardBase({ item, onCompare, inCompare, indice = 0 }: {
         {item.parsedOutcomes ? (
           <div className="mb-3">
             <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-1.5">Probabilidades</p>
-            <MultiOutcomePills outcomes={item.parsedOutcomes} />
+            <MultiOutcomePills outcomes={item.parsedOutcomes} independentes={item.grupo === "independentes"} ocultas={item.opcoesOcultas} />
           </div>
         ) : item.yesProb !== undefined ? (
           <div className="mb-3"><ProbBar prob={livePct / 100} /></div>

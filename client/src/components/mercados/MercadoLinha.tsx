@@ -137,11 +137,15 @@ export function MercadoLinha({ item, onCompare, inCompare, onWatch, watched }: {
   const valor = item.yesProb !== undefined ? valorAoVivo : null;
   const todos = item.parsedOutcomes ?? [];
   const desfechos = todos.slice(0, MAX_DESFECHOS);
-  const sobram = todos.length - desfechos.length;
+  // As que o servidor deixou de fora também contam: sumir calado era o defeito.
+  const sobram = todos.length - desfechos.length + (item.opcoesOcultas ?? 0);
+  // Escada (datas, faixas): não há líder. A 1ª opção é o prazo mais curto, e
+  // pôr o número dela na barra grande diria "5%" sobre o evento inteiro.
+  const escada = item.grupo === "independentes";
 
   // Num mercado de vários desfechos, quem manda na barra é o líder — é a leitura
   // equivalente ao "sim" de um mercado binário.
-  const barra = todos.length ? Math.round((todos[0]?.prob ?? 0) * 100) : valor;
+  const barra = escada ? null : todos.length ? Math.round((todos[0]?.prob ?? 0) * 100) : valor;
 
   const variacao = item.weekPriceChange !== undefined ? item.weekPriceChange * 100 : null;
   const destino = ehMercado ? `/mercados/${item.id}` : undefined;
@@ -182,7 +186,14 @@ export function MercadoLinha({ item, onCompare, inCompare, onWatch, watched }: {
               "Eleição 2028 — 17%" não diz de QUEM é o 17%. */}
           {desfechos.length > 0 && (
             <p className="mt-1.5 text-[0.8125rem] text-foreground/70 flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
-              {desfechos.map((d) => (
+              {desfechos.map((d) => escada ? (
+                // "até 31 de dezembro de 2026 5%": o prazo primeiro. Com o número
+                // na frente ("5 até 31 de…") a linha parecia dizer outra coisa.
+                <span key={d.label} className="whitespace-nowrap">
+                  {d.label}{" "}
+                  <span className="font-mono tabular-nums text-foreground">{Math.round(d.prob * 100)}%</span>
+                </span>
+              ) : (
                 <span key={d.label} className="whitespace-nowrap">
                   <span className="font-mono tabular-nums text-foreground">{Math.round(d.prob * 100)}</span>
                   {" "}{d.label}
@@ -267,12 +278,16 @@ export function MercadoLinha({ item, onCompare, inCompare, onWatch, watched }: {
 
         {/* No celular não há espaço para o eixo, então o número volta a ser um
             número — mas continua em mono e tabular, alinhado com os vizinhos. */}
-        <div className="md:hidden shrink-0 text-right -mt-0.5">
-          <p className="font-mono font-semibold tabular-nums text-foreground text-[1.75rem] leading-none">
-            {valor ?? barra ?? "—"}
-            {valor !== null && <span className="text-[0.75rem] align-top text-muted-foreground">%</span>}
-          </p>
-        </div>
+        {/* Na escada não há UM número que resuma o mercado: as opções acima já
+            dizem a chance de cada prazo. */}
+        {!escada && (
+          <div className="md:hidden shrink-0 text-right -mt-0.5">
+            <p className="font-mono font-semibold tabular-nums text-foreground text-[1.75rem] leading-none">
+              {valor ?? barra ?? "—"}
+              {valor !== null && <span className="text-[0.75rem] align-top text-muted-foreground">%</span>}
+            </p>
+          </div>
+        )}
 
         {/* ── MOVIMENTO E AÇÕES ───────────────────────────────────────────── */}
         <div className="hidden md:flex shrink-0 flex-col items-end gap-1 w-[5.5rem]">

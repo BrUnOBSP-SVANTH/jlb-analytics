@@ -288,7 +288,7 @@ async function executarPasso(page, passo) {
       return page.waitForTimeout(1300);
     }
     case "clicar": {
-      const alvo = page.getByRole(passo.papel, { name: passo.nome, exact: Boolean(passo.exato) }).first();
+      const alvo = page.getByRole(passo.papel, { name: passo.nome, exact: Boolean(passo.exato) }).nth(passo.indice ?? 0);
       await alvo.waitFor({ state: "visible", timeout: 15_000 });
       await mirar(page, alvo);
       await alvo.click();

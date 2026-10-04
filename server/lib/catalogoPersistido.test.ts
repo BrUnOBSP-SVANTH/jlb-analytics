@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { copiaUtilizavel, VALIDADE_DA_COPIA_MS } from "./catalogoPersistido.ts";
+import { copiaUtilizavel, VALIDADE_DA_COPIA_MS, podeGuardarCopia } from "./catalogoPersistido.ts";
 
 const AQUI = dirname(fileURLToPath(import.meta.url));
 const ler = (rel: string) => readFileSync(join(AQUI, rel), "utf-8");
@@ -80,5 +80,23 @@ describe("servir cópia sem dizer que é cópia seria mentir", () => {
     const cache = ler("../../client/src/lib/marketsCache.ts");
     // A pior das fontes manda: uma ao vivo não pode esconder a outra velha.
     expect(cache).toMatch(/export function procedenciaDoCatalogo/);
+  });
+});
+
+describe("só a produção guarda a cópia", () => {
+  // O `.env` local aponta para o banco de produção: um servidor de teste
+  // sobrescrevia a cópia que o site serve ao acordar (03/10/2026).
+  it("máquina local não guarda; o Render guarda", () => {
+    expect(podeGuardarCopia({ NODE_ENV: "development" })).toBe(false);
+    expect(podeGuardarCopia({})).toBe(false);
+    expect(podeGuardarCopia({ RENDER_EXTERNAL_URL: "https://jlb-analytics.onrender.com" })).toBe(true);
+    expect(podeGuardarCopia({ NODE_ENV: "production" })).toBe(true);
+  });
+
+  it("a trava fica ANTES de qualquer escrita", () => {
+    const fonte = ler("catalogoPersistido.ts").replace(/\/\*[\s\S]*?\*\//g, " ");
+    const corpo = fonte.slice(fonte.indexOf("export async function salvarCatalogo"));
+    expect(corpo.indexOf("podeGuardarCopia()")).toBeGreaterThan(-1);
+    expect(corpo.indexOf("podeGuardarCopia()")).toBeLessThan(corpo.indexOf("fetch("));
   });
 });

@@ -1,5 +1,8 @@
 import { describe, it, expect } from "vitest";
-import { descreverMercado, descreverPolymarket, resumoDoMercado, rotuloEmPortugues } from "./descreverMercado.ts";
+import {
+  descreverMercado, descreverPolymarket, resumoDoMercado, rotuloEmPortugues,
+  rotuloDaOpcao, ehEscadaDePrazo, tituloDoGrupo, rotulosSaoSimNao,
+} from "./descreverMercado.ts";
 import { pctDeProb } from "./formato.ts";
 
 const resumo = (m: Parameters<typeof descreverMercado>[0]) =>
@@ -170,5 +173,117 @@ describe("o caso em que o EVENTO é o título certo", () => {
       rotulos: ["Yes", "No"], precos: [0.925, 0.075],
     });
     expect(d.titulo).toContain("Democratic Party");
+  });
+});
+
+/**
+ * Os grupos (03/10/2026): o servidor passou a mandar UM card por evento com
+ * TODAS as opções. Os exemplos são os do catálogo publicado naquele dia.
+ */
+describe("card de evento — grupo exclusivo ou de opções independentes", () => {
+  const indiana = {
+    question: "Indiana enacts data center moratorium by...?",
+    eventTitle: "Indiana enacts data center moratorium by...?",
+    outcomes: JSON.stringify(["December 31, 2026", "June 30, 2027", "December 31, 2027", "December 31, 2028"]),
+    outcomePrices: JSON.stringify(["0.045", "0.09", "0.11", "0.185"]),
+    tipoDeGrupo: "independentes" as const,
+  };
+
+  it("🔴 escada de datas: todas as datas, NA ORDEM, com 'até'", () => {
+    const d = descreverPolymarket(indiana);
+    expect(d.tipo).toBe("opcoes-independentes");
+    expect(d.desfechos.map((o) => o.rotulo)).toEqual([
+      "até 31 de dezembro de 2026", "até 30 de junho de 2027", "até 31 de dezembro de 2027", "até 31 de dezembro de 2028",
+    ]);
+    // Ordenar por chance poria 2028 primeiro e embaralharia o tempo.
+    expect(d.desfechos.map((o) => o.prob)).toEqual([0.045, 0.09, 0.11, 0.185]);
+    // A opção em destaque é a 1ª — a mesma que liquida a aposta da banca
+    // (mercadoQueLiquida usa outcomeMarketIds[0]), nunca a "mais provável".
+    expect(d.lider).toEqual({ rotulo: "até 31 de dezembro de 2026", prob: 0.045 });
+  });
+
+  it("o título não fica com o 'by...?' pendurado", () => {
+    expect(descreverPolymarket(indiana).titulo).toBe("Indiana enacts data center moratorium by when?");
+    expect(tituloDoGrupo("US-Iran Final Nuclear Deal by…?")).toBe("US-Iran Final Nuclear Deal by when?");
+    expect(tituloDoGrupo("Democratic Presidential Nominee 2028")).toBe("Democratic Presidential Nominee 2028");
+  });
+
+  it("o resumo da escada mostra as duas pontas, não um 'líder'", () => {
+    expect(resumoDoMercado(descreverPolymarket(indiana), (p) => pctDeProb(p)))
+      .toBe("até 31 de dezembro de 2026 5% … até 31 de dezembro de 2028 19%");
+  });
+
+  it("🔴 disputa de DOIS (Flávio × Lula) é disputa, não 'dois rótulos' de um binário", () => {
+    const d = descreverPolymarket({
+      question: "Brazil Presidential Election", eventTitle: "Brazil Presidential Election",
+      outcomes: JSON.stringify(["Luiz Inácio Lula da Silva", "Flávio Bolsonaro"]),
+      outcomePrices: JSON.stringify(["0.415", "0.592"]),
+      tipoDeGrupo: "exclusivos",
+    });
+    expect(d.tipo).toBe("varios-desfechos");
+    expect(d.lider?.rotulo).toBe("Flávio Bolsonaro");
+  });
+
+  it("faixa de preço (escada que não é de prazo) não ganha 'até'", () => {
+    const d = descreverPolymarket({
+      question: "What will Gold (GC) hit by end of December?",
+      eventTitle: "What will Gold (GC) hit by end of December?",
+      outcomes: JSON.stringify(["↑ $4,500", "↑ $5,000"]),
+      outcomePrices: JSON.stringify(["0.495", "0.2"]),
+      tipoDeGrupo: "independentes",
+    });
+    expect(d.desfechos.map((o) => o.rotulo)).toEqual(["↑ US$ 4.500", "↑ US$ 5.000"]);
+  });
+});
+
+describe("rótulo de opção em português", () => {
+  it("data por extenso e dinheiro em dólar", () => {
+    expect(rotuloEmPortugues("December 31, 2026")).toBe("31 de dezembro de 2026");
+    expect(rotuloEmPortugues("October 31")).toBe("31 de outubro");
+    expect(rotuloEmPortugues("$86,000")).toBe("US$ 86.000");
+    expect(rotuloEmPortugues("Above $3.5")).toBe("Acima de US$ 3,5");
+  });
+
+  it("os rótulos reais do Kalshi (catálogo de 03/10/2026)", () => {
+    expect(rotuloEmPortugues("Before Oct 10, 2026")).toBe("antes de 10 de outubro de 2026");
+    expect(rotuloEmPortugues("Before Jan 1, 2027")).toBe("antes de 1º de janeiro de 2027");
+    expect(rotuloEmPortugues("At least $4.45")).toBe("Pelo menos US$ 4,45");
+    expect(rotuloEmPortugues("Above 6")).toBe("Acima de 6");
+    expect(rotuloEmPortugues("$76,600 or above")).toBe("US$ 76.600 ou mais");
+    expect(rotuloEmPortugues("10 or more")).toBe("10 ou mais");
+    expect(rotuloEmPortugues("Above 1,000")).toBe("Acima de 1.000");
+    // O prefixo só traduz quando o rótulo INTEIRO vira português — meio-a-meio
+    // ("Exatamente 4 songs") é pior que o original.
+    expect(rotuloEmPortugues("Exactly 4 songs")).toBe("Exactly 4 songs");
+    expect(rotuloEmPortugues("At least 2.5 inches")).toBe("At least 2,5 inches");
+  });
+
+  it("o 'até' da escada não se soma a um rótulo que já traz o prazo", () => {
+    expect(rotuloDaOpcao("Before Oct 10, 2026", { prazo: true })).toBe("antes de 10 de outubro de 2026");
+    expect(rotuloDaOpcao("Dec 31, 2026", { prazo: true })).toBe("até 31 de dezembro de 2026");
+  });
+
+  it("nome de gente e de time fica como está", () => {
+    expect(rotuloEmPortugues("Flávio Bolsonaro")).toBe("Flávio Bolsonaro");
+    expect(rotuloEmPortugues("Mayor Adams")).toBe("Mayor Adams");
+  });
+
+  it("'até' só quando o evento é de prazo — e por palavra inteira", () => {
+    expect(rotuloDaOpcao("June 30, 2027", { prazo: true })).toBe("até 30 de junho de 2027");
+    expect(rotuloDaOpcao("Lula", { prazo: true })).toBe("Lula");
+    expect(ehEscadaDePrazo("Russia x Ukraine ceasefire agreement by...?")).toBe(true);
+    // Casar por substring já mordeu 4× neste projeto (CLAUDE.md): "by" dentro
+    // de "Ruby" ou "nearby" não é prazo.
+    expect(ehEscadaDePrazo("Ruby on Rails 9 release")).toBe(false);
+    expect(ehEscadaDePrazo("Nearby asteroid passes Earth?")).toBe(false);
+  });
+});
+
+describe("rotulosSaoSimNao", () => {
+  it("lê o texto JSON do Polymarket", () => {
+    expect(rotulosSaoSimNao('["Yes", "No"]')).toBe(true);
+    expect(rotulosSaoSimNao('["Spirit", "ShindeN"]')).toBe(false);
+    expect(rotulosSaoSimNao(["Over", "Under"])).toBe(false);
+    expect(rotulosSaoSimNao(undefined)).toBe(true);
   });
 });

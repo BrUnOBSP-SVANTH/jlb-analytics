@@ -5,6 +5,7 @@ import { fetchWithRetry } from "../lib/fetcher.ts";
 import { kalshiMarketUrl, kalshiYesProb, kalshiTemPrecoReal } from "../lib/marketNormalize.ts";
 import type { KalshiEventsResponse, KalshiMarket, KalshiEvent, KalshiNestedMarket } from "../lib/types.ts";
 import { log } from "../lib/log.ts";
+import { organizarOpcoes, tipoPeloStrike, prefixoComumDosRotulos, type TipoDeGrupo } from "../lib/eventoAgregado.ts";
 import { comOrcamento, porVolume, desambiguarPorPai, desambiguarTitulosIguais, limitePedido, normalizarTitulo, tituloLimpo, expandirNomeTruncado, confrontoEmTexto, glossarioDeNomes, completarComGlossario } from "../lib/marketCatalog.ts";
 
 const router = Router();
@@ -45,6 +46,8 @@ const COTA_ATE_7_DIAS = 20;
 interface KalshiMercadoPlano {
   ticker?: string; event_ticker?: string; title?: string; yes_sub_title?: string;
   rules_primary?: string;
+  /** "structured" (jogo), "between" (faixa), "greater"/"less" (limiar) — ver `tipoPeloStrike`. */
+  strike_type?: string; floor_strike?: number;
   yes_bid_dollars?: string; yes_ask_dollars?: string; last_price_dollars?: string;
   previous_price_dollars?: string; volume_fp?: string; volume_24h_fp?: string;
   open_interest_fp?: string; liquidity_dollars?: string; close_time?: string; status?: string;
@@ -106,6 +109,105 @@ async function fetchCurtoPrazo(): Promise<KalshiMercadoPlano[]> {
   }
   return Array.from(porTicker.values())
     .sort((a, b) => vol(b, "volume_24h_fp") - vol(a, "volume_24h_fp") || vol(b, "volume_fp") - vol(a, "volume_fp"));
+}
+
+/**
+ * O card de um evento de VÁRIAS opções no Kalshi — ou `null` se nada sobrar.
+ *
+ * `id` de cada opção = o TICKER do mercado dela. É o identificador estável e o
+ * que a previsão registrada guarda: rótulo de time ou candidato muda ("Barça" →
+ * "Barcelona") e levaria o histórico junto. Ordem e corte vêm de
+ * `organizarOpcoes` (lib/eventoAgregado.ts), a mesma regra do Polymarket.
+ */
+function cardDoGrupoKalshi(
+  mapeados: KalshiMarket[],
+  crus: ReadonlyArray<{ yes_sub_title?: string; title?: string; close_time?: string; floor_strike?: number }>,
+  tipo: TipoDeGrupo,
+  tituloDoEvento?: string,
+  /** Opções abertas que ficaram fora por NÃO TEREM PREÇO confiável. Não vão para
+   *  a lista (preço inventado é pior que nenhum), mas entram no "e mais N":
+   *  existem no Kalshi, e sumir com elas calado era o defeito. */
+  semPreco = 0,
+): KalshiMarket | null {
+  const opcoes = mapeados.map((m, i) => ({
+    rotulo: crus[i].yes_sub_title ?? crus[i].title ?? m.ticker,
+    prob: m.yesProb / 100,
+    idDoMercado: m.ticker,
+    token: "",
+    ordemNaFonte: typeof crus[i].floor_strike === "number" ? crus[i].floor_strike : null,
+    fimMs: crus[i].close_time ? Date.parse(crus[i].close_time!) : null,
+    ref: i,
+  }));
+  const { lista, ocultas } = organizarOpcoes(opcoes, tipo);
+  if (lista.length === 0) return null;
+  const rep = mapeados[lista[0].ref];
+  const soma = (f: "volume" | "volume24h") => mapeados.reduce((s, m) => s + (m[f] ?? 0), 0);
+  // Na escada o evento dura até o ÚLTIMO degrau.
+  const fim = tipo === "independentes"
+    ? mapeados.map((m) => m.closeTime).filter(Boolean).sort().at(-1) ?? rep.closeTime
+    : rep.closeTime;
+  // "Ken Paxton, 1+ pts", "Ken Paxton, 3+ pts"… → título "… — Ken Paxton" e
+  // rótulos "1+ pts", "3+ pts" (ver `prefixoComumDosRotulos`).
+  const prefixo = prefixoComumDosRotulos(opcoes.map((o) => o.rotulo));
+  const base = normalizarTitulo(tituloDoEvento ?? rep.title);
+  return {
+    ...rep,
+    title: prefixo && !base.toLowerCase().includes(prefixo.toLowerCase()) ? `${base} — ${prefixo}` : base,
+    rotuloDesfecho: undefined,
+    volume: soma("volume"),
+    volume24h: soma("volume24h"),
+    closeTime: fim,
+    // Variação é de UMA opção: na escada seria a do prazo mais curto fingindo ser o evento.
+    prevYesProb: tipo === "independentes" ? undefined : rep.prevYesProb,
+    outcomes: lista.map((o) => ({
+      id: o.idDoMercado,
+      label: prefixo ? o.rotulo.trim().slice(prefixo.length).replace(/^,\s*/, "") : o.rotulo,
+      prob: o.prob,
+    })),
+    tipoDeGrupo: tipo,
+    opcoesOcultas: ocultas + Math.max(0, semPreco),
+  };
+}
+
+/**
+ * O EVENTO COMPLETO dos mercados que chegaram sem ele (a lista plana de curto
+ * prazo), com todas as opções.
+ *
+ * Por que buscar (03/10/2026, medido na varredura do catálogo contra a fonte):
+ *  · a lista plana só traz o que fecha em até 30 dias E já teve negócio. "Quando
+ *    o tráfego em Hormuz volta ao normal?" chegava com 1 das 9 datas, e o card
+ *    não tinha como saber das outras 8 — 57 eventos assim, calados;
+ *  · o título do MERCADO às vezes já traz a opção ("Will exactly 0 people be
+ *    pardoned…"), e o do evento é a pergunta ("How many people will Trump
+ *    pardon?");
+ *  · a flag `mutually_exclusive` é a verdade que `tipoPeloStrike` só aproxima.
+ *
+ * Os mercados (preços) valem só para ESTA montagem — guardar seria servir preço
+ * velho. Título e flag ficam em `metaDeEvento`, porque não mudam: se a próxima
+ * busca falhar, o card ao menos tem o título certo.
+ */
+const metaDeEvento = new Map<string, { titulo?: string; exclusivo: boolean }>();
+async function eventosCompletos(tickers: ReadonlyArray<string>): Promise<Map<string, KalshiEvent>> {
+  const desta = new Map<string, KalshiEvent>();
+  const todos = Array.from(new Set(tickers)).filter(Boolean);
+  const DE_CADA_VEZ = 8;
+  // Orçamento do LOTE inteiro, não de cada pedido: 60 eventos com um teto de
+  // 20 s cada podiam segurar a montagem por minutos se o Kalshi engasgasse. O
+  // que não chegar a tempo fica com o que a lista plana trouxe.
+  const prazo = Date.now() + 8_000;
+  for (let i = 0; i < todos.length && Date.now() < prazo; i += DE_CADA_VEZ) {
+    await Promise.allSettled(todos.slice(i, i + DE_CADA_VEZ).map(async (t) => {
+      const r = await comOrcamento(fetchWithRetry<{ event?: KalshiEvent; markets?: KalshiNestedMarket[] }>(
+        `https://api.elections.kalshi.com/trade-api/v2/events/${encodeURIComponent(t)}?with_nested_markets=true`,
+        { "Accept": "application/json" },
+      ), 4_000);
+      if (!r?.event) return;
+      const ev: KalshiEvent = { ...r.event, markets: r.event.markets ?? r.markets ?? [] };
+      desta.set(t, ev);
+      metaDeEvento.set(t, { titulo: ev.title, exclusivo: !!ev.mutually_exclusive });
+    }));
+  }
+  return desta;
 }
 
 /** Volume negociado em 24h somado nos mercados do evento — a régua de "vivo". */
@@ -239,36 +341,30 @@ async function montarCatalogoKalshi(): Promise<KalshiMarket[]> {
       const longoPrazo = events.flatMap((ev) => {
         // Fidelidade ao mercado: só o que está realmente aberto. Kalshi marca o status como
         // "closed"/"settled"/"finalized"/"determined" quando o mercado encerra/resolve.
-        const active = (ev.markets ?? [])
-          .filter((m) => !m.status || m.status === "active")
+        const abertasDoEvento = (ev.markets ?? []).filter((m) => !m.status || m.status === "active");
+        const active = abertasDoEvento
           // Sem cotação não vai para a tela: `kalshiYesProb` devolveria 50% e isso
           // é número inventado exibido como preço de mercado.
           .filter((m) => kalshiTemPrecoReal(m.yes_bid_dollars, m.yes_ask_dollars, m.last_price_dollars));
         if (active.length === 0) return [];
 
-        // Multi-resultado: evento mutuamente exclusivo com >2 desfechos → 1 card agrupado,
-        // cada desfecho com sua prob (yes_sub_title = rótulo). Fiel ao Kalshi, como no Polymarket.
-        if (ev.mutually_exclusive && active.length > 2) {
-          const mapped = active.map((m) => toMarket(m, ev, active.length));
-          // `id` = o ticker do mercado daquele desfecho. É o identificador
-          // ESTÁVEL, e é o que a previsão registrada guarda: rótulo de time ou
-          // candidato muda ("Barça" → "Barcelona") e levaria o histórico junto.
-          const outcomes = active
-            .map((m, i) => ({ id: m.ticker, label: m.yes_sub_title ?? m.title ?? m.ticker, prob: mapped[i].yesProb / 100 }))
-            .filter((o) => o.label && o.prob > 0.005)
-            .sort((a, b) => b.prob - a.prob)
-            .slice(0, 12);
-          if (outcomes.length > 2) {
-            const topIdx = mapped.reduce((best, m, i) => (m.yesProb > mapped[best].yesProb ? i : best), 0);
-            const sum = (f: "volume" | "volume24h") => mapped.reduce((s, m) => s + (m[f] ?? 0), 0);
-            return [{
-              ...mapped[topIdx],           // representante = mercado do desfecho líder (ticker p/ navegação)
-              title: normalizarTitulo(ev.title ?? mapped[topIdx].title),
-              volume: sum("volume"),
-              volume24h: sum("volume24h"),
-              outcomes,
-            }];
-          }
+        // Evento de VÁRIAS opções → 1 card com todas (03/10/2026). Antes só o
+        // mutuamente exclusivo com 3+ agrupava; o resto virava UM CARD POR OPÇÃO
+        // e o corte por volume ficava com as mais negociadas — "Quando o tráfego
+        // em Hormuz volta ao normal?" aparecia com 1 das 9 datas. A regra de
+        // ordem e de corte é a mesma do Polymarket (lib/eventoAgregado.ts).
+        // Conta as ABERTAS, não só as com preço: num jogo de 3 opções em que só
+        // uma tem preço confiável, o card solto escondia as outras duas caladas;
+        // agrupado, ele mostra a uma e diz "e mais 2".
+        if (abertasDoEvento.length >= 2) {
+          const card = cardDoGrupoKalshi(
+            active.map((m) => toMarket(m, ev, active.length)),
+            active,
+            ev.mutually_exclusive ? "exclusivos" : "independentes",
+            ev.title,
+            abertasDoEvento.length - active.length,
+          );
+          if (card) return [card];
         }
         return active.map((m) => toMarket(m, ev, active.length));
       })
@@ -286,25 +382,73 @@ async function montarCatalogoKalshi(): Promise<KalshiMarket[]> {
       // qualquer bônus somado à nota seria engolido. Reservar vagas é o único jeito
       // de o curto prazo sobreviver ao lado de um campeão de volume — mesmo padrão
       // que a tela já usa para não deixar uma fonte sufocar as outras.
-      const jaTem = new Set(longoPrazo.map((m) => m.ticker));
+      // O EVENTO que já veio pelo caminho dos eventos não volta por aqui. Agrupado,
+      // as opções irmãs não têm o ticker do card e entrariam como cards soltos ao
+      // lado do grupo — o mesmo evento duas vezes, de dois jeitos.
+      const eventosJaTem = new Set(longoPrazo.map((m) => m.eventTicker));
+      const tickersJaTem = new Set(longoPrazo.map((m) => m.ticker));
+      const exclusivoPorEvento = new Map(events.map((ev) => [ev.event_ticker, !!ev.mutually_exclusive]));
       // Sub-reserva: primeiro os que fecham em ATÉ 7 DIAS (por volume entre eles),
       // depois o resto da cota com os demais. Sem isso a semana nunca aparece.
       const dentroDe = (m: KalshiMercadoPlano, dias: number) =>
         new Date(m.close_time ?? 0).getTime() - Date.now() <= dias * 86_400_000;
-      const disponiveis = curtoPrazo.filter((m) => !jaTem.has(m.ticker!));
-      // Quantos irmãos cada evento tem DENTRO desta piscina — a escada de faixas do
-      // SpaceX ("How many launches…", 5 mercados) chega por aqui, não pelo caminho
-      // dos eventos, então precisa da mesma desambiguação.
-      const irmaosPorEvento = new Map<string, number>();
+      const disponiveis = curtoPrazo.filter((m) => !tickersJaTem.has(m.ticker!) && !eventosJaTem.has(m.event_ticker ?? ""));
+      // Uma UNIDADE por evento, na ordem da piscina (o mais negociado primeiro):
+      // a escada de faixas do SpaceX ("How many launches…", 5 mercados) e a do
+      // Bitcoin da hora chegam por aqui, não pelo caminho dos eventos.
+      const porEvento = new Map<string, KalshiMercadoPlano[]>();
       for (const m of disponiveis) {
         const k = m.event_ticker ?? m.ticker!;
-        irmaosPorEvento.set(k, (irmaosPorEvento.get(k) ?? 0) + 1);
+        if (!porEvento.has(k)) porEvento.set(k, []);
+        porEvento.get(k)!.push(m);
       }
-      const daSemana = disponiveis.filter((m) => dentroDe(m, 7)).slice(0, COTA_ATE_7_DIAS);
-      const naSemana = new Set(daSemana.map((m) => m.ticker));
-      const curtos = [...daSemana, ...disponiveis.filter((m) => !naSemana.has(m.ticker))]
-        .slice(0, COTA_CURTO_PRAZO)
-        .map((m) => {
+      const unidades = Array.from(porEvento.values());
+      const daSemana = unidades.filter((u) => u.some((m) => dentroDe(m, 7))).slice(0, COTA_ATE_7_DIAS);
+      const naSemana = new Set(daSemana);
+      const escolhidas = [...daSemana, ...unidades.filter((u) => !naSemana.has(u))].slice(0, COTA_CURTO_PRAZO);
+      const completos = await eventosCompletos(escolhidas.map((u) => u[0].event_ticker ?? ""));
+      const curtos = escolhidas
+        .flatMap((u): KalshiMarket[] => {
+          const cards = u.map((m) => cartaoPlano(m, u.length));
+          const ev = u[0].event_ticker ?? "";
+          // Com o evento completo, o card nasce dele — todas as opções abertas,
+          // com o título e a flag do evento — exatamente como no longo prazo.
+          const completo = completos.get(ev);
+          if (completo) {
+            const abertasDoEvento = (completo.markets ?? []).filter((m) => !m.status || m.status === "active");
+            const abertas = abertasDoEvento
+              .filter((m) => kalshiTemPrecoReal(m.yes_bid_dollars, m.yes_ask_dollars, m.last_price_dollars));
+            if (abertasDoEvento.length >= 2 && abertas.length >= 1) {
+              const card = cardDoGrupoKalshi(
+                abertas.map((m) => toMarket(m, completo, abertas.length)),
+                abertas,
+                completo.mutually_exclusive ? "exclusivos" : "independentes",
+                completo.title,
+                abertasDoEvento.length - abertas.length,
+              );
+              if (card) return [card];
+            }
+          }
+          if (u.length < 2) return cards;
+          const meta = metaDeEvento.get(ev);
+          // Sem o evento, só se agrupa se os irmãos tiverem o MESMO título — senão
+          // o título de um deles traz a opção dele e mentiria sobre o grupo. Aí
+          // ficam os cards separados, cada um com o seu rótulo, como antes.
+          const titulos = new Set(u.map((m) => tituloLimpo(m.title) ?? ""));
+          if (!meta?.titulo && titulos.size > 1) return cards;
+          const tipo: TipoDeGrupo = meta
+            ? (meta.exclusivo ? "exclusivos" : "independentes")
+            : exclusivoPorEvento.has(ev)
+              ? (exclusivoPorEvento.get(ev) ? "exclusivos" : "independentes")
+              : tipoPeloStrike(u.map((m) => m.strike_type));
+          const titulo = meta?.titulo ?? expandirNomeTruncado(
+            tituloLimpo(u[0].title) ?? u[0].ticker!, confrontoEmTexto(u[0].rules_primary));
+          const card = cardDoGrupoKalshi(cards, u, tipo, titulo);
+          return card ? [card] : cards;
+        })
+        .slice(0, COTA_CURTO_PRAZO);
+
+      function cartaoPlano(m: KalshiMercadoPlano, irmaos: number): KalshiMarket {
           const serie = String(m.event_ticker ?? m.ticker).split("-")[0];
           return {
             ticker: m.ticker!,
@@ -314,7 +458,6 @@ async function montarCatalogoKalshi(): Promise<KalshiMarket[]> {
             title: (() => {
               const base = tituloLimpo(m.title) ?? tituloLimpo(m.yes_sub_title) ?? m.ticker!;
               const rotulo = tituloLimpo(m.yes_sub_title);
-              const irmaos = irmaosPorEvento.get(m.event_ticker ?? m.ticker!) ?? 1;
               const comp = (t: string) => expandirNomeTruncado(t, confrontoEmTexto(m.rules_primary));
               // Sem o evento junto (esta piscina vem da listagem plana), o confronto
               // sai do próprio regulamento do mercado. Nada é inventado.
@@ -337,7 +480,7 @@ async function montarCatalogoKalshi(): Promise<KalshiMarket[]> {
             category: undefined,
             status: m.status,
           };
-        });
+      }
 
       const juntos = [...curtos, ...longoPrazo].slice(0, TETO_KALSHI);
 

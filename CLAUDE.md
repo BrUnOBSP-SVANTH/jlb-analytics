@@ -23,6 +23,7 @@ Anthropic → Gemini → Groq.
 | `pnpm test:e2e` | Playwright |
 | `pnpm doctor` | Auditoria de saúde: telas órfãs, mocks, env faltando, dados no Supabase. Sai com lista de prioridades. `--quick` pula o tsc |
 | `pnpm varredura` | Abre TODAS as rotas num navegador real e registra o que quebra. Acha o que o doctor não acha (erro de runtime em tela esquecida). Precisa do servidor local de pé |
+| `pnpm desfechos` | Compara cada mercado do catálogo com a fonte (Polymarket/Kalshi) e falha se algum mostra parte das opções **sem avisar**. Precisa do servidor de pé; `JLB_URL=https://jlbanalytics.com` mede o site publicado |
 | `pnpm cobertura` / `pnpm qualidade` | Medem cobertura e qualidade da análise da IA |
 
 Gerenciador é **pnpm** (`packageManager` fixa a versão). Não usar npm/yarn aqui.

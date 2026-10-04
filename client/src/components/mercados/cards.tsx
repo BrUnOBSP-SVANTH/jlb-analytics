@@ -318,9 +318,42 @@ export function ProbBar({ prob }: { prob: number }) {
   );
 }
 
-/** Shown when the market has more than 2 outcomes (multi-way market). */
-export function MultiOutcomePills({ outcomes }: { outcomes: { label: string; prob: number }[] }) {
+/**
+ * As opções de um mercado de vários desfechos.
+ *
+ * `independentes` (03/10/2026): escada de datas ou de faixas. Ali não há líder —
+ * a 1ª linha é só o prazo mais curto — então nenhuma linha vira número-herói, a
+ * ordem é a da plataforma, e o "+N" não soma chances (somar chances de mercados
+ * separados não significa nada). `ocultas` são as opções que o servidor não
+ * mandou: elas entram na contagem, porque sumir calado era o defeito.
+ */
+export function MultiOutcomePills({ outcomes, independentes = false, ocultas = 0 }: {
+  outcomes: { label: string; prob: number }[];
+  independentes?: boolean;
+  ocultas?: number;
+}) {
   if (outcomes.length === 0) return null;
+  if (independentes) {
+    const visiveis = outcomes.slice(0, 6);
+    const fora = outcomes.length - visiveis.length + ocultas;
+    return (
+      <div className="w-full space-y-1.5">
+        {visiveis.map(({ label, prob }) => {
+          const pct = Math.round(prob * 100);
+          return (
+            <div key={label} className="flex items-center gap-2">
+              <span className="text-xs text-foreground/80 min-w-0 flex-1 truncate leading-none" title={label}>{label}</span>
+              <div className="w-16 h-1.5 bg-secondary/40 rounded-full overflow-hidden shrink-0">
+                <div className="h-full rounded-l-full rounded-r-[2px] bg-primary/50" style={{ width: `${Math.max(2, pct)}%` }} />
+              </div>
+              <span className="text-xs font-mono font-bold w-9 text-right shrink-0 tabular-nums text-foreground">{pct}%</span>
+            </div>
+          );
+        })}
+        {fora > 0 && <p className="text-[11px] text-muted-foreground">e mais {fora}</p>}
+      </div>
+    );
+  }
   const [leader, ...restAll] = outcomes;
   const rest = restAll.slice(0, 5);
   const others = restAll.slice(5);
@@ -354,15 +387,17 @@ export function MultiOutcomePills({ outcomes }: { outcomes: { label: string; pro
             </div>
           );
         })}
-        {otherProb > 0.01 && (
+        {otherProb > 0.01 ? (
           <div className="flex items-center gap-2">
-            <span className="text-[11px] text-muted-foreground shrink-0 w-24">+{others.length} outros</span>
+            <span className="text-[11px] text-muted-foreground shrink-0 w-24">+{others.length + ocultas} outros</span>
             <div className="flex-1 h-1.5 bg-secondary/30 rounded-full overflow-hidden">
               <div className="h-full rounded-full bg-secondary/60" style={{ width: `${Math.round(otherProb * 100)}%` }} />
             </div>
             <span className="text-[11px] font-mono text-muted-foreground w-8 text-right">{Math.round(otherProb * 100)}%</span>
           </div>
-        )}
+        ) : others.length + ocultas > 0 ? (
+          <p className="text-[11px] text-muted-foreground">e mais {others.length + ocultas}, todos abaixo de 1%</p>
+        ) : null}
       </div>
     </div>
   );

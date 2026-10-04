@@ -53,7 +53,7 @@ export type Passo =
    * acharia "Calcular margem" antes. Casar token por substring já mordeu este
    * repositório quatro vezes.
    */
-  | { acao: "clicar"; papel: "link" | "button" | "tab"; nome: string; exato?: boolean }
+  | { acao: "clicar"; papel: "link" | "button" | "tab"; nome: string; exato?: boolean; indice?: number }
   | { acao: "arrastar"; campo: string; para: number } // slider, 0..1 do curso
   /**
    * Campo por RÓTULO (o nome acessível) ou, se não houver, por placeholder.
@@ -483,15 +483,27 @@ export const FILMES: readonly Filme[] = [
         rota: "/portfolio",
         legenda: "Banca simulada — dinheiro fictício, mercado real",
         narracao:
-          "Com a conta, você ganha uma banca de mil reais fictícios para registrar posições em " +
-          "mercados de verdade, pelo preço de verdade — você não escolhe o preço. Quando o mercado " +
-          "resolve, o site liquida a posição pelo resultado oficial da plataforma, não por um chute " +
-          "nosso.",
+          "Com a conta, você ganha uma banca de mil reais fictícios para testar suas estimativas. " +
+          "Vou abrir uma nova aposta, buscar por presidente e escolher um mercado. O preço " +
+          "da cota é o preço real de agora. Digo que não vai acontecer, escolho apostar cem reais, " +
+          "e vejo na hora quanto ganho. Quando o mercado " +
+          "resolve, o site liquida a posição pelo resultado oficial da plataforma, não por um chute nosso.",
         passos: [
           { acao: "verificar", texto: "Patrimônio" },
+          { acao: "esperar", ms: 1000 },
+          { acao: "clicar", papel: "button", nome: "Nova aposta" },
           { acao: "esperar", ms: 1500 },
-          { acao: "rolar", ate: 0.3 },
+          { acao: "digitar", campo: "Buscar mercado", texto: "president" },
+          { acao: "esperar", ms: 2000 },
+          { acao: "clicar", papel: "button", nome: "president", indice: 0 },
           { acao: "esperar", ms: 1500 },
+          { acao: "clicar", papel: "button", nome: "NÃO VAI" },
+          { acao: "esperar", ms: 1500 },
+          { acao: "arrastar", campo: "Valor da aposta", para: 0.1 },
+          { acao: "esperar", ms: 1500 },
+          { acao: "clicar", papel: "button", nome: "Aplicar" },
+          { acao: "verificar", texto: "registrada na sua banca", prazoMs: 20000 },
+          { acao: "esperar", ms: 2000 },
         ],
       },
       {
@@ -525,14 +537,25 @@ export const FILMES: readonly Filme[] = [
         rota: "/duelos",
         legenda: "Duelos de previsão",
         narracao:
-          "Nos duelos, duas pessoas — ou você contra a nossa IA — fazem previsões seladas sobre os " +
-          "mesmos mercados, e ninguém vê a do outro antes do fim. Quando tudo resolve, vence quem " +
-          "teve o menor Brier. É um beta valendo pontos, sem dinheiro de verdade.",
+          "Nos duelos, você pode desafiar a comunidade ou a nossa própria IA sobre os " +
+          "mesmos mercados, e ninguém vê a do outro antes do fim. " +
+          "Vou criar um duelo contra a IA: escolho dois mercados e selo as minhas previsões. " +
+          "Quando tudo resolve, vence quem teve o menor Brier. É um beta valendo pontos, sem dinheiro.",
         passos: [
           { acao: "verificar", texto: "Lobby" },
           { acao: "esperar", ms: 1200 },
-          { acao: "clicar", papel: "tab", nome: "Como funciona" },
-          { acao: "verificar", texto: "Brier" },
+          { acao: "clicar", papel: "button", nome: "Criar duelo" },
+          { acao: "esperar", ms: 1500 },
+          { acao: "clicar", papel: "radio", nome: "Contra a IA JLB" },
+          { acao: "esperar", ms: 2000 },
+          { acao: "clicar", papel: "button", nome: "%", indice: 0 },
+          { acao: "esperar", ms: 1000 },
+          { acao: "clicar", papel: "button", nome: "%", indice: 1 },
+          { acao: "esperar", ms: 1500 },
+          { acao: "rolarAte", texto: "Pontos em jogo" },
+          { acao: "esperar", ms: 1000 },
+          { acao: "clicar", papel: "button", nome: "Selar previsões" },
+          { acao: "verificar", texto: "Duelo contra a IA", prazoMs: 20000 },
           { acao: "esperar", ms: 2000 },
         ],
       },

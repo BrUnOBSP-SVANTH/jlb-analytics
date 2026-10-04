@@ -18,7 +18,7 @@ import { BarChart2 } from "lucide-react";
 import { type MarketBasic } from "@/components/marketDetail/types";
 import { Explain } from "@/components/marketDetail/Explain";
 import { Termo } from "@/components/Termo";
-import { percentuaisQueSomam, pct } from "@shared/formato";
+import { percentuaisQueSomam, pct, plural } from "@shared/formato";
 
 export function OutcomesBreakdown({
   market,
@@ -30,7 +30,20 @@ export function OutcomesBreakdown({
   onSelecionarDesfecho?: (id: string) => void;
 }) {
   const outcomes = market.parsedOutcomes;
-  if (!outcomes || outcomes.length <= 2) return null;
+  // Card de EVENTO (o servidor diz o grupo) é lista mesmo com 2 — Flávio × Lula.
+  if (!outcomes || (market.grupo ? outcomes.length === 0 : outcomes.length <= 2)) return null;
+
+  /**
+   * ESCADA NÃO SOMA (03/10/2026). Numa escada de datas ("até 31/12/2026",
+   * "até 30/06/2027"…) cada linha é um mercado separado e mais de uma pode
+   * acontecer: "até 2028" já inclui "até 2026". Dizer "somam 112%, isso é
+   * overround" ali seria ensinar errado — e ajustar o arredondamento para
+   * fechar em 100 seria mexer em preços que não têm por que fechar em nada.
+   */
+  const independentes = market.grupo === "independentes";
+  const deprazo = independentes && outcomes.every((o) => /^(até|antes de) /.test(o.label));
+  const ocultas = market.opcoesOcultas ?? 0;
+  const fonte = market.source === "kalshi" ? "Kalshi" : market.source === "polymarket" ? "Polymarket" : market.source;
 
   const encerrado = market.closed === true || market.status === "settled" || market.status === "finalized";
   const clicavel = Boolean(onSelecionarDesfecho) && !encerrado;
@@ -51,21 +64,38 @@ export function OutcomesBreakdown({
    * Antes cada linha arredondava sozinha: 87,50 + 11,50 + 0,95 (soma 99,95)
    * virava 88 + 12 + 1 = 101 na tela, enquanto o texto acima dizia 100%.
    */
-  const porLinha = percentuaisQueSomam(outcomes.map((o) => o.prob));
+  const porLinha = independentes
+    ? outcomes.map((o) => Math.round(o.prob * 100))
+    : percentuaisQueSomam(outcomes.map((o) => o.prob));
   const soma = porLinha.reduce((t, v) => t + v, 0);
   const fechaEmCem = soma >= 99 && soma <= 101;
+  const total = outcomes.length + ocultas;
   return (
     <AnimatedSection delay={0.09}>
       <div className="glass-card rounded-xl p-5 space-y-3">
         <div className="flex items-center gap-2">
           <BarChart2 className="w-4 h-4 text-dado" />
-          <h2 className="text-sm font-semibold text-[var(--titulo)]">Desfechos possíveis</h2>
-          <span className="ml-auto text-[11px] text-muted-foreground">{outcomes.length} opções · fonte: {market.source}</span>
+          <h2 className="text-sm font-semibold text-[var(--titulo)]">
+            {independentes ? "A chance de cada opção" : "Desfechos possíveis"}
+          </h2>
+          <span className="ml-auto text-[11px] text-muted-foreground">{plural(total, "opção", "opções")} no {fonte}</span>
         </div>
+        {independentes ? (
+          <Explain>
+            Cada linha é um <strong className="text-foreground">mercado separado</strong> no {fonte}, com preço e
+            resultado próprios — por isso as chances <strong className="text-foreground">não somam 100%</strong>.
+            {deprazo && (
+              <>
+                {" "}Numa lista de prazos, a chance só pode crescer de uma data para a seguinte: se acontecer até
+                a primeira, já aconteceu até todas as outras.
+              </>
+            )}
+          </Explain>
+        ) : (
         <Explain>
-          Este mercado tem <strong className="text-foreground">mais de dois desfechos</strong>. Cada linha é uma
-          possibilidade e a probabilidade que o mercado dá a ela. É o retrato do que está sendo precificado —
-          não só o SIM/NÃO do desfecho líder.{" "}
+          Este mercado tem <strong className="text-foreground">vários desfechos</strong>, e só um acontece. Cada
+          linha é uma possibilidade e a probabilidade que o mercado dá a ela. É o retrato do que está sendo
+          precificado — não só o SIM/NÃO do desfecho líder.{" "}
           {fechaEmCem ? (
             <>As linhas somam <strong className="text-foreground">{pct(soma)}</strong>, como se espera.</>
           ) : soma > 101 ? (
@@ -77,11 +107,12 @@ export function OutcomesBreakdown({
           ) : (
             <>
               Elas somam <strong className="text-foreground">{pct(soma)}</strong>: os{" "}
-              <strong className="text-foreground">{pct(100 - soma)}</strong> que faltam estão em desfechos que a
-              plataforma não lista individualmente, por serem pouco prováveis.
+              <strong className="text-foreground">{pct(100 - soma)}</strong> que faltam estão em desfechos{" "}
+              {ocultas > 0 ? "fora desta lista, por serem pouco prováveis" : "que a plataforma não lista individualmente, por serem pouco prováveis"}.
             </>
           )}
         </Explain>
+        )}
 
         {clicavel && (
           <p className="text-xs text-muted-foreground">
@@ -131,6 +162,16 @@ export function OutcomesBreakdown({
             );
           })}
         </div>
+        {/* O que ficou de fora é DITO, logo depois da lista. Sumir com opções
+            caladas era o defeito inteiro: a eleição brasileira tinha 19
+            candidatos e a tela mostrava um. */}
+        {ocultas > 0 && (
+          <p className="text-xs text-muted-foreground">
+            {independentes
+              ? `Mais ${plural(ocultas, "opção aberta", "opções abertas")} no ${fonte} ${ocultas === 1 ? "não aparece" : "não aparecem"} nesta lista.`
+              : `Mais ${plural(ocultas, "opção aberta", "opções abertas")} no ${fonte} ${ocultas === 1 ? "fica" : "ficam"} fora da lista: chance menor que as de cima, ou sem preço confiável.`}
+          </p>
+        )}
       </div>
     </AnimatedSection>
   );

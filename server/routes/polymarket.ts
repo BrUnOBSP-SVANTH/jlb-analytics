@@ -3,11 +3,12 @@ import { swr, getCache, setCache } from "../lib/cache.ts";
 import { lerCatalogo, salvarCatalogo } from "../lib/catalogoPersistido.ts";
 import { urlDoEventoPoly } from "../../shared/linksDeMercado.ts";
 import { fetchWithRetry, fetchJSON } from "../lib/fetcher.ts";
-import { parseYesPrice, polyEventUrl, rankOutcomes } from "../lib/marketNormalize.ts";
+import { parseYesPrice, polyEventUrl } from "../lib/marketNormalize.ts";
 import type { PolyEvent, PolyMarket } from "../lib/types.ts";
 import { log } from "../lib/log.ts";
 import { comOrcamento, desambiguarPorPai, limitePedido, normalizarTitulo } from "../lib/marketCatalog.ts";
-import { montarCardDoEvento } from "../lib/eventoAgregado.ts";
+import { agruparOpcoesDoEvento } from "../lib/eventoAgregado.ts";
+import { tituloDoGrupo, rotulosSaoSimNao } from "../../shared/descreverMercado.ts";
 
 const router = Router();
 
@@ -97,7 +98,7 @@ async function montarCatalogoPoly(closed: boolean): Promise<PolyMarket[]> {
     const GENERIC_PLACEHOLDER = /\b(Team|Person|Candidate|Player|Country|Party)\s+[A-Z]{1,3}\b/;
 
     // Build flat market list: 1 market per event (highest-volume nested market)
-    const rawMarkets: (PolyMarket & { _vol24h: number; _endMs: number })[] = uniqueEvents.flatMap((ev) => {
+    const rawMarkets: (PolyMarket & { _vol24h: number; _endMs: number; _ordem?: number | null })[] = uniqueEvents.flatMap((ev) => {
       const nested = (ev.markets ?? [])
         .filter((m) => isDateFresh(m.endDate))
         // Skip markets that only have generic placeholder names — real names not yet published
@@ -140,49 +141,58 @@ async function montarCatalogoPoly(closed: boolean): Promise<PolyMarket[]> {
             clobTokenIds: m.clobTokenIds,
             _vol24h: toNum(m.volume24hr) ?? toNum(ev.volume24hr) ?? 0,
             _endMs: endMs,
+            // Não `toNum`: ele transforma 0 em "sem valor", e "0" é o 1º degrau.
+            _ordem: m.groupItemThreshold === undefined || m.groupItemThreshold === "" ? null : Number(m.groupItemThreshold),
           };
         })
         .sort((a, b) => (b.volume ?? 0) - (a.volume ?? 0));
 
-      // Caso binário: 1 desfecho por evento (o de maior volume). Para eventos
-      // multi-resultado (negRisk), junta TODOS os desfechos num só card — cada
-      // mercado aninhado é um desfecho e o "Yes" dele é a probabilidade
-      // (groupItemTitle = rótulo). Assim mostramos as reais possibilidades, fiel
-      // ao Polymarket, em vez de descartar tudo menos o líder.
+      // Um card por EVENTO. Com 2+ opções abertas, o card traz todas — a escada
+      // de datas e a disputa —, dizendo de que tipo é o grupo e quantas ficaram
+      // de fora. A regra mora em lib/eventoAgregado.ts (`agruparOpcoesDoEvento`),
+      // pura e testada: era aqui, num `if` sem teste, que o evento de Indiana
+      // virava "11%" e a eleição brasileira virava "0,15%" (ver lá o porquê).
+      // O representante (`lista[0].ref`) empresta os campos que o card precisa
+      // (categoria, slug), mas não o id: quem dá identidade é o evento (DAD-03).
       if (nested.length === 0) return [];
       const top = nested[0];
-      if (ev.negRisk && nested.length > 1) {
-        // rankOutcomes ordena por PROBABILIDADE e corta o ruído. A ordem dele é a
-        // ordem das quatro listas paralelas do card — por construção, não por
-        // coincidência. O representante (`ranked[0].ref`) ainda empresta os campos
-        // que o card precisa (prazo, categoria, slug), mas NÃO empresta mais o id:
-        // desde o DAD-03 quem dá identidade ao card é o evento, e quem liquida um
-        // desfecho é o mercado dele, em `outcomeMarketIds`.
-        const ranked = rankOutcomes<(typeof nested)[number]>(nested.map((m) => ({ label: m.groupItemTitle ?? m.question ?? "", prob: parseYesPrice(m.outcomePrices), ref: m })));
-        if (ranked.length > 2) {
-          const lead = ranked[0].ref;
-          // A identidade do card e as quatro listas paralelas moram em
-          // `lib/eventoAgregado.ts` — função pura, testada, porque é ali que o
-          // card deixa de trocar de dono quando o líder muda (DAD-03).
-          const card = montarCardDoEvento(String(ev.id), ranked.map((o) => ({
-            rotulo: o.label,
-            prob: o.prob,
-            idDoMercado: String(o.ref.id ?? ""),
-            token: (() => {
-              try {
-                const ids = JSON.parse(String(o.ref.clobTokenIds ?? "[]")) as string[];
-                return ids[0] ?? "";
-              } catch { return ""; }
-            })(),
-          })));
-          return [{
-            ...lead,
-            ...card,
-            question: normalizarTitulo(ev.title ?? lead.question ?? ""),
-            eventTitle: normalizarTitulo(ev.title ?? ""),
-            volume: toNum(ev.volume) ?? lead.volume,
-          }];
-        }
+      const grupo = agruparOpcoesDoEvento(ev, nested.map((m) => ({
+        rotulo: m.groupItemTitle ?? m.question ?? "",
+        prob: parseYesPrice(m.outcomePrices),
+        idDoMercado: String(m.id ?? ""),
+        token: (() => {
+          try {
+            const ids = JSON.parse(String(m.clobTokenIds ?? "[]")) as string[];
+            return ids[0] ?? "";
+          } catch { return ""; }
+        })(),
+        ordemNaFonte: m._ordem,
+        fimMs: m._endMs,
+        simNao: rotulosSaoSimNao(m.outcomes),
+        ref: m,
+      })));
+      if (grupo) {
+        const lead = grupo.lista[0].ref;
+        // Na escada, o evento dura até o ÚLTIMO degrau; o 1º pode fechar amanhã.
+        const fimDoEvento = grupo.tipo === "independentes"
+          ? nested.reduce((maior, m) => (m._endMs > maior._endMs ? m : maior), lead)
+          : lead;
+        return [{
+          ...lead,
+          ...grupo.card,
+          question: normalizarTitulo(tituloDoGrupo(ev.title ?? lead.question ?? "")),
+          eventTitle: normalizarTitulo(ev.title ?? ""),
+          volume: toNum(ev.volume) ?? lead.volume,
+          // O movimento do EVENTO, não o da opção representante: senão a escada
+          // ranqueia e se descreve pelo prazo mais curto.
+          volume24hr: toNum(ev.volume24hr) ?? lead.volume24hr,
+          _vol24h: toNum(ev.volume24hr) ?? lead._vol24h,
+          // Variação semanal é de UMA opção. Na disputa ela é a do líder ("subiu
+          // 3 pp"); na escada seria a do prazo mais curto fingindo ser o evento.
+          weekPriceChange: grupo.tipo === "independentes" ? undefined : lead.weekPriceChange,
+          endDate: fimDoEvento.endDate,
+          _endMs: fimDoEvento._endMs,
+        }];
       }
       return [top];
     })
@@ -226,7 +236,7 @@ async function montarCatalogoPoly(closed: boolean): Promise<PolyMarket[]> {
         };
       })
       .sort((a, b) => b._score - a._score)
-      .map(({ _vol24h, _endMs, _score, ...rest }) => ({
+      .map(({ _vol24h, _endMs, _score, _ordem, ...rest }) => ({
         ...rest,
         // URL canônica (shared/linksDeMercado.ts): /event/{eventSlug}. O market.slug
         // e o id numérico dão 404 (o "mercado falso"), e o prefixo de idioma que
@@ -336,7 +346,7 @@ router.get("/markets", async (req, res) => {
  *
  * O cache continua guardando o objeto inteiro: quem precisa do resto pede em
  * `/api/polymarket/desfechos/:id`. ⚠️ O primeiro token e o primeiro preço
- * precisam descrever o MESMO desfecho (ver `rankOutcomes` em marketNormalize):
+ * precisam descrever o MESMO desfecho (ver `organizarOpcoes` em eventoAgregado):
  * por isso encolhe para o PRIMEIRO, nunca para outro.
  *
  * `outcomeMarketIds` FICA, e a diferença é o preço: medido em 22/09 nos mesmos

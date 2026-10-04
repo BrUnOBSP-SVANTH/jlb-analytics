@@ -20,6 +20,7 @@ import { useSEO } from "@/hooks/useSEO";
 import type { MarketBasic, CerebroArticleSnippet, AiResult, CommunityForecast } from "@/components/marketDetail/types";
 import { apiFetch, buscarJson } from "@/lib/api";
 import { montarDesfechos } from "@/lib/desfechos";
+import { descreverPolymarket, ehEscadaDePrazo, rotuloDaOpcao, type TipoDeGrupo } from "@shared/descreverMercado";
 import { termosDistintivos, filtrarRelacionados } from "@/lib/relevancia";
 import { historicoDoToken } from "@/lib/historicoPreco";
 import { serieDiaria } from "@/lib/serieDiaria";
@@ -80,6 +81,7 @@ export function useMarketDetail(marketId: string) {
             closeTime?: string; category?: string; status?: string;
             seriesTicker?: string; eventTicker?: string; externalUrl?: string;
             outcomes?: { id?: string; label: string; prob: number }[];
+            tipoDeGrupo?: TipoDeGrupo; opcoesOcultas?: number;
           }>("kalshi");
           // ⚠️ SÓ igualdade exata. Havia um `|| m.ticker.includes(rawId)` aqui, e o
           // `.find` avalia o OU por ELEMENTO: bastava um ticker que CONTIVESSE o id
@@ -110,7 +112,10 @@ export function useMarketDetail(marketId: string) {
               // ainda vem sem o ticker por desfecho. Sem id nenhum a lista deixaria
               // de ser clicável; com o rótulo ela funciona e o pior caso é um
               // histórico que troca de dono se o nome mudar.
-              parsedOutcomes: found.outcomes?.map((o) => ({ ...o, id: o.id ?? o.label })),
+              // O rótulo sai em português; o `id` nunca depende dele.
+              parsedOutcomes: found.outcomes?.map((o) => ({ ...o, id: o.id ?? o.label, label: rotuloDaOpcao(o.label) })),
+              grupo: found.tipoDeGrupo,
+              opcoesOcultas: found.opcoesOcultas,
             });
           } else {
             // Fora da lista ao vivo — provável mercado resolvido. Busca o mercado único
@@ -134,6 +139,7 @@ export function useMarketDetail(marketId: string) {
             volume24h?: number | string; weekPriceChange?: number | string;
             outcomePrices?: string; outcomes?: string; outcomeTokens?: string; category?: string; clobTokenIds?: string; endDate?: string;
             closed?: boolean; active?: boolean;
+            tipoDeGrupo?: TipoDeGrupo; opcoesOcultas?: number;
           }>("polymarket");
           const found = data.find((m) => m.id === rawId || m.slug === rawId);
           if (found) {
@@ -143,10 +149,11 @@ export function useMarketDetail(marketId: string) {
                 return prices[0] ? parseFloat(prices[0]) : 0.5;
               } catch { return 0.5; }
             })();
-            const displayTitle =
-              found.eventTitle && found.eventTitle.length > 10 && found.eventTitle !== found.question
-                ? found.eventTitle
-                : found.question;
+            // O título sai da MESMA regra da lista (shared/descreverMercado.ts).
+            // Aqui ele era escolhido à parte — "eventTitle quando difere da
+            // pergunta" — e por isso a página de Indiana mostrava o título do
+            // evento cortado, "…by...?", que a lista nunca mostra (03/10/2026).
+            const displayTitle = descreverPolymarket(found).titulo || found.question;
             // Multi-resultado (negRisk): o servidor manda outcomes/outcomePrices já
             // agregados. >2 rótulos ⇒ mostramos o breakdown de desfechos, não SIM/NÃO.
             // A montagem mora em lib/desfechos.ts, testada: o identificador
@@ -159,7 +166,9 @@ export function useMarketDetail(marketId: string) {
             // e apenas quando ele tem mais de dois desfechos.
             let tokensDesfecho = found.outcomeTokens;
             let mercadosDesfecho: string | undefined;
-            const multi = (() => { try { return (JSON.parse(found.outcomes ?? "[]") as string[]).length > 2; } catch { return false; } })();
+            // Card de EVENTO (o servidor diz o tipo do grupo) é lista mesmo com 2.
+            const grupo = found.tipoDeGrupo;
+            const multi = !!grupo || (() => { try { return (JSON.parse(found.outcomes ?? "[]") as string[]).length > 2; } catch { return false; } })();
             if (!tokensDesfecho && multi) {
               const extra = await buscarJson<{ outcomeTokens?: string | null; outcomeMarketIds?: string | null }>(
                 `/api/polymarket/desfechos/${encodeURIComponent(rawId)}`,
@@ -167,7 +176,9 @@ export function useMarketDetail(marketId: string) {
               tokensDesfecho = extra?.outcomeTokens ?? undefined;
               mercadosDesfecho = extra?.outcomeMarketIds ?? undefined;
             }
-            const desfechos = montarDesfechos(found.outcomes, found.outcomePrices, tokensDesfecho, mercadosDesfecho);
+            const desfechos = montarDesfechos(found.outcomes, found.outcomePrices, tokensDesfecho, mercadosDesfecho, {
+              grupo, prazo: ehEscadaDePrazo(found.eventTitle ?? found.question),
+            });
             // ⚠️ DUAS COISAS DIFERENTES, e confundi-las era o DAD-03: `id` é o que
             // LIQUIDA (o mercado do desfecho) e `outcomeTokens` é o que DESENHA (o
             // token CLOB, que o gráfico de histórico consome). Eram o mesmo valor
@@ -200,6 +211,8 @@ export function useMarketDetail(marketId: string) {
               active: found.active,
               parsedOutcomes,
               outcomeTokens,
+              grupo,
+              opcoesOcultas: found.opcoesOcultas,
             });
           } else {
             // Idem Kalshi: mercado provavelmente resolvido → busca o mercado único.

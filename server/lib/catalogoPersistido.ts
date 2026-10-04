@@ -23,6 +23,7 @@
  */
 import { SUPABASE_URL, SUPABASE_KEY, supaWriteHeaders } from "./supabaseRest.ts";
 import { log } from "./log.ts";
+import { ehProducao } from "./urlPublica.ts";
 
 export type FonteDeCatalogo = "polymarket" | "kalshi";
 
@@ -45,8 +46,20 @@ function configurado(): boolean {
 }
 
 /** Guarda a versão recém-montada. Nunca lança: falhar aqui não pode derrubar a rota. */
+/**
+ * Só a PRODUÇÃO guarda cópia (03/10/2026). O `.env` local aponta para o mesmo
+ * banco, e qualquer servidor de teste — o da varredura, o do gravador de vídeo,
+ * o de quem está desenvolvendo — sobrescrevia a cópia que o site serve ao
+ * acordar: o visitante podia receber um catálogo montado por um código que
+ * ainda nem foi publicado. Mesma família do servidor local que gastava a cota
+ * de IA da produção. Ler a cópia continua livre: ler não muda nada para ninguém.
+ */
+export function podeGuardarCopia(env: Record<string, string | undefined> = process.env): boolean {
+  return ehProducao(env);
+}
+
 export async function salvarCatalogo<T>(fonte: FonteDeCatalogo, itens: ReadonlyArray<T>): Promise<void> {
-  if (!configurado() || itens.length === 0) return;
+  if (!podeGuardarCopia() || !configurado() || itens.length === 0) return;
   try {
     const r = await fetch(`${SUPABASE_URL}/rest/v1/catalogo_mercados?on_conflict=fonte`, {
       method: "POST",

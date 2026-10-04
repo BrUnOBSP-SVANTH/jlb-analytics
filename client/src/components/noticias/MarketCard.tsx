@@ -215,7 +215,13 @@ export function MarketCard({ market, savedIds, onSaved, highlight = false, indic
       {/* Barra SIM/NÃO só quando os desfechos SÃO Sim/Não; nos demais, os
           rótulos de verdade (Over/Under, candidatos, times). */}
       {!ehBinarioSimNao ? (
-        <MultiOutcomePills outcomes={descricao.desfechos.filter((o) => o.prob > 0.005).map((o) => ({ label: o.rotulo, prob: o.prob }))} />
+        <MultiOutcomePills
+          outcomes={descricao.desfechos
+            .filter((o) => descricao.tipo === "opcoes-independentes" || o.prob > 0.005)
+            .map((o) => ({ label: o.rotulo, prob: o.prob }))}
+          independentes={descricao.tipo === "opcoes-independentes"}
+          ocultas={market.opcoesOcultas}
+        />
       ) : prices ? (
         <div>
           <ProbBar prob={prices.yes / 100} />

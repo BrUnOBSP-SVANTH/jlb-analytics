@@ -57,9 +57,11 @@ export function HistoricoDesfechos({ market }: { market: MarketBasic }) {
 
   const outcomes = market.parsedOutcomes;
   const tokens = market.outcomeTokens;
+  // Card de EVENTO (o servidor diz o grupo) é lista mesmo com 2 — Flávio × Lula.
+  const minimo = market.grupo ? 1 : 3;
 
   useEffect(() => {
-    if (!outcomes || outcomes.length <= 2 || !tokens) { setCarregando(false); return; }
+    if (!outcomes || outcomes.length < minimo || !tokens) { setCarregando(false); return; }
     let vivo = true;
 
     const alvos = outcomes.slice(0, MAX_LINHAS)
@@ -84,9 +86,9 @@ export function HistoricoDesfechos({ market }: { market: MarketBasic }) {
     });
 
     return () => { vivo = false; };
-  }, [outcomes, tokens]);
+  }, [outcomes, tokens, minimo]);
 
-  if (!outcomes || outcomes.length <= 2) return null;
+  if (!outcomes || outcomes.length < minimo) return null;
   if (carregando) {
     return (
       <AnimatedSection delay={0.08}>

@@ -111,3 +111,32 @@ describe("o mercado de cada desfecho — é ele que liquida (DAD-03)", () => {
     expect(r![0].token).toBe("tok-aoc");
   });
 });
+
+/** Card de EVENTO, 03/10/2026: o servidor diz o tipo do grupo. */
+describe("montarDesfechos com grupo", () => {
+  const indiana = [
+    JSON.stringify(["December 31, 2026", "June 30, 2027", "December 31, 2027", "December 31, 2028"]),
+    JSON.stringify(["0.0040", "0.0900", "0.1100", "0.1850"]),
+    JSON.stringify(["t1", "t2", "t3", "t4"]),
+    JSON.stringify(["m1", "m2", "m3", "m4"]),
+  ] as const;
+
+  it("🔴 escada: todas as datas, na ordem da plataforma, sem cortar a barata", () => {
+    const d = montarDesfechos(...indiana, { grupo: "independentes", prazo: true })!;
+    expect(d.map((o) => o.label)).toEqual([
+      "até 31 de dezembro de 2026", "até 30 de junho de 2027", "até 31 de dezembro de 2027", "até 31 de dezembro de 2028",
+    ]);
+    // 0,4% está abaixo do corte de ruído da disputa — e fica: num prazo é informação.
+    expect(d[0].prob).toBe(0.004);
+    // O identificador viaja com o rótulo (traduzir o rótulo não muda quem liquida).
+    expect(d.map((o) => o.marketId)).toEqual(["m1", "m2", "m3", "m4"]);
+  });
+
+  it("🔴 disputa de DOIS vira lista (sem grupo, 2 rótulos seria SIM/NÃO)", () => {
+    const args = [JSON.stringify(["Lula", "Flávio Bolsonaro"]), JSON.stringify(["0.415", "0.592"]), "[]", JSON.stringify(["lula", "flavio"])] as const;
+    expect(montarDesfechos(...args)).toBeNull();
+    const d = montarDesfechos(...args, { grupo: "exclusivos" })!;
+    expect(d.map((o) => o.label)).toEqual(["Flávio Bolsonaro", "Lula"]);
+    expect(d.map((o) => o.marketId)).toEqual(["flavio", "lula"]);
+  });
+});

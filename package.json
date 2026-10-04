@@ -25,6 +25,7 @@
     "cobertura": "node --env-file=.env --experimental-transform-types scripts/cobertura-analise.mjs",
     "qualidade": "node --env-file=.env --experimental-transform-types scripts/qualidade-analise.mjs",
     "varredura": "node scripts/varredura-telas.mjs",
+    "desfechos": "node scripts/varredura-desfechos.mjs",
     "calibration:fit": "node scripts/calibration-fit.mjs",
     "sports:forecast": "node scripts/sports-forecast.mjs",
     "format": "prettier --write .",

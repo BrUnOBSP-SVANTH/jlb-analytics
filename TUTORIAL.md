@@ -140,19 +140,19 @@ E dentro de qualquer mercado, a análise por IA lê notícias reais, compara com
 
 ## Sua conta: banca simulada e calibração
 
-`pnpm tutorial conta` · 2 cenas · ~00:39 · ⚠️ **precisa de conta** (`TUTORIAL_EMAIL` e `TUTORIAL_SENHA` no `.env`)
+`pnpm tutorial conta` · 2 cenas · ~00:48 · ⚠️ **precisa de conta** (`TUTORIAL_EMAIL` e `TUTORIAL_SENHA` no `.env`)
 
 > Mil reais fictícios em mercados reais, e o painel que mede se você está acertando.
 
 ### 1. Banca simulada — dinheiro fictício, mercado real
 
-**00:00 – 00:19** · rota `/portfolio` · cena `banca` · 1 verificação
+**00:00 – 00:28** · rota `/portfolio` · cena `banca` · 2 verificaçãoões
 
-Com a conta, você ganha uma banca de mil reais fictícios para registrar posições em mercados de verdade, pelo preço de verdade — você não escolhe o preço. Quando o mercado resolve, o site liquida a posição pelo resultado oficial da plataforma, não por um chute nosso.
+Com a conta, você ganha uma banca de mil reais fictícios para testar suas estimativas. Vou abrir uma nova aposta, buscar por presidente e escolher um mercado. O preço da cota é o preço real de agora. Digo que não vai acontecer, escolho apostar cem reais, e vejo na hora quanto ganho. Quando o mercado resolve, o site liquida a posição pelo resultado oficial da plataforma, não por um chute nosso.
 
 ### 2. A sua calibração
 
-**00:19 – 00:39** · rota `/dashboard` · cena `dashboard` · 1 verificação
+**00:28 – 00:48** · rota `/dashboard` · cena `dashboard` · 1 verificação
 
 No painel você acompanha a sua calibração. O Brier Score mede o quanto as suas probabilidades batem com o que aconteceu: zero é perfeito, e responder cinquenta por cento em tudo dá zero vírgula vinte e cinco. É o número que diz se você está melhorando — ou só tendo sorte.
 
@@ -160,12 +160,12 @@ No painel você acompanha a sua calibração. O Brier Score mede o quanto as sua
 
 ## Duelos de previsão
 
-`pnpm tutorial duelos` · 1 cena · ~00:18 · ⚠️ **precisa de conta** (`TUTORIAL_EMAIL` e `TUTORIAL_SENHA` no `.env`)
+`pnpm tutorial duelos` · 1 cena · ~00:22 · ⚠️ **precisa de conta** (`TUTORIAL_EMAIL` e `TUTORIAL_SENHA` no `.env`)
 
 > Previsões seladas sobre os mesmos mercados — vence o menor Brier. Por pontos, sem dinheiro.
 
 ### 1. Duelos de previsão
 
-**00:00 – 00:18** · rota `/duelos` · cena `duelos` · 2 verificaçãoões
+**00:00 – 00:22** · rota `/duelos` · cena `duelos` · 2 verificaçãoões
 
-Nos duelos, duas pessoas — ou você contra a nossa IA — fazem previsões seladas sobre os mesmos mercados, e ninguém vê a do outro antes do fim. Quando tudo resolve, vence quem teve o menor Brier. É um beta valendo pontos, sem dinheiro de verdade.
+Nos duelos, você pode desafiar a comunidade ou a nossa própria IA sobre os mesmos mercados, e ninguém vê a do outro antes do fim. Vou criar um duelo contra a IA: escolho dois mercados e selo as minhas previsões. Quando tudo resolve, vence quem teve o menor Brier. É um beta valendo pontos, sem dinheiro.

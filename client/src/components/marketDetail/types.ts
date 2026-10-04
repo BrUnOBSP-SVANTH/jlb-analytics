@@ -2,6 +2,8 @@
  * Tipos compartilhados da tela de detalhe de mercado (/apostas/:id).
  * Extraido de pages/MarketDetail.tsx.
  */
+import type { TipoDeGrupo } from "@shared/descreverMercado";
+
 /** Um desfecho de mercado multi-resultado. `prob` vem em 0..1 com a precisão
  *  ORIGINAL da fonte — arredondar aqui é o que fazia a calculadora ler 19% onde
  *  o preço praticado era 18,5%, e anunciar edge onde não havia. */
@@ -43,6 +45,14 @@ export interface MarketBasic {
    *  gráfico de histórico consome nesta forma. Derivado da mesma lista, nunca
    *  montado à parte, senão o histórico troca de dono. */
   outcomeTokens?: string[];
+  /**
+   * Que tipo de grupo é a lista (03/10/2026, ver shared/descreverMercado.ts):
+   * "exclusivos" somam ~100% e só um acontece; "independentes" (escada de
+   * datas) são mercados separados — NADA na tela pode dizer que somam 100%.
+   */
+  grupo?: TipoDeGrupo;
+  /** Opções abertas na fonte que a lista não traz. A tela diz que existem. */
+  opcoesOcultas?: number;
   resolvedOutcome?: string; // desfecho vencedor quando o mercado já resolveu (SIM/NÃO/rótulo)
 }
 

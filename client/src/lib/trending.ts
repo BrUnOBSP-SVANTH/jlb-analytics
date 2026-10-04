@@ -6,7 +6,7 @@
  * para isolar a lógica pura da UI. São funções puras + fetch — sem React.
  */
 import { analyzeSentiment } from "@/lib/predictions";
-import { descreverMercado, type TipoDeMercado } from "@shared/descreverMercado";
+import { descreverMercado, rotuloDaOpcao, type TipoDeMercado, type TipoDeGrupo } from "@shared/descreverMercado";
 import { dolar, pct, pp } from "@shared/formato";
 import { nomeDaPlataforma, volumeNaMoeda } from "@shared/plataforma";
 import { getMarkets } from "@/lib/marketsCache";
@@ -51,6 +51,11 @@ export interface PolyBet {
   /** Lista paralela a `outcomes`: o id do MERCADO de cada desfecho — o que
    *  liquida (DAD-03). Só vem nos cards de evento agregado (`id` = "ev-…"). */
   outcomeMarketIds?: string;
+  /** Só no card de evento: "exclusivos" (só um acontece) ou "independentes"
+   *  (escada de datas/faixas) — ver shared/descreverMercado.ts. */
+  tipoDeGrupo?: TipoDeGrupo;
+  /** Opções abertas na fonte que a lista não traz. */
+  opcoesOcultas?: number;
   clobTokenIds?: string;
   externalUrl?: string; // URL canônica computada no servidor (fonte da verdade)
 }
@@ -82,7 +87,10 @@ export interface KalshiMarket {
   closeTime?: string;
   category?: string;
   externalUrl?: string; // URL canônica computada no servidor (fonte da verdade)
-  outcomes?: { label: string; prob: number }[];
+  /** Card de evento de várias opções; `id` = ticker do mercado da opção. */
+  outcomes?: { id?: string; label: string; prob: number }[];
+  tipoDeGrupo?: TipoDeGrupo;
+  opcoesOcultas?: number;
 }
 
 export type Source = "reddit" | "polymarket" | "kalshi" | "manifold";
@@ -289,6 +297,11 @@ export interface TrendingItem {
   /** Desfechos com rótulo. Preenchido também para binário com rótulos PRÓPRIOS
    *  (Over/Under, time × time): é o que faz o card parar de escrever "SIM". */
   parsedOutcomes?: { label: string; prob: number }[];
+  /** "independentes": a lista é uma escada (datas, faixas) — sem líder, na
+   *  ordem da plataforma, e nada nela soma 100%. */
+  grupo?: TipoDeGrupo;
+  /** Opções abertas na fonte que a lista não traz — a tela diz "e mais N". */
+  opcoesOcultas?: number;
   clobTokenIds?: string;
   externalUrl: string;
   whyTrending: string;
@@ -429,8 +442,10 @@ export function whyTrendingMarket(item: {
   multiDesfecho?: boolean;
   /** Probabilidades 0–1 de todos os desfechos. Sem elas, cai no binário. */
   desfechos?: ReadonlyArray<number>;
+  /** Escada (datas, faixas): não há líder nem "SIM" para descrever. */
+  independentes?: boolean;
 }): string {
-  const { volume, volume24h, liquidity, yesProb, prevYesProb, weekPriceChange, source, multiDesfecho, desfechos } = item;
+  const { volume, volume24h, liquidity, yesProb, prevYesProb, weekPriceChange, source, multiDesfecho, desfechos, independentes } = item;
   void liquidity;
   const variacao = prevYesProb !== undefined ? yesProb - prevYesProb : undefined;
   const plataforma = nomeDaPlataforma(source) ?? "mercado";
@@ -447,6 +462,10 @@ export function whyTrendingMarket(item: {
     especifico.push(`${variacao > 0 ? "alta" : "queda"} de ${pp(Math.abs(variacao * 100)).replace("+", "")} nas últimas horas`);
 
   const abertura = especifico.length > 0 ? especifico.join(", ") + ". " : "";
+
+  // Escada: "líder com 5%" seria o prazo mais curto fingindo ser o evento.
+  if (independentes)
+    return `${abertura}${volumeNaMoeda(volume, source)} negociados no ${plataforma}, cada prazo (ou faixa) como um mercado separado — a lista mostra a chance de cada um.`;
 
   // O líder de um mercado multi-desfecho não é "SIM": é o desfecho na frente.
   const nivel = multiDesfecho
@@ -504,6 +523,16 @@ function bestBetNoteReddit(post: RedditPost): string {
   if ((post.num_comments ?? 0) > 300)
     return "Alta discussão ativa — leia os comentários mais votados para capturar análises de apostadores experientes. Comentários com muitos upvotes geralmente contêm informação não precificada.";
   return "Evento com engajamento consolidado — as odds já refletem o consenso público. Para ter edge, procure ângulos específicos (desfalques, clima, histórico recente) que a maioria ainda não precificou.";
+}
+
+/**
+ * A nota de uma ESCADA (datas, faixas). A de binário fala em "X% SIM" e "o lado
+ * NÃO paga" — usando o preço da 1ª opção, numa escada isso diria "baixa
+ * probabilidade" do evento inteiro olhando só o prazo mais curto.
+ */
+export function notaDaEscada(source: Source): string {
+  const platform = nomeDaPlataforma(source) ?? "mercado";
+  return `Cada linha é um mercado separado no ${platform}. Compare uma com a seguinte: onde a chance dá o maior salto é onde o mercado acha que o evento fica mais provável.`;
 }
 
 export function bestBetNoteMarket(yesProb: number, vol: number, source: Source): string {
@@ -591,13 +620,18 @@ export function buildPolyItem(bet: PolyBet): TrendingItem | null {
     rotulos: allLabels.length ? allLabels : undefined,
     precos: allPrices.length ? allPrices : undefined,
     probSim: yesProb,
+    grupo: bet.tipoDeGrupo,
   });
   const displayTitle = descricao.titulo;
+  const independentes = descricao.tipo === "opcoes-independentes";
   // Pílulas de desfecho sempre que NÃO for Sim/Não — é o que tira o "CHANCE SIM"
-  // de Over/Under e de time × time.
+  // de Over/Under e de time × time. Na escada vai tudo, na ordem: 4% num prazo
+  // é informação, não ruído.
   const parsedOutcomes = descricao.tipo === "sim-nao" || descricao.tipo === "escada-de-datas"
     ? undefined
-    : descricao.desfechos.filter((o) => o.prob > 0.005).map((o) => ({ label: o.rotulo, prob: o.prob }));
+    : descricao.desfechos
+        .filter((o) => independentes || o.prob > 0.005)
+        .map((o) => ({ label: o.rotulo, prob: o.prob }));
 
   return {
     id: `poly-${bet.id}`,
@@ -609,16 +643,18 @@ export function buildPolyItem(bet: PolyBet): TrendingItem | null {
     volume: vol, volume24h: vol24h, liquidity: liq, weekPriceChange: weekChg,
     yesProb, prevYesProb: bet.prevYesProb,
     parsedOutcomes,
+    grupo: bet.tipoDeGrupo,
+    opcoesOcultas: bet.opcoesOcultas,
     clobTokenIds: bet.clobTokenIds,
     externalUrl,
     whyTrending: whyTrendingMarket({
       volume: vol, volume24h: vol24h, liquidity: liq, yesProb, prevYesProb: bet.prevYesProb,
-      weekPriceChange: weekChg, source: "polymarket", multiDesfecho: !!parsedOutcomes,
+      weekPriceChange: weekChg, source: "polymarket", multiDesfecho: !!parsedOutcomes, independentes,
       // As probabilidades de TODOS os desfechos: é a folga entre os dois
       // primeiros que diz se a disputa está aberta (DAD-04).
       desfechos: descricao.desfechos.map((d) => d.prob),
     }),
-    bestBetNote: bestBetNoteMarket(yesProb, vol, "polymarket"),
+    bestBetNote: independentes ? notaDaEscada("polymarket") : bestBetNoteMarket(yesProb, vol, "polymarket"),
     sentiment: analyzeSentiment(displayTitle),
     ageHours: 0,
     category: bet.category,
@@ -638,6 +674,10 @@ export function buildKalshiItem(m: KalshiMarket): TrendingItem | null {
   const badge: DynamicBadge | undefined =
     isClosingSoon(m.closeTime) ? "encerrando" :
     (m.volume24h !== undefined && m.volume > 0 && m.volume24h / m.volume > 0.15) ? "em-alta" : undefined;
+  // Card de evento (03/10/2026): a ordem é a do servidor — na escada, a da
+  // plataforma —, e os rótulos saem em português ("antes de 1º de janeiro…").
+  const independentes = m.tipoDeGrupo === "independentes";
+  const parsedOutcomes = m.outcomes?.map((o) => ({ label: rotuloDaOpcao(o.label), prob: o.prob }));
   return {
     id: `kalshi-${m.ticker}`,
     title: m.title,
@@ -647,14 +687,16 @@ export function buildKalshiItem(m: KalshiMarket): TrendingItem | null {
     openInterest: m.openInterest,
     yesProb: yesDecimal,
     prevYesProb: prevDecimal,
-    parsedOutcomes: m.outcomes,
+    parsedOutcomes,
+    grupo: m.tipoDeGrupo,
+    opcoesOcultas: m.opcoesOcultas,
     externalUrl: m.externalUrl ?? urlDoEventoKalshi(m.seriesTicker, m.eventTicker) ?? HOME_KALSHI,
     whyTrending: whyTrendingMarket({
       volume: m.volume, volume24h: m.volume24h, liquidity: m.liquidity, yesProb: yesDecimal,
-      prevYesProb: prevDecimal, source: "kalshi", multiDesfecho: !!m.outcomes,
+      prevYesProb: prevDecimal, source: "kalshi", multiDesfecho: !!m.outcomes, independentes,
       desfechos: m.outcomes?.map((o) => o.prob),
     }),
-    bestBetNote: bestBetNoteMarket(yesDecimal, m.volume, "kalshi"),
+    bestBetNote: independentes ? notaDaEscada("kalshi") : bestBetNoteMarket(yesDecimal, m.volume, "kalshi"),
     sentiment: analyzeSentiment(m.title),
     ageHours: 0,
     category: m.category,

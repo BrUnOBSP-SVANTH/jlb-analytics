@@ -12,6 +12,8 @@
  * erro que este site pode cometer — por isso a regra virou função e ganhou teste.
  */
 
+import { rotuloDaOpcao, type TipoDeGrupo } from "@shared/descreverMercado";
+
 export interface Desfecho {
   label: string;
   /** 0–1. */
@@ -44,31 +46,41 @@ function jsonArray<T>(cru: string | undefined): T[] {
  * Junta os três arrays paralelos numa lista só, filtra o ruído e ordena por
  * probabilidade. Devolve `null` quando não é multi-resultado (2 ou menos
  * rótulos), porque aí a tela mostra SIM/NÃO e não a lista.
+ *
+ * Com `grupo` (card de EVENTO, 03/10/2026 — ver `TipoDeGrupo` em
+ * shared/descreverMercado.ts) quem decide é o servidor, não a contagem:
+ *  · "exclusivos" vale com 2 opções (Flávio × Lula é disputa, não SIM/NÃO);
+ *  · "independentes" (escada de datas) mantém a ORDEM e não corta nada —
+ *    ordenar por chance embaralharia as datas, e 4% num prazo é informação.
+ * O `label` sai em português ("até 31 de dezembro de 2026"); o `id` nunca
+ * depende dele.
  */
 export function montarDesfechos(
   outcomesJson?: string,
   pricesJson?: string,
   tokensJson?: string,
   marketIdsJson?: string,
+  opcoes: { grupo?: TipoDeGrupo; prazo?: boolean } = {},
 ): Desfecho[] | null {
   const labels = jsonArray<string>(outcomesJson);
   const precos = jsonArray<string | number>(pricesJson).map(Number);
   const tokens = jsonArray<string>(tokensJson);
   const mercados = jsonArray<string>(marketIdsJson);
 
-  // 2 ou menos rótulos = mercado binário comum.
-  if (labels.length <= 2) return null;
+  // Sem grupo: 2 ou menos rótulos = mercado binário comum.
+  if (opcoes.grupo ? labels.length === 0 : labels.length <= 2) return null;
   // Preço faltando para algum rótulo: a lista sairia com buraco, e um buraco
   // aqui vira "0%" na tela, que é uma afirmação falsa e não uma ausência.
   if (precos.length < labels.length) return null;
 
   const juntos = labels.map((label, i) => ({
-    label,
+    label: opcoes.grupo ? rotuloDaOpcao(label, { prazo: opcoes.prazo }) : label,
     prob: Number.isFinite(precos[i]) ? precos[i] : 0,
     token: tokens[i] ?? "",
     marketId: String(mercados[i] ?? ""),
   }));
 
+  if (opcoes.grupo === "independentes") return juntos;
   return juntos
     .filter((o) => o.prob > PROB_MINIMA)
     .sort((a, b) => b.prob - a.prob);
