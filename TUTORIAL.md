@@ -86,7 +86,7 @@ E cada nível termina com uma checagem. O SIM custa quarenta centavos e você ac
 
 ### 4. Nível 5: a análise integrada
 
-**01:00 – 01:15** · rota `/nivel/5` · cena `nivel5` · 1 verificação
+**01:00 – 01:15** · rota `/nivel/5` · cena `nivel5` · 2 verificaçãoões
 
 No último nível tudo se junta: modelos, mercado e notícia na mesma leitura. O sistema nunca diz o que fazer — mostra onde os modelos divergem do mercado e por quê, e deixa a decisão com você.
 
